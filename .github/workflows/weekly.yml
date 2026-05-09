@@ -1,1 +1,41 @@
 # Weekly Keepalive workflow
+name: Weekly AppFolio Keepalive
+
+on:
+  schedule:
+    - cron: "0 8 * * 0"
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install playwright
+          playwright install chromium
+
+      - name: Run keepalive
+        id: keepalive
+        env:
+          APPFOLIO_EMAIL: ${{ secrets.APPFOLIO_EMAIL }}
+          APPFOLIO_PASSWORD: ${{ secrets.APPFOLIO_PASSWORD }}
+          APPFOLIO_COOKIES: ${{ secrets.APPFOLIO_COOKIES }}
+        run: python automation/keepalive.py
+
+      - name: Save updated cookies
+        if: steps.keepalive.outputs.new_cookies != ''
+        uses: gliech/create-github-secret-action@v1
+        with:
+          name: APPFOLIO_COOKIES
+          value: ${{ steps.keepalive.outputs.new_cookies }}
+          pa_token: ${{ secrets.GITHUB_TOKEN }}
