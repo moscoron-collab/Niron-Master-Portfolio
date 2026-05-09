@@ -1,1 +1,63 @@
 # weekly keepalive script
+"""
+Weekly keepalive script — logs into AppFolio to keep the session alive
+and saves updated cookies back to GitHub Secrets.
+"""
+
+import os
+import json
+import base64
+
+from playwright.sync_api import sync_playwright
+
+APPFOLIO_URL   = "https://laureatetld.appfolio.com/oportal/users/log_in"
+APPFOLIO_EMAIL = os.environ["APPFOLIO_EMAIL"]
+APPFOLIO_PASS  = os.environ["APPFOLIO_PASSWORD"]
+COOKIES_B64    = os.environ.get("APPFOLIO_COOKIES", "")
+
+
+def load_cookies():
+    if not COOKIES_B64:
+        return []
+    try:
+        return json.loads(base64.b64decode(COOKIES_B64).decode())
+    except Exception:
+        return []
+
+
+def save_cookies(context):
+    cookies = context.cookies()
+    encoded = base64.b64encode(json.dumps(cookies).encode()).decode()
+    print(f"::set-output name=new_cookies::{encoded}")
+
+
+def main():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context()
+
+        cookies = load_cookies()
+        if cookies:
+            context.add_cookies(cookies)
+
+        page = context.new_page()
+        page.goto(APPFOLIO_URL)
+        page.wait_for_load_state("networkidle")
+
+        if "log_in" in page.url:
+            print("Cookies expired — logging in with credentials...")
+            page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
+            page.fill("input[name='user[password]']", APPFOLIO_PASS)
+            page.click("input[type='submit']")
+            page.wait_for_load_state("networkidle")
+            print("Login successful.")
+        else:
+            print("Session still active via cookies.")
+
+        save_cookies(context)
+        browser.close()
+        print("Keepalive complete.")
+
+
+if __name__ == "__main__":
+    main()
