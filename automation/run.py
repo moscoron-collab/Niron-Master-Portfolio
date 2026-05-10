@@ -10,19 +10,21 @@ import zipfile
 import tempfile
 import datetime
 import traceback
+import urllib.request
 
 import pdfplumber
 from playwright.sync_api import sync_playwright
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 
-APPFOLIO_URL   = "https://laureatetld.appfolio.com/oportal/users/log_in"
-APPFOLIO_EMAIL = os.environ["APPFOLIO_EMAIL"]
-APPFOLIO_PASS  = os.environ["APPFOLIO_PASSWORD"]
-SHEET_ID       = os.environ["GOOGLE_SHEET_ID"]
-NOTIFY_EMAIL   = os.environ["NOTIFICATION_EMAIL"]
-CREDS_JSON     = os.environ["GOOGLE_CREDENTIALS_JSON"]
-COOKIES_B64    = os.environ.get("APPFOLIO_COOKIES", "")
+APPFOLIO_URL    = "https://laureatetld.appfolio.com/oportal/users/log_in"
+APPFOLIO_EMAIL  = os.environ["APPFOLIO_EMAIL"]
+APPFOLIO_PASS   = os.environ["APPFOLIO_PASSWORD"]
+SHEET_ID        = os.environ["GOOGLE_SHEET_ID"]
+NOTIFY_EMAIL    = os.environ["NOTIFICATION_EMAIL"]
+CREDS_JSON      = os.environ["GOOGLE_CREDENTIALS_JSON"]
+COOKIES_B64     = os.environ.get("APPFOLIO_COOKIES", "")
+APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXtgU_bEQx-3B15FoV4SrolI1int0s6PUo9WKnHJ2Wz8zV5jq62MWNFQLjI51OqsWH/exec"
 
 LLC_MAP = {
     "Yale Townhomes, LLC": "Yale Townhomes, LLC",
@@ -40,8 +42,7 @@ def get_sheets_service():
 
 
 def read_sheet(sheets, range_name):
-    result = sheets.values().get(spreadsheetId=SHEET_ID, range=range_name).execute()
-    return result.get("values", [])
+    return sheets.values().get(spreadsheetId=SHEET_ID, range=range_name).execute().get("values", [])
 
 
 def append_row(sheets, tab, row):
@@ -62,7 +63,7 @@ def require_approval(sheets):
 
 def already_recorded(sheets, llc, month_label):
     rows = read_sheet(sheets, "History!A:C")
-    for row in rows[2:]:
+    for row in rows[1:]:
         if len(row) >= 3 and row[1] == month_label and row[2] == llc:
             return True
     return False
@@ -140,25 +141,17 @@ def _normalize_cookies(cookies):
     out = []
     for c in cookies:
         cookie = {
-            "name": c.get("name"),
-            "value": c.get("value"),
-            "domain": c.get("domain"),
-            "path": c.get("path", "/"),
+            "name": c.get("name"), "value": c.get("value"),
+            "domain": c.get("domain"), "path": c.get("path", "/"),
         }
-        if "expirationDate" in c:
-            cookie["expires"] = int(c["expirationDate"])
-        if "httpOnly" in c:
-            cookie["httpOnly"] = c["httpOnly"]
-        if "secure" in c:
-            cookie["secure"] = c["secure"]
+        if "expirationDate" in c: cookie["expires"] = int(c["expirationDate"])
+        if "httpOnly" in c: cookie["httpOnly"] = c["httpOnly"]
+        if "secure" in c: cookie["secure"] = c["secure"]
         if "sameSite" in c:
             ss = c["sameSite"]
-            if ss in ("no_restriction", "unspecified", None):
-                cookie["sameSite"] = "None"
-            elif ss == "lax":
-                cookie["sameSite"] = "Lax"
-            elif ss == "strict":
-                cookie["sameSite"] = "Strict"
+            if ss in ("no_restriction", "unspecified", None): cookie["sameSite"] = "None"
+            elif ss == "lax": cookie["sameSite"] = "Lax"
+            elif ss == "strict": cookie["sameSite"] = "Strict"
         out.append(cookie)
     return out
 
@@ -182,6 +175,16 @@ def save_cookies(context):
     print(f"::set-output name=new_cookies::{encoded}")
 
 
+def trigger_email_notification():
+    """Calls Apps Script to send email about new pending review rows."""
+    try:
+        url = f"{APPS_SCRIPT_URL}?action=notify"
+        with urllib.request.urlopen(url, timeout=30) as resp:
+            print(f"Email notification triggered: {resp.status}")
+    except Exception as e:
+        print(f"Email notification failed (non-fatal): {e}")
+
+
 def login(page):
     page.goto(APPFOLIO_URL)
     page.wait_for_load_state("networkidle")
@@ -201,38 +204,30 @@ def download_packet_for_llc(page, llc, tmp_dir):
     print(f"\nLooking for: {appfolio_name}")
     page.goto("https://laureatetld.appfolio.com/oportal/statements")
     page.wait_for_load_state("networkidle")
-
     try:
         page.wait_for_selector("#statements-root .card", timeout=20000)
     except Exception:
         print("WARNING: Timed out waiting for cards")
-
     cards = page.query_selector_all(".card")
     print(f"Cards found: {len(cards)}")
 
     for card in cards:
         h2 = card.query_selector("h2.card-title")
-        if not h2:
+        if not h2 or h2.inner_text().strip() != appfolio_name:
             continue
-        card_name = h2.inner_text().strip()
-        if card_name != appfolio_name:
-            continue
-
-        print(f"Found card for: {card_name}")
-
+        print(f"Found card for: {appfolio_name}")
         first_li = card.query_selector("ul.list-group li")
         if not first_li:
             return None, None, None
-
         date_text = first_li.query_selector("b")
         date_range = date_text.inner_text().strip() if date_text else ""
         print(f"Most recent packet: {date_range}")
 
         month_label = None
-        to_match = re.search(r"to\s+(\w+ \d+, \d+)", date_range)
-        if to_match:
+        m = re.search(r"to\s+(\w+ \d+, \d+)", date_range)
+        if m:
             try:
-                to_date = datetime.datetime.strptime(to_match.group(1), "%b %d, %Y")
+                to_date = datetime.datetime.strptime(m.group(1), "%b %d, %Y")
                 month_label = to_date.strftime("%Y-%m-01")
             except Exception:
                 pass
@@ -240,11 +235,9 @@ def download_packet_for_llc(page, llc, tmp_dir):
         dl_link = first_li.query_selector(".analytics-statement-download-link a")
         if not dl_link:
             return None, None, None
-
         href = dl_link.get_attribute("href") or ""
         ext = ".zip" if ".zip" in href else ".pdf"
         print(f"Downloading ({ext}): {href[:80]}...")
-
         with page.expect_download() as dl_info:
             dl_link.click()
         download = dl_info.value
@@ -296,43 +289,31 @@ def main():
                     if not file_path or not month_label:
                         errors.append(f"{llc}: Could not download packet")
                         continue
-
                     if already_recorded(sheets, llc, month_label):
                         print(f"Already recorded {llc} for {month_label}, skipping.")
                         continue
-
                     pdf_path = get_pdf_path(file_path, tmp_dir, llc)
                     if not pdf_path:
                         errors.append(f"{llc}: Owner Packet.pdf not found")
                         continue
-
                     disbursement, mgmt_fee = extract_from_pdf(pdf_path)
                     if disbursement is None:
                         errors.append(f"{llc}: Could not extract disbursement from PDF")
                         continue
-
                     mortgage, tax_mo, ins_mo = get_fixed_costs(sheets, llc)
                     maintenance = get_maintenance(sheets, llc, month_label)
                     net = disbursement - mortgage - tax_mo - ins_mo - maintenance
-
                     results[llc] = {
-                        "date_range": date_range,
-                        "month": month_label,
-                        "disbursement": disbursement,
-                        "mgmt_fee": mgmt_fee or 0,
-                        "mortgage": mortgage,
-                        "tax_mo": tax_mo,
-                        "ins_mo": ins_mo,
-                        "maintenance": maintenance,
-                        "net": net,
+                        "date_range": date_range, "month": month_label,
+                        "disbursement": disbursement, "mgmt_fee": mgmt_fee or 0,
+                        "mortgage": mortgage, "tax_mo": tax_mo, "ins_mo": ins_mo,
+                        "maintenance": maintenance, "net": net,
                     }
                     print(f"OK {llc}: Disbursement=${disbursement:,.2f}, Net=${net:,.2f}")
-
                 except Exception as e:
                     errors.append(f"{llc}: {str(e)}")
                     print(f"ERROR {llc}: {e}")
                     print(traceback.format_exc())
-
         browser.close()
 
     print(f"\nResults: {list(results.keys())}")
@@ -347,24 +328,19 @@ def main():
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     for llc, d in results.items():
-        # 12 columns: Date Range, Period Start, LLC, Disbursements, Mgmt Fees,
-        # Mortgage, Tax, Insurance, Maintenance, Net Cashflow, Source, Logged At
         row = [
-            d["date_range"],
-            d["month"],
-            llc,
-            d["disbursement"],
-            d["mgmt_fee"],
-            d["mortgage"],
-            d["tax_mo"],
-            d["ins_mo"],
-            d["maintenance"],
-            d["net"],
-            "System — Automation",
-            now_str,
+            d["date_range"], d["month"], llc,
+            d["disbursement"], d["mgmt_fee"],
+            d["mortgage"], d["tax_mo"], d["ins_mo"],
+            d["maintenance"], d["net"],
+            "System — Automation", now_str,
         ]
         append_row(sheets, tab, row)
         print(f"Written to {tab}: {llc}")
+
+    # Send email notification
+    if approval:
+        trigger_email_notification()
 
 
 if __name__ == "__main__":
