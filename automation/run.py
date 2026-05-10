@@ -139,11 +139,43 @@ def _parse_amount(text):
     return None
 
 
+def _normalize_cookies(cookies):
+    out = []
+    for c in cookies:
+        cookie = {
+            "name": c.get("name"),
+            "value": c.get("value"),
+            "domain": c.get("domain"),
+            "path": c.get("path", "/"),
+        }
+        if "expirationDate" in c:
+            cookie["expires"] = int(c["expirationDate"])
+        if "httpOnly" in c:
+            cookie["httpOnly"] = c["httpOnly"]
+        if "secure" in c:
+            cookie["secure"] = c["secure"]
+        if "sameSite" in c:
+            ss = c["sameSite"]
+            if ss in ("no_restriction", "unspecified", None):
+                cookie["sameSite"] = "None"
+            elif ss == "lax":
+                cookie["sameSite"] = "Lax"
+            elif ss == "strict":
+                cookie["sameSite"] = "Strict"
+        out.append(cookie)
+    return out
+
+
 def load_cookies():
     if not COOKIES_B64:
         return []
+    raw = COOKIES_B64.strip()
     try:
-        return json.loads(base64.b64decode(COOKIES_B64).decode())
+        return _normalize_cookies(json.loads(raw))
+    except Exception:
+        pass
+    try:
+        return _normalize_cookies(json.loads(base64.b64decode(raw).decode()))
     except Exception:
         return []
 
@@ -159,7 +191,7 @@ def login(page):
     if "log_in" not in page.url:
         print("Already logged in via cookies.")
         return
-    print("Logging in...")
+    print("Logging in with credentials...")
     page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
     page.fill("input[name='user[password]']", APPFOLIO_PASS)
     page.click("input[type='submit']")
@@ -173,11 +205,10 @@ def download_packet_for_llc(page, llc, tmp_dir):
     page.goto("https://laureatetld.appfolio.com/oportal/statements")
     page.wait_for_load_state("networkidle")
 
-    # Wait for JS to render the cards
     try:
         page.wait_for_selector("#statements-root .card", timeout=20000)
     except Exception:
-        print("WARNING: Timed out waiting for cards — page may not have loaded")
+        print("WARNING: Timed out waiting for cards")
 
     cards = page.query_selector_all(".card")
     print(f"Cards found: {len(cards)}")
@@ -257,6 +288,7 @@ def main():
         browser = p.chromium.launch(headless=True)
         context = browser.new_context()
         cookies = load_cookies()
+        print(f"Loaded {len(cookies)} cookies")
         if cookies:
             context.add_cookies(cookies)
         page = context.new_page()
@@ -299,7 +331,7 @@ def main():
                         "maintenance": maintenance,
                         "net": net,
                     }
-                    print(f"✓ {llc}: Disbursement=${disbursement:,.2f}, Net=${net:,.2f}")
+                    print(f"OK {llc}: Disbursement=${disbursement:,.2f}, Net=${net:,.2f}")
 
                 except Exception as e:
                     errors.append(f"{llc}: {str(e)}\n{traceback.format_exc()}")
