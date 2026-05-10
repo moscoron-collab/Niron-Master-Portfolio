@@ -1,4 +1,3 @@
-# Monthly Automation Workflow
 name: Monthly AppFolio Data Pull
 
 on:
