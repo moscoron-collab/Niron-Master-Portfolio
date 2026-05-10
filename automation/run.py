@@ -61,9 +61,9 @@ def require_approval(sheets):
 
 
 def already_recorded(sheets, llc, month_label):
-    rows = read_sheet(sheets, "History!A:B")
-    for row in rows[1:]:
-        if len(row) >= 2 and row[0] == month_label and row[1] == llc:
+    rows = read_sheet(sheets, "History!A:C")
+    for row in rows[2:]:
+        if len(row) >= 3 and row[1] == month_label and row[2] == llc:
             return True
     return False
 
@@ -222,8 +222,7 @@ def download_packet_for_llc(page, llc, tmp_dir):
 
         first_li = card.query_selector("ul.list-group li")
         if not first_li:
-            print("No list items in card")
-            return None, None
+            return None, None, None
 
         date_text = first_li.query_selector("b")
         date_range = date_text.inner_text().strip() if date_text else ""
@@ -240,8 +239,7 @@ def download_packet_for_llc(page, llc, tmp_dir):
 
         dl_link = first_li.query_selector(".analytics-statement-download-link a")
         if not dl_link:
-            print("No download link found")
-            return None, None
+            return None, None, None
 
         href = dl_link.get_attribute("href") or ""
         ext = ".zip" if ".zip" in href else ".pdf"
@@ -253,10 +251,10 @@ def download_packet_for_llc(page, llc, tmp_dir):
         file_path = os.path.join(tmp_dir, f"{llc}{ext}")
         download.save_as(file_path)
         print(f"Saved: {file_path}")
-        return file_path, month_label
+        return file_path, month_label, date_range
 
     print(f"WARNING: No card found for '{appfolio_name}'")
-    return None, None
+    return None, None, None
 
 
 def get_pdf_path(file_path, tmp_dir, llc):
@@ -271,7 +269,6 @@ def get_pdf_path(file_path, tmp_dir, llc):
             print(f"  ZIP contains: {f}")
             if f.lower() == "owner packet.pdf":
                 return os.path.join(root, f)
-    print(f"Owner Packet.pdf not found in ZIP for {llc}")
     return None
 
 
@@ -295,7 +292,7 @@ def main():
         with tempfile.TemporaryDirectory() as tmp_dir:
             for llc in LLC_MAP.keys():
                 try:
-                    file_path, month_label = download_packet_for_llc(page, llc, tmp_dir)
+                    file_path, month_label, date_range = download_packet_for_llc(page, llc, tmp_dir)
                     if not file_path or not month_label:
                         errors.append(f"{llc}: Could not download packet")
                         continue
@@ -319,6 +316,7 @@ def main():
                     net = disbursement - mortgage - tax_mo - ins_mo - maintenance
 
                     results[llc] = {
+                        "date_range": date_range,
                         "month": month_label,
                         "disbursement": disbursement,
                         "mgmt_fee": mgmt_fee or 0,
@@ -331,8 +329,9 @@ def main():
                     print(f"OK {llc}: Disbursement=${disbursement:,.2f}, Net=${net:,.2f}")
 
                 except Exception as e:
-                    errors.append(f"{llc}: {str(e)}\n{traceback.format_exc()}")
+                    errors.append(f"{llc}: {str(e)}")
                     print(f"ERROR {llc}: {e}")
+                    print(traceback.format_exc())
 
         browser.close()
 
@@ -345,14 +344,24 @@ def main():
 
     approval = require_approval(sheets)
     tab = "Pending Review" if approval else "History"
+    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     for llc, d in results.items():
+        # 12 columns: Date Range, Period Start, LLC, Disbursements, Mgmt Fees,
+        # Mortgage, Tax, Insurance, Maintenance, Net Cashflow, Source, Logged At
         row = [
-            d["month"], llc,
-            d["disbursement"], d["mgmt_fee"],
-            d["mortgage"], d["tax_mo"], d["ins_mo"],
-            d["maintenance"], "",
+            d["date_range"],
+            d["month"],
+            llc,
+            d["disbursement"],
+            d["mgmt_fee"],
+            d["mortgage"],
+            d["tax_mo"],
+            d["ins_mo"],
+            d["maintenance"],
+            d["net"],
             "System — Automation",
+            now_str,
         ]
         append_row(sheets, tab, row)
         print(f"Written to {tab}: {llc}")
