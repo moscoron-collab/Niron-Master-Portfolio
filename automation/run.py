@@ -1,4 +1,3 @@
-# AppFolio automation script
 """
 AppFolio Monthly Cashflow Automation
 Downloads Owner Packets for each LLC, extracts disbursement data,
@@ -19,7 +18,6 @@ import pdfplumber
 from playwright.sync_api import sync_playwright
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
-import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -41,7 +39,6 @@ LLCS = [
 
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/gmail.send",
 ]
 
 
@@ -50,12 +47,6 @@ def get_sheets_service():
     creds_info = json.loads(CREDS_JSON)
     creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
     return build("sheets", "v4", credentials=creds).spreadsheets()
-
-
-def get_gmail_service():
-    creds_info = json.loads(CREDS_JSON)
-    creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
-    return build("gmail", "v1", credentials=creds)
 
 
 def read_sheet(sheets, range_name):
@@ -138,6 +129,9 @@ def extract_from_pdf(pdf_path):
     with pdfplumber.open(pdf_path) as pdf:
         page = pdf.pages[0]
         text = page.extract_text() or ""
+    print("=== PDF PAGE 1 TEXT ===")
+    print(text[:2000])
+    print("=== END PDF TEXT ===")
     lines = text.split("\n")
     for i, line in enumerate(lines):
         low = line.lower()
@@ -198,15 +192,44 @@ def login(page):
 
 
 def download_packet_for_llc(page, llc, tmp_dir):
-    print(f"Looking for packet: {llc}")
+    print(f"\nLooking for packet: {llc}")
     page.goto("https://laureatetld.appfolio.com/oportal/statements")
     page.wait_for_load_state("networkidle")
+
+    # Debug: print all text on the page
+    page_text = page.inner_text("body")
+    print("=== STATEMENTS PAGE TEXT (first 3000 chars) ===")
+    print(page_text[:3000])
+    print("=== END PAGE TEXT ===")
+
+    # Try to find any download links
+    all_links = page.query_selector_all("a")
+    print(f"Total links on page: {len(all_links)}")
+    for link in all_links:
+        href = link.get_attribute("href") or ""
+        text = link.inner_text().strip()
+        if "download" in href.lower() or "download" in text.lower() or "packet" in text.lower():
+            print(f"  Download link found: text='{text}' href='{href}'")
+
+    # Try matching by LLC name in rows
     rows = page.query_selector_all("tr")
+    print(f"Total table rows: {len(rows)}")
     for row in rows:
         text = row.inner_text()
-        if llc in text and "Download" in text:
-            link = row.query_selector("a[href*='download']") or row.query_selector("a")
+        if text.strip():
+            print(f"  Row: {text[:200]}")
+
+    # Now try to find and click the download for this LLC
+    # Strategy: find rows containing LLC name keywords
+    llc_keywords = llc.lower().replace(",", "").replace("llc", "").strip().split()
+    print(f"Searching for keywords: {llc_keywords}")
+
+    for row in rows:
+        row_text = row.inner_text().lower()
+        if any(kw in row_text for kw in llc_keywords) and ("download" in row_text or "packet" in row_text):
+            link = row.query_selector("a")
             if link:
+                print(f"Found matching row for {llc}, clicking download...")
                 with page.expect_download() as dl_info:
                     link.click()
                 download = dl_info.value
@@ -214,6 +237,20 @@ def download_packet_for_llc(page, llc, tmp_dir):
                 download.save_as(zip_path)
                 print(f"Downloaded packet for {llc}")
                 return zip_path
+
+    # Fallback: try clicking any link with "Download Packet" text
+    for link in all_links:
+        text = link.inner_text().strip()
+        if "download" in text.lower() and "packet" in text.lower():
+            print(f"Fallback: clicking '{text}'")
+            with page.expect_download() as dl_info:
+                link.click()
+            download = dl_info.value
+            zip_path = os.path.join(tmp_dir, f"{llc}.zip")
+            download.save_as(zip_path)
+            print(f"Downloaded via fallback for {llc}")
+            return zip_path
+
     print(f"WARNING: No download found for {llc}")
     return None
 
@@ -225,26 +262,11 @@ def extract_owner_packet(zip_path, tmp_dir, llc):
         z.extractall(extract_dir)
     for root, _, files in os.walk(extract_dir):
         for f in files:
+            print(f"  File in ZIP: {f}")
             if f.lower() == "owner packet.pdf":
                 return os.path.join(root, f)
     print(f"WARNING: Owner Packet.pdf not found in ZIP for {llc}")
     return None
-
-
-# ── Email notification ───────────────────────────────────────────────
-def send_email(subject, body):
-    try:
-        gmail = get_gmail_service()
-        msg = MIMEMultipart()
-        msg["To"] = NOTIFY_EMAIL
-        msg["From"] = "serviceaccount@appfolio-automation"
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "html"))
-        raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
-        gmail.users().messages().send(userId="me", body={"raw": raw}).execute()
-        print(f"Email sent: {subject}")
-    except Exception as e:
-        print(f"Email failed (non-fatal): {e}")
 
 
 # ── Main ─────────────────────────────────────────────────────────────
@@ -331,26 +353,8 @@ def main():
         append_row(sheets, tab, row)
         print(f"Written to {tab}: {llc}")
 
-    if errors:
-        send_email(
-            f"⚠️ AppFolio Automation — Errors ({month_display})",
-            f"<p>Errors during {month_display}:</p><pre>{'<br>'.join(errors)}</pre>"
-            f"<p>Processed: {', '.join(results.keys()) or 'none'}</p>"
-        )
-    elif approval:
-        sheet_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit"
-        send_email(
-            f"📋 AppFolio Data Ready for Review — {month_display}",
-            f"<p>Data for <b>{month_display}</b> is in <b>Pending Review</b>.</p>"
-            f"<p><a href='{sheet_url}'>Click here to review and approve</a></p>"
-            f"<p>LLCs: {', '.join(results.keys())}</p>"
-        )
-    else:
-        send_email(
-            f"✅ AppFolio Data Saved — {month_display}",
-            f"<p>Data for <b>{month_display}</b> saved to History.</p>"
-            f"<p>LLCs: {', '.join(results.keys())}</p>"
-        )
+    print(f"Done. Results: {list(results.keys())}")
+    print(f"Errors: {errors}")
 
 
 if __name__ == "__main__":
