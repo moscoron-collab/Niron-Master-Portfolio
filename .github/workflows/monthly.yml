@@ -40,4 +40,4 @@ jobs:
         with:
           name: APPFOLIO_COOKIES
           value: ${{ steps.automation.outputs.new_cookies }}
-          pa_token: ${{ secrets.GITHUB_TOKEN }}
+          pa_token: ${{ secrets.PAT_TOKEN }}
