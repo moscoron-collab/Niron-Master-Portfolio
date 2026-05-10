@@ -1,7 +1,5 @@
 """
 AppFolio Monthly Cashflow Automation
-Downloads Owner Packets for each LLC, extracts disbursement data,
-and writes to Google Sheets (History or Pending Review tab).
 """
 
 import os
@@ -12,7 +10,6 @@ import zipfile
 import tempfile
 import datetime
 import traceback
-from pathlib import Path
 
 import pdfplumber
 from playwright.sync_api import sync_playwright
@@ -21,31 +18,27 @@ from googleapiclient.discovery import build
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# ── Configuration ────────────────────────────────────────────────────
-APPFOLIO_URL    = "https://laureatetld.appfolio.com/oportal/users/log_in"
-APPFOLIO_EMAIL  = os.environ["APPFOLIO_EMAIL"]
-APPFOLIO_PASS   = os.environ["APPFOLIO_PASSWORD"]
-SHEET_ID        = os.environ["GOOGLE_SHEET_ID"]
-NOTIFY_EMAIL    = os.environ["NOTIFICATION_EMAIL"]
-CREDS_JSON      = os.environ["GOOGLE_CREDENTIALS_JSON"]
-COOKIES_B64     = os.environ.get("APPFOLIO_COOKIES", "")
+APPFOLIO_URL  = "https://laureatetld.appfolio.com/oportal/users/log_in"
+APPFOLIO_EMAIL = os.environ["APPFOLIO_EMAIL"]
+APPFOLIO_PASS  = os.environ["APPFOLIO_PASSWORD"]
+SHEET_ID       = os.environ["GOOGLE_SHEET_ID"]
+NOTIFY_EMAIL   = os.environ["NOTIFICATION_EMAIL"]
+CREDS_JSON     = os.environ["GOOGLE_CREDENTIALS_JSON"]
+COOKIES_B64    = os.environ.get("APPFOLIO_COOKIES", "")
 
-LLCS = [
-    "Yale Townhomes, LLC",
-    "5070 Donald, LLC",
-    "Divando LLC",
-    "Dorado LLC",
-]
+# Internal name → AppFolio page name
+LLC_MAP = {
+    "Yale Townhomes, LLC":  "Yale Townhomes, LLC",
+    "5070 Donald, LLC":     "5070 Donald, LLC",
+    "Divando LLC":          "Divando, LLC",
+    "Dorado LLC":           "Dorado Investment Group LLC",
+}
 
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-]
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
-# ── Google Sheets helpers ─────────────────────────────────────────────
 def get_sheets_service():
-    creds_info = json.loads(CREDS_JSON)
-    creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
+    creds = Credentials.from_service_account_info(json.loads(CREDS_JSON), scopes=SCOPES)
     return build("sheets", "v4", credentials=creds).spreadsheets()
 
 
@@ -64,15 +57,9 @@ def append_row(sheets, tab, row):
     ).execute()
 
 
-def get_setting(sheets, cell):
-    rows = read_sheet(sheets, f"Settings!{cell}")
-    if rows and rows[0]:
-        return rows[0][0]
-    return ""
-
-
 def require_approval(sheets):
-    val = get_setting(sheets, "B3")
+    rows = read_sheet(sheets, "Settings!B3")
+    val = rows[0][0] if rows and rows[0] else "YES"
     return val.strip().upper() != "NO"
 
 
@@ -98,9 +85,10 @@ def get_fixed_costs(sheets, llc):
     if not data or not data[0]:
         return 0, 0, 0
     vals = data[0]
-    mortgage   = float(str(vals[0]).replace("$","").replace(",","")) if len(vals) > 0 and vals[0] else 0
-    tax_annual = float(str(vals[1]).replace("$","").replace(",","")) if len(vals) > 1 and vals[1] else 0
-    ins_annual = float(str(vals[2]).replace("$","").replace(",","")) if len(vals) > 2 and vals[2] else 0
+    def parse(v): return float(str(v).replace("$","").replace(",","")) if v else 0
+    mortgage   = parse(vals[0] if len(vals) > 0 else 0)
+    tax_annual = parse(vals[1] if len(vals) > 1 else 0)
+    ins_annual = parse(vals[2] if len(vals) > 2 else 0)
     return mortgage, tax_annual / 12, ins_annual / 12
 
 
@@ -110,50 +98,44 @@ def get_maintenance(sheets, llc, month_label):
     for row in rows[1:]:
         if len(row) < 4:
             continue
-        date_str, row_llc, _, amount_str = row[0], row[1], row[2], row[3]
-        if row_llc.strip() != llc.strip():
-            continue
         try:
-            date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
-            if f"{date.year}-{date.month:02d}" == month_label[:7]:
-                total += float(str(amount_str).replace("$","").replace(",",""))
+            date = datetime.datetime.strptime(row[0], "%Y-%m-%d")
+            if row[1].strip() == llc.strip() and f"{date.year}-{date.month:02d}" == month_label[:7]:
+                total += float(str(row[3]).replace("$","").replace(",",""))
         except Exception:
             continue
     return total
 
 
-# ── PDF extraction ───────────────────────────────────────────────────
 def extract_from_pdf(pdf_path):
     disbursement = None
     mgmt_fee = None
     with pdfplumber.open(pdf_path) as pdf:
-        page = pdf.pages[0]
-        text = page.extract_text() or ""
-    print("=== PDF PAGE 1 TEXT ===")
+        text = pdf.pages[0].extract_text() or ""
+    print("=== PDF TEXT ===")
     print(text[:2000])
-    print("=== END PDF TEXT ===")
+    print("================")
     lines = text.split("\n")
     for i, line in enumerate(lines):
         low = line.lower()
         if "owner disbursement" in low:
-            disbursement = extract_amount(line, lines, i)
+            disbursement = _find_amount(line, lines, i)
         if "management fee" in low:
-            mgmt_fee = extract_amount(line, lines, i)
+            mgmt_fee = _find_amount(line, lines, i)
     return disbursement, mgmt_fee
 
 
-def extract_amount(line, lines, idx):
-    amount = find_amount_in_text(line)
-    if amount is not None:
-        return amount
+def _find_amount(line, lines, idx):
+    v = _parse_amount(line)
+    if v is not None:
+        return v
     if idx + 1 < len(lines):
-        return find_amount_in_text(lines[idx + 1])
+        return _parse_amount(lines[idx + 1])
     return None
 
 
-def find_amount_in_text(text):
-    matches = re.findall(r"\(?\$?([\d,]+\.?\d*)\)?", text)
-    for m in matches:
+def _parse_amount(text):
+    for m in re.findall(r"\(?\$?([\d,]+\.?\d*)\)?", text):
         try:
             return float(m.replace(",", ""))
         except ValueError:
@@ -161,7 +143,6 @@ def find_amount_in_text(text):
     return None
 
 
-# ── AppFolio browser automation ──────────────────────────────────────
 def load_cookies():
     if not COOKIES_B64:
         return []
@@ -172,18 +153,17 @@ def load_cookies():
 
 
 def save_cookies(context):
-    cookies = context.cookies()
-    encoded = base64.b64encode(json.dumps(cookies).encode()).decode()
+    encoded = base64.b64encode(json.dumps(context.cookies()).encode()).decode()
     print(f"::set-output name=new_cookies::{encoded}")
 
 
 def login(page):
-    print("Logging in to AppFolio...")
     page.goto(APPFOLIO_URL)
     page.wait_for_load_state("networkidle")
     if "log_in" not in page.url:
         print("Already logged in via cookies.")
         return
+    print("Logging in...")
     page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
     page.fill("input[name='user[password]']", APPFOLIO_PASS)
     page.click("input[type='submit']")
@@ -192,98 +172,79 @@ def login(page):
 
 
 def download_packet_for_llc(page, llc, tmp_dir):
-    print(f"\nLooking for packet: {llc}")
+    appfolio_name = LLC_MAP.get(llc, llc)
+    print(f"\nLooking for: {appfolio_name}")
     page.goto("https://laureatetld.appfolio.com/oportal/statements")
     page.wait_for_load_state("networkidle")
 
-    # Debug: print all text on the page
-    page_text = page.inner_text("body")
-    print("=== STATEMENTS PAGE TEXT (first 3000 chars) ===")
-    print(page_text[:3000])
-    print("=== END PAGE TEXT ===")
+    cards = page.query_selector_all(".card")
+    for card in cards:
+        h2 = card.query_selector("h2.card-title")
+        if not h2 or h2.inner_text().strip() != appfolio_name:
+            continue
 
-    # Try to find any download links
-    all_links = page.query_selector_all("a")
-    print(f"Total links on page: {len(all_links)}")
-    for link in all_links:
-        href = link.get_attribute("href") or ""
-        text = link.inner_text().strip()
-        if "download" in href.lower() or "download" in text.lower() or "packet" in text.lower():
-            print(f"  Download link found: text='{text}' href='{href}'")
+        print(f"Found card for {appfolio_name}")
 
-    # Try matching by LLC name in rows
-    rows = page.query_selector_all("tr")
-    print(f"Total table rows: {len(rows)}")
-    for row in rows:
-        text = row.inner_text()
-        if text.strip():
-            print(f"  Row: {text[:200]}")
+        # Get date range from first list item
+        first_li = card.query_selector("ul.list-group li")
+        if not first_li:
+            print("No list items in card")
+            return None, None
 
-    # Now try to find and click the download for this LLC
-    # Strategy: find rows containing LLC name keywords
-    llc_keywords = llc.lower().replace(",", "").replace("llc", "").strip().split()
-    print(f"Searching for keywords: {llc_keywords}")
+        date_text = first_li.query_selector("b")
+        date_range = date_text.inner_text().strip() if date_text else ""
+        print(f"Most recent packet: {date_range}")
 
-    for row in rows:
-        row_text = row.inner_text().lower()
-        if any(kw in row_text for kw in llc_keywords) and ("download" in row_text or "packet" in row_text):
-            link = row.query_selector("a")
-            if link:
-                print(f"Found matching row for {llc}, clicking download...")
-                with page.expect_download() as dl_info:
-                    link.click()
-                download = dl_info.value
-                zip_path = os.path.join(tmp_dir, f"{llc}.zip")
-                download.save_as(zip_path)
-                print(f"Downloaded packet for {llc}")
-                return zip_path
+        # Parse month label from "to" date (e.g. "Mar 16, 2026 to Apr 15, 2026")
+        month_label = None
+        to_match = re.search(r"to\s+(\w+ \d+, \d+)", date_range)
+        if to_match:
+            try:
+                to_date = datetime.datetime.strptime(to_match.group(1), "%b %d, %Y")
+                month_label = to_date.strftime("%Y-%m-01")
+            except Exception:
+                pass
 
-    # Fallback: try clicking any link with "Download Packet" text
-    for link in all_links:
-        text = link.inner_text().strip()
-        if "download" in text.lower() and "packet" in text.lower():
-            print(f"Fallback: clicking '{text}'")
-            with page.expect_download() as dl_info:
-                link.click()
-            download = dl_info.value
-            zip_path = os.path.join(tmp_dir, f"{llc}.zip")
-            download.save_as(zip_path)
-            print(f"Downloaded via fallback for {llc}")
-            return zip_path
+        # Find download link
+        dl_link = first_li.query_selector(".analytics-statement-download-link a")
+        if not dl_link:
+            print("No download link found")
+            return None, None
 
-    print(f"WARNING: No download found for {llc}")
-    return None
+        href = dl_link.get_attribute("href") or ""
+        ext = ".zip" if ".zip" in href else ".pdf"
+        print(f"Downloading: {href[:80]}...")
+
+        with page.expect_download() as dl_info:
+            dl_link.click()
+        download = dl_info.value
+        file_path = os.path.join(tmp_dir, f"{llc}{ext}")
+        download.save_as(file_path)
+        print(f"Saved to: {file_path}")
+        return file_path, month_label
+
+    print(f"WARNING: No card found for '{appfolio_name}'")
+    return None, None
 
 
-def extract_owner_packet(zip_path, tmp_dir, llc):
+def get_pdf_path(file_path, tmp_dir, llc):
+    if file_path.endswith(".pdf"):
+        return file_path
     extract_dir = os.path.join(tmp_dir, llc.replace(" ", "_"))
     os.makedirs(extract_dir, exist_ok=True)
-    with zipfile.ZipFile(zip_path, "r") as z:
+    with zipfile.ZipFile(file_path, "r") as z:
         z.extractall(extract_dir)
     for root, _, files in os.walk(extract_dir):
         for f in files:
-            print(f"  File in ZIP: {f}")
+            print(f"  ZIP contains: {f}")
             if f.lower() == "owner packet.pdf":
                 return os.path.join(root, f)
-    print(f"WARNING: Owner Packet.pdf not found in ZIP for {llc}")
+    print(f"Owner Packet.pdf not found in ZIP for {llc}")
     return None
 
 
-# ── Main ─────────────────────────────────────────────────────────────
 def main():
-    today = datetime.date.today()
-    if today.day < 5:
-        first = today.replace(day=1)
-        last_month = first - datetime.timedelta(days=1)
-        target = last_month
-    else:
-        target = today
-
-    month_label   = target.strftime("%Y-%m-01")
-    month_display = target.strftime("%B %Y")
-
-    print(f"Processing month: {month_display}")
-
+    print("Starting AppFolio automation...")
     sheets  = get_sheets_service()
     results = {}
     errors  = []
@@ -299,26 +260,31 @@ def main():
         save_cookies(context)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-            for llc in LLCS:
+            for llc in LLC_MAP.keys():
                 try:
+                    file_path, month_label = download_packet_for_llc(page, llc, tmp_dir)
+                    if not file_path or not month_label:
+                        errors.append(f"{llc}: Could not download packet")
+                        continue
+
                     if already_recorded(sheets, llc, month_label):
-                        print(f"Already recorded for {llc}, skipping.")
+                        print(f"Already recorded {llc} for {month_label}, skipping.")
                         continue
-                    zip_path = download_packet_for_llc(page, llc, tmp_dir)
-                    if not zip_path:
-                        errors.append(f"{llc}: Could not find download link")
-                        continue
-                    pdf_path = extract_owner_packet(zip_path, tmp_dir, llc)
+
+                    pdf_path = get_pdf_path(file_path, tmp_dir, llc)
                     if not pdf_path:
-                        errors.append(f"{llc}: Owner Packet.pdf not found in ZIP")
+                        errors.append(f"{llc}: Owner Packet.pdf not found")
                         continue
+
                     disbursement, mgmt_fee = extract_from_pdf(pdf_path)
                     if disbursement is None:
-                        errors.append(f"{llc}: Could not extract Owner Disbursements from PDF")
+                        errors.append(f"{llc}: Could not extract disbursement from PDF")
                         continue
+
                     mortgage, tax_mo, ins_mo = get_fixed_costs(sheets, llc)
                     maintenance = get_maintenance(sheets, llc, month_label)
                     net = disbursement - mortgage - tax_mo - ins_mo - maintenance
+
                     results[llc] = {
                         "month": month_label,
                         "disbursement": disbursement,
@@ -329,14 +295,19 @@ def main():
                         "maintenance": maintenance,
                         "net": net,
                     }
-                    print(f"{llc}: Disbursement=${disbursement:,.2f}, Net=${net:,.2f}")
+                    print(f"✓ {llc}: Disbursement=${disbursement:,.2f}, Net=${net:,.2f}")
+
                 except Exception as e:
                     errors.append(f"{llc}: {str(e)}\n{traceback.format_exc()}")
+                    print(f"ERROR {llc}: {e}")
 
         browser.close()
 
-    if not results and not errors:
-        print("No new data to process.")
+    print(f"\nResults: {list(results.keys())}")
+    print(f"Errors: {errors}")
+
+    if not results:
+        print("Nothing to write.")
         return
 
     approval = require_approval(sheets)
@@ -352,9 +323,6 @@ def main():
         ]
         append_row(sheets, tab, row)
         print(f"Written to {tab}: {llc}")
-
-    print(f"Done. Results: {list(results.keys())}")
-    print(f"Errors: {errors}")
 
 
 if __name__ == "__main__":
