@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Niron Master Portfolio</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #090d12 0%, #0c1a2e 100%);
+    color: #ccd9ea;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 28px; margin-bottom: 24px;
+    background: rgba(14, 22, 38, 0.8);
+    border: 1px solid #1e2d42;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+  }
+  header h1 {
+    color: #ffffff; font-size: 26px; font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  header h1 .accent { color: #f0a500; }
+  .meta { font-size: 13px; color: #4e6d8c; text-align: right; }
+  .meta .label { color: #00BFFF; font-weight: 500; }
+
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px; margin-bottom: 24px;
+  }
+  .summary-card {
+    background: rgba(14, 22, 38, 0.8);
+    border: 1px solid #1e2d42; border-radius: 12px;
+    padding: 20px;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .summary-card:hover { transform: translateY(-2px); border-color: #0080cc; }
+  .summary-card .label {
+    font-size: 11px; color: #4e6d8c;
+    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;
+  }
+  .summary-card .value {
+    font-size: 28px; font-weight: 700; color: #ffffff;
+  }
+  .summary-card .sublabel { font-size: 12px; color: #4e6d8c; margin-top: 6px; }
+  .summary-card.green .value { color: #00c97a; }
+  .summary-card.red .value { color: #ff4455; }
+  .summary-card.gold .value { color: #f0a500; }
+
+  .section {
+    background: rgba(14, 22, 38, 0.8);
+    border: 1px solid #1e2d42; border-radius: 12px;
+    padding: 24px; margin-bottom: 24px;
+  }
+  .section h2 {
+    color: #ffffff; font-size: 18px; margin-bottom: 16px;
+    padding-bottom: 12px; border-bottom: 1px solid #1e2d42;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section h2 .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #00BFFF; box-shadow: 0 0 8px #00BFFF;
+  }
+
+  .llc-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .llc-card {
+    background: linear-gradient(135deg, #0d1825 0%, #111620 100%);
+    border: 1px solid #1e2d42; border-radius: 10px;
+    padding: 18px;
+  }
+  .llc-card h3 {
+    color: #ffffff; font-size: 15px; margin-bottom: 12px;
+    padding-bottom: 8px; border-bottom: 1px solid #1e2d42;
+  }
+  .llc-row {
+    display: flex; justify-content: space-between;
+    padding: 5px 0; font-size: 13px;
+  }
+  .llc-row .k { color: #4e6d8c; }
+  .llc-row .v { color: #ccd9ea; font-weight: 500; }
+  .llc-row .v.green { color: #00c97a; }
+  .llc-row .v.red { color: #ff4455; }
+  .llc-row.total {
+    border-top: 1px solid #1e2d42; margin-top: 6px;
+    padding-top: 10px; font-size: 15px; font-weight: 600;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left; padding: 12px 10px;
+    color: #4e6d8c; font-weight: 500; text-transform: uppercase;
+    font-size: 11px; letter-spacing: 1px;
+    border-bottom: 1px solid #1e2d42;
+  }
+  td {
+    padding: 12px 10px; color: #ccd9ea;
+    border-bottom: 1px solid #182030;
+  }
+  tr:hover td { background: rgba(0, 191, 255, 0.05); }
+  .green { color: #00c97a; font-weight: 600; }
+  .red { color: #ff4455; font-weight: 600; }
+
+  .chart-container { position: relative; height: 320px; }
+
+  .loading {
+    text-align: center; padding: 80px 20px; color: #4e6d8c;
+  }
+  .loading .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid #1e2d42; border-top-color: #00BFFF;
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error {
+    color: #ff4455; padding: 20px;
+    background: rgba(255, 68, 85, 0.1);
+    border: 1px solid #ff4455; border-radius: 8px;
+  }
+
+  @media (max-width: 768px) {
+    body { padding: 12px; }
+    header { flex-direction: column; gap: 10px; align-items: flex-start; }
+    .meta { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1><span class="accent">●</span> NIRON MASTER PORTFOLIO</h1>
+    <div class="meta">
+      <div><span class="label">Last Updated:</span> <span id="last-updated">—</span></div>
+      <div><span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span></div>
+    </div>
+  </header>
+
+  <div id="content">
+    <div class="loading">
+      <div class="spinner"></div>
+      <div>Loading portfolio data...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbzXtgU_bEQx-3B15FoV4SrolI1int0s6PUo9WKnHJ2Wz8zV5jq62MWNFQLjI51OqsWH/exec";
+
+const fmt = n => "$" + (Number(n) || 0).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const fmtShort = n => {
+  n = Number(n) || 0;
+  if (Math.abs(n) >= 1e6) return "$" + (n/1e6).toFixed(2) + "M";
+  if (Math.abs(n) >= 1e3) return "$" + (n/1e3).toFixed(1) + "K";
+  return "$" + n.toFixed(0);
+};
+
+async function load() {
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    render(data);
+  } catch (e) {
+    document.getElementById("content").innerHTML =
+      '<div class="error">Failed to load: ' + e.message + '</div>';
+    document.getElementById("status").textContent = "● Offline";
+    document.getElementById("status").style.color = "#ff4455";
+  }
+}
+
+function render(data) {
+  const el = document.getElementById("content");
+  document.getElementById("last-updated").textContent =
+    new Date(data.last_updated).toLocaleString();
+
+  const history = data.history || [];
+  const llcs = data.llcs || [];
+  const loans = data.loans || [];
+
+  const months = [...new Set(history.map(h => h.period_start))].sort().reverse();
+  const latestMonth = months[0] || "";
+  const latest = history.filter(h => h.period_start === latestMonth);
+
+  const totalDisb = latest.reduce((s, r) => s + r.disbursement, 0);
+  const totalNet = latest.reduce((s, r) => s + r.net_cashflow, 0);
+  const totalMortgage = latest.reduce((s, r) => s + r.mortgage, 0);
+  const totalValue = llcs.reduce((s, l) => s + l.property_value, 0);
+
+  el.innerHTML = `
+    <div class="summary-grid">
+      <div class="summary-card gold">
+        <div class="label">Total Disbursements</div>
+        <div class="value">${fmtShort(totalDisb)}</div>
+        <div class="sublabel">${latestMonth || 'No data'}</div>
+      </div>
+      <div class="summary-card ${totalNet >= 0 ? 'green' : 'red'}">
+        <div class="label">Net Cashflow</div>
+        <div class="value">${fmtShort(totalNet)}</div>
+        <div class="sublabel">After all expenses</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">Total Mortgage / Mo</div>
+        <div class="value">${fmtShort(totalMortgage)}</div>
+        <div class="sublabel">Across all LLCs</div>
+      </div>
+      <div class="summary-card">
+        <div class="label">Portfolio Value</div>
+        <div class="value">${fmtShort(totalValue)}</div>
+        <div class="sublabel">Estimated</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2><span class="dot"></span>This Month — ${latestMonth || 'No data'}</h2>
+      <div class="llc-grid">
+        ${latest.map(r => {
+          const net = r.net_cashflow;
+          const cls = net >= 0 ? 'green' : 'red';
+          return `
+            <div class="llc-card">
+              <h3>${r.llc}</h3>
+              <div class="llc-row"><span class="k">Disbursement</span><span class="v">${fmt(r.disbursement)}</span></div>
+              <div class="llc-row"><span class="k">Mgmt Fees</span><span class="v">${fmt(r.mgmt_fee)}</span></div>
+              <div class="llc-row"><span class="k">Mortgage</span><span class="v">${fmt(r.mortgage)}</span></div>
+              <div class="llc-row"><span class="k">Tax / 12</span><span class="v">${fmt(r.tax_mo)}</span></div>
+              <div class="llc-row"><span class="k">Insurance / 12</span><span class="v">${fmt(r.ins_mo)}</span></div>
+              <div class="llc-row"><span class="k">Maintenance</span><span class="v">${fmt(r.maintenance)}</span></div>
+              <div class="llc-row total"><span class="k">Net Cashflow</span><span class="v ${cls}">${fmt(net)}</span></div>
+            </div>
+          `;
+        }).join('') || '<div style="color:#4e6d8c">No data yet for this month.</div>'}
+      </div>
+    </div>
+
+    ${months.length > 1 ? `
+    <div class="section">
+      <h2><span class="dot"></span>Cashflow Trend</h2>
+      <div class="chart-container"><canvas id="trendChart"></canvas></div>
+    </div>
+    ` : ''}
+
+    ${loans.length ? `
+    <div class="section">
+      <h2><span class="dot"></span>Loan Balances</h2>
+      <table>
+        <thead><tr>
+          <th>LLC</th><th>Lender</th><th>Original</th>
+          <th>Remaining</th><th>Monthly</th><th>Maturity</th>
+        </tr></thead>
+        <tbody>
+          ${loans.map(l => `
+            <tr>
+              <td>${l.llc}</td>
+              <td>${l.lender}</td>
+              <td>${fmt(l.original_balance)}</td>
+              <td style="color:#f0a500;font-weight:600">${fmt(l.balance_override || l.calculated_balance)}</td>
+              <td>${fmt(l.monthly_payment)}</td>
+              <td>${l.maturity_date || '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    ` : ''}
+
+    <div class="section">
+      <h2><span class="dot"></span>History</h2>
+      <table>
+        <thead><tr>
+          <th>Month</th><th>LLC</th><th>Disbursement</th>
+          <th>Mortgage</th><th>Net</th>
+        </tr></thead>
+        <tbody>
+          ${history.slice().reverse().slice(0, 50).map(h => `
+            <tr>
+              <td>${h.period_start}</td>
+              <td>${h.llc}</td>
+              <td>${fmt(h.disbursement)}</td>
+              <td>${fmt(h.mortgage)}</td>
+              <td class="${h.net_cashflow >= 0 ? 'green' : 'red'}">${fmt(h.net_cashflow)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  if (months.length > 1) renderChart(history, months);
+}
+
+function renderChart(history, months) {
+  const sortedMonths = months.slice().reverse();
+  const llcNames = [...new Set(history.map(h => h.llc))];
+  const colors = ['#00c97a', '#0080cc', '#f0a500', '#ff4455', '#00BFFF', '#a78bfa'];
+
+  const datasets = llcNames.map((llc, i) => ({
+    label: llc,
+    data: sortedMonths.map(m => {
+      const r = history.find(h => h.period_start === m && h.llc === llc);
+      return r ? r.net_cashflow : 0;
+    }),
+    borderColor: colors[i % colors.length],
+    backgroundColor: colors[i % colors.length] + '33',
+    tension: 0.3,
+    borderWidth: 2,
+    pointRadius: 4,
+    pointBackgroundColor: colors[i % colors.length],
+  }));
+
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: { labels: sortedMonths, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#ccd9ea', font: { size: 12 } } },
+        tooltip: {
+          backgroundColor: '#0c1a2e', borderColor: '#1e2d42',
+          borderWidth: 1, titleColor: '#ffffff', bodyColor: '#ccd9ea',
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#4e6d8c' }, grid: { color: '#182030' } },
+        y: {
+          ticks: { color: '#4e6d8c', callback: v => fmtShort(v) },
+          grid: { color: '#182030' }
+        }
+      }
+    }
+  });
+}
+
+load();
+</script>
+</body>
+</html>
