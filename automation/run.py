@@ -69,23 +69,20 @@ def already_recorded(sheets, llc, month_label):
 
 
 def get_fixed_costs(sheets, llc):
-    llc_row_map = {
-        "Yale Townhomes, LLC": 7,
-        "5070 Donald, LLC": 8,
-        "Divando LLC": 9,
-        "Dorado LLC": 10,
-    }
-    row = llc_row_map.get(llc)
-    if not row:
-        return 0, 0, 0
-    data = read_sheet(sheets, f"Settings!B{row}:D{row}")
-    if not data or not data[0]:
-        return 0, 0, 0
-    vals = data[0]
-    def parse(v): return float(str(v).replace("$", "").replace(",", "")) if v else 0
-    return parse(vals[0] if len(vals) > 0 else 0), \
-           parse(vals[1] if len(vals) > 1 else 0) / 12, \
-           parse(vals[2] if len(vals) > 2 else 0) / 12
+    rows = read_sheet(sheets, "Settings!A:D")
+    def parse(v):
+        try:
+            return float(str(v).replace("$", "").replace(",", "").strip())
+        except (ValueError, AttributeError):
+            return 0
+    for row in rows:
+        if row and row[0].strip() == llc.strip():
+            mortgage   = parse(row[1]) if len(row) > 1 else 0
+            tax_annual = parse(row[2]) if len(row) > 2 else 0
+            ins_annual = parse(row[3]) if len(row) > 3 else 0
+            return mortgage, tax_annual / 12, ins_annual / 12
+    print(f"WARNING: LLC '{llc}' not found in Settings tab")
+    return 0, 0, 0
 
 
 def get_maintenance(sheets, llc, month_label):
