@@ -15,10 +15,8 @@ import pdfplumber
 from playwright.sync_api import sync_playwright
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
-APPFOLIO_URL  = "https://laureatetld.appfolio.com/oportal/users/log_in"
+APPFOLIO_URL   = "https://laureatetld.appfolio.com/oportal/users/log_in"
 APPFOLIO_EMAIL = os.environ["APPFOLIO_EMAIL"]
 APPFOLIO_PASS  = os.environ["APPFOLIO_PASSWORD"]
 SHEET_ID       = os.environ["GOOGLE_SHEET_ID"]
@@ -26,12 +24,11 @@ NOTIFY_EMAIL   = os.environ["NOTIFICATION_EMAIL"]
 CREDS_JSON     = os.environ["GOOGLE_CREDENTIALS_JSON"]
 COOKIES_B64    = os.environ.get("APPFOLIO_COOKIES", "")
 
-# Internal name → AppFolio page name
 LLC_MAP = {
-    "Yale Townhomes, LLC":  "Yale Townhomes, LLC",
-    "5070 Donald, LLC":     "5070 Donald, LLC",
-    "Divando LLC":          "Divando, LLC",
-    "Dorado LLC":           "Dorado Investment Group LLC",
+    "Yale Townhomes, LLC": "Yale Townhomes, LLC",
+    "5070 Donald, LLC":    "5070 Donald, LLC",
+    "Divando LLC":         "Divando, LLC",
+    "Dorado LLC":          "Dorado Investment Group LLC",
 }
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -85,11 +82,10 @@ def get_fixed_costs(sheets, llc):
     if not data or not data[0]:
         return 0, 0, 0
     vals = data[0]
-    def parse(v): return float(str(v).replace("$","").replace(",","")) if v else 0
-    mortgage   = parse(vals[0] if len(vals) > 0 else 0)
-    tax_annual = parse(vals[1] if len(vals) > 1 else 0)
-    ins_annual = parse(vals[2] if len(vals) > 2 else 0)
-    return mortgage, tax_annual / 12, ins_annual / 12
+    def parse(v): return float(str(v).replace("$", "").replace(",", "")) if v else 0
+    return parse(vals[0] if len(vals) > 0 else 0), \
+           parse(vals[1] if len(vals) > 1 else 0) / 12, \
+           parse(vals[2] if len(vals) > 2 else 0) / 12
 
 
 def get_maintenance(sheets, llc, month_label):
@@ -101,7 +97,7 @@ def get_maintenance(sheets, llc, month_label):
         try:
             date = datetime.datetime.strptime(row[0], "%Y-%m-%d")
             if row[1].strip() == llc.strip() and f"{date.year}-{date.month:02d}" == month_label[:7]:
-                total += float(str(row[3]).replace("$","").replace(",",""))
+                total += float(str(row[3]).replace("$", "").replace(",", ""))
         except Exception:
             continue
     return total
@@ -177,15 +173,25 @@ def download_packet_for_llc(page, llc, tmp_dir):
     page.goto("https://laureatetld.appfolio.com/oportal/statements")
     page.wait_for_load_state("networkidle")
 
+    # Wait for JS to render the cards
+    try:
+        page.wait_for_selector("#statements-root .card", timeout=20000)
+    except Exception:
+        print("WARNING: Timed out waiting for cards — page may not have loaded")
+
     cards = page.query_selector_all(".card")
+    print(f"Cards found: {len(cards)}")
+
     for card in cards:
         h2 = card.query_selector("h2.card-title")
-        if not h2 or h2.inner_text().strip() != appfolio_name:
+        if not h2:
+            continue
+        card_name = h2.inner_text().strip()
+        if card_name != appfolio_name:
             continue
 
-        print(f"Found card for {appfolio_name}")
+        print(f"Found card for: {card_name}")
 
-        # Get date range from first list item
         first_li = card.query_selector("ul.list-group li")
         if not first_li:
             print("No list items in card")
@@ -195,7 +201,6 @@ def download_packet_for_llc(page, llc, tmp_dir):
         date_range = date_text.inner_text().strip() if date_text else ""
         print(f"Most recent packet: {date_range}")
 
-        # Parse month label from "to" date (e.g. "Mar 16, 2026 to Apr 15, 2026")
         month_label = None
         to_match = re.search(r"to\s+(\w+ \d+, \d+)", date_range)
         if to_match:
@@ -205,7 +210,6 @@ def download_packet_for_llc(page, llc, tmp_dir):
             except Exception:
                 pass
 
-        # Find download link
         dl_link = first_li.query_selector(".analytics-statement-download-link a")
         if not dl_link:
             print("No download link found")
@@ -213,14 +217,14 @@ def download_packet_for_llc(page, llc, tmp_dir):
 
         href = dl_link.get_attribute("href") or ""
         ext = ".zip" if ".zip" in href else ".pdf"
-        print(f"Downloading: {href[:80]}...")
+        print(f"Downloading ({ext}): {href[:80]}...")
 
         with page.expect_download() as dl_info:
             dl_link.click()
         download = dl_info.value
         file_path = os.path.join(tmp_dir, f"{llc}{ext}")
         download.save_as(file_path)
-        print(f"Saved to: {file_path}")
+        print(f"Saved: {file_path}")
         return file_path, month_label
 
     print(f"WARNING: No card found for '{appfolio_name}'")
