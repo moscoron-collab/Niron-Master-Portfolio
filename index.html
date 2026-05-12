@@ -318,7 +318,7 @@ function renderChart(history, months) {
   }));
 
   new Chart(document.getElementById('trendChart'), {
-    type: 'line',
+    type: 'bar',
     data: { labels: sortedMonths, datasets },
     options: {
       responsive: true, maintainAspectRatio: false,
