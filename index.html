@@ -21,43 +21,33 @@
     background: rgba(14, 22, 38, 0.8);
     border: 1px solid #1e2d42;
     border-radius: 12px;
-    backdrop-filter: blur(10px);
   }
-  header h1 {
-    color: #ffffff; font-size: 26px; font-weight: 600;
-    letter-spacing: 0.5px;
-  }
+  header h1 { color: #ffffff; font-size: 26px; font-weight: 600; }
   header h1 .accent { color: #f0a500; }
   .meta { font-size: 13px; color: #4e6d8c; text-align: right; }
   .meta .label { color: #00BFFF; font-weight: 500; }
-
   .summary-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 16px; margin-bottom: 24px;
   }
   .summary-card {
     background: rgba(14, 22, 38, 0.8);
-    border: 1px solid #1e2d42; border-radius: 12px;
-    padding: 20px;
+    border: 1px solid #1e2d42; border-radius: 12px; padding: 20px;
     transition: transform 0.15s, border-color 0.15s;
   }
   .summary-card:hover { transform: translateY(-2px); border-color: #0080cc; }
   .summary-card .label {
-    font-size: 11px; color: #4e6d8c;
-    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;
+    font-size: 11px; color: #4e6d8c; text-transform: uppercase;
+    letter-spacing: 1.5px; margin-bottom: 8px;
   }
-  .summary-card .value {
-    font-size: 28px; font-weight: 700; color: #ffffff;
-  }
+  .summary-card .value { font-size: 28px; font-weight: 700; color: #ffffff; }
   .summary-card .sublabel { font-size: 12px; color: #4e6d8c; margin-top: 6px; }
   .summary-card.green .value { color: #00c97a; }
   .summary-card.red .value { color: #ff4455; }
   .summary-card.gold .value { color: #f0a500; }
-
   .section {
-    background: rgba(14, 22, 38, 0.8);
-    border: 1px solid #1e2d42; border-radius: 12px;
-    padding: 24px; margin-bottom: 24px;
+    background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42;
+    border-radius: 12px; padding: 24px; margin-bottom: 24px;
   }
   .section h2 {
     color: #ffffff; font-size: 18px; margin-bottom: 16px;
@@ -68,15 +58,13 @@
     width: 8px; height: 8px; border-radius: 50%;
     background: #00BFFF; box-shadow: 0 0 8px #00BFFF;
   }
-
   .llc-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 16px;
   }
   .llc-card {
     background: linear-gradient(135deg, #0d1825 0%, #111620 100%);
-    border: 1px solid #1e2d42; border-radius: 10px;
-    padding: 18px;
+    border: 1px solid #1e2d42; border-radius: 10px; padding: 18px;
   }
   .llc-card h3 {
     color: #ffffff; font-size: 15px; margin-bottom: 12px;
@@ -94,13 +82,11 @@
     border-top: 1px solid #1e2d42; margin-top: 6px;
     padding-top: 10px; font-size: 15px; font-weight: 600;
   }
-
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th {
-    text-align: left; padding: 12px 10px;
-    color: #4e6d8c; font-weight: 500; text-transform: uppercase;
-    font-size: 11px; letter-spacing: 1px;
-    border-bottom: 1px solid #1e2d42;
+    text-align: left; padding: 12px 10px; color: #4e6d8c;
+    font-weight: 500; text-transform: uppercase; font-size: 11px;
+    letter-spacing: 1px; border-bottom: 1px solid #1e2d42;
   }
   td {
     padding: 12px 10px; color: #ccd9ea;
@@ -109,12 +95,8 @@
   tr:hover td { background: rgba(0, 191, 255, 0.05); }
   .green { color: #00c97a; font-weight: 600; }
   .red { color: #ff4455; font-weight: 600; }
-
-  .chart-container { position: relative; height: 320px; }
-
-  .loading {
-    text-align: center; padding: 80px 20px; color: #4e6d8c;
-  }
+  .chart-container { position: relative; height: 380px; }
+  .loading { text-align: center; padding: 80px 20px; color: #4e6d8c; }
   .loading .spinner {
     width: 40px; height: 40px;
     border: 3px solid #1e2d42; border-top-color: #00BFFF;
@@ -122,13 +104,11 @@
     margin: 0 auto 16px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-
   .error {
     color: #ff4455; padding: 20px;
     background: rgba(255, 68, 85, 0.1);
     border: 1px solid #ff4455; border-radius: 8px;
   }
-
   @media (max-width: 768px) {
     body { padding: 12px; }
     header { flex-direction: column; gap: 10px; align-items: flex-start; }
@@ -145,7 +125,6 @@
       <div><span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span></div>
     </div>
   </header>
-
   <div id="content">
     <div class="loading">
       <div class="spinner"></div>
@@ -244,7 +223,7 @@ function render(data) {
 
     ${months.length > 1 ? `
     <div class="section">
-      <h2><span class="dot"></span>Cashflow Trend</h2>
+      <h2><span class="dot"></span>Cashflow Trend (Bars per LLC + Total Line)</h2>
       <div class="chart-container"><canvas id="trendChart"></canvas></div>
     </div>
     ` : ''}
@@ -281,7 +260,7 @@ function render(data) {
           <th>Mortgage</th><th>Net</th>
         </tr></thead>
         <tbody>
-          ${history.slice().reverse().slice(0, 50).map(h => `
+          ${history.slice().reverse().slice(0, 60).map(h => `
             <tr>
               <td>${h.period_start}</td>
               <td>${h.llc}</td>
@@ -303,25 +282,47 @@ function renderChart(history, months) {
   const llcNames = [...new Set(history.map(h => h.llc))];
   const colors = ['#00c97a', '#0080cc', '#f0a500', '#ff4455', '#00BFFF', '#a78bfa'];
 
+  // Bar datasets per LLC
   const datasets = llcNames.map((llc, i) => ({
+    type: 'bar',
     label: llc,
     data: sortedMonths.map(m => {
       const r = history.find(h => h.period_start === m && h.llc === llc);
       return r ? r.net_cashflow : 0;
     }),
+    backgroundColor: colors[i % colors.length] + 'aa',
     borderColor: colors[i % colors.length],
-    backgroundColor: colors[i % colors.length] + '33',
-    tension: 0.3,
-    borderWidth: 2,
-    pointRadius: 4,
-    pointBackgroundColor: colors[i % colors.length],
+    borderWidth: 1,
+    order: 2,
   }));
+
+  // Total trend line
+  const totalData = sortedMonths.map(m =>
+    history.filter(h => h.period_start === m).reduce((s, r) => s + (r.net_cashflow || 0), 0)
+  );
+  datasets.push({
+    type: 'line',
+    label: 'TOTAL Portfolio',
+    data: totalData,
+    borderColor: '#ffffff',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 3,
+    pointRadius: 5,
+    pointBackgroundColor: '#ffffff',
+    pointBorderColor: '#0c1a2e',
+    pointBorderWidth: 2,
+    tension: 0.3,
+    fill: false,
+    order: 1,
+  });
 
   new Chart(document.getElementById('trendChart'), {
     type: 'bar',
     data: { labels: sortedMonths, datasets },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { labels: { color: '#ccd9ea', font: { size: 12 } } },
         tooltip: {
