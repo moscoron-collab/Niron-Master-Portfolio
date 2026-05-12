@@ -10,17 +10,14 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: linear-gradient(135deg, #090d12 0%, #0c1a2e 100%);
-    color: #ccd9ea;
-    min-height: 100vh;
-    padding: 24px;
+    color: #ccd9ea; min-height: 100vh; padding: 24px;
   }
   .container { max-width: 1400px; margin: 0 auto; }
   header {
     display: flex; justify-content: space-between; align-items: center;
     padding: 20px 28px; margin-bottom: 24px;
     background: rgba(14, 22, 38, 0.8);
-    border: 1px solid #1e2d42;
-    border-radius: 12px;
+    border: 1px solid #1e2d42; border-radius: 12px;
   }
   header h1 { color: #ffffff; font-size: 26px; font-weight: 600; }
   header h1 .accent { color: #f0a500; }
@@ -31,8 +28,8 @@
     gap: 16px; margin-bottom: 24px;
   }
   .summary-card {
-    background: rgba(14, 22, 38, 0.8);
-    border: 1px solid #1e2d42; border-radius: 12px; padding: 20px;
+    background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42;
+    border-radius: 12px; padding: 20px;
     transition: transform 0.15s, border-color 0.15s;
   }
   .summary-card:hover { transform: translateY(-2px); border-color: #0080cc; }
@@ -88,10 +85,7 @@
     font-weight: 500; text-transform: uppercase; font-size: 11px;
     letter-spacing: 1px; border-bottom: 1px solid #1e2d42;
   }
-  td {
-    padding: 12px 10px; color: #ccd9ea;
-    border-bottom: 1px solid #182030;
-  }
+  td { padding: 12px 10px; color: #ccd9ea; border-bottom: 1px solid #182030; }
   tr:hover td { background: rgba(0, 191, 255, 0.05); }
   .green { color: #00c97a; font-weight: 600; }
   .red { color: #ff4455; font-weight: 600; }
@@ -105,8 +99,7 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   .error {
-    color: #ff4455; padding: 20px;
-    background: rgba(255, 68, 85, 0.1);
+    color: #ff4455; padding: 20px; background: rgba(255, 68, 85, 0.1);
     border: 1px solid #ff4455; border-radius: 8px;
   }
   @media (max-width: 768px) {
@@ -170,10 +163,21 @@ function render(data) {
   const latestMonth = months[0] || "";
   const latest = history.filter(h => h.period_start === latestMonth);
 
+  // Sort latest by LLC name for consistent ordering
+  latest.sort((a, b) => a.llc.localeCompare(b.llc));
+
   const totalDisb = latest.reduce((s, r) => s + r.disbursement, 0);
   const totalNet = latest.reduce((s, r) => s + r.net_cashflow, 0);
   const totalMortgage = latest.reduce((s, r) => s + r.mortgage, 0);
   const totalValue = llcs.reduce((s, l) => s + l.property_value, 0);
+
+  // Sort history newest first, then by LLC
+  const sortedHistory = history.slice().sort((a, b) => {
+    if (a.period_start !== b.period_start) {
+      return b.period_start > a.period_start ? 1 : -1;
+    }
+    return a.llc.localeCompare(b.llc);
+  });
 
   el.innerHTML = `
     <div class="summary-grid">
@@ -253,14 +257,14 @@ function render(data) {
     ` : ''}
 
     <div class="section">
-      <h2><span class="dot"></span>History</h2>
+      <h2><span class="dot"></span>History (newest first)</h2>
       <table>
         <thead><tr>
           <th>Month</th><th>LLC</th><th>Disbursement</th>
           <th>Mortgage</th><th>Net</th>
         </tr></thead>
         <tbody>
-          ${history.slice().reverse().slice(0, 60).map(h => `
+          ${sortedHistory.slice(0, 100).map(h => `
             <tr>
               <td>${h.period_start}</td>
               <td>${h.llc}</td>
@@ -279,10 +283,9 @@ function render(data) {
 
 function renderChart(history, months) {
   const sortedMonths = months.slice().reverse();
-  const llcNames = [...new Set(history.map(h => h.llc))];
+  const llcNames = [...new Set(history.map(h => h.llc))].sort();
   const colors = ['#00c97a', '#0080cc', '#f0a500', '#ff4455', '#00BFFF', '#a78bfa'];
 
-  // Bar datasets per LLC
   const datasets = llcNames.map((llc, i) => ({
     type: 'bar',
     label: llc,
@@ -296,7 +299,6 @@ function renderChart(history, months) {
     order: 2,
   }));
 
-  // Total trend line
   const totalData = sortedMonths.map(m =>
     history.filter(h => h.period_start === m).reduce((s, r) => s + (r.net_cashflow || 0), 0)
   );
