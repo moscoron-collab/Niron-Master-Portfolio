@@ -1,6 +1,6 @@
 """
-AppFolio Historical Backfill — downloads the last N months of packets per LLC
-and writes directly to History.
+AppFolio Historical Backfill — paginates through AppFolio to download
+up to N monthly packets per LLC and writes to History.
 """
 
 import os
@@ -55,9 +55,24 @@ def append_row(sheets, tab, row):
 
 
 def already_recorded(sheets, llc, month_label):
+    """Robust check that handles different date formats in column B."""
     rows = read_sheet(sheets, "History!A:C")
+    target_ym = month_label[:7]  # "2026-04"
     for row in rows[1:]:
-        if len(row) >= 3 and row[1] == month_label and row[2] == llc:
+        if len(row) < 3 or row[2].strip() != llc.strip():
+            continue
+        period = str(row[1]).strip()
+        # Try parsing common date formats
+        matched = False
+        for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%Y/%m/%d"):
+            try:
+                d = datetime.datetime.strptime(period, fmt)
+                if d.strftime("%Y-%m") == target_ym:
+                    matched = True
+                break
+            except ValueError:
+                continue
+        if matched or target_ym in period:
             return True
     return False
 
@@ -140,79 +155,150 @@ def login(page):
     print("Navigating to login page...")
     page.goto(APPFOLIO_URL)
     page.wait_for_load_state("networkidle")
-    print(f"Current URL after navigate: {page.url}")
+    print(f"URL: {page.url}")
     if "log_in" not in page.url:
         print("Already logged in via cookies.")
         return
-    print("Cookies invalid — logging in with credentials...")
+    print("Logging in with credentials...")
     page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
     page.fill("input[name='user[password]']", APPFOLIO_PASS)
     page.click("input[type='submit']")
     page.wait_for_load_state("networkidle")
-    print(f"URL after login submit: {page.url}")
+
+
+def parse_packet_li(li):
+    """Extract metadata from a list item. Returns dict or None."""
+    date_text = li.query_selector("b")
+    if not date_text:
+        return None
+    date_range = date_text.inner_text().strip()
+    if not re.search(r"\w+ \d+, \d+ to \w+ \d+, \d+", date_range):
+        return None
+
+    m_to = re.search(r"to\s+(\w+ \d+, \d+)", date_range)
+    m_from = re.search(r"^(\w+ \d+, \d+)", date_range)
+    if not m_to or not m_from:
+        return None
+    try:
+        to_date   = datetime.datetime.strptime(m_to.group(1), "%b %d, %Y")
+        from_date = datetime.datetime.strptime(m_from.group(1), "%b %d, %Y")
+        # Skip year-end / annual summaries
+        if (to_date - from_date).days > 60:
+            return {"skip": True, "date_range": date_range}
+        month_label = to_date.strftime("%Y-%m-01")
+    except Exception:
+        return None
+
+    dl_link = li.query_selector(".analytics-statement-download-link a")
+    if not dl_link:
+        return None
+    href = dl_link.get_attribute("href") or ""
+    return {
+        "date_range": date_range,
+        "month_label": month_label,
+        "href": href,
+        "ext": ".zip" if ".zip" in href else ".pdf",
+    }
+
+
+def find_card_index(page, appfolio_name):
+    cards = page.query_selector_all(".card")
+    for idx, card in enumerate(cards):
+        h2 = card.query_selector("h2.card-title")
+        if h2 and h2.inner_text().strip() == appfolio_name:
+            return idx
+    return -1
+
+
+def click_next_page(page, card_idx):
+    """Click the 'next page' button within the specified LLC's card. Returns True if clicked."""
+    cards = page.query_selector_all(".card")
+    if card_idx >= len(cards):
+        return False
+    card = cards[card_idx]
+    pagination_btns = card.query_selector_all(".pagination li.page-item button")
+    # Find "next" button (the one with fa-angle-right but not fa-angle-double-right)
+    for btn in pagination_btns:
+        html = btn.inner_html()
+        if "fa-angle-right" in html and "fa-angle-double-right" not in html:
+            parent_li = btn.evaluate_handle("el => el.closest('li')")
+            classes = parent_li.evaluate("el => el.className") if parent_li else ""
+            if "disabled" in classes:
+                return False
+            try:
+                btn.click()
+                return True
+            except Exception:
+                return False
+    return False
 
 
 def collect_packets(page, appfolio_name, max_count):
+    """Navigate, paginate, and return up to max_count monthly packets."""
     print(f"  Navigating to statements page...")
     page.goto("https://laureatetld.appfolio.com/oportal/statements")
     page.wait_for_load_state("networkidle")
-    print(f"  Statements page URL: {page.url}")
     try:
         page.wait_for_selector("#statements-root .card", timeout=20000)
     except Exception:
         print("  WARNING: Timed out waiting for cards")
 
-    cards = page.query_selector_all(".card")
-    print(f"  Total cards on page: {len(cards)}")
-    for card in cards:
-        h2 = card.query_selector("h2.card-title")
-        if not h2:
-            continue
-        card_name = h2.inner_text().strip()
-        if card_name != appfolio_name:
-            continue
+    card_idx = find_card_index(page, appfolio_name)
+    if card_idx == -1:
+        print(f"  No card found for '{appfolio_name}'")
+        return []
+    print(f"  Card index: {card_idx}")
 
+    all_packets = []
+    seen_month_labels = set()
+    page_num = 1
+    max_pages = (max_count // 4) + 3  # safety margin
+
+    while len(all_packets) < max_count and page_num <= max_pages:
+        cards = page.query_selector_all(".card")
+        if card_idx >= len(cards):
+            break
+        card = cards[card_idx]
         items = card.query_selector_all("ul.list-group li")
-        print(f"  Found matching card with {len(items)} items")
-        packets = []
-        for li in items[:max_count]:
-            date_text = li.query_selector("b")
-            date_range = date_text.inner_text().strip() if date_text else ""
-            if not re.search(r"\w+ \d+, \d+ to \w+ \d+, \d+", date_range):
+        print(f"  Page {page_num}: {len(items)} items")
+
+        new_added = 0
+        for li in items:
+            data = parse_packet_li(li)
+            if not data:
                 continue
+            if data.get("skip"):
+                print(f"    Skipping non-monthly: {data['date_range']}")
+                continue
+            if data["month_label"] in seen_month_labels:
+                continue
+            seen_month_labels.add(data["month_label"])
+            all_packets.append(data)
+            new_added += 1
+            if len(all_packets) >= max_count:
+                break
 
-            month_label = None
-            m = re.search(r"to\s+(\w+ \d+, \d+)", date_range)
-            if m:
-                try:
-                    to_date = datetime.datetime.strptime(m.group(1), "%b %d, %Y")
-                    month_label = to_date.strftime("%Y-%m-01")
-                except Exception:
-                    continue
+        if len(all_packets) >= max_count or new_added == 0:
+            break
 
-            dl_link = li.query_selector(".analytics-statement-download-link a")
-            if not dl_link: continue
-            href = dl_link.get_attribute("href") or ""
-            ext = ".zip" if ".zip" in href else ".pdf"
+        if not click_next_page(page, card_idx):
+            print("  No next page available")
+            break
+        page.wait_for_timeout(2000)
+        page_num += 1
 
-            packets.append({
-                "date_range": date_range,
-                "month_label": month_label,
-                "href": href,
-                "ext": ext,
-                "element": dl_link,
-            })
-        return packets
-    return []
+    return all_packets
 
 
-def download_packet(page, packet, tmp_dir, name_prefix):
-    with page.expect_download() as dl_info:
-        packet["element"].click()
-    download = dl_info.value
-    file_path = os.path.join(tmp_dir, f"{name_prefix}{packet['ext']}")
-    download.save_as(file_path)
-    return file_path
+def download_via_url(page, url, file_path):
+    """Download a file directly via HTTP using the page's session cookies."""
+    if url.startswith("/"):
+        url = "https://laureatetld.appfolio.com" + url
+    response = page.context.request.get(url)
+    if response.status >= 400:
+        raise Exception(f"Download failed with HTTP {response.status}")
+    with open(file_path, "wb") as f:
+        f.write(response.body())
 
 
 def get_pdf_path(file_path, tmp_dir, name):
@@ -250,23 +336,23 @@ def main():
                 print(f"\n=== {llc} ({appfolio_name}) ===")
                 try:
                     packets = collect_packets(page, appfolio_name, MAX_MONTHS)
-                    print(f"  Found {len(packets)} valid packets for {llc}")
+                    print(f"  Collected {len(packets)} monthly packets")
 
-                    for idx, pkt in enumerate(packets):
-                        if not pkt["month_label"]:
-                            continue
+                    for pkt in packets:
                         if already_recorded(sheets, llc, pkt["month_label"]):
                             print(f"  [{pkt['month_label']}] already in History — skip")
                             skipped += 1
                             continue
 
                         print(f"  [{pkt['month_label']}] downloading...")
-                        packets_fresh = collect_packets(page, appfolio_name, MAX_MONTHS)
-                        if idx >= len(packets_fresh): continue
-                        fresh_pkt = packets_fresh[idx]
+                        file_path = os.path.join(tmp_dir, f"{llc}_{pkt['month_label']}{pkt['ext']}")
+                        try:
+                            download_via_url(page, pkt["href"], file_path)
+                        except Exception as e:
+                            errors.append(f"{llc} {pkt['month_label']}: {e}")
+                            continue
 
-                        file_path = download_packet(page, fresh_pkt, tmp_dir, f"{llc}_{pkt['month_label']}")
-                        pdf_path  = get_pdf_path(file_path, tmp_dir, f"{llc}_{pkt['month_label']}")
+                        pdf_path = get_pdf_path(file_path, tmp_dir, f"{llc}_{pkt['month_label']}")
                         if not pdf_path:
                             errors.append(f"{llc} {pkt['month_label']}: PDF not found")
                             continue
@@ -300,7 +386,8 @@ def main():
     print(f"\n=== DONE ===")
     print(f"Written: {written}")
     print(f"Skipped: {skipped}")
-    print(f"Errors: {errors}")
+    print(f"Errors: {len(errors)}")
+    for e in errors: print(f"  - {e}")
 
 
 if __name__ == "__main__":
