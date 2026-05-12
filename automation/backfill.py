@@ -1,6 +1,6 @@
 """
 AppFolio Historical Backfill — downloads the last N months of packets per LLC
-and writes directly to History (bypasses Pending Review since this is trusted data).
+and writes directly to History.
 """
 
 import os
@@ -65,10 +65,8 @@ def already_recorded(sheets, llc, month_label):
 def get_fixed_costs(sheets, llc):
     rows = read_sheet(sheets, "Settings!A:D")
     def parse(v):
-        try:
-            return float(str(v).replace("$","").replace(",","").strip())
-        except (ValueError, AttributeError):
-            return 0
+        try: return float(str(v).replace("$","").replace(",","").strip())
+        except (ValueError, AttributeError): return 0
     for row in rows:
         if row and row[0].strip() == llc.strip():
             mortgage   = parse(row[1]) if len(row) > 1 else 0
@@ -112,14 +110,19 @@ def _normalize_cookies(cookies):
     for c in cookies:
         cookie = {"name": c.get("name"), "value": c.get("value"),
                   "domain": c.get("domain"), "path": c.get("path", "/")}
-        if "expirationDate" in c: cookie["expires"] = int(c["expirationDate"])
+        if "expirationDate" in c:
+            cookie["expires"] = int(c["expirationDate"])
+        elif "expires" in c and c["expires"]:
+            try: cookie["expires"] = int(c["expires"])
+            except: pass
         if "httpOnly" in c: cookie["httpOnly"] = c["httpOnly"]
         if "secure" in c: cookie["secure"] = c["secure"]
         if "sameSite" in c:
             ss = c["sameSite"]
-            if ss in ("no_restriction","unspecified",None): cookie["sameSite"] = "None"
-            elif ss == "lax": cookie["sameSite"] = "Lax"
-            elif ss == "strict": cookie["sameSite"] = "Strict"
+            if ss in ("no_restriction","unspecified",None,""): cookie["sameSite"] = "None"
+            elif ss in ("lax","Lax"): cookie["sameSite"] = "Lax"
+            elif ss in ("strict","Strict"): cookie["sameSite"] = "Strict"
+            elif ss in ("None","none"): cookie["sameSite"] = "None"
         out.append(cookie)
     return out
 
@@ -134,32 +137,43 @@ def load_cookies():
 
 
 def login(page):
+    print("Navigating to login page...")
     page.goto(APPFOLIO_URL)
     page.wait_for_load_state("networkidle")
+    print(f"Current URL after navigate: {page.url}")
     if "log_in" not in page.url:
         print("Already logged in via cookies.")
         return
+    print("Cookies invalid — logging in with credentials...")
     page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
     page.fill("input[name='user[password]']", APPFOLIO_PASS)
     page.click("input[type='submit']")
     page.wait_for_load_state("networkidle")
+    print(f"URL after login submit: {page.url}")
 
 
 def collect_packets(page, appfolio_name, max_count):
+    print(f"  Navigating to statements page...")
     page.goto("https://laureatetld.appfolio.com/oportal/statements")
     page.wait_for_load_state("networkidle")
+    print(f"  Statements page URL: {page.url}")
     try:
         page.wait_for_selector("#statements-root .card", timeout=20000)
     except Exception:
-        pass
+        print("  WARNING: Timed out waiting for cards")
 
     cards = page.query_selector_all(".card")
+    print(f"  Total cards on page: {len(cards)}")
     for card in cards:
         h2 = card.query_selector("h2.card-title")
-        if not h2 or h2.inner_text().strip() != appfolio_name:
+        if not h2:
+            continue
+        card_name = h2.inner_text().strip()
+        if card_name != appfolio_name:
             continue
 
         items = card.query_selector_all("ul.list-group li")
+        print(f"  Found matching card with {len(items)} items")
         packets = []
         for li in items[:max_count]:
             date_text = li.query_selector("b")
@@ -225,6 +239,7 @@ def main():
         browser = p.chromium.launch(headless=True)
         context = browser.new_context()
         cookies = load_cookies()
+        print(f"Loaded {len(cookies)} cookies from secret")
         if cookies:
             context.add_cookies(cookies)
         page = context.new_page()
@@ -235,7 +250,7 @@ def main():
                 print(f"\n=== {llc} ({appfolio_name}) ===")
                 try:
                     packets = collect_packets(page, appfolio_name, MAX_MONTHS)
-                    print(f"Found {len(packets)} packets")
+                    print(f"  Found {len(packets)} valid packets for {llc}")
 
                     for idx, pkt in enumerate(packets):
                         if not pkt["month_label"]:
