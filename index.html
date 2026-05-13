@@ -29,7 +29,6 @@
     font-size: 11px; margin-left: 12px;
   }
   .logout-btn:hover { color: #ff4455; border-color: #ff4455; }
-
   .summary-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 16px; margin-bottom: 24px;
@@ -57,11 +56,20 @@
     color: #ffffff; font-size: 18px; margin-bottom: 16px;
     padding-bottom: 12px; border-bottom: 1px solid #1e2d42;
     display: flex; align-items: center; gap: 10px;
+    flex-wrap: wrap;
   }
   .section h2 .dot {
     width: 8px; height: 8px; border-radius: 50%;
     background: #00BFFF; box-shadow: 0 0 8px #00BFFF;
   }
+  .month-select {
+    margin-left: auto; padding: 8px 12px;
+    background: #0a1520; border: 1px solid #1e2d42;
+    color: #ffffff; border-radius: 8px;
+    font-size: 14px; cursor: pointer; outline: none;
+    min-width: 160px;
+  }
+  .month-select:hover, .month-select:focus { border-color: #00BFFF; }
   .llc-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 16px;
@@ -106,7 +114,6 @@
     color: #ff4455; padding: 20px; background: rgba(255, 68, 85, 0.1);
     border: 1px solid #ff4455; border-radius: 8px;
   }
-  /* Login screen */
   .login-overlay {
     position: fixed; inset: 0;
     background: linear-gradient(135deg, #090d12 0%, #0c1a2e 100%);
@@ -120,37 +127,27 @@
     text-align: center;
     box-shadow: 0 20px 60px rgba(0,0,0,0.6);
   }
-  .login-box .lock-icon {
-    font-size: 42px; margin-bottom: 12px;
-  }
-  .login-box h2 {
-    color: #ffffff; font-size: 20px; margin-bottom: 8px;
-    font-weight: 600;
-  }
-  .login-box p {
-    color: #4e6d8c; font-size: 13px; margin-bottom: 24px;
-  }
+  .login-box .lock-icon { font-size: 42px; margin-bottom: 12px; }
+  .login-box h2 { color: #ffffff; font-size: 20px; margin-bottom: 8px; font-weight: 600; }
+  .login-box p { color: #4e6d8c; font-size: 13px; margin-bottom: 24px; }
   .login-box input {
     width: 100%; padding: 12px 14px; margin-bottom: 12px;
     background: #0a1520; border: 1px solid #1e2d42;
-    border-radius: 8px; color: #ffffff; font-size: 15px;
-    outline: none;
+    border-radius: 8px; color: #ffffff; font-size: 15px; outline: none;
   }
   .login-box input:focus { border-color: #00BFFF; }
   .login-box button {
     width: 100%; padding: 12px;
     background: #0080cc; color: #ffffff; border: none;
-    border-radius: 8px; font-size: 15px; font-weight: 600;
-    cursor: pointer;
+    border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
   }
   .login-box button:hover { background: #00BFFF; }
-  .login-box .err {
-    color: #ff4455; font-size: 13px; margin-top: 8px; min-height: 18px;
-  }
+  .login-box .err { color: #ff4455; font-size: 13px; margin-top: 8px; min-height: 18px; }
   @media (max-width: 768px) {
     body { padding: 12px; }
     header { flex-direction: column; gap: 10px; align-items: flex-start; }
     .meta { text-align: left; }
+    .month-select { margin-left: 0; margin-top: 8px; }
   }
 </style>
 </head>
@@ -187,16 +184,16 @@
 </div>
 
 <script>
-// SHA-256 hash of the password. Change this to a new hash to update the password.
 const PASSWORD_HASH = "76818309665bee769203a5117621375d41ef7f7aa9cee390dc8ec586e2dd664c";
-
 const API_URL = "https://script.google.com/macros/s/AKfycbzXtgU_bEQx-3B15FoV4SrolI1int0s6PUo9WKnHJ2Wz8zV5jq62MWNFQLjI51OqsWH/exec";
+
+let PORTFOLIO_DATA = null;
+let SELECTED_MONTH = null;
 
 async function sha256(text) {
   const buf = new TextEncoder().encode(text);
   const hash = await crypto.subtle.digest("SHA-256", buf);
-  return Array.from(new Uint8Array(hash))
-    .map(b => b.toString(16).padStart(2, "0")).join("");
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
 async function tryLogin() {
@@ -210,8 +207,7 @@ async function tryLogin() {
     showDashboard();
   } else {
     err.textContent = "Incorrect password";
-    input.value = "";
-    input.focus();
+    input.value = ""; input.focus();
   }
 }
 
@@ -227,11 +223,8 @@ function logout() {
 }
 
 document.getElementById("pwd-btn").addEventListener("click", tryLogin);
-document.getElementById("pwd-input").addEventListener("keypress", e => {
-  if (e.key === "Enter") tryLogin();
-});
+document.getElementById("pwd-input").addEventListener("keypress", e => { if (e.key === "Enter") tryLogin(); });
 
-// Auto-skip login if previously authenticated
 if (localStorage.getItem("niron_auth") === "ok") {
   showDashboard();
 } else {
@@ -246,11 +239,19 @@ const fmtShort = n => {
   return "$" + n.toFixed(0);
 };
 
+const monthLabel = ym => {
+  if (!ym) return "";
+  const [y, m] = ym.split("-");
+  const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return names[parseInt(m,10)-1] + " " + y;
+};
+
 async function load() {
   try {
     const res = await fetch(API_URL);
     const data = await res.json();
-    render(data);
+    PORTFOLIO_DATA = data;
+    initialRender(data);
   } catch (e) {
     document.getElementById("content").innerHTML =
       '<div class="error">Failed to load: ' + e.message + '</div>';
@@ -259,23 +260,29 @@ async function load() {
   }
 }
 
-function render(data) {
-  const el = document.getElementById("content");
-  document.getElementById("last-updated").textContent =
-    new Date(data.last_updated).toLocaleString();
+function initialRender(data) {
+  document.getElementById("last-updated").textContent = new Date(data.last_updated).toLocaleString();
+  const history = data.history || [];
+  const months = [...new Set(history.map(h => h.period_start))].sort().reverse();
+  SELECTED_MONTH = months[0] || "";
+  renderAll();
+}
 
+function renderAll() {
+  const data = PORTFOLIO_DATA;
+  if (!data) return;
+  const el = document.getElementById("content");
   const history = data.history || [];
   const llcs = data.llcs || [];
   const loans = data.loans || [];
 
   const months = [...new Set(history.map(h => h.period_start))].sort().reverse();
-  const latestMonth = months[0] || "";
-  const latest = history.filter(h => h.period_start === latestMonth);
-  latest.sort((a, b) => a.llc.localeCompare(b.llc));
+  const selectedRows = history.filter(h => h.period_start === SELECTED_MONTH);
+  selectedRows.sort((a, b) => a.llc.localeCompare(b.llc));
 
-  const totalDisb = latest.reduce((s, r) => s + r.disbursement, 0);
-  const totalNet = latest.reduce((s, r) => s + r.net_cashflow, 0);
-  const totalMortgage = latest.reduce((s, r) => s + r.mortgage, 0);
+  const totalDisb = selectedRows.reduce((s, r) => s + r.disbursement, 0);
+  const totalNet = selectedRows.reduce((s, r) => s + r.net_cashflow, 0);
+  const totalMortgage = selectedRows.reduce((s, r) => s + r.mortgage, 0);
   const totalValue = llcs.reduce((s, l) => s + l.property_value, 0);
 
   const sortedHistory = history.slice().sort((a, b) => {
@@ -283,12 +290,16 @@ function render(data) {
     return a.llc.localeCompare(b.llc);
   });
 
+  const monthOptions = months.map(m =>
+    `<option value="${m}" ${m === SELECTED_MONTH ? 'selected' : ''}>${monthLabel(m)}</option>`
+  ).join('');
+
   el.innerHTML = `
     <div class="summary-grid">
       <div class="summary-card gold">
         <div class="label">Total Disbursements</div>
         <div class="value">${fmtShort(totalDisb)}</div>
-        <div class="sublabel">${latestMonth || 'No data'}</div>
+        <div class="sublabel">${monthLabel(SELECTED_MONTH) || 'No data'}</div>
       </div>
       <div class="summary-card ${totalNet >= 0 ? 'green' : 'red'}">
         <div class="label">Net Cashflow</div>
@@ -308,9 +319,15 @@ function render(data) {
     </div>
 
     <div class="section">
-      <h2><span class="dot"></span>This Month — ${latestMonth || 'No data'}</h2>
+      <h2>
+        <span class="dot"></span>
+        <span>Monthly Breakdown</span>
+        <select id="month-select" class="month-select" onchange="onMonthChange(this.value)">
+          ${monthOptions}
+        </select>
+      </h2>
       <div class="llc-grid">
-        ${latest.map(r => {
+        ${selectedRows.map(r => {
           const net = r.net_cashflow;
           const cls = net >= 0 ? 'green' : 'red';
           return `
@@ -324,7 +341,7 @@ function render(data) {
               <div class="llc-row"><span class="k">Maintenance</span><span class="v">${fmt(r.maintenance)}</span></div>
               <div class="llc-row total"><span class="k">Net Cashflow</span><span class="v ${cls}">${fmt(net)}</span></div>
             </div>`;
-        }).join('') || '<div style="color:#4e6d8c">No data yet for this month.</div>'}
+        }).join('') || '<div style="color:#4e6d8c">No data for this month.</div>'}
       </div>
     </div>
 
@@ -369,6 +386,11 @@ function render(data) {
     </div>`;
 
   if (months.length > 1) renderChart(history, months);
+}
+
+function onMonthChange(newMonth) {
+  SELECTED_MONTH = newMonth;
+  renderAll();
 }
 
 function renderChart(history, months) {
