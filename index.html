@@ -49,9 +49,7 @@
     display: flex; gap: 12px; align-items: stretch;
   }
   .summary-card.dual > div { flex: 1; min-width: 0; }
-  .summary-card.dual .divider {
-    width: 1px; background: #1e2d42; flex: none;
-  }
+  .summary-card.dual .divider { width: 1px; background: #1e2d42; flex: none; }
   .summary-card.dual .ytd-label { color: #00BFFF; }
   .summary-card.dual .ytd-value { font-size: 18px; }
   .section {
@@ -247,14 +245,18 @@ const monthLabel = ym => {
   return MONTH_NAMES[parseInt(m,10)-1] + " " + y;
 };
 
-// Convert "Apr 2026" -> "2026-04-01"
-function parseDistMonth(str) {
-  if (!str) return null;
-  const parts = String(str).trim().split(/\s+/);
-  if (parts.length !== 2) return null;
-  const monthIdx = MONTH_NAMES.indexOf(parts[0].slice(0,3));
-  if (monthIdx < 0) return null;
-  return parts[1] + "-" + String(monthIdx + 1).padStart(2, "0") + "-01";
+// Sum maintenance for a specific LLC + month period
+function maintenanceFor(maintenance, llc, period) {
+  if (!maintenance || !llc || !period) return 0;
+  return maintenance
+    .filter(m => m.llc && m.llc.trim() === llc.trim() && m.period === period)
+    .reduce((s, m) => s + (m.amount || 0), 0);
+}
+
+// Recalc net cashflow live (overrides stored value)
+function recalcNet(row, maintenance) {
+  const m = maintenanceFor(maintenance, row.llc, row.period_start);
+  return row.disbursement - row.mortgage - row.tax_mo - row.ins_mo - m;
 }
 
 async function load() {
@@ -287,38 +289,47 @@ function renderAll() {
   const llcs = data.llcs || [];
   const loans = data.loans || [];
   const distributions = data.distributions || [];
+  const maintenance = data.maintenance || [];
 
   const months = [...new Set(history.map(h => h.period_start))].sort().reverse();
   const selectedRows = history.filter(h => h.period_start === SELECTED_MONTH);
   selectedRows.sort((a, b) => a.llc.localeCompare(b.llc));
 
-  const totalDisb = selectedRows.reduce((s, r) => s + r.disbursement, 0);
-  const totalNet = selectedRows.reduce((s, r) => s + r.net_cashflow, 0);
-  const totalMortgage = selectedRows.reduce((s, r) => s + r.mortgage, 0);
+  // Enrich rows with live maintenance + recalc'd net
+  const enrichedSelected = selectedRows.map(r => {
+    const m = maintenanceFor(maintenance, r.llc, r.period_start);
+    return { ...r, maintenance: m, net_cashflow: r.disbursement - r.mortgage - r.tax_mo - r.ins_mo - m };
+  });
+
+  const totalDisb = enrichedSelected.reduce((s, r) => s + r.disbursement, 0);
+  const totalNet = enrichedSelected.reduce((s, r) => s + r.net_cashflow, 0);
+  const totalMortgage = enrichedSelected.reduce((s, r) => s + r.mortgage, 0);
   const totalValue = llcs.reduce((s, l) => s + l.property_value, 0);
 
-  // YTD history calculations
   const selectedYear = SELECTED_MONTH ? SELECTED_MONTH.slice(0, 4) : "";
   const ytdRows = history.filter(h =>
     h.period_start && h.period_start.slice(0,4) === selectedYear && h.period_start <= SELECTED_MONTH
   );
   const ytdDisb = ytdRows.reduce((s, r) => s + r.disbursement, 0);
-  const ytdNet = ytdRows.reduce((s, r) => s + r.net_cashflow, 0);
+  const ytdNet = ytdRows.reduce((s, r) => s + recalcNet(r, maintenance), 0);
 
-  // Distributions: this month + YTD (Your share only)
-  const distNormalized = distributions
-    .map(d => ({...d, period: parseDistMonth(d.month)}))
-    .filter(d => d.period);
-  const distThisMonth = distNormalized
+  // Distributions (new structure with period from Date Sent)
+  const distThisMonth = distributions
     .filter(d => d.period === SELECTED_MONTH)
     .reduce((s, d) => s + (d.your_amount || 0), 0);
-  const distYtd = distNormalized
-    .filter(d => d.period.slice(0,4) === selectedYear && d.period <= SELECTED_MONTH)
+  const distYtd = distributions
+    .filter(d => d.period && d.period.slice(0,4) === selectedYear && d.period <= SELECTED_MONTH)
     .reduce((s, d) => s + (d.your_amount || 0), 0);
 
   const ytdSubLabel = `Jan – ${monthLabel(SELECTED_MONTH).split(' ')[0]} ${selectedYear}`;
 
-  const sortedHistory = history.slice().sort((a, b) => {
+  // Enriched history for table + chart
+  const enrichedHistory = history.map(r => {
+    const m = maintenanceFor(maintenance, r.llc, r.period_start);
+    return { ...r, maintenance: m, net_cashflow: r.disbursement - r.mortgage - r.tax_mo - r.ins_mo - m };
+  });
+
+  const sortedHistory = enrichedHistory.slice().sort((a, b) => {
     if (a.period_start !== b.period_start) return b.period_start > a.period_start ? 1 : -1;
     return a.llc.localeCompare(b.llc);
   });
@@ -392,7 +403,7 @@ function renderAll() {
         </select>
       </h2>
       <div class="llc-grid">
-        ${selectedRows.map(r => {
+        ${enrichedSelected.map(r => {
           const net = r.net_cashflow;
           const cls = net >= 0 ? 'green' : 'red';
           return `
@@ -437,20 +448,21 @@ function renderAll() {
     <div class="section">
       <h2><span class="dot"></span>History (newest first)</h2>
       <table>
-        <thead><tr><th>Month</th><th>LLC</th><th>Disbursement</th><th>Mortgage</th><th>Net</th></tr></thead>
+        <thead><tr><th>Month</th><th>LLC</th><th>Disbursement</th><th>Mortgage</th><th>Maintenance</th><th>Net</th></tr></thead>
         <tbody>
           ${sortedHistory.slice(0, 100).map(h => `
             <tr>
               <td>${h.period_start}</td><td>${h.llc}</td>
               <td>${fmt(h.disbursement)}</td>
               <td>${fmt(h.mortgage)}</td>
+              <td>${fmt(h.maintenance)}</td>
               <td class="${h.net_cashflow >= 0 ? 'green' : 'red'}">${fmt(h.net_cashflow)}</td>
             </tr>`).join('')}
         </tbody>
       </table>
     </div>`;
 
-  if (months.length > 1) renderChart(history, months);
+  if (months.length > 1) renderChart(enrichedHistory, months);
 }
 
 function onMonthChange(newMonth) {
