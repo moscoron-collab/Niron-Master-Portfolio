@@ -30,33 +30,30 @@
   }
   .logout-btn:hover { color: #ff4455; border-color: #ff4455; }
   .summary-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 16px; margin-bottom: 24px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px; margin-bottom: 24px;
   }
   .summary-card {
     background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42;
-    border-radius: 12px; padding: 20px;
+    border-radius: 12px; padding: 16px;
     transition: transform 0.15s, border-color 0.15s;
   }
   .summary-card:hover { transform: translateY(-2px); border-color: #0080cc; }
   .summary-card .label {
-    font-size: 11px; color: #4e6d8c; text-transform: uppercase;
-    letter-spacing: 1.5px; margin-bottom: 8px;
+    font-size: 10px; color: #4e6d8c; text-transform: uppercase;
+    letter-spacing: 1.4px; margin-bottom: 6px;
   }
-  .summary-card .value { font-size: 26px; font-weight: 700; color: #ffffff; }
-  .summary-card .sublabel { font-size: 12px; color: #4e6d8c; margin-top: 6px; }
-  .summary-card.green .value { color: #00c97a; }
-  .summary-card.red .value { color: #ff4455; }
-  .summary-card.gold .value { color: #f0a500; }
+  .summary-card .value { font-size: 22px; font-weight: 700; color: #ffffff; line-height: 1.1; }
+  .summary-card .sublabel { font-size: 11px; color: #4e6d8c; margin-top: 4px; }
   .summary-card.dual {
-    display: flex; gap: 16px; align-items: stretch;
+    display: flex; gap: 12px; align-items: stretch;
   }
-  .summary-card.dual > div { flex: 1; }
+  .summary-card.dual > div { flex: 1; min-width: 0; }
   .summary-card.dual .divider {
-    width: 1px; background: #1e2d42;
+    width: 1px; background: #1e2d42; flex: none;
   }
   .summary-card.dual .ytd-label { color: #00BFFF; }
-  .summary-card.dual .ytd-value { font-size: 22px; }
+  .summary-card.dual .ytd-value { font-size: 18px; }
   .section {
     background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42;
     border-radius: 12px; padding: 24px; margin-bottom: 24px;
@@ -64,8 +61,7 @@
   .section h2 {
     color: #ffffff; font-size: 18px; margin-bottom: 16px;
     padding-bottom: 12px; border-bottom: 1px solid #1e2d42;
-    display: flex; align-items: center; gap: 10px;
-    flex-wrap: wrap;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   }
   .section h2 .dot {
     width: 8px; height: 8px; border-radius: 50%;
@@ -75,8 +71,7 @@
     margin-left: auto; padding: 8px 12px;
     background: #0a1520; border: 1px solid #1e2d42;
     color: #ffffff; border-radius: 8px;
-    font-size: 14px; cursor: pointer; outline: none;
-    min-width: 160px;
+    font-size: 14px; cursor: pointer; outline: none; min-width: 160px;
   }
   .month-select:hover, .month-select:focus { border-color: #00BFFF; }
   .llc-grid {
@@ -126,15 +121,13 @@
   .login-overlay {
     position: fixed; inset: 0;
     background: linear-gradient(135deg, #090d12 0%, #0c1a2e 100%);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 9999;
+    display: flex; align-items: center; justify-content: center; z-index: 9999;
   }
   .login-box {
     background: rgba(14, 22, 38, 0.95);
     border: 1px solid #1e2d42; border-radius: 14px;
     padding: 40px 36px; max-width: 380px; width: 90%;
-    text-align: center;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
   }
   .login-box .lock-icon { font-size: 42px; margin-bottom: 12px; }
   .login-box h2 { color: #ffffff; font-size: 20px; margin-bottom: 8px; font-weight: 600; }
@@ -236,11 +229,8 @@ function logout() {
 document.getElementById("pwd-btn").addEventListener("click", tryLogin);
 document.getElementById("pwd-input").addEventListener("keypress", e => { if (e.key === "Enter") tryLogin(); });
 
-if (localStorage.getItem("niron_auth") === "ok") {
-  showDashboard();
-} else {
-  document.getElementById("pwd-input").focus();
-}
+if (localStorage.getItem("niron_auth") === "ok") showDashboard();
+else document.getElementById("pwd-input").focus();
 
 const fmt = n => "$" + (Number(n) || 0).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const fmtShort = n => {
@@ -250,12 +240,22 @@ const fmtShort = n => {
   return "$" + n.toFixed(0);
 };
 
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const monthLabel = ym => {
   if (!ym) return "";
   const [y, m] = ym.split("-");
-  const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return names[parseInt(m,10)-1] + " " + y;
+  return MONTH_NAMES[parseInt(m,10)-1] + " " + y;
 };
+
+// Convert "Apr 2026" -> "2026-04-01"
+function parseDistMonth(str) {
+  if (!str) return null;
+  const parts = String(str).trim().split(/\s+/);
+  if (parts.length !== 2) return null;
+  const monthIdx = MONTH_NAMES.indexOf(parts[0].slice(0,3));
+  if (monthIdx < 0) return null;
+  return parts[1] + "-" + String(monthIdx + 1).padStart(2, "0") + "-01";
+}
 
 async function load() {
   try {
@@ -286,6 +286,7 @@ function renderAll() {
   const history = data.history || [];
   const llcs = data.llcs || [];
   const loans = data.loans || [];
+  const distributions = data.distributions || [];
 
   const months = [...new Set(history.map(h => h.period_start))].sort().reverse();
   const selectedRows = history.filter(h => h.period_start === SELECTED_MONTH);
@@ -296,13 +297,25 @@ function renderAll() {
   const totalMortgage = selectedRows.reduce((s, r) => s + r.mortgage, 0);
   const totalValue = llcs.reduce((s, l) => s + l.property_value, 0);
 
-  // YTD calculations
+  // YTD history calculations
   const selectedYear = SELECTED_MONTH ? SELECTED_MONTH.slice(0, 4) : "";
   const ytdRows = history.filter(h =>
     h.period_start && h.period_start.slice(0,4) === selectedYear && h.period_start <= SELECTED_MONTH
   );
   const ytdDisb = ytdRows.reduce((s, r) => s + r.disbursement, 0);
   const ytdNet = ytdRows.reduce((s, r) => s + r.net_cashflow, 0);
+
+  // Distributions: this month + YTD (Your share only)
+  const distNormalized = distributions
+    .map(d => ({...d, period: parseDistMonth(d.month)}))
+    .filter(d => d.period);
+  const distThisMonth = distNormalized
+    .filter(d => d.period === SELECTED_MONTH)
+    .reduce((s, d) => s + (d.your_amount || 0), 0);
+  const distYtd = distNormalized
+    .filter(d => d.period.slice(0,4) === selectedYear && d.period <= SELECTED_MONTH)
+    .reduce((s, d) => s + (d.your_amount || 0), 0);
+
   const ytdSubLabel = `Jan – ${monthLabel(SELECTED_MONTH).split(' ')[0]} ${selectedYear}`;
 
   const sortedHistory = history.slice().sort((a, b) => {
@@ -318,7 +331,7 @@ function renderAll() {
     <div class="summary-grid">
       <div class="summary-card dual">
         <div>
-          <div class="label gold" style="color:#f0a500">Total Disbursements</div>
+          <div class="label" style="color:#f0a500">Total Disbursements</div>
           <div class="value" style="color:#f0a500">${fmtShort(totalDisb)}</div>
           <div class="sublabel">${monthLabel(SELECTED_MONTH) || 'No data'}</div>
         </div>
@@ -340,6 +353,20 @@ function renderAll() {
         <div>
           <div class="label ytd-label">YTD</div>
           <div class="value ytd-value" style="color:${ytdNet >= 0 ? '#00c97a' : '#ff4455'}">${fmtShort(ytdNet)}</div>
+          <div class="sublabel">${ytdSubLabel}</div>
+        </div>
+      </div>
+
+      <div class="summary-card dual">
+        <div>
+          <div class="label" style="color:#00BFFF">Your Distribution</div>
+          <div class="value" style="color:#00BFFF">${fmtShort(distThisMonth)}</div>
+          <div class="sublabel">${monthLabel(SELECTED_MONTH) || 'No data'}</div>
+        </div>
+        <div class="divider"></div>
+        <div>
+          <div class="label ytd-label">YTD</div>
+          <div class="value ytd-value" style="color:#00BFFF">${fmtShort(distYtd)}</div>
           <div class="sublabel">${ytdSubLabel}</div>
         </div>
       </div>
@@ -435,7 +462,6 @@ function renderChart(history, months) {
   const sortedMonths = months.slice().reverse();
   const llcNames = [...new Set(history.map(h => h.llc))].sort();
   const colors = ['#00c97a', '#0080cc', '#f0a500', '#ff4455', '#00BFFF', '#a78bfa'];
-
   const datasets = llcNames.map((llc, i) => ({
     type: 'bar', label: llc,
     data: sortedMonths.map(m => {
@@ -446,7 +472,6 @@ function renderChart(history, months) {
     borderColor: colors[i % colors.length],
     borderWidth: 1, order: 2,
   }));
-
   const totalData = sortedMonths.map(m =>
     history.filter(h => h.period_start === m).reduce((s, r) => s + (r.net_cashflow || 0), 0)
   );
@@ -457,7 +482,6 @@ function renderChart(history, months) {
     pointBackgroundColor: '#ffffff', pointBorderColor: '#0c1a2e', pointBorderWidth: 2,
     tension: 0.3, fill: false, order: 1,
   });
-
   new Chart(document.getElementById('trendChart'), {
     type: 'bar',
     data: { labels: sortedMonths, datasets },
