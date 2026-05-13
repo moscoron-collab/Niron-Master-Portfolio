@@ -23,6 +23,13 @@
   header h1 .accent { color: #f0a500; }
   .meta { font-size: 13px; color: #4e6d8c; text-align: right; }
   .meta .label { color: #00BFFF; font-weight: 500; }
+  .logout-btn {
+    background: none; border: 1px solid #1e2d42; color: #4e6d8c;
+    padding: 6px 12px; border-radius: 6px; cursor: pointer;
+    font-size: 11px; margin-left: 12px;
+  }
+  .logout-btn:hover { color: #ff4455; border-color: #ff4455; }
+
   .summary-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 16px; margin-bottom: 24px;
@@ -67,10 +74,7 @@
     color: #ffffff; font-size: 15px; margin-bottom: 12px;
     padding-bottom: 8px; border-bottom: 1px solid #1e2d42;
   }
-  .llc-row {
-    display: flex; justify-content: space-between;
-    padding: 5px 0; font-size: 13px;
-  }
+  .llc-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
   .llc-row .k { color: #4e6d8c; }
   .llc-row .v { color: #ccd9ea; font-weight: 500; }
   .llc-row .v.green { color: #00c97a; }
@@ -102,6 +106,47 @@
     color: #ff4455; padding: 20px; background: rgba(255, 68, 85, 0.1);
     border: 1px solid #ff4455; border-radius: 8px;
   }
+  /* Login screen */
+  .login-overlay {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, #090d12 0%, #0c1a2e 100%);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+  }
+  .login-box {
+    background: rgba(14, 22, 38, 0.95);
+    border: 1px solid #1e2d42; border-radius: 14px;
+    padding: 40px 36px; max-width: 380px; width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  .login-box .lock-icon {
+    font-size: 42px; margin-bottom: 12px;
+  }
+  .login-box h2 {
+    color: #ffffff; font-size: 20px; margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .login-box p {
+    color: #4e6d8c; font-size: 13px; margin-bottom: 24px;
+  }
+  .login-box input {
+    width: 100%; padding: 12px 14px; margin-bottom: 12px;
+    background: #0a1520; border: 1px solid #1e2d42;
+    border-radius: 8px; color: #ffffff; font-size: 15px;
+    outline: none;
+  }
+  .login-box input:focus { border-color: #00BFFF; }
+  .login-box button {
+    width: 100%; padding: 12px;
+    background: #0080cc; color: #ffffff; border: none;
+    border-radius: 8px; font-size: 15px; font-weight: 600;
+    cursor: pointer;
+  }
+  .login-box button:hover { background: #00BFFF; }
+  .login-box .err {
+    color: #ff4455; font-size: 13px; margin-top: 8px; min-height: 18px;
+  }
   @media (max-width: 768px) {
     body { padding: 12px; }
     header { flex-direction: column; gap: 10px; align-items: flex-start; }
@@ -110,12 +155,27 @@
 </style>
 </head>
 <body>
-<div class="container">
+
+<div id="login-screen" class="login-overlay">
+  <div class="login-box">
+    <div class="lock-icon">🔒</div>
+    <h2>Niron Master Portfolio</h2>
+    <p>Enter password to access the dashboard</p>
+    <input type="password" id="pwd-input" placeholder="Password" autocomplete="off">
+    <button id="pwd-btn">Unlock</button>
+    <div class="err" id="pwd-err"></div>
+  </div>
+</div>
+
+<div class="container" id="main-container" style="display:none">
   <header>
     <h1><span class="accent">●</span> NIRON MASTER PORTFOLIO</h1>
     <div class="meta">
       <div><span class="label">Last Updated:</span> <span id="last-updated">—</span></div>
-      <div><span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span></div>
+      <div>
+        <span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
     </div>
   </header>
   <div id="content">
@@ -127,7 +187,56 @@
 </div>
 
 <script>
+// SHA-256 hash of the password. Change this to a new hash to update the password.
+const PASSWORD_HASH = "76818309665bee769203a5117621375d41ef7f7aa9cee390dc8ec586e2dd664c";
+
 const API_URL = "https://script.google.com/macros/s/AKfycbzXtgU_bEQx-3B15FoV4SrolI1int0s6PUo9WKnHJ2Wz8zV5jq62MWNFQLjI51OqsWH/exec";
+
+async function sha256(text) {
+  const buf = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function tryLogin() {
+  const input = document.getElementById("pwd-input");
+  const err = document.getElementById("pwd-err");
+  const pwd = input.value;
+  if (!pwd) return;
+  const h = await sha256(pwd);
+  if (h === PASSWORD_HASH) {
+    localStorage.setItem("niron_auth", "ok");
+    showDashboard();
+  } else {
+    err.textContent = "Incorrect password";
+    input.value = "";
+    input.focus();
+  }
+}
+
+function showDashboard() {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("main-container").style.display = "block";
+  load();
+}
+
+function logout() {
+  localStorage.removeItem("niron_auth");
+  location.reload();
+}
+
+document.getElementById("pwd-btn").addEventListener("click", tryLogin);
+document.getElementById("pwd-input").addEventListener("keypress", e => {
+  if (e.key === "Enter") tryLogin();
+});
+
+// Auto-skip login if previously authenticated
+if (localStorage.getItem("niron_auth") === "ok") {
+  showDashboard();
+} else {
+  document.getElementById("pwd-input").focus();
+}
 
 const fmt = n => "$" + (Number(n) || 0).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const fmtShort = n => {
@@ -162,8 +271,6 @@ function render(data) {
   const months = [...new Set(history.map(h => h.period_start))].sort().reverse();
   const latestMonth = months[0] || "";
   const latest = history.filter(h => h.period_start === latestMonth);
-
-  // Sort latest by LLC name for consistent ordering
   latest.sort((a, b) => a.llc.localeCompare(b.llc));
 
   const totalDisb = latest.reduce((s, r) => s + r.disbursement, 0);
@@ -171,11 +278,8 @@ function render(data) {
   const totalMortgage = latest.reduce((s, r) => s + r.mortgage, 0);
   const totalValue = llcs.reduce((s, l) => s + l.property_value, 0);
 
-  // Sort history newest first, then by LLC
   const sortedHistory = history.slice().sort((a, b) => {
-    if (a.period_start !== b.period_start) {
-      return b.period_start > a.period_start ? 1 : -1;
-    }
+    if (a.period_start !== b.period_start) return b.period_start > a.period_start ? 1 : -1;
     return a.llc.localeCompare(b.llc);
   });
 
@@ -219,8 +323,7 @@ function render(data) {
               <div class="llc-row"><span class="k">Insurance / 12</span><span class="v">${fmt(r.ins_mo)}</span></div>
               <div class="llc-row"><span class="k">Maintenance</span><span class="v">${fmt(r.maintenance)}</span></div>
               <div class="llc-row total"><span class="k">Net Cashflow</span><span class="v ${cls}">${fmt(net)}</span></div>
-            </div>
-          `;
+            </div>`;
         }).join('') || '<div style="color:#4e6d8c">No data yet for this month.</div>'}
       </div>
     </div>
@@ -229,54 +332,41 @@ function render(data) {
     <div class="section">
       <h2><span class="dot"></span>Cashflow Trend (Bars per LLC + Total Line)</h2>
       <div class="chart-container"><canvas id="trendChart"></canvas></div>
-    </div>
-    ` : ''}
+    </div>` : ''}
 
     ${loans.length ? `
     <div class="section">
       <h2><span class="dot"></span>Loan Balances</h2>
       <table>
-        <thead><tr>
-          <th>LLC</th><th>Lender</th><th>Original</th>
-          <th>Remaining</th><th>Monthly</th><th>Maturity</th>
-        </tr></thead>
+        <thead><tr><th>LLC</th><th>Lender</th><th>Original</th><th>Remaining</th><th>Monthly</th><th>Maturity</th></tr></thead>
         <tbody>
           ${loans.map(l => `
             <tr>
-              <td>${l.llc}</td>
-              <td>${l.lender}</td>
+              <td>${l.llc}</td><td>${l.lender}</td>
               <td>${fmt(l.original_balance)}</td>
               <td style="color:#f0a500;font-weight:600">${fmt(l.balance_override || l.calculated_balance)}</td>
               <td>${fmt(l.monthly_payment)}</td>
               <td>${l.maturity_date || '—'}</td>
-            </tr>
-          `).join('')}
+            </tr>`).join('')}
         </tbody>
       </table>
-    </div>
-    ` : ''}
+    </div>` : ''}
 
     <div class="section">
       <h2><span class="dot"></span>History (newest first)</h2>
       <table>
-        <thead><tr>
-          <th>Month</th><th>LLC</th><th>Disbursement</th>
-          <th>Mortgage</th><th>Net</th>
-        </tr></thead>
+        <thead><tr><th>Month</th><th>LLC</th><th>Disbursement</th><th>Mortgage</th><th>Net</th></tr></thead>
         <tbody>
           ${sortedHistory.slice(0, 100).map(h => `
             <tr>
-              <td>${h.period_start}</td>
-              <td>${h.llc}</td>
+              <td>${h.period_start}</td><td>${h.llc}</td>
               <td>${fmt(h.disbursement)}</td>
               <td>${fmt(h.mortgage)}</td>
               <td class="${h.net_cashflow >= 0 ? 'green' : 'red'}">${fmt(h.net_cashflow)}</td>
-            </tr>
-          `).join('')}
+            </tr>`).join('')}
         </tbody>
       </table>
-    </div>
-  `;
+    </div>`;
 
   if (months.length > 1) renderChart(history, months);
 }
@@ -287,43 +377,32 @@ function renderChart(history, months) {
   const colors = ['#00c97a', '#0080cc', '#f0a500', '#ff4455', '#00BFFF', '#a78bfa'];
 
   const datasets = llcNames.map((llc, i) => ({
-    type: 'bar',
-    label: llc,
+    type: 'bar', label: llc,
     data: sortedMonths.map(m => {
       const r = history.find(h => h.period_start === m && h.llc === llc);
       return r ? r.net_cashflow : 0;
     }),
     backgroundColor: colors[i % colors.length] + 'aa',
     borderColor: colors[i % colors.length],
-    borderWidth: 1,
-    order: 2,
+    borderWidth: 1, order: 2,
   }));
 
   const totalData = sortedMonths.map(m =>
     history.filter(h => h.period_start === m).reduce((s, r) => s + (r.net_cashflow || 0), 0)
   );
   datasets.push({
-    type: 'line',
-    label: 'TOTAL Portfolio',
-    data: totalData,
-    borderColor: '#ffffff',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderWidth: 3,
-    pointRadius: 5,
-    pointBackgroundColor: '#ffffff',
-    pointBorderColor: '#0c1a2e',
-    pointBorderWidth: 2,
-    tension: 0.3,
-    fill: false,
-    order: 1,
+    type: 'line', label: 'TOTAL Portfolio', data: totalData,
+    borderColor: '#ffffff', backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 3, pointRadius: 5,
+    pointBackgroundColor: '#ffffff', pointBorderColor: '#0c1a2e', pointBorderWidth: 2,
+    tension: 0.3, fill: false, order: 1,
   });
 
   new Chart(document.getElementById('trendChart'), {
     type: 'bar',
     data: { labels: sortedMonths, datasets },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: { labels: { color: '#ccd9ea', font: { size: 12 } } },
@@ -334,16 +413,11 @@ function renderChart(history, months) {
       },
       scales: {
         x: { ticks: { color: '#4e6d8c' }, grid: { color: '#182030' } },
-        y: {
-          ticks: { color: '#4e6d8c', callback: v => fmtShort(v) },
-          grid: { color: '#182030' }
-        }
+        y: { ticks: { color: '#4e6d8c', callback: v => fmtShort(v) }, grid: { color: '#182030' } }
       }
     }
   });
 }
-
-load();
 </script>
 </body>
 </html>
