@@ -29,29 +29,65 @@
     font-size: 11px; margin-left: 12px;
   }
   .logout-btn:hover { color: #ff4455; border-color: #ff4455; }
+
+  /* SUMMARY CARDS — aligned heights & font sizes */
   .summary-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 14px; margin-bottom: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+    align-items: stretch;
   }
   .summary-card {
-    background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42;
-    border-radius: 12px; padding: 16px;
+    background: rgba(14, 22, 38, 0.8);
+    border: 1px solid #1e2d42;
+    border-radius: 12px;
+    padding: 18px 16px;
     transition: transform 0.15s, border-color 0.15s;
+    display: flex;
+    min-height: 140px;
   }
   .summary-card:hover { transform: translateY(-2px); border-color: #0080cc; }
-  .summary-card .label {
-    font-size: 10px; color: #4e6d8c; text-transform: uppercase;
-    letter-spacing: 1.4px; margin-bottom: 6px;
+  .card-cell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
   }
-  .summary-card .value { font-size: 22px; font-weight: 700; color: #ffffff; line-height: 1.1; }
-  .summary-card .sublabel { font-size: 11px; color: #4e6d8c; margin-top: 4px; }
+  .card-cell .label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    line-height: 1.3;
+    min-height: 32px;        /* reserves 2 lines */
+    color: #4e6d8c;
+  }
+  .card-cell .value {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #ffffff;
+    margin: 6px 0 4px;
+  }
+  .card-cell .sublabel {
+    font-size: 11px;
+    color: #4e6d8c;
+  }
   .summary-card.dual {
-    display: flex; gap: 12px; align-items: stretch;
+    gap: 14px;
+    padding: 18px 14px;
   }
-  .summary-card.dual > div { flex: 1; min-width: 0; }
-  .summary-card.dual .divider { width: 1px; background: #1e2d42; flex: none; }
-  .summary-card.dual .ytd-label { color: #00BFFF; }
-  .summary-card.dual .ytd-value { font-size: 18px; }
+  .summary-card.dual .divider {
+    width: 1px; background: #1e2d42; flex: none;
+  }
+  .ytd-label { color: #00BFFF !important; }
+  .gold .value, .gold .label { color: #f0a500; }
+  .green .value, .green .label { color: #00c97a; }
+  .red .value, .red .label { color: #ff4455; }
+  .blue .value, .blue .label { color: #00BFFF; }
+
   .section {
     background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42;
     border-radius: 12px; padding: 24px; margin-bottom: 24px;
@@ -245,15 +281,12 @@ const monthLabel = ym => {
   return MONTH_NAMES[parseInt(m,10)-1] + " " + y;
 };
 
-// Sum maintenance for a specific LLC + month period
 function maintenanceFor(maintenance, llc, period) {
   if (!maintenance || !llc || !period) return 0;
   return maintenance
     .filter(m => m.llc && m.llc.trim() === llc.trim() && m.period === period)
     .reduce((s, m) => s + (m.amount || 0), 0);
 }
-
-// Recalc net cashflow live (overrides stored value)
 function recalcNet(row, maintenance) {
   const m = maintenanceFor(maintenance, row.llc, row.period_start);
   return row.disbursement - row.mortgage - row.tax_mo - row.ins_mo - m;
@@ -295,7 +328,6 @@ function renderAll() {
   const selectedRows = history.filter(h => h.period_start === SELECTED_MONTH);
   selectedRows.sort((a, b) => a.llc.localeCompare(b.llc));
 
-  // Enrich rows with live maintenance + recalc'd net
   const enrichedSelected = selectedRows.map(r => {
     const m = maintenanceFor(maintenance, r.llc, r.period_start);
     return { ...r, maintenance: m, net_cashflow: r.disbursement - r.mortgage - r.tax_mo - r.ins_mo - m };
@@ -313,7 +345,6 @@ function renderAll() {
   const ytdDisb = ytdRows.reduce((s, r) => s + r.disbursement, 0);
   const ytdNet = ytdRows.reduce((s, r) => s + recalcNet(r, maintenance), 0);
 
-  // Distributions (new structure with period from Date Sent)
   const distThisMonth = distributions
     .filter(d => d.period === SELECTED_MONTH)
     .reduce((s, d) => s + (d.your_amount || 0), 0);
@@ -323,7 +354,6 @@ function renderAll() {
 
   const ytdSubLabel = `Jan – ${monthLabel(SELECTED_MONTH).split(' ')[0]} ${selectedYear}`;
 
-  // Enriched history for table + chart
   const enrichedHistory = history.map(r => {
     const m = maintenanceFor(maintenance, r.llc, r.period_start);
     return { ...r, maintenance: m, net_cashflow: r.disbursement - r.mortgage - r.tax_mo - r.ins_mo - m };
@@ -338,59 +368,67 @@ function renderAll() {
     `<option value="${m}" ${m === SELECTED_MONTH ? 'selected' : ''}>${monthLabel(m)}</option>`
   ).join('');
 
+  const netCls = totalNet >= 0 ? 'green' : 'red';
+  const ytdNetCls = ytdNet >= 0 ? 'green' : 'red';
+
   el.innerHTML = `
     <div class="summary-grid">
-      <div class="summary-card dual">
-        <div>
-          <div class="label" style="color:#f0a500">Total Disbursements</div>
-          <div class="value" style="color:#f0a500">${fmtShort(totalDisb)}</div>
+      <div class="summary-card dual gold">
+        <div class="card-cell">
+          <div class="label">Total Disbursements</div>
+          <div class="value">${fmtShort(totalDisb)}</div>
           <div class="sublabel">${monthLabel(SELECTED_MONTH) || 'No data'}</div>
         </div>
         <div class="divider"></div>
-        <div>
+        <div class="card-cell">
           <div class="label ytd-label">YTD</div>
-          <div class="value ytd-value" style="color:#f0a500">${fmtShort(ytdDisb)}</div>
+          <div class="value">${fmtShort(ytdDisb)}</div>
           <div class="sublabel">${ytdSubLabel}</div>
         </div>
       </div>
 
-      <div class="summary-card dual">
-        <div>
-          <div class="label" style="color:${totalNet >= 0 ? '#00c97a' : '#ff4455'}">Net Cashflow</div>
-          <div class="value" style="color:${totalNet >= 0 ? '#00c97a' : '#ff4455'}">${fmtShort(totalNet)}</div>
+      <div class="summary-card dual ${netCls}">
+        <div class="card-cell">
+          <div class="label">Net Cashflow</div>
+          <div class="value">${fmtShort(totalNet)}</div>
           <div class="sublabel">After all expenses</div>
         </div>
         <div class="divider"></div>
-        <div>
+        <div class="card-cell">
           <div class="label ytd-label">YTD</div>
-          <div class="value ytd-value" style="color:${ytdNet >= 0 ? '#00c97a' : '#ff4455'}">${fmtShort(ytdNet)}</div>
+          <div class="value">${fmtShort(ytdNet)}</div>
           <div class="sublabel">${ytdSubLabel}</div>
         </div>
       </div>
 
-      <div class="summary-card dual">
-        <div>
-          <div class="label" style="color:#00BFFF">Your Distribution</div>
-          <div class="value" style="color:#00BFFF">${fmtShort(distThisMonth)}</div>
+      <div class="summary-card dual blue">
+        <div class="card-cell">
+          <div class="label">Your Distribution</div>
+          <div class="value">${fmtShort(distThisMonth)}</div>
           <div class="sublabel">${monthLabel(SELECTED_MONTH) || 'No data'}</div>
         </div>
         <div class="divider"></div>
-        <div>
+        <div class="card-cell">
           <div class="label ytd-label">YTD</div>
-          <div class="value ytd-value" style="color:#00BFFF">${fmtShort(distYtd)}</div>
+          <div class="value">${fmtShort(distYtd)}</div>
           <div class="sublabel">${ytdSubLabel}</div>
         </div>
       </div>
 
       <div class="summary-card">
-        <div class="label">Total Mortgage / Mo</div>
-        <div class="value">${fmtShort(totalMortgage)}</div>
-        <div class="sublabel">Across all LLCs</div>
+        <div class="card-cell">
+          <div class="label">Total Mortgage / Mo</div>
+          <div class="value">${fmtShort(totalMortgage)}</div>
+          <div class="sublabel">Across all LLCs</div>
+        </div>
       </div>
+
       <div class="summary-card">
-        <div class="label">Portfolio Value</div>
-        <div class="value">${fmtShort(totalValue)}</div>
-        <div class="sublabel">Estimated</div>
+        <div class="card-cell">
+          <div class="label">Portfolio Value</div>
+          <div class="value">${fmtShort(totalValue)}</div>
+          <div class="sublabel">Estimated</div>
+        </div>
       </div>
     </div>
 
