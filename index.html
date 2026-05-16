@@ -303,7 +303,10 @@
 <div class="chat-panel" id="chat-panel">
   <div class="chat-header">
     <h3><span class="dot"></span>Ask Claude</h3>
-    <button class="chat-close" onclick="toggleChat()">×</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="chat-close" onclick="newChat()" title="Start new conversation" style="font-size:13px;padding:4px 8px;border:1px solid #1e2d42;border-radius:6px">↻ New</button>
+      <button class="chat-close" onclick="toggleChat()">×</button>
+    </div>
   </div>
   <div class="chat-hint">Try: "Which LLC was most profitable last month?" or "What was my YTD net cashflow?"</div>
   <div class="chat-messages" id="chat-messages"></div>
@@ -373,6 +376,8 @@ function showDashboard() {
 }
 
 // ── CHAT ─────────────────────────────────────────────────────
+let chatHistory = [];
+
 function toggleChat() {
   const panel = document.getElementById("chat-panel");
   const fab = document.getElementById("chat-fab");
@@ -384,6 +389,11 @@ function toggleChat() {
     fab.style.display = "none";
     document.getElementById("chat-input").focus();
   }
+}
+
+function newChat() {
+  chatHistory = [];
+  document.getElementById("chat-messages").innerHTML = "";
 }
 
 function appendChatMsg(text, kind) {
@@ -403,23 +413,32 @@ async function sendChat() {
   if (!q) return;
 
   appendChatMsg(q, "user");
+  chatHistory.push({ role: "user", content: q });
   input.value = "";
   sendBtn.disabled = true;
   const typingEl = appendChatMsg("Thinking…", "bot typing");
 
   try {
-    const url = API_URL + "?action=chat&q=" + encodeURIComponent(q);
-    const res = await fetch(url);
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ action: "chat", messages: chatHistory })
+    });
     const data = await res.json();
     typingEl.remove();
     if (data.error) {
       appendChatMsg("Error: " + data.error, "bot err");
+      // Remove the last user message since the API call failed
+      chatHistory.pop();
     } else {
-      appendChatMsg(data.answer || "(no response)", "bot");
+      const answer = data.answer || "(no response)";
+      appendChatMsg(answer, "bot");
+      chatHistory.push({ role: "assistant", content: answer });
     }
   } catch (e) {
     typingEl.remove();
     appendChatMsg("Network error: " + e.message, "bot err");
+    chatHistory.pop();
   } finally {
     sendBtn.disabled = false;
     input.focus();
