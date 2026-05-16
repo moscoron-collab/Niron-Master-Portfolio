@@ -7,112 +7,356 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: linear-gradient(135deg, #090d12 0%, #0c1a2e 100%); color: #ccd9ea; min-height: 100vh; padding: 24px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #090d12 0%, #0c1a2e 100%);
+    color: #ccd9ea; min-height: 100vh; padding: 24px;
+  }
   .container { max-width: 1400px; margin: 0 auto; }
-  header { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 28px; margin-bottom: 24px; background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42; border-radius: 12px; gap: 16px; }
+  header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 20px 28px; margin-bottom: 24px;
+    background: rgba(14, 22, 38, 0.8);
+    border: 1px solid #1e2d42; border-radius: 12px;
+    gap: 16px;
+  }
   .header-left { display: flex; flex-direction: column; gap: 12px; }
   header h1 { color: #ffffff; font-size: 26px; font-weight: 600; }
   header h1 .accent { color: #f0a500; }
-  .header-month-select { padding: 8px 12px; background: #0a1520; border: 1px solid #1e2d42; color: #ffffff; border-radius: 8px; font-size: 14px; cursor: pointer; outline: none; min-width: 160px; align-self: flex-start; }
+  .header-month-select {
+    padding: 8px 12px;
+    background: #0a1520; border: 1px solid #1e2d42;
+    color: #ffffff; border-radius: 8px;
+    font-size: 14px; cursor: pointer; outline: none; min-width: 160px;
+    align-self: flex-start;
+  }
   .header-month-select:hover, .header-month-select:focus { border-color: #00BFFF; }
   .meta { font-size: 13px; color: #4e6d8c; text-align: right; }
   .meta .label { color: #00BFFF; font-weight: 500; }
-  .logout-btn { background: none; border: 1px solid #1e2d42; color: #4e6d8c; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; margin-left: 12px; }
+  .logout-btn {
+    background: none; border: 1px solid #1e2d42; color: #4e6d8c;
+    padding: 6px 12px; border-radius: 6px; cursor: pointer;
+    font-size: 11px; margin-left: 12px;
+  }
   .logout-btn:hover { color: #ff4455; border-color: #ff4455; }
-  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; align-items: stretch; }
-  .summary-card { background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42; border-radius: 12px; padding: 18px 16px; transition: transform 0.15s, border-color 0.15s; display: flex; min-height: 140px; }
+
+  /* SUMMARY CARDS — equal heights, equal value font sizes, label baseline aligned */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+    align-items: stretch;
+  }
+  .summary-card {
+    background: rgba(14, 22, 38, 0.8);
+    border: 1px solid #1e2d42;
+    border-radius: 12px;
+    padding: 18px 16px;
+    transition: transform 0.15s, border-color 0.15s;
+    display: flex;
+    min-height: 140px;
+  }
   .summary-card:hover { transform: translateY(-2px); border-color: #0080cc; }
-  .card-cell { flex: 1; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
-  .card-cell .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.4px; line-height: 1.3; min-height: 32px; color: #4e6d8c; }
-  .card-cell .value { font-size: 24px; font-weight: 700; line-height: 1.1; color: #ffffff; margin: 6px 0 4px; }
-  .card-cell .sublabel { font-size: 11px; color: #4e6d8c; }
-  .summary-card.dual { gap: 14px; padding: 18px 14px; }
-  .summary-card.dual .divider { width: 1px; background: #1e2d42; flex: none; }
+  .card-cell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 0;
+  }
+  .card-cell .label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    line-height: 1.3;
+    min-height: 32px;
+    color: #4e6d8c;
+  }
+  .card-cell .value {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #ffffff;
+    margin: 6px 0 4px;
+  }
+  .card-cell .sublabel {
+    font-size: 11px;
+    color: #4e6d8c;
+  }
+  .summary-card.dual {
+    gap: 14px;
+    padding: 18px 14px;
+  }
+  .summary-card.dual .divider {
+    width: 1px; background: #1e2d42; flex: none;
+  }
   .ytd-label { color: #00BFFF !important; }
   .gold .value, .gold .label { color: #f0a500; }
   .green .value, .green .label { color: #00c97a; }
   .red .value, .red .label { color: #ff4455; }
   .blue .value, .blue .label { color: #00BFFF; }
-  .section { background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
-  .section h2 { color: #ffffff; font-size: 18px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #1e2d42; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .section h2 .dot { width: 8px; height: 8px; border-radius: 50%; background: #00BFFF; box-shadow: 0 0 8px #00BFFF; }
-  .llc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
-  .llc-card { background: linear-gradient(135deg, #0d1825 0%, #111620 100%); border: 1px solid #1e2d42; border-radius: 10px; padding: 18px; }
-  .llc-card h3 { color: #ffffff; font-size: 15px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #1e2d42; }
+
+  .section {
+    background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42;
+    border-radius: 12px; padding: 24px; margin-bottom: 24px;
+  }
+  .section h2 {
+    color: #ffffff; font-size: 18px; margin-bottom: 16px;
+    padding-bottom: 12px; border-bottom: 1px solid #1e2d42;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .section h2 .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #00BFFF; box-shadow: 0 0 8px #00BFFF;
+  }
+  .month-select {
+    margin-left: auto; padding: 8px 12px;
+    background: #0a1520; border: 1px solid #1e2d42;
+    color: #ffffff; border-radius: 8px;
+    font-size: 14px; cursor: pointer; outline: none; min-width: 160px;
+  }
+  .month-select:hover, .month-select:focus { border-color: #00BFFF; }
+  .llc-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .llc-card {
+    background: linear-gradient(135deg, #0d1825 0%, #111620 100%);
+    border: 1px solid #1e2d42; border-radius: 10px; padding: 18px;
+  }
+  .llc-card h3 {
+    color: #ffffff; font-size: 15px; margin-bottom: 12px;
+    padding-bottom: 8px; border-bottom: 1px solid #1e2d42;
+  }
   .llc-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
   .llc-row .k { color: #4e6d8c; }
   .llc-row .v { color: #ccd9ea; font-weight: 500; }
   .llc-row .v.green { color: #00c97a; }
   .llc-row .v.red { color: #ff4455; }
-  .llc-row.total { border-top: 1px solid #1e2d42; margin-top: 6px; padding-top: 10px; font-size: 15px; font-weight: 600; }
+  .llc-row.total {
+    border-top: 1px solid #1e2d42; margin-top: 6px;
+    padding-top: 10px; font-size: 15px; font-weight: 600;
+  }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; padding: 12px 10px; color: #4e6d8c; font-weight: 500; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; border-bottom: 1px solid #1e2d42; }
+  th {
+    text-align: left; padding: 12px 10px; color: #4e6d8c;
+    font-weight: 500; text-transform: uppercase; font-size: 11px;
+    letter-spacing: 1px; border-bottom: 1px solid #1e2d42;
+  }
   td { padding: 12px 10px; color: #ccd9ea; border-bottom: 1px solid #182030; }
   tr:hover td { background: rgba(0, 191, 255, 0.05); }
   .green { color: #00c97a; font-weight: 600; }
   .red { color: #ff4455; font-weight: 600; }
   .chart-container { position: relative; height: 380px; }
   .loading { text-align: center; padding: 80px 20px; color: #4e6d8c; }
-  .loading .spinner { width: 40px; height: 40px; border: 3px solid #1e2d42; border-top-color: #00BFFF; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+  .loading .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid #1e2d42; border-top-color: #00BFFF;
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .error { color: #ff4455; padding: 20px; background: rgba(255, 68, 85, 0.1); border: 1px solid #ff4455; border-radius: 8px; }
-  .login-overlay { position: fixed; inset: 0; background: linear-gradient(135deg, #090d12 0%, #0c1a2e 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-  .login-box { background: rgba(14, 22, 38, 0.95); border: 1px solid #1e2d42; border-radius: 14px; padding: 40px 36px; max-width: 380px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+  .error {
+    color: #ff4455; padding: 20px; background: rgba(255, 68, 85, 0.1);
+    border: 1px solid #ff4455; border-radius: 8px;
+  }
+  .login-overlay {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, #090d12 0%, #0c1a2e 100%);
+    display: flex; align-items: center; justify-content: center; z-index: 9999;
+  }
+  .login-box {
+    background: rgba(14, 22, 38, 0.95);
+    border: 1px solid #1e2d42; border-radius: 14px;
+    padding: 40px 36px; max-width: 380px; width: 90%;
+    text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
   .login-box .lock-icon { font-size: 42px; margin-bottom: 12px; }
   .login-box h2 { color: #ffffff; font-size: 20px; margin-bottom: 8px; font-weight: 600; }
   .login-box p { color: #4e6d8c; font-size: 13px; margin-bottom: 24px; }
-  .login-box input { width: 100%; padding: 12px 14px; margin-bottom: 12px; background: #0a1520; border: 1px solid #1e2d42; border-radius: 8px; color: #ffffff; font-size: 15px; outline: none; }
+  .login-box input {
+    width: 100%; padding: 12px 14px; margin-bottom: 12px;
+    background: #0a1520; border: 1px solid #1e2d42;
+    border-radius: 8px; color: #ffffff; font-size: 15px; outline: none;
+  }
   .login-box input:focus { border-color: #00BFFF; }
-  .login-box button { width: 100%; padding: 12px; background: #0080cc; color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .login-box button {
+    width: 100%; padding: 12px;
+    background: #0080cc; color: #ffffff; border: none;
+    border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
   .login-box button:hover { background: #00BFFF; }
   .login-box .err { color: #ff4455; font-size: 13px; margin-top: 8px; min-height: 18px; }
-  .chat-fab { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #0080cc, #00BFFF); border: none; cursor: pointer; z-index: 1000; box-shadow: 0 4px 20px rgba(0, 191, 255, 0.4); font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+
+  /* CHAT / MAINTENANCE FABs */
+  .chat-fab {
+    position: fixed; bottom: 24px; right: 24px;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, #0080cc, #00BFFF);
+    border: none; cursor: pointer; z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 191, 255, 0.4);
+    font-size: 24px; color: white;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s;
+  }
   .chat-fab:hover { transform: scale(1.05); }
-  .maint-fab { position: fixed; bottom: 92px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #f0a500, #ff9100); border: none; cursor: pointer; z-index: 1000; box-shadow: 0 4px 20px rgba(240, 165, 0, 0.4); font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+  .maint-fab {
+    position: fixed; bottom: 92px; right: 24px;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, #f0a500, #ff9100);
+    border: none; cursor: pointer; z-index: 1000;
+    box-shadow: 0 4px 20px rgba(240, 165, 0, 0.4);
+    font-size: 24px; color: white;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s;
+  }
   .maint-fab:hover { transform: scale(1.05); }
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center; z-index: 2000; }
+
+  /* Maintenance Modal */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: none; align-items: center; justify-content: center;
+    z-index: 2000;
+  }
   .modal-overlay.open { display: flex; }
-  .modal-box { background: rgba(14, 22, 38, 0.98); border: 1px solid #1e2d42; border-radius: 14px; padding: 24px; max-width: 480px; width: 90%; max-height: 90vh; overflow-y: auto; }
-  .modal-box h2 { color: #ffffff; font-size: 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-  .modal-box label { display: block; color: #4e6d8c; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; margin-top: 12px; margin-bottom: 4px; font-weight: 600; }
-  .modal-box input, .modal-box select, .modal-box textarea { width: 100%; padding: 10px 12px; background: #0a1520; border: 1px solid #1e2d42; border-radius: 6px; color: #ffffff; font-size: 14px; outline: none; font-family: inherit; }
+  .modal-box {
+    background: rgba(14, 22, 38, 0.98);
+    border: 1px solid #1e2d42; border-radius: 14px;
+    padding: 24px; max-width: 480px; width: 90%;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-box h2 {
+    color: #ffffff; font-size: 18px; margin-bottom: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .modal-box label {
+    display: block; color: #4e6d8c; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 1.2px;
+    margin-top: 12px; margin-bottom: 4px; font-weight: 600;
+  }
+  .modal-box input, .modal-box select, .modal-box textarea {
+    width: 100%; padding: 10px 12px;
+    background: #0a1520; border: 1px solid #1e2d42;
+    border-radius: 6px; color: #ffffff;
+    font-size: 14px; outline: none;
+    font-family: inherit;
+  }
   .modal-box textarea { resize: vertical; min-height: 50px; }
   .modal-box input:focus, .modal-box select:focus, .modal-box textarea:focus { border-color: #00BFFF; }
-  .modal-box .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
-  .modal-box button.primary { flex: 1; padding: 12px; background: #f0a500; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .modal-box .modal-actions {
+    display: flex; gap: 8px; margin-top: 20px;
+  }
+  .modal-box button.primary {
+    flex: 1; padding: 12px;
+    background: #f0a500; color: #ffffff; border: none;
+    border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
   .modal-box button.primary:hover { background: #ff9100; }
   .modal-box button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
-  .modal-box button.secondary { padding: 12px 18px; background: transparent; color: #4e6d8c; border: 1px solid #1e2d42; border-radius: 8px; font-size: 14px; cursor: pointer; }
+  .modal-box button.secondary {
+    padding: 12px 18px;
+    background: transparent; color: #4e6d8c; border: 1px solid #1e2d42;
+    border-radius: 8px; font-size: 14px; cursor: pointer;
+  }
   .modal-box button.secondary:hover { color: #ffffff; }
-  .modal-box .modal-close { background: none; border: none; color: #4e6d8c; cursor: pointer; font-size: 22px; line-height: 1; }
-  .modal-box .form-msg { margin-top: 12px; padding: 10px; border-radius: 6px; font-size: 13px; display: none; }
+  .modal-box .modal-close {
+    background: none; border: none; color: #4e6d8c;
+    cursor: pointer; font-size: 22px; line-height: 1;
+  }
+  .modal-box .form-msg {
+    margin-top: 12px; padding: 10px; border-radius: 6px;
+    font-size: 13px; display: none;
+  }
   .modal-box .form-msg.ok { background: rgba(0, 201, 122, 0.15); color: #00c97a; display: block; }
   .modal-box .form-msg.err { background: rgba(255, 68, 85, 0.15); color: #ff4455; display: block; }
-  .chat-panel { position: fixed; bottom: 24px; right: 24px; width: 380px; height: 540px; max-height: 80vh; background: rgba(14, 22, 38, 0.98); border: 1px solid #1e2d42; border-radius: 16px; display: none; flex-direction: column; z-index: 1001; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+  .chat-panel {
+    position: fixed; bottom: 24px; right: 24px;
+    width: 380px; height: 540px; max-height: 80vh;
+    background: rgba(14, 22, 38, 0.98);
+    border: 1px solid #1e2d42; border-radius: 16px;
+    display: none; flex-direction: column; z-index: 1001;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
   .chat-panel.open { display: flex; }
-  .chat-header { padding: 16px 20px; border-bottom: 1px solid #1e2d42; display: flex; justify-content: space-between; align-items: center; }
-  .chat-header h3 { color: #ffffff; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-  .chat-header h3 .dot { width: 8px; height: 8px; border-radius: 50%; background: #00c97a; box-shadow: 0 0 8px #00c97a; }
-  .chat-close { background: none; border: none; color: #4e6d8c; cursor: pointer; font-size: 22px; line-height: 1; }
+  .chat-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #1e2d42;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .chat-header h3 {
+    color: #ffffff; font-size: 16px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .chat-header h3 .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #00c97a; box-shadow: 0 0 8px #00c97a;
+  }
+  .chat-close {
+    background: none; border: none; color: #4e6d8c;
+    cursor: pointer; font-size: 22px; line-height: 1;
+  }
   .chat-close:hover { color: #ff4455; }
-  .chat-messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
-  .chat-msg { padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; max-width: 85%; white-space: pre-wrap; word-wrap: break-word; }
-  .chat-msg.user { background: #0080cc; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-  .chat-msg.bot { background: #182030; color: #ccd9ea; align-self: flex-start; border-bottom-left-radius: 4px; }
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 16px 20px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .chat-msg {
+    padding: 10px 14px; border-radius: 12px;
+    font-size: 13.5px; line-height: 1.5; max-width: 85%;
+    white-space: pre-wrap; word-wrap: break-word;
+  }
+  .chat-msg.user {
+    background: #0080cc; color: white; align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+  .chat-msg.bot {
+    background: #182030; color: #ccd9ea; align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
   .chat-msg.bot.err { color: #ff4455; background: rgba(255, 68, 85, 0.1); }
   .chat-msg.typing { color: #4e6d8c; font-style: italic; }
-  .chat-input-row { padding: 12px 14px; border-top: 1px solid #1e2d42; display: flex; gap: 8px; }
-  .chat-input { flex: 1; padding: 10px 12px; background: #0a1520; border: 1px solid #1e2d42; border-radius: 8px; color: #ffffff; font-size: 13.5px; outline: none; font-family: inherit; }
+  .chat-input-row {
+    padding: 12px 14px; border-top: 1px solid #1e2d42;
+    display: flex; gap: 8px;
+  }
+  .chat-input {
+    flex: 1; padding: 10px 12px;
+    background: #0a1520; border: 1px solid #1e2d42;
+    border-radius: 8px; color: #ffffff;
+    font-size: 13.5px; outline: none;
+    font-family: inherit;
+  }
   .chat-input:focus { border-color: #00BFFF; }
-  .chat-send { padding: 10px 16px; background: #0080cc; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .chat-send {
+    padding: 10px 16px; background: #0080cc; color: white;
+    border: none; border-radius: 8px; font-size: 13px;
+    font-weight: 600; cursor: pointer;
+  }
   .chat-send:hover { background: #00BFFF; }
   .chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
-  .chat-hint { color: #4e6d8c; font-size: 11px; text-align: center; padding: 8px 14px; border-bottom: 1px solid #1e2d42; }
-  @media (max-width: 480px) { .chat-panel { width: calc(100vw - 24px); right: 12px; bottom: 12px; height: 70vh; } }
-  @media (max-width: 768px) { body { padding: 12px; } header { flex-direction: column; gap: 10px; align-items: flex-start; } .meta { text-align: left; } .summary-card.dual { flex-direction: column; } .summary-card.dual .divider { width: 100%; height: 1px; } }
+  .chat-hint {
+    color: #4e6d8c; font-size: 11px; text-align: center;
+    padding: 8px 14px; border-bottom: 1px solid #1e2d42;
+  }
+  @media (max-width: 480px) {
+    .chat-panel { width: calc(100vw - 24px); right: 12px; bottom: 12px; height: 70vh; }
+  }
+
+  @media (max-width: 768px) {
+    body { padding: 12px; }
+    header { flex-direction: column; gap: 10px; align-items: flex-start; }
+    .meta { text-align: left; }
+    .month-select { margin-left: 0; margin-top: 8px; }
+    .summary-card.dual { flex-direction: column; }
+    .summary-card.dual .divider { width: 100%; height: 1px; }
+  }
 </style>
 </head>
 <body>
+
 <div id="login-screen" class="login-overlay">
   <div class="login-box">
     <div class="lock-icon">🔒</div>
@@ -123,124 +367,643 @@
     <div class="err" id="pwd-err"></div>
   </div>
 </div>
+
 <button class="chat-fab" id="chat-fab" onclick="toggleChat()" style="display:none" title="Ask Claude about your portfolio">💬</button>
 <button class="maint-fab" id="maint-fab" onclick="openMaintModal()" style="display:none" title="Add maintenance invoice">🔧</button>
+
 <div class="modal-overlay" id="maint-modal">
   <div class="modal-box">
-    <h2>🔧 Add Maintenance Invoice <button class="modal-close" onclick="closeMaintModal()">×</button></h2>
-    <label>Date</label><input type="date" id="maint-date">
-    <label>LLC</label>
-    <select id="maint-llc"><option value="">-- Select LLC --</option><option value="Yale Townhomes, LLC">Yale Townhomes, LLC</option><option value="5070 Donald, LLC">5070 Donald, LLC</option><option value="Divando LLC">Divando LLC</option><option value="Dorado LLC">Dorado LLC</option></select>
+    <h2>
+      🔧 Add Maintenance Invoice
+      <button class="modal-close" onclick="closeMaintModal()">×</button>
+    </h2>
+    <label>Date</label>
+    <input type="date" id="maint-date">
+    <label>Property</label>
+    <select id="maint-property" onchange="onPropertyChange(this)">
+      <option value="">-- Select Property --</option>
+    </select>
+    <label>LLC <span style="font-weight:normal;text-transform:none;letter-spacing:normal;color:#4e6d8c;font-size:11px">(auto-set from property)</span></label>
+    <input type="text" id="maint-llc" readonly style="background:#0d1825;color:#4e6d8c;cursor:not-allowed">
     <label>Sub / Vendor</label>
-    <select id="maint-sub" onchange="onSubChange(this)"><option value="">-- Select Sub --</option><option value="Rigo">Rigo</option><option value="Samuel">Samuel</option><option value="Rolando">Rolando</option><option value="Tamir">Tamir</option><option value="Rudy">Rudy</option><option value="Rosalio">Rosalio</option><option value="Melchor">Melchor</option><option value="__add_new__">+ Add new sub...</option></select>
+    <select id="maint-sub" onchange="onSubChange(this)">
+      <option value="">-- Select Sub --</option>
+      <option value="Rigo">Rigo</option>
+      <option value="Samuel">Samuel</option>
+      <option value="Rolando">Rolando</option>
+      <option value="Tamir">Tamir</option>
+      <option value="Rudy">Rudy</option>
+      <option value="Rosalio">Rosalio</option>
+      <option value="Melchor">Melchor</option>
+      <option value="__add_new__">+ Add new sub...</option>
+    </select>
     <label>Category</label>
-    <select id="maint-category"><option value="">-- Select Category --</option><option>Plumbing</option><option>Electrical</option><option>HVAC / AC</option><option>Appliances</option><option>Roof / Exterior</option><option>Doors / Windows / Locks</option><option>Flooring / Walls / Paint</option><option>Pest / Mold</option><option>Yard / Irrigation</option><option>Safety / Smoke Detectors</option><option>Tenant Turnover</option></select>
-    <label>Description (optional)</label><textarea id="maint-desc" placeholder="e.g. Fixed leaky bathroom faucet at 2991 Yale"></textarea>
-    <label>Amount ($)</label><input type="number" id="maint-amount" step="0.01" placeholder="0.00">
+    <select id="maint-category">
+      <option value="">-- Select Category --</option>
+      <option>Plumbing</option>
+      <option>Electrical</option>
+      <option>HVAC / AC</option>
+      <option>Appliances</option>
+      <option>Roof / Exterior</option>
+      <option>Doors / Windows / Locks</option>
+      <option>Flooring / Walls / Paint</option>
+      <option>Pest / Mold</option>
+      <option>Yard / Irrigation</option>
+      <option>Safety / Smoke Detectors</option>
+      <option>Tenant Turnover</option>
+    </select>
+    <label>Description (optional)</label>
+    <textarea id="maint-desc" placeholder="e.g. Fixed leaky bathroom faucet at 2991 Yale"></textarea>
+    <label>Amount ($)</label>
+    <input type="number" id="maint-amount" step="0.01" placeholder="0.00">
     <div class="form-msg" id="maint-msg"></div>
-    <div class="modal-actions"><button class="secondary" onclick="closeMaintModal()">Cancel</button><button class="primary" id="maint-submit" onclick="submitMaintenance()">Save Invoice</button></div>
+    <div class="modal-actions">
+      <button class="secondary" onclick="closeMaintModal()">Cancel</button>
+      <button class="primary" id="maint-submit" onclick="submitMaintenance()">Save Invoice</button>
+    </div>
   </div>
 </div>
+
 <div class="chat-panel" id="chat-panel">
-  <div class="chat-header"><h3><span class="dot"></span>Ask Claude</h3><div style="display:flex;gap:8px;align-items:center"><button class="chat-close" onclick="newChat()" title="Start new conversation" style="font-size:13px;padding:4px 8px;border:1px solid #1e2d42;border-radius:6px">↻ New</button><button class="chat-close" onclick="toggleChat()">×</button></div></div>
-  <div class="chat-hint">Try: "Which LLC was most profitable last month?"</div>
+  <div class="chat-header">
+    <h3><span class="dot"></span>Ask Claude</h3>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="chat-close" onclick="newChat()" title="Start new conversation" style="font-size:13px;padding:4px 8px;border:1px solid #1e2d42;border-radius:6px">↻ New</button>
+      <button class="chat-close" onclick="toggleChat()">×</button>
+    </div>
+  </div>
+  <div class="chat-hint">Try: "Which LLC was most profitable last month?" or "What was my YTD net cashflow?"</div>
   <div class="chat-messages" id="chat-messages"></div>
-  <div class="chat-input-row"><input type="text" class="chat-input" id="chat-input" placeholder="Ask a question..." onkeypress="if(event.key==='Enter')sendChat()"><button class="chat-send" id="chat-send" onclick="sendChat()">Send</button></div>
+  <div class="chat-input-row">
+    <input type="text" class="chat-input" id="chat-input" placeholder="Ask a question..." onkeypress="if(event.key==='Enter')sendChat()">
+    <button class="chat-send" id="chat-send" onclick="sendChat()">Send</button>
+  </div>
 </div>
+
 <div class="container" id="main-container" style="display:none">
   <header>
     <div class="header-left">
       <h1><span class="accent">●</span> NIRON MASTER PORTFOLIO</h1>
-      <select id="header-month-select" class="header-month-select" onchange="onMonthChange(this.value)"><option>Loading…</option></select>
+      <select id="header-month-select" class="header-month-select" onchange="onMonthChange(this.value)">
+        <option>Loading…</option>
+      </select>
     </div>
     <div class="meta">
       <div><span class="label">Last Updated:</span> <span id="last-updated">—</span></div>
-      <div><span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span><button class="logout-btn" onclick="logout()">Logout</button></div>
+      <div>
+        <span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
     </div>
   </header>
-  <div id="content"><div class="loading"><div class="spinner"></div><div>Loading portfolio data...</div></div></div>
+  <div id="content">
+    <div class="loading">
+      <div class="spinner"></div>
+      <div>Loading portfolio data...</div>
+    </div>
+  </div>
 </div>
+
 <script>
 const PASSWORD_HASH = "76818309665bee769203a5117621375d41ef7f7aa9cee390dc8ec586e2dd664c";
 const API_URL = "https://script.google.com/macros/s/AKfycbzXtgU_bEQx-3B15FoV4SrolI1int0s6PUo9WKnHJ2Wz8zV5jq62MWNFQLjI51OqsWH/exec";
+
 let PORTFOLIO_DATA = null;
 let SELECTED_MONTH = null;
-async function sha256(text) { const buf = new TextEncoder().encode(text); const hash = await crypto.subtle.digest("SHA-256", buf); return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join(""); }
-async function tryLogin() { const input = document.getElementById("pwd-input"); const err = document.getElementById("pwd-err"); const pwd = input.value; if (!pwd) return; const h = await sha256(pwd); if (h === PASSWORD_HASH) { localStorage.setItem("niron_auth", "ok"); showDashboard(); } else { err.textContent = "Incorrect password"; input.value = ""; input.focus(); } }
-function showDashboard() { document.getElementById("login-screen").style.display = "none"; document.getElementById("main-container").style.display = "block"; document.getElementById("chat-fab").style.display = "flex"; document.getElementById("maint-fab").style.display = "flex"; load(); }
-function openMaintModal() { document.getElementById("maint-modal").classList.add("open"); const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, "0"); const dd = String(today.getDate()).padStart(2, "0"); document.getElementById("maint-date").value = yyyy + "-" + mm + "-" + dd; document.getElementById("maint-msg").className = "form-msg"; document.getElementById("maint-msg").textContent = ""; }
-function closeMaintModal() { document.getElementById("maint-modal").classList.remove("open"); ["maint-llc", "maint-sub", "maint-category", "maint-desc", "maint-amount"].forEach(id => { document.getElementById(id).value = ""; }); }
-function onSubChange(sel) { if (sel.value === "__add_new__") { const newSub = prompt("Enter the new sub/vendor name:"); if (newSub && newSub.trim()) { const opt = document.createElement("option"); opt.value = newSub.trim(); opt.text = newSub.trim(); sel.insertBefore(opt, sel.lastElementChild); sel.value = newSub.trim(); } else { sel.value = ""; } } }
-async function submitMaintenance() { const msgEl = document.getElementById("maint-msg"); const btn = document.getElementById("maint-submit"); const data = { action: "add_maintenance", date: document.getElementById("maint-date").value, llc: document.getElementById("maint-llc").value, sub: document.getElementById("maint-sub").value, category: document.getElementById("maint-category").value, description: document.getElementById("maint-desc").value, amount: parseFloat(document.getElementById("maint-amount").value) || 0, entered_by: "Dashboard" }; if (!data.date || !data.llc || !data.amount) { msgEl.className = "form-msg err"; msgEl.textContent = "Please fill in Date, LLC, and Amount."; return; } btn.disabled = true; msgEl.className = "form-msg"; msgEl.textContent = "Saving..."; try { const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(data) }); const result = await res.json(); if (result.error) { msgEl.className = "form-msg err"; msgEl.textContent = "Error: " + result.error; } else { msgEl.className = "form-msg ok"; msgEl.textContent = "✅ Saved! Refreshing dashboard..."; setTimeout(() => { closeMaintModal(); load(); }, 1000); } } catch (e) { msgEl.className = "form-msg err"; msgEl.textContent = "Network error: " + e.message; } finally { btn.disabled = false; } }
+
+async function sha256(text) {
+  const buf = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest("SHA-256", buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function tryLogin() {
+  const input = document.getElementById("pwd-input");
+  const err = document.getElementById("pwd-err");
+  const pwd = input.value;
+  if (!pwd) return;
+  const h = await sha256(pwd);
+  if (h === PASSWORD_HASH) {
+    localStorage.setItem("niron_auth", "ok");
+    showDashboard();
+  } else {
+    err.textContent = "Incorrect password";
+    input.value = ""; input.focus();
+  }
+}
+
+function showDashboard() {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("main-container").style.display = "block";
+  document.getElementById("chat-fab").style.display = "flex";
+  document.getElementById("maint-fab").style.display = "flex";
+  load();
+}
+
+// ── MAINTENANCE MODAL ────────────────────────────────────────
+function openMaintModal() {
+  document.getElementById("maint-modal").classList.add("open");
+  // Default date to today
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  document.getElementById("maint-date").value = `${yyyy}-${mm}-${dd}`;
+  document.getElementById("maint-msg").className = "form-msg";
+  document.getElementById("maint-msg").textContent = "";
+  // Populate property dropdown from portfolio data
+  populatePropertyDropdown();
+}
+
+function populatePropertyDropdown() {
+  const sel = document.getElementById("maint-property");
+  if (!sel || !PORTFOLIO_DATA) return;
+  const properties = PORTFOLIO_DATA.properties || [];
+  // Group by LLC
+  const grouped = {};
+  properties.forEach(p => {
+    if (!grouped[p.llc]) grouped[p.llc] = [];
+    grouped[p.llc].push(p);
+  });
+  let html = '<option value="">-- Select Property --</option>';
+  Object.keys(grouped).sort().forEach(llc => {
+    html += `<optgroup label="${llc}">`;
+    grouped[llc].forEach(p => {
+      const label = p.notes ? `${p.address} (${p.notes})` : p.address;
+      html += `<option value="${p.address}" data-llc="${p.llc}">${label}</option>`;
+    });
+    html += '</optgroup>';
+  });
+  sel.innerHTML = html;
+}
+
+function onPropertyChange(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const llc = opt ? opt.getAttribute("data-llc") || "" : "";
+  document.getElementById("maint-llc").value = llc;
+}
+
+function closeMaintModal() {
+  document.getElementById("maint-modal").classList.remove("open");
+  // Clear fields
+  ["maint-property", "maint-llc", "maint-sub", "maint-category", "maint-desc", "maint-amount"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+}
+
+function onSubChange(sel) {
+  if (sel.value === "__add_new__") {
+    const newSub = prompt("Enter the new sub/vendor name:");
+    if (newSub && newSub.trim()) {
+      // Add as new option and select it
+      const opt = document.createElement("option");
+      opt.value = newSub.trim();
+      opt.text = newSub.trim();
+      sel.insertBefore(opt, sel.lastElementChild);  // insert before "+ Add new..."
+      sel.value = newSub.trim();
+    } else {
+      sel.value = "";
+    }
+  }
+}
+
+async function submitMaintenance() {
+  const msgEl = document.getElementById("maint-msg");
+  const btn = document.getElementById("maint-submit");
+  const data = {
+    action: "add_maintenance",
+    date: document.getElementById("maint-date").value,
+    property: document.getElementById("maint-property").value,
+    llc: document.getElementById("maint-llc").value,
+    sub: document.getElementById("maint-sub").value,
+    category: document.getElementById("maint-category").value,
+    description: document.getElementById("maint-desc").value,
+    amount: parseFloat(document.getElementById("maint-amount").value) || 0,
+    entered_by: "Dashboard"
+  };
+
+  if (!data.date || !data.property || !data.llc || !data.amount) {
+    msgEl.className = "form-msg err";
+    msgEl.textContent = "Please fill in Date, Property, and Amount.";
+    return;
+  }
+
+  btn.disabled = true;
+  msgEl.className = "form-msg";
+  msgEl.textContent = "Saving...";
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (result.error) {
+      msgEl.className = "form-msg err";
+      msgEl.textContent = "Error: " + result.error;
+    } else {
+      msgEl.className = "form-msg ok";
+      msgEl.textContent = "✅ Saved! Refreshing dashboard...";
+      setTimeout(() => {
+        closeMaintModal();
+        load();  // reload portfolio data
+      }, 1000);
+    }
+  } catch (e) {
+    msgEl.className = "form-msg err";
+    msgEl.textContent = "Network error: " + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── CHAT ─────────────────────────────────────────────────────
 let chatHistory = [];
-function toggleChat() { const panel = document.getElementById("chat-panel"); const fab = document.getElementById("chat-fab"); if (panel.classList.contains("open")) { panel.classList.remove("open"); fab.style.display = "flex"; } else { panel.classList.add("open"); fab.style.display = "none"; document.getElementById("chat-input").focus(); } }
-function newChat() { chatHistory = []; document.getElementById("chat-messages").innerHTML = ""; }
-function appendChatMsg(text, kind) { const el = document.createElement("div"); el.className = "chat-msg " + kind; el.textContent = text; const msgs = document.getElementById("chat-messages"); msgs.appendChild(el); msgs.scrollTop = msgs.scrollHeight; return el; }
-async function sendChat() { const input = document.getElementById("chat-input"); const sendBtn = document.getElementById("chat-send"); const q = input.value.trim(); if (!q) return; appendChatMsg(q, "user"); chatHistory.push({ role: "user", content: q }); input.value = ""; sendBtn.disabled = true; const typingEl = appendChatMsg("Thinking…", "bot typing"); try { const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "chat", messages: chatHistory }) }); const data = await res.json(); typingEl.remove(); if (data.error) { appendChatMsg("Error: " + data.error, "bot err"); chatHistory.pop(); } else { const answer = data.answer || "(no response)"; appendChatMsg(answer, "bot"); chatHistory.push({ role: "assistant", content: answer }); } } catch (e) { typingEl.remove(); appendChatMsg("Network error: " + e.message, "bot err"); chatHistory.pop(); } finally { sendBtn.disabled = false; input.focus(); } }
-function logout() { localStorage.removeItem("niron_auth"); location.reload(); }
+
+function toggleChat() {
+  const panel = document.getElementById("chat-panel");
+  const fab = document.getElementById("chat-fab");
+  if (panel.classList.contains("open")) {
+    panel.classList.remove("open");
+    fab.style.display = "flex";
+  } else {
+    panel.classList.add("open");
+    fab.style.display = "none";
+    document.getElementById("chat-input").focus();
+  }
+}
+
+function newChat() {
+  chatHistory = [];
+  document.getElementById("chat-messages").innerHTML = "";
+}
+
+function appendChatMsg(text, kind) {
+  const el = document.createElement("div");
+  el.className = "chat-msg " + kind;
+  el.textContent = text;
+  const msgs = document.getElementById("chat-messages");
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+  return el;
+}
+
+async function sendChat() {
+  const input = document.getElementById("chat-input");
+  const sendBtn = document.getElementById("chat-send");
+  const q = input.value.trim();
+  if (!q) return;
+
+  appendChatMsg(q, "user");
+  chatHistory.push({ role: "user", content: q });
+  input.value = "";
+  sendBtn.disabled = true;
+  const typingEl = appendChatMsg("Thinking…", "bot typing");
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({ action: "chat", messages: chatHistory })
+    });
+    const data = await res.json();
+    typingEl.remove();
+    if (data.error) {
+      appendChatMsg("Error: " + data.error, "bot err");
+      // Remove the last user message since the API call failed
+      chatHistory.pop();
+    } else {
+      const answer = data.answer || "(no response)";
+      appendChatMsg(answer, "bot");
+      chatHistory.push({ role: "assistant", content: answer });
+    }
+  } catch (e) {
+    typingEl.remove();
+    appendChatMsg("Network error: " + e.message, "bot err");
+    chatHistory.pop();
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+function logout() {
+  localStorage.removeItem("niron_auth");
+  location.reload();
+}
+
 document.getElementById("pwd-btn").addEventListener("click", tryLogin);
 document.getElementById("pwd-input").addEventListener("keypress", e => { if (e.key === "Enter") tryLogin(); });
-if (localStorage.getItem("niron_auth") === "ok") showDashboard(); else document.getElementById("pwd-input").focus();
+
+if (localStorage.getItem("niron_auth") === "ok") showDashboard();
+else document.getElementById("pwd-input").focus();
+
 const fmt = n => "$" + (Number(n) || 0).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
-const fmtShort = n => { n = Number(n) || 0; if (Math.abs(n) >= 1e6) return "$" + (n/1e6).toFixed(2) + "M"; if (Math.abs(n) >= 1e3) return "$" + (n/1e3).toFixed(1) + "K"; return "$" + n.toFixed(0); };
+const fmtShort = n => {
+  n = Number(n) || 0;
+  if (Math.abs(n) >= 1e6) return "$" + (n/1e6).toFixed(2) + "M";
+  if (Math.abs(n) >= 1e3) return "$" + (n/1e3).toFixed(1) + "K";
+  return "$" + n.toFixed(0);
+};
+
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const monthLabel = ym => { if (!ym) return ""; const parts = ym.split("-"); return MONTH_NAMES[parseInt(parts[1],10)-1] + " " + parts[0]; };
-function maintenanceFor(maintenance, llc, period) { if (!maintenance || !llc || !period) return 0; return maintenance.filter(m => m.llc && m.llc.trim() === llc.trim() && m.period === period).reduce((s, m) => s + (m.amount || 0), 0); }
-function recalcNet(row, maintenance) { const m = maintenanceFor(maintenance, row.llc, row.period_start); return row.disbursement - row.mortgage - row.tax_mo - row.ins_mo - m; }
-async function load() { try { const res = await fetch(API_URL); const data = await res.json(); PORTFOLIO_DATA = data; initialRender(data); } catch (e) { document.getElementById("content").innerHTML = '<div class="error">Failed to load: ' + e.message + '</div>'; document.getElementById("status").textContent = "● Offline"; document.getElementById("status").style.color = "#ff4455"; } }
-function initialRender(data) { document.getElementById("last-updated").textContent = new Date(data.last_updated).toLocaleString(); const history = data.history || []; const months = [...new Set(history.map(h => h.period_start))].sort().reverse(); SELECTED_MONTH = months[0] || ""; renderAll(); }
-function renderAll() {
-  const data = PORTFOLIO_DATA; if (!data) return;
-  const el = document.getElementById("content");
-  const history = data.history || []; const llcs = data.llcs || []; const loans = data.loans || []; const distributions = data.distributions || []; const maintenance = data.maintenance || [];
+const monthLabel = ym => {
+  if (!ym) return "";
+  const [y, m] = ym.split("-");
+  return MONTH_NAMES[parseInt(m,10)-1] + " " + y;
+};
+
+function maintenanceFor(maintenance, llc, period) {
+  if (!maintenance || !llc || !period) return 0;
+  return maintenance
+    .filter(m => m.llc && m.llc.trim() === llc.trim() && m.period === period)
+    .reduce((s, m) => s + (m.amount || 0), 0);
+}
+function recalcNet(row, maintenance) {
+  const m = maintenanceFor(maintenance, row.llc, row.period_start);
+  return row.disbursement - row.mortgage - row.tax_mo - row.ins_mo - m;
+}
+
+async function load() {
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    PORTFOLIO_DATA = data;
+    initialRender(data);
+  } catch (e) {
+    document.getElementById("content").innerHTML =
+      '<div class="error">Failed to load: ' + e.message + '</div>';
+    document.getElementById("status").textContent = "● Offline";
+    document.getElementById("status").style.color = "#ff4455";
+  }
+}
+
+function initialRender(data) {
+  document.getElementById("last-updated").textContent = new Date(data.last_updated).toLocaleString();
+  const history = data.history || [];
   const months = [...new Set(history.map(h => h.period_start))].sort().reverse();
-  const selectedRows = history.filter(h => h.period_start === SELECTED_MONTH); selectedRows.sort((a, b) => a.llc.localeCompare(b.llc));
-  const enrichedSelected = selectedRows.map(r => { const m = maintenanceFor(maintenance, r.llc, r.period_start); return Object.assign({}, r, { maintenance: m, net_cashflow: r.disbursement - r.mortgage - r.tax_mo - r.ins_mo - m }); });
+  SELECTED_MONTH = months[0] || "";
+  renderAll();
+}
+
+function renderAll() {
+  const data = PORTFOLIO_DATA;
+  if (!data) return;
+  const el = document.getElementById("content");
+  const history = data.history || [];
+  const llcs = data.llcs || [];
+  const loans = data.loans || [];
+  const distributions = data.distributions || [];
+  const maintenance = data.maintenance || [];
+
+  const months = [...new Set(history.map(h => h.period_start))].sort().reverse();
+  const selectedRows = history.filter(h => h.period_start === SELECTED_MONTH);
+  selectedRows.sort((a, b) => a.llc.localeCompare(b.llc));
+
+  const enrichedSelected = selectedRows.map(r => {
+    const m = maintenanceFor(maintenance, r.llc, r.period_start);
+    return { ...r, maintenance: m, net_cashflow: r.disbursement - r.mortgage - r.tax_mo - r.ins_mo - m };
+  });
+
   const totalDisb = enrichedSelected.reduce((s, r) => s + r.disbursement, 0);
   const totalNet = enrichedSelected.reduce((s, r) => s + r.net_cashflow, 0);
   const totalMortgage = enrichedSelected.reduce((s, r) => s + r.mortgage, 0);
   const totalValue = llcs.reduce((s, l) => s + l.property_value, 0);
+
   const selectedYear = SELECTED_MONTH ? SELECTED_MONTH.slice(0, 4) : "";
-  const ytdRows = history.filter(h => h.period_start && h.period_start.slice(0,4) === selectedYear && h.period_start <= SELECTED_MONTH);
+  const ytdRows = history.filter(h =>
+    h.period_start && h.period_start.slice(0,4) === selectedYear && h.period_start <= SELECTED_MONTH
+  );
   const ytdDisb = ytdRows.reduce((s, r) => s + r.disbursement, 0);
   const ytdNet = ytdRows.reduce((s, r) => s + recalcNet(r, maintenance), 0);
-  const distThisMonth = distributions.filter(d => d.period === SELECTED_MONTH).reduce((s, d) => s + (d.your_amount || 0), 0);
-  const distYtd = distributions.filter(d => d.period && d.period.slice(0,4) === selectedYear && d.period <= SELECTED_MONTH).reduce((s, d) => s + (d.your_amount || 0), 0);
-  const ytdSubLabel = "Jan – " + monthLabel(SELECTED_MONTH).split(' ')[0] + " " + selectedYear;
-  const enrichedHistory = history.map(r => { const m = maintenanceFor(maintenance, r.llc, r.period_start); return Object.assign({}, r, { maintenance: m, net_cashflow: r.disbursement - r.mortgage - r.tax_mo - r.ins_mo - m }); });
-  const sortedHistory = enrichedHistory.slice().sort((a, b) => { if (a.period_start !== b.period_start) return b.period_start > a.period_start ? 1 : -1; return a.llc.localeCompare(b.llc); });
-  const monthOptions = months.map(m => '<option value="' + m + '"' + (m === SELECTED_MONTH ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
-  const headerSelect = document.getElementById('header-month-select'); if (headerSelect) headerSelect.innerHTML = monthOptions;
+
+  const distThisMonth = distributions
+    .filter(d => d.period === SELECTED_MONTH)
+    .reduce((s, d) => s + (d.your_amount || 0), 0);
+  const distYtd = distributions
+    .filter(d => d.period && d.period.slice(0,4) === selectedYear && d.period <= SELECTED_MONTH)
+    .reduce((s, d) => s + (d.your_amount || 0), 0);
+
+  const ytdSubLabel = `Jan – ${monthLabel(SELECTED_MONTH).split(' ')[0]} ${selectedYear}`;
+
+  const enrichedHistory = history.map(r => {
+    const m = maintenanceFor(maintenance, r.llc, r.period_start);
+    return { ...r, maintenance: m, net_cashflow: r.disbursement - r.mortgage - r.tax_mo - r.ins_mo - m };
+  });
+
+  const sortedHistory = enrichedHistory.slice().sort((a, b) => {
+    if (a.period_start !== b.period_start) return b.period_start > a.period_start ? 1 : -1;
+    return a.llc.localeCompare(b.llc);
+  });
+
+  const monthOptions = months.map(m =>
+    `<option value="${m}" ${m === SELECTED_MONTH ? 'selected' : ''}>${monthLabel(m)}</option>`
+  ).join('');
+
+  // Update the header dropdown
+  const headerSelect = document.getElementById('header-month-select');
+  if (headerSelect) headerSelect.innerHTML = monthOptions;
+
   const netCls = totalNet >= 0 ? 'green' : 'red';
-  let html = '<div class="summary-grid">';
-  html += '<div class="summary-card dual gold"><div class="card-cell"><div class="label">Gross Total Disbursements</div><div class="value">' + fmtShort(totalDisb) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">Gross YTD</div><div class="value">' + fmtShort(ytdDisb) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
-  html += '<div class="summary-card dual ' + netCls + '"><div class="card-cell"><div class="label">Net Cashflow</div><div class="value">' + fmtShort(totalNet) + '</div><div class="sublabel">After all expenses</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value">' + fmtShort(ytdNet) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
-  html += '<div class="summary-card dual blue"><div class="card-cell"><div class="label">Your Distribution</div><div class="value">' + fmtShort(distThisMonth) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value">' + fmtShort(distYtd) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Total Mortgage / Mo</div><div class="value">' + fmtShort(totalMortgage) + '</div><div class="sublabel">Across all LLCs</div></div></div>';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Portfolio Value</div><div class="value">' + fmtShort(totalValue) + '</div><div class="sublabel">Estimated</div></div></div>';
-  html += '</div>';
-  html += '<div class="section"><h2><span class="dot"></span><span>Monthly Breakdown — ' + (monthLabel(SELECTED_MONTH) || '') + '</span></h2><div class="llc-grid">';
-  enrichedSelected.forEach(r => { const net = r.net_cashflow; const cls = net >= 0 ? 'green' : 'red'; html += '<div class="llc-card"><h3>' + r.llc + '</h3><div class="llc-row"><span class="k">Disbursement</span><span class="v">' + fmt(r.disbursement) + '</span></div><div class="llc-row"><span class="k">Mgmt Fees</span><span class="v">' + fmt(r.mgmt_fee) + '</span></div><div class="llc-row"><span class="k">Mortgage</span><span class="v">' + fmt(r.mortgage) + '</span></div><div class="llc-row"><span class="k">Tax / 12</span><span class="v">' + fmt(r.tax_mo) + '</span></div><div class="llc-row"><span class="k">Insurance / 12</span><span class="v">' + fmt(r.ins_mo) + '</span></div><div class="llc-row"><span class="k">Maintenance</span><span class="v">' + fmt(r.maintenance) + '</span></div><div class="llc-row total"><span class="k">Net Cashflow</span><span class="v ' + cls + '">' + fmt(net) + '</span></div></div>'; });
-  if (!enrichedSelected.length) html += '<div style="color:#4e6d8c">No data for this month.</div>';
-  html += '</div></div>';
-  if (months.length > 1) html += '<div class="section"><h2><span class="dot"></span>Cashflow Trend (Bars per LLC + Total Line)</h2><div class="chart-container"><canvas id="trendChart"></canvas></div></div>';
-  if (loans.length) { html += '<div class="section"><h2><span class="dot"></span>Loan Balances</h2><table><thead><tr><th>LLC</th><th>Lender</th><th>Original</th><th>Remaining</th><th>Monthly</th><th>Maturity</th></tr></thead><tbody>'; loans.forEach(l => { html += '<tr><td>' + l.llc + '</td><td>' + l.lender + '</td><td>' + fmt(l.original_balance) + '</td><td style="color:#f0a500;font-weight:600">' + fmt(l.balance_override || l.calculated_balance) + '</td><td>' + fmt(l.monthly_payment) + '</td><td>' + (l.maturity_date || '—') + '</td></tr>'; }); html += '</tbody></table></div>'; }
-  if (maintenance.length) { html += '<div class="section"><h2><span class="dot"></span>Recent Maintenance Invoices</h2><table><thead><tr><th>Date</th><th>LLC</th><th>Sub</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead><tbody>'; maintenance.slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 20).forEach(m => { html += '<tr><td>' + m.date + '</td><td>' + m.llc + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td></tr>'; }); html += '</tbody></table></div>'; }
-  html += '<div class="section"><h2><span class="dot"></span>History (newest first)</h2><table><thead><tr><th>Month</th><th>LLC</th><th>Disbursement</th><th>Mortgage</th><th>Maintenance</th><th>Net</th></tr></thead><tbody>';
-  sortedHistory.slice(0, 100).forEach(h => { html += '<tr><td>' + h.period_start + '</td><td>' + h.llc + '</td><td>' + fmt(h.disbursement) + '</td><td>' + fmt(h.mortgage) + '</td><td>' + fmt(h.maintenance) + '</td><td class="' + (h.net_cashflow >= 0 ? 'green' : 'red') + '">' + fmt(h.net_cashflow) + '</td></tr>'; });
-  html += '</tbody></table></div>';
-  el.innerHTML = html;
+
+  el.innerHTML = `
+    <div class="summary-grid">
+      <div class="summary-card dual gold">
+        <div class="card-cell">
+          <div class="label">Gross Total Disbursements</div>
+          <div class="value">${fmtShort(totalDisb)}</div>
+          <div class="sublabel">${monthLabel(SELECTED_MONTH) || 'No data'}</div>
+        </div>
+        <div class="divider"></div>
+        <div class="card-cell">
+          <div class="label ytd-label">Gross YTD</div>
+          <div class="value">${fmtShort(ytdDisb)}</div>
+          <div class="sublabel">${ytdSubLabel}</div>
+        </div>
+      </div>
+
+      <div class="summary-card dual ${netCls}">
+        <div class="card-cell">
+          <div class="label">Net Cashflow</div>
+          <div class="value">${fmtShort(totalNet)}</div>
+          <div class="sublabel">After all expenses</div>
+        </div>
+        <div class="divider"></div>
+        <div class="card-cell">
+          <div class="label ytd-label">YTD</div>
+          <div class="value">${fmtShort(ytdNet)}</div>
+          <div class="sublabel">${ytdSubLabel}</div>
+        </div>
+      </div>
+
+      <div class="summary-card dual blue">
+        <div class="card-cell">
+          <div class="label">Your Distribution</div>
+          <div class="value">${fmtShort(distThisMonth)}</div>
+          <div class="sublabel">${monthLabel(SELECTED_MONTH) || 'No data'}</div>
+        </div>
+        <div class="divider"></div>
+        <div class="card-cell">
+          <div class="label ytd-label">YTD</div>
+          <div class="value">${fmtShort(distYtd)}</div>
+          <div class="sublabel">${ytdSubLabel}</div>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="card-cell">
+          <div class="label">Total Mortgage / Mo</div>
+          <div class="value">${fmtShort(totalMortgage)}</div>
+          <div class="sublabel">Across all LLCs</div>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="card-cell">
+          <div class="label">Portfolio Value</div>
+          <div class="value">${fmtShort(totalValue)}</div>
+          <div class="sublabel">Estimated</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>
+        <span class="dot"></span>
+        <span>Monthly Breakdown — ${monthLabel(SELECTED_MONTH) || ''}</span>
+      </h2>
+      <div class="llc-grid">
+        ${enrichedSelected.map(r => {
+          const net = r.net_cashflow;
+          const cls = net >= 0 ? 'green' : 'red';
+          return `
+            <div class="llc-card">
+              <h3>${r.llc}</h3>
+              <div class="llc-row"><span class="k">Disbursement</span><span class="v">${fmt(r.disbursement)}</span></div>
+              <div class="llc-row"><span class="k">Mgmt Fees</span><span class="v">${fmt(r.mgmt_fee)}</span></div>
+              <div class="llc-row"><span class="k">Mortgage</span><span class="v">${fmt(r.mortgage)}</span></div>
+              <div class="llc-row"><span class="k">Tax / 12</span><span class="v">${fmt(r.tax_mo)}</span></div>
+              <div class="llc-row"><span class="k">Insurance / 12</span><span class="v">${fmt(r.ins_mo)}</span></div>
+              <div class="llc-row"><span class="k">Maintenance</span><span class="v">${fmt(r.maintenance)}</span></div>
+              <div class="llc-row total"><span class="k">Net Cashflow</span><span class="v ${cls}">${fmt(net)}</span></div>
+            </div>`;
+        }).join('') || '<div style="color:#4e6d8c">No data for this month.</div>'}
+      </div>
+    </div>
+
+    ${months.length > 1 ? `
+    <div class="section">
+      <h2><span class="dot"></span>Cashflow Trend (Bars per LLC + Total Line)</h2>
+      <div class="chart-container"><canvas id="trendChart"></canvas></div>
+    </div>` : ''}
+
+    ${loans.length ? `
+    <div class="section">
+      <h2><span class="dot"></span>Loan Balances</h2>
+      <table>
+        <thead><tr><th>LLC</th><th>Lender</th><th>Original</th><th>Remaining</th><th>Monthly</th><th>Maturity</th></tr></thead>
+        <tbody>
+          ${loans.map(l => `
+            <tr>
+              <td>${l.llc}</td><td>${l.lender}</td>
+              <td>${fmt(l.original_balance)}</td>
+              <td style="color:#f0a500;font-weight:600">${fmt(l.balance_override || l.calculated_balance)}</td>
+              <td>${fmt(l.monthly_payment)}</td>
+              <td>${l.maturity_date || '—'}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+
+    ${maintenance.length ? `
+    <div class="section">
+      <h2><span class="dot"></span>Recent Maintenance Invoices</h2>
+      <table>
+        <thead><tr><th>Date</th><th>LLC</th><th>Property</th><th>Sub</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead>
+        <tbody>
+          ${maintenance.slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 20).map(m => `
+            <tr>
+              <td>${m.date}</td>
+              <td>${m.llc}</td>
+              <td style="font-size:12px">${m.property || '—'}</td>
+              <td>${m.sub || '—'}</td>
+              <td>${m.category || '—'}</td>
+              <td style="color:#ccd9ea">${m.description || '—'}</td>
+              <td class="red">${fmt(m.amount)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+
+    <div class="section">
+      <h2><span class="dot"></span>History (newest first)</h2>
+      <table>
+        <thead><tr><th>Month</th><th>LLC</th><th>Disbursement</th><th>Mortgage</th><th>Maintenance</th><th>Net</th></tr></thead>
+        <tbody>
+          ${sortedHistory.slice(0, 100).map(h => `
+            <tr>
+              <td>${h.period_start}</td><td>${h.llc}</td>
+              <td>${fmt(h.disbursement)}</td>
+              <td>${fmt(h.mortgage)}</td>
+              <td>${fmt(h.maintenance)}</td>
+              <td class="${h.net_cashflow >= 0 ? 'green' : 'red'}">${fmt(h.net_cashflow)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
   if (months.length > 1) renderChart(enrichedHistory, months);
 }
-function onMonthChange(newMonth) { SELECTED_MONTH = newMonth; renderAll(); }
+
+function onMonthChange(newMonth) {
+  SELECTED_MONTH = newMonth;
+  renderAll();
+}
+
 function renderChart(history, months) {
   const sortedMonths = months.slice().reverse();
   const llcNames = [...new Set(history.map(h => h.llc))].sort();
   const colors = ['#00c97a', '#0080cc', '#f0a500', '#ff4455', '#00BFFF', '#a78bfa'];
-  const datasets = llcNames.map((llc, i) => ({ type: 'bar', label: llc, data: sortedMonths.map(m => { const r = history.find(h => h.period_start === m && h.llc === llc); return r ? r.net_cashflow : 0; }), backgroundColor: colors[i % colors.length] + 'aa', borderColor: colors[i % colors.length], borderWidth: 1, order: 2 }));
-  const totalData = sortedMonths.map(m => history.filter(h => h.period_start === m).reduce((s, r) => s + (r.net_cashflow || 0), 0));
-  datasets.push({ type: 'line', label: 'TOTAL Portfolio', data: totalData, borderColor: '#ffffff', backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 3, pointRadius: 5, pointBackgroundColor: '#ffffff', pointBorderColor: '#0c1a2e', pointBorderWidth: 2, tension: 0.3, fill: false, order: 1 });
-  new Chart(document.getElementById('trendChart'), { type: 'bar', data: { labels: sortedMonths, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { labels: { color: '#ccd9ea', font: { size: 12 } } }, tooltip: { backgroundColor: '#0c1a2e', borderColor: '#1e2d42', borderWidth: 1, titleColor: '#ffffff', bodyColor: '#ccd9ea' } }, scales: { x: { ticks: { color: '#4e6d8c' }, grid: { color: '#182030' } }, y: { ticks: { color: '#4e6d8c', callback: v => fmtShort(v) }, grid: { color: '#182030' } } } } });
+  const datasets = llcNames.map((llc, i) => ({
+    type: 'bar', label: llc,
+    data: sortedMonths.map(m => {
+      const r = history.find(h => h.period_start === m && h.llc === llc);
+      return r ? r.net_cashflow : 0;
+    }),
+    backgroundColor: colors[i % colors.length] + 'aa',
+    borderColor: colors[i % colors.length],
+    borderWidth: 1, order: 2,
+  }));
+  const totalData = sortedMonths.map(m =>
+    history.filter(h => h.period_start === m).reduce((s, r) => s + (r.net_cashflow || 0), 0)
+  );
+  datasets.push({
+    type: 'line', label: 'TOTAL Portfolio', data: totalData,
+    borderColor: '#ffffff', backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 3, pointRadius: 5,
+    pointBackgroundColor: '#ffffff', pointBorderColor: '#0c1a2e', pointBorderWidth: 2,
+    tension: 0.3, fill: false, order: 1,
+  });
+  new Chart(document.getElementById('trendChart'), {
+    type: 'bar',
+    data: { labels: sortedMonths, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#ccd9ea', font: { size: 12 } } },
+        tooltip: {
+          backgroundColor: '#0c1a2e', borderColor: '#1e2d42',
+          borderWidth: 1, titleColor: '#ffffff', bodyColor: '#ccd9ea',
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#4e6d8c' }, grid: { color: '#182030' } },
+        y: { ticks: { color: '#4e6d8c', callback: v => fmtShort(v) }, grid: { color: '#182030' } }
+      }
+    }
+  });
 }
 </script>
 </body>
