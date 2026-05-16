@@ -30,7 +30,7 @@
   }
   .logout-btn:hover { color: #ff4455; border-color: #ff4455; }
 
-  /* SUMMARY CARDS — aligned heights & font sizes */
+  /* SUMMARY CARDS — equal heights, equal value font sizes, label baseline aligned */
   .summary-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -61,7 +61,7 @@
     text-transform: uppercase;
     letter-spacing: 1.4px;
     line-height: 1.3;
-    min-height: 32px;        /* reserves 2 lines */
+    min-height: 32px;
     color: #4e6d8c;
   }
   .card-cell .value {
@@ -369,7 +369,6 @@ function renderAll() {
   ).join('');
 
   const netCls = totalNet >= 0 ? 'green' : 'red';
-  const ytdNetCls = ytdNet >= 0 ? 'green' : 'red';
 
   el.innerHTML = `
     <div class="summary-grid">
