@@ -189,6 +189,92 @@
   }
   .login-box button:hover { background: #00BFFF; }
   .login-box .err { color: #ff4455; font-size: 13px; margin-top: 8px; min-height: 18px; }
+
+  /* CHAT */
+  .chat-fab {
+    position: fixed; bottom: 24px; right: 24px;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, #0080cc, #00BFFF);
+    border: none; cursor: pointer; z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 191, 255, 0.4);
+    font-size: 24px; color: white;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s;
+  }
+  .chat-fab:hover { transform: scale(1.05); }
+  .chat-panel {
+    position: fixed; bottom: 24px; right: 24px;
+    width: 380px; height: 540px; max-height: 80vh;
+    background: rgba(14, 22, 38, 0.98);
+    border: 1px solid #1e2d42; border-radius: 16px;
+    display: none; flex-direction: column; z-index: 1001;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  .chat-panel.open { display: flex; }
+  .chat-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #1e2d42;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .chat-header h3 {
+    color: #ffffff; font-size: 16px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .chat-header h3 .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #00c97a; box-shadow: 0 0 8px #00c97a;
+  }
+  .chat-close {
+    background: none; border: none; color: #4e6d8c;
+    cursor: pointer; font-size: 22px; line-height: 1;
+  }
+  .chat-close:hover { color: #ff4455; }
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 16px 20px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .chat-msg {
+    padding: 10px 14px; border-radius: 12px;
+    font-size: 13.5px; line-height: 1.5; max-width: 85%;
+    white-space: pre-wrap; word-wrap: break-word;
+  }
+  .chat-msg.user {
+    background: #0080cc; color: white; align-self: flex-end;
+    border-bottom-right-radius: 4px;
+  }
+  .chat-msg.bot {
+    background: #182030; color: #ccd9ea; align-self: flex-start;
+    border-bottom-left-radius: 4px;
+  }
+  .chat-msg.bot.err { color: #ff4455; background: rgba(255, 68, 85, 0.1); }
+  .chat-msg.typing { color: #4e6d8c; font-style: italic; }
+  .chat-input-row {
+    padding: 12px 14px; border-top: 1px solid #1e2d42;
+    display: flex; gap: 8px;
+  }
+  .chat-input {
+    flex: 1; padding: 10px 12px;
+    background: #0a1520; border: 1px solid #1e2d42;
+    border-radius: 8px; color: #ffffff;
+    font-size: 13.5px; outline: none;
+    font-family: inherit;
+  }
+  .chat-input:focus { border-color: #00BFFF; }
+  .chat-send {
+    padding: 10px 16px; background: #0080cc; color: white;
+    border: none; border-radius: 8px; font-size: 13px;
+    font-weight: 600; cursor: pointer;
+  }
+  .chat-send:hover { background: #00BFFF; }
+  .chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
+  .chat-hint {
+    color: #4e6d8c; font-size: 11px; text-align: center;
+    padding: 8px 14px; border-bottom: 1px solid #1e2d42;
+  }
+  @media (max-width: 480px) {
+    .chat-panel { width: calc(100vw - 24px); right: 12px; bottom: 12px; height: 70vh; }
+  }
+
   @media (max-width: 768px) {
     body { padding: 12px; }
     header { flex-direction: column; gap: 10px; align-items: flex-start; }
@@ -209,6 +295,21 @@
     <input type="password" id="pwd-input" placeholder="Password" autocomplete="off">
     <button id="pwd-btn">Unlock</button>
     <div class="err" id="pwd-err"></div>
+  </div>
+</div>
+
+<button class="chat-fab" id="chat-fab" onclick="toggleChat()" style="display:none" title="Ask Claude about your portfolio">💬</button>
+
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-header">
+    <h3><span class="dot"></span>Ask Claude</h3>
+    <button class="chat-close" onclick="toggleChat()">×</button>
+  </div>
+  <div class="chat-hint">Try: "Which LLC was most profitable last month?" or "What was my YTD net cashflow?"</div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <div class="chat-input-row">
+    <input type="text" class="chat-input" id="chat-input" placeholder="Ask a question..." onkeypress="if(event.key==='Enter')sendChat()">
+    <button class="chat-send" id="chat-send" onclick="sendChat()">Send</button>
   </div>
 </div>
 
@@ -267,7 +368,62 @@ async function tryLogin() {
 function showDashboard() {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("main-container").style.display = "block";
+  document.getElementById("chat-fab").style.display = "flex";
   load();
+}
+
+// ── CHAT ─────────────────────────────────────────────────────
+function toggleChat() {
+  const panel = document.getElementById("chat-panel");
+  const fab = document.getElementById("chat-fab");
+  if (panel.classList.contains("open")) {
+    panel.classList.remove("open");
+    fab.style.display = "flex";
+  } else {
+    panel.classList.add("open");
+    fab.style.display = "none";
+    document.getElementById("chat-input").focus();
+  }
+}
+
+function appendChatMsg(text, kind) {
+  const el = document.createElement("div");
+  el.className = "chat-msg " + kind;
+  el.textContent = text;
+  const msgs = document.getElementById("chat-messages");
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+  return el;
+}
+
+async function sendChat() {
+  const input = document.getElementById("chat-input");
+  const sendBtn = document.getElementById("chat-send");
+  const q = input.value.trim();
+  if (!q) return;
+
+  appendChatMsg(q, "user");
+  input.value = "";
+  sendBtn.disabled = true;
+  const typingEl = appendChatMsg("Thinking…", "bot typing");
+
+  try {
+    const url = API_URL + "?action=chat&q=" + encodeURIComponent(q);
+    const res = await fetch(url);
+    const data = await res.json();
+    typingEl.remove();
+    if (data.error) {
+      appendChatMsg("Error: " + data.error, "bot err");
+    } else {
+      appendChatMsg(data.answer || "(no response)", "bot");
+    }
+  } catch (e) {
+    typingEl.remove();
+    appendChatMsg("Network error: " + e.message, "bot err");
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
+  }
 }
 
 function logout() {
