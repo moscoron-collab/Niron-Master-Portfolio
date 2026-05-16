@@ -368,8 +368,6 @@
   </div>
 </div>
 
-<button class="chat-fab" id="chat-fab" onclick="toggleChat()" style="display:none" title="Ask Claude about your portfolio">💬</button>
-<button class="maint-fab" id="maint-fab" onclick="openMaintModal()" style="display:none" title="Add maintenance invoice">🔧</button>
 
 <div class="modal-overlay" id="maint-modal">
   <div class="modal-box">
@@ -441,6 +439,8 @@
 </div>
 
 <div class="container" id="main-container" style="display:none">
+  <button class="chat-fab" id="chat-fab" onclick="toggleChat()" title="Ask Claude about your portfolio">💬</button>
+  <button class="maint-fab" id="maint-fab" onclick="openMaintModal()" title="Add maintenance invoice">🔧</button>
   <header>
     <div class="header-left">
       <h1><span class="accent">●</span> NIRON MASTER PORTFOLIO</h1>
@@ -495,8 +495,6 @@ async function tryLogin() {
 function showDashboard() {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("main-container").style.display = "block";
-  document.getElementById("chat-fab").style.display = "flex";
-  document.getElementById("maint-fab").style.display = "flex";
   load();
 }
 
