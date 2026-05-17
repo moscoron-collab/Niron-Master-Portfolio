@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="#090d12"/>
+  <!-- Gold "N" lettermark -->
+  <text x="256" y="340" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="300" font-weight="700" fill="#f0a500" text-anchor="middle">N</text>
+  <!-- Blue accent bar at bottom -->
+  <rect x="80" y="420" width="352" height="8" rx="4" fill="#00BFFF"/>
+</svg>
