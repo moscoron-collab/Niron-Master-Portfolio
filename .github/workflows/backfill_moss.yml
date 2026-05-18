@@ -1,0 +1,36 @@
+name: Historical Backfill — Moss (Manual Only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      months:
+        description: "Number of months to backfill"
+        required: true
+        default: "65"
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install playwright pdfplumber google-auth google-auth-httplib2 google-api-python-client
+          playwright install chromium
+
+      - name: Run Moss backfill
+        env:
+          APPFOLIO_EMAIL: ${{ secrets.APPFOLIO_EMAIL }}
+          APPFOLIO_PASSWORD: ${{ secrets.APPFOLIO_PASSWORD }}
+          MOSS_SHEET_ID: ${{ secrets.MOSS_SHEET_ID }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          APPFOLIO_COOKIES: ${{ secrets.APPFOLIO_COOKIES }}
+          BACKFILL_MONTHS: ${{ inputs.months }}
+        run: python automation/backfill_moss.py
