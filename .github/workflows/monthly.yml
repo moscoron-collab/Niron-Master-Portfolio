@@ -2,8 +2,9 @@ name: Monthly AppFolio Data Pull
 
 on:
   schedule:
-    - cron: "0 9 15-25 * *"
-  workflow_dispatch:
+    # Runs daily at 12pm EDT / 4pm UTC from the 15th to 25th of each month
+    - cron: "0 16 15-25 * *"
+  workflow_dispatch:  # allows manual trigger from GitHub UI
 
 jobs:
   run:
@@ -40,4 +41,4 @@ jobs:
         with:
           name: APPFOLIO_COOKIES
           value: ${{ steps.automation.outputs.new_cookies }}
-          pa_token: ${{ secrets.PAT_TOKEN }}
+          pa_token: ${{ secrets.GITHUB_TOKEN }}
