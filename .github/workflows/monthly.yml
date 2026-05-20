@@ -35,8 +35,29 @@ jobs:
           APPFOLIO_COOKIES: ${{ secrets.APPFOLIO_COOKIES }}
         run: python automation/run.py
 
+      - name: Send dashboard updated notification
+        if: steps.automation.outcome == 'success'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: moscoron@gmail.com
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          from: Niron Automation <moscoron@gmail.com>
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          subject: "Niron Master Portfolio — Dashboard Updated"
+          body: |
+            The monthly AppFolio data pull completed successfully.
+
+            New month data has been written to the History tab of your Google Sheet
+            and is now visible on the Niron Master Portfolio dashboard.
+
+            Run details: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
       - name: Save updated cookies
         if: steps.automation.outputs.new_cookies != ''
+        continue-on-error: true
         uses: gliech/create-github-secret-action@v1
         with:
           name: APPFOLIO_COOKIES
