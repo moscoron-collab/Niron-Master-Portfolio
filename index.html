@@ -5,20 +5,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Niron Master Portfolio</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700&family=Barlow:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+  /* ============================================================
+     MASTER PORTFOLIO BASE STYLES
+     ============================================================ */
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: linear-gradient(135deg, #090d12 0%, #0c1a2e 100%); color: #ccd9ea; min-height: 100vh; padding: 24px; }
   .container { max-width: 1400px; margin: 0 auto; }
-  header { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 28px; margin-bottom: 24px; background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42; border-radius: 12px; gap: 16px; }
+  header.app-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 28px; margin-bottom: 16px; background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42; border-radius: 12px; gap: 16px; }
   .header-left { display: flex; flex-direction: column; gap: 12px; }
-  header h1 { color: #ffffff; font-size: 26px; font-weight: 600; }
-  header h1 .accent { color: #f0a500; }
+  header.app-header h1 { color: #ffffff; font-size: 26px; font-weight: 600; }
+  header.app-header h1 .accent { color: #f0a500; }
   .header-month-select { padding: 8px 12px; background: #0a1520; border: 1px solid #1e2d42; color: #ffffff; border-radius: 8px; font-size: 14px; cursor: pointer; outline: none; min-width: 160px; align-self: flex-start; }
   .header-month-select:hover, .header-month-select:focus { border-color: #00BFFF; }
   .meta { font-size: 13px; color: #4e6d8c; text-align: right; }
   .meta .label { color: #00BFFF; font-weight: 500; }
   .logout-btn { background: none; border: 1px solid #1e2d42; color: #4e6d8c; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; margin-left: 12px; }
   .logout-btn:hover { color: #ff4455; border-color: #ff4455; }
+
+  /* ============================================================
+     MAIN TAB BAR (Master / Noble switcher)
+     ============================================================ */
+  .main-tabs { display: flex; gap: 6px; background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42; border-radius: 12px; padding: 6px; margin-bottom: 20px; overflow-x: auto; }
+  .main-tab { flex: 1; min-width: 160px; padding: 12px 18px; background: transparent; color: #4e6d8c; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.18s; white-space: nowrap; font-family: inherit; }
+  .main-tab:hover { color: #ccd9ea; background: rgba(0, 191, 255, 0.06); }
+  .main-tab.active { background: linear-gradient(135deg, #0080cc, #00BFFF); color: #ffffff; box-shadow: 0 4px 14px rgba(0, 191, 255, 0.25); }
+  .main-pane { display: none; }
+  .main-pane.active { display: block; }
+  @media (max-width: 480px) {
+    .main-tab { min-width: auto; padding: 10px 12px; font-size: 12px; letter-spacing: 0.5px; }
+  }
+
+  /* Master Portfolio card styles (existing) */
   .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; align-items: stretch; }
   .summary-card { background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42; border-radius: 12px; padding: 18px 16px; transition: transform 0.15s, border-color 0.15s; display: flex; min-height: 140px; }
   .summary-card:hover { transform: translateY(-2px); border-color: #0080cc; }
@@ -45,17 +64,19 @@
   .llc-row .v.green { color: #00c97a; }
   .llc-row .v.red { color: #ff4455; }
   .llc-row.total { border-top: 1px solid #1e2d42; margin-top: 6px; padding-top: 10px; font-size: 15px; font-weight: 600; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { text-align: left; padding: 12px 10px; color: #4e6d8c; font-weight: 500; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; border-bottom: 1px solid #1e2d42; }
-  td { padding: 12px 10px; color: #ccd9ea; border-bottom: 1px solid #182030; }
-  tr:hover td { background: rgba(0, 191, 255, 0.05); }
-  .green { color: #00c97a; font-weight: 600; }
-  .red { color: #ff4455; font-weight: 600; }
+  #tab-master table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  #tab-master th { text-align: left; padding: 12px 10px; color: #4e6d8c; font-weight: 500; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; border-bottom: 1px solid #1e2d42; }
+  #tab-master td { padding: 12px 10px; color: #ccd9ea; border-bottom: 1px solid #182030; }
+  #tab-master tr:hover td { background: rgba(0, 191, 255, 0.05); }
+  #tab-master .green { color: #00c97a; font-weight: 600; }
+  #tab-master .red { color: #ff4455; font-weight: 600; }
   .chart-container { position: relative; height: 380px; }
   .loading { text-align: center; padding: 80px 20px; color: #4e6d8c; }
   .loading .spinner { width: 40px; height: 40px; border: 3px solid #1e2d42; border-top-color: #00BFFF; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .error { color: #ff4455; padding: 20px; background: rgba(255, 68, 85, 0.1); border: 1px solid #ff4455; border-radius: 8px; }
+
+  /* Login overlay */
   .login-overlay { position: fixed; inset: 0; background: linear-gradient(135deg, #090d12 0%, #0c1a2e 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; }
   .login-box { background: rgba(14, 22, 38, 0.95); border: 1px solid #1e2d42; border-radius: 14px; padding: 40px 36px; max-width: 380px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
   .login-box .lock-icon { font-size: 42px; margin-bottom: 12px; }
@@ -66,10 +87,14 @@
   .login-box button { width: 100%; padding: 12px; background: #0080cc; color: #ffffff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
   .login-box button:hover { background: #00BFFF; }
   .login-box .err { color: #ff4455; font-size: 13px; margin-top: 8px; min-height: 18px; }
+
+  /* FABs */
   .chat-fab { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #0080cc, #00BFFF); border: none; cursor: pointer; z-index: 1000; box-shadow: 0 4px 20px rgba(0, 191, 255, 0.4); font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
   .chat-fab:hover { transform: scale(1.05); }
   .maint-fab { position: fixed; bottom: 92px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #f0a500, #ff9100); border: none; cursor: pointer; z-index: 1000; box-shadow: 0 4px 20px rgba(240, 165, 0, 0.4); font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
   .maint-fab:hover { transform: scale(1.05); }
+
+  /* Master Portfolio modals */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center; z-index: 2000; }
   .modal-overlay.open { display: flex; }
   .modal-box { background: rgba(14, 22, 38, 0.98); border: 1px solid #1e2d42; border-radius: 14px; padding: 24px; max-width: 480px; width: 90%; max-height: 90vh; overflow-y: auto; }
@@ -88,11 +113,14 @@
   .modal-box .form-msg { margin-top: 12px; padding: 10px; border-radius: 6px; font-size: 13px; display: none; }
   .modal-box .form-msg.ok { background: rgba(0, 201, 122, 0.15); color: #00c97a; display: block; }
   .modal-box .form-msg.err { background: rgba(255, 68, 85, 0.15); color: #ff4455; display: block; }
+
+  /* Chat panel */
   .chat-panel { position: fixed; bottom: 24px; right: 24px; width: 380px; height: 540px; max-height: 80vh; background: rgba(14, 22, 38, 0.98); border: 1px solid #1e2d42; border-radius: 16px; display: none; flex-direction: column; z-index: 1001; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
   .chat-panel.open { display: flex; }
   .chat-header { padding: 16px 20px; border-bottom: 1px solid #1e2d42; display: flex; justify-content: space-between; align-items: center; }
   .chat-header h3 { color: #ffffff; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
   .chat-header h3 .dot { width: 8px; height: 8px; border-radius: 50%; background: #00c97a; box-shadow: 0 0 8px #00c97a; }
+  .chat-context-tag { font-size: 10px; padding: 3px 8px; border-radius: 4px; background: rgba(0, 191, 255, 0.15); color: #00BFFF; letter-spacing: 0.5px; text-transform: uppercase; margin-left: 6px; font-weight: 600; }
   .chat-close { background: none; border: none; color: #4e6d8c; cursor: pointer; font-size: 22px; line-height: 1; }
   .chat-close:hover { color: #ff4455; }
   .chat-messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
@@ -109,10 +137,165 @@
   .chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
   .chat-hint { color: #4e6d8c; font-size: 11px; text-align: center; padding: 8px 14px; border-bottom: 1px solid #1e2d42; }
   @media (max-width: 480px) { .chat-panel { width: calc(100vw - 24px); right: 12px; bottom: 12px; height: 70vh; } }
-  @media (max-width: 768px) { body { padding: 12px; } header { flex-direction: column; gap: 10px; align-items: flex-start; } .meta { text-align: left; } .summary-card.dual { flex-direction: column; } .summary-card.dual .divider { width: 100%; height: 1px; } }
+  @media (max-width: 768px) { body { padding: 12px; } header.app-header { flex-direction: column; gap: 10px; align-items: flex-start; } .meta { text-align: left; } .summary-card.dual { flex-direction: column; } .summary-card.dual .divider { width: 100%; height: 1px; } }
+
+  /* ============================================================
+     NOBLE INSURANCE STYLES — scoped under #tab-noble
+     ============================================================ */
+  #tab-noble {
+    --bg:#090d12; --bg-card:#111620; --bg-hover:#182030; --border:#1e2d42;
+    --accent:#00BFFF; --accent-d:#00BFFF18; --glow:0 0 22px #00BFFF33;
+    --text:#ccd9ea; --muted:#4e6d8c; --active:#00c97a; --warn:#f0a500;
+    --expired:#ff4455; --edit:#f0a500; --edit-bg:#f0a50010; --edit-border:#f0a50055;
+    --fh:'Barlow Condensed',sans-serif; --fb:'Barlow',sans-serif; --fm:'IBM Plex Mono',monospace;
+    font-family: var(--fb); color: var(--text);
+  }
+  #tab-noble .nb-sub-hdr { background: linear-gradient(180deg,#0c1a2e 0%,#090d12 100%); border: 1px solid var(--border); border-radius: 12px; padding: 18px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+  #tab-noble .hdr-logo { width:42px; height:42px; background: var(--accent-d); border: 1px solid var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; color: var(--accent); font-family: var(--fm); font-size: 16px; box-shadow: var(--glow); flex-shrink: 0; }
+  #tab-noble .hdr-t { font-family: var(--fh); font-size: 21px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
+  #tab-noble .hdr-s { font-family: var(--fm); font-size: 10px; color: var(--muted); letter-spacing: 1.5px; margin-top: 2px; }
+  #tab-noble .hdr-right { margin-left: auto; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  #tab-noble .hdr-dt { font-family: var(--fm); font-size: 11px; color: var(--accent); }
+  #tab-noble .drive-btn { font-family: var(--fm); font-size: 10px; background: var(--accent-d); border: 1px solid var(--accent); color: var(--accent); padding: 6px 14px; border-radius: 5px; cursor: pointer; text-decoration: none; letter-spacing: .5px; display: flex; align-items: center; gap: 5px; transition: all .15s; }
+  #tab-noble .drive-btn:hover { background: #00BFFF30; }
+  #tab-noble .edit-banner { background: #f0a50010; border: 1px solid #f0a50035; border-radius: 10px; padding: 9px 18px; display: flex; align-items: center; gap: 10px; font-family: var(--fm); font-size: 11px; color: var(--warn); margin-bottom: 14px; flex-wrap: wrap; }
+  #tab-noble .edit-banner span { color: var(--muted); }
+  #tab-noble .nav { display: flex; border: 1px solid var(--border); border-radius: 10px; background: #0b1422; padding: 0 12px; overflow-x: auto; margin-bottom: 18px; }
+  #tab-noble .tb { font-family: var(--fh); font-size: 16px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); padding: 13px 18px; border: none; background: transparent; cursor: pointer; border-bottom: 3px solid transparent; transition: all .18s; white-space: nowrap; }
+  #tab-noble .tb:hover { color: var(--text); }
+  #tab-noble .tb.on { color: var(--accent); border-bottom-color: var(--accent); }
+  #tab-noble .con { padding: 0; max-width: none; }
+  #tab-noble .pane { display: none; }
+  #tab-noble .pane.on { display: block; }
+  #tab-noble .mg { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; margin-bottom: 26px; }
+  #tab-noble .mc { background: var(--bg-card); border: 1px solid var(--border); border-radius: 9px; padding: 22px; position: relative; overflow: hidden; }
+  #tab-noble .mc::before { content: ''; position: absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg,transparent,var(--accent),transparent); opacity:.5; }
+  #tab-noble .ml { font-family: var(--fm); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  #tab-noble .mv { font-family: var(--fm); font-size: 30px; font-weight: 500; color: var(--accent); line-height: 1; }
+  #tab-noble .ms { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+  #tab-noble .st { font-family: var(--fm); font-size: 10px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+  #tab-noble .st::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  #tab-noble .renewal-card { background: #0d1825; border: 1px solid var(--edit-border); border-radius: 9px; padding: 22px; margin-bottom: 26px; position: relative; }
+  #tab-noble .renewal-card::before { content: '✏️ EDITABLE — Click any amber field to update at renewal'; position: absolute; top: -1px; right: 16px; background: #0d1825; padding: 0 8px; font-family: var(--fm); font-size: 9px; letter-spacing: 1px; color: var(--warn); border: 1px solid var(--edit-border); border-radius: 3px; transform: translateY(-50%); }
+  #tab-noble .rc-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 16px; }
+  #tab-noble .rf label { display: block; font-family: var(--fm); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  #tab-noble .rf .ev { font-family: var(--fm); font-size: 13px; color: var(--text); min-height: 22px; padding: 3px 6px; border-radius: 4px; border: 1px solid transparent; line-height: 1.5; word-break: break-word; }
+  #tab-noble .rf .ev.editable { background: var(--edit-bg); border-color: var(--edit-border); color: var(--warn); cursor: text; }
+  #tab-noble .rf .ev.editable:focus { outline: none; border-color: var(--warn); background: #f0a50018; box-shadow: 0 0 12px #f0a50022; }
+  #tab-noble .rf .ev.ok { color: var(--active); }
+  #tab-noble .rf .ev.hi { color: var(--accent); }
+  #tab-noble .renewal-actions { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  #tab-noble .ra-btn { font-family: var(--fm); font-size: 10px; padding: 6px 14px; border-radius: 5px; cursor: pointer; letter-spacing: .5px; border: none; transition: all .15s; }
+  #tab-noble .ra-save { background: #f0a50025; border: 1px solid var(--warn); color: var(--warn); }
+  #tab-noble .ra-save:hover { background: #f0a50040; }
+  #tab-noble .ra-policy { background: var(--accent-d); border: 1px solid var(--accent); color: var(--accent); }
+  #tab-noble .ra-policy:hover { background: #00BFFF30; }
+  #tab-noble .ra-note { font-family: var(--fm); font-size: 10px; color: var(--muted); }
+  #tab-noble .ra-renew { background: #00c97a18; border: 1px solid var(--active); color: var(--active); }
+  #tab-noble .ra-renew:hover { background: #00c97a30; }
+  .modal-bg { position: fixed; inset: 0; background: #000000cc; display: none; align-items: center; justify-content: center; z-index: 2500; }
+  .modal-bg.on { display: flex; }
+  .modal-bg .modal { background: #0d1825; border: 1px solid #f0a500; border-radius: 11px; padding: 32px; max-width: 420px; width: 90%; text-align: center; font-family: 'Barlow',sans-serif; color: #ccd9ea; }
+  .modal-bg .modal h3 { font-family: 'Barlow Condensed',sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #f0a500; margin-bottom: 12px; }
+  .modal-bg .modal p { font-size: 13px; color: #4e6d8c; line-height: 1.7; margin-bottom: 22px; }
+  .modal-bg .modal p strong { color: #ccd9ea; }
+  .modal-bg .modal-btns { display: flex; gap: 10px; justify-content: center; }
+  .modal-bg .m-yes { background: #00c97a22; border: 1px solid #00c97a; color: #00c97a; font-family: 'IBM Plex Mono',monospace; font-size: 12px; padding: 9px 24px; border-radius: 6px; cursor: pointer; transition: all .15s; }
+  .modal-bg .m-yes:hover { background: #00c97a40; }
+  .modal-bg .m-no { background: #ff445518; border: 1px solid #ff4455; color: #ff4455; font-family: 'IBM Plex Mono',monospace; font-size: 12px; padding: 9px 24px; border-radius: 6px; cursor: pointer; transition: all .15s; }
+  .modal-bg .m-no:hover { background: #ff445530; }
+
+  #tab-noble .pc { background: var(--bg-card); border: 1px solid var(--border); border-radius: 9px; padding: 20px; margin-bottom: 22px; display: grid; grid-template-columns: repeat(auto-fit,minmax(155px,1fr)); gap: 16px; }
+  #tab-noble .pf label { display: block; font-family: var(--fm); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  #tab-noble .pf .v { font-family: var(--fm); font-size: 12px; color: var(--text); line-height: 1.6; }
+  #tab-noble .pf .v.ac { color: var(--accent); }
+  #tab-noble .pf .v.ok { color: var(--active); }
+  #tab-noble .pf .v.ex { color: var(--expired); text-decoration: line-through; }
+  #tab-noble .pf .v.wn { color: var(--warn); }
+  #tab-noble .lg { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 14px; margin-bottom: 26px; }
+  #tab-noble .lc { background: var(--bg-card); border: 1px solid var(--border); border-radius: 9px; padding: 18px; }
+  #tab-noble .ln { font-family: var(--fh); font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  #tab-noble .la { font-family: var(--fm); font-size: 20px; color: var(--text); margin: 6px 0 5px; }
+  #tab-noble .ld { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  #tab-noble .rl { background: var(--bg-card); border: 1px solid var(--border); border-radius: 9px; overflow: hidden; margin-bottom: 26px; }
+  #tab-noble .rh { padding: 12px 20px; border-bottom: 1px solid var(--border); font-family: var(--fm); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+  #tab-noble .rr { display: flex; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border); gap: 12px; flex-wrap: wrap; }
+  #tab-noble .rr:last-child { border-bottom: none; }
+  #tab-noble .rr:hover { background: var(--bg-hover); }
+  #tab-noble .rr .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; box-shadow: none; }
+  #tab-noble .d-a { background: var(--active) !important; }
+  #tab-noble .d-w { background: var(--warn) !important; }
+  #tab-noble .d-e { background: var(--expired) !important; }
+  #tab-noble .re { font-family: var(--fh); font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--text); min-width: 130px; }
+  #tab-noble .rc-r { font-size: 12px; color: var(--muted); flex: 1; min-width: 200px; }
+  #tab-noble .rd { font-family: var(--fm); font-size: 12px; color: var(--text); min-width: 140px; }
+  #tab-noble .badge { font-family: var(--fm); font-size: 10px; padding: 3px 10px; border-radius: 20px; min-width: 72px; text-align: center; letter-spacing: .5px; }
+  #tab-noble .b-a { background: #00c97a18; color: var(--active); border: 1px solid #00c97a35; }
+  #tab-noble .b-w { background: #f0a50018; color: var(--warn); border: 1px solid #f0a50035; }
+  #tab-noble .b-e { background: #ff445518; color: var(--expired); border: 1px solid #ff445535; }
+  #tab-noble .tw { background: var(--bg-card); border: 1px solid var(--border); border-radius: 9px; overflow: auto; margin-bottom: 22px; }
+  #tab-noble table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  #tab-noble thead th { font-family: var(--fm); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); background: #0b1422; white-space: nowrap; }
+  #tab-noble tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; line-height: 1.5; }
+  #tab-noble tbody tr:last-child td { border-bottom: none; }
+  #tab-noble tbody tr:hover { background: var(--bg-hover); }
+  #tab-noble tfoot td { padding: 12px 14px; background: #0b1422; border-top: 1px solid var(--border); font-family: var(--fm); font-size: 12px; font-weight: 500; color: var(--accent); }
+  #tab-noble .mn { font-family: var(--fm); }
+  #tab-noble .ta { color: var(--active); }
+  #tab-noble .te { color: var(--expired); text-decoration: line-through; }
+  #tab-noble .tn { font-size: 11px; color: var(--muted); max-width: 200px; line-height: 1.5; }
+  #tab-noble .tw-wn td { background: #f0a50009; }
+  #tab-noble .hist { opacity: .5; }
+  #tab-noble .hist:hover { opacity: .75; }
+  #tab-noble .toast { position: fixed; bottom: 24px; left: 24px; background: #00c97a22; border: 1px solid var(--active); color: var(--active); font-family: var(--fm); font-size: 12px; padding: 10px 18px; border-radius: 6px; display: none; z-index: 999; animation: fadein .3s; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  #tab-noble .search-wrap { padding: 0 0 12px; }
+  #tab-noble .search-input { width: 100%; max-width: 620px; background: #111620; border: 1px solid var(--border); color: var(--text); font-family: var(--fm); font-size: 13px; padding: 10px 16px; border-radius: 7px; outline: none; transition: border-color .2s; }
+  #tab-noble .search-input:focus { border-color: var(--accent); }
+  #tab-noble .search-input::placeholder { color: var(--muted); }
+  #tab-noble .row-hide { display: none !important; }
+  #tab-noble .row-match td { background: #00BFFF08 !important; }
+  .save-modal-bg { position: fixed; inset: 0; background: #000000cc; display: none; align-items: center; justify-content: center; z-index: 2600; }
+  .save-modal-bg.on { display: flex; }
+  .save-modal-bg .save-modal { background: #0d1825; border: 1px solid #00c97a; border-radius: 11px; padding: 30px; max-width: 380px; width: 90%; text-align: center; font-family: 'Barlow',sans-serif; }
+  .save-modal-bg .save-modal h3 { font-family: 'Barlow Condensed',sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #00c97a; margin-bottom: 18px; }
+  .save-modal-bg .sm-label { display: block; font-family: 'IBM Plex Mono',monospace; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: #4e6d8c; margin-bottom: 6px; text-align: left; }
+  .save-modal-bg .sm-select, .save-modal-bg .sm-date { width: 100%; background: #111620; border: 1px solid #1e2d42; color: #ccd9ea; font-family: 'IBM Plex Mono',monospace; font-size: 13px; padding: 9px 12px; border-radius: 6px; margin-bottom: 16px; outline: none; cursor: pointer; }
+  .save-modal-bg .sm-select:focus, .save-modal-bg .sm-date:focus { border-color: #00c97a; }
+  .save-modal-bg .sm-warn { font-family: 'IBM Plex Mono',monospace; font-size: 11px; color: #f0a500; margin-bottom: 14px; display: none; }
+  .save-modal-bg .modal-btns { display: flex; gap: 10px; justify-content: center; }
+  .save-modal-bg .m-yes { background: #00c97a22; border: 1px solid #00c97a; color: #00c97a; font-family: 'IBM Plex Mono',monospace; font-size: 12px; padding: 9px 24px; border-radius: 6px; cursor: pointer; }
+  .save-modal-bg .m-no { background: #ff445518; border: 1px solid #ff4455; color: #ff4455; font-family: 'IBM Plex Mono',monospace; font-size: 12px; padding: 9px 24px; border-radius: 6px; cursor: pointer; }
+  #tab-noble .owner-btn { background: none; border: none; cursor: pointer; font-size: 15px; opacity: .2; transition: opacity .2s; padding: 4px 8px; color: var(--muted); }
+  #tab-noble .owner-btn:hover { opacity: .5; }
+  #tab-noble .owner-panel { display: none; background: #0a1520; border: 1px solid #00BFFF35; border-radius: 9px; padding: 26px; margin-bottom: 26px; position: relative; }
+  #tab-noble .owner-panel.on { display: block; }
+  #tab-noble .owner-panel h3 { font-family: var(--fh); font-size: 16px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; }
+  #tab-noble .owner-close { position: absolute; top: 14px; right: 16px; background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; }
+  #tab-noble .owner-close:hover { color: var(--text); }
+  #tab-noble .wf-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 16px; margin-bottom: 20px; }
+  #tab-noble .wf-step { background: #0d1825; border: 1px solid var(--border); border-radius: 7px; padding: 16px; }
+  #tab-noble .wf-step .n { font-family: var(--fm); font-size: 22px; color: var(--accent); margin-bottom: 4px; }
+  #tab-noble .wf-step .t { font-family: var(--fh); font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text); margin-bottom: 8px; }
+  #tab-noble .wf-step .d { font-size: 12px; color: var(--muted); line-height: 1.8; }
+  #tab-noble .wf-step .d b { color: var(--text); }
+  #tab-noble .wf-links { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  #tab-noble .wf-link { font-family: var(--fm); font-size: 11px; padding: 7px 14px; border-radius: 5px; text-decoration: none; background: var(--accent-d); border: 1px solid var(--accent); color: var(--accent); }
+  #tab-noble .wf-link:hover { background: #00BFFF30; }
+  #tab-noble .agents-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); gap: 12px; }
+  #tab-noble .ag { background: #0d1825; border: 1px solid var(--border); border-radius: 7px; padding: 14px; }
+  #tab-noble .ag .an { font-family: var(--fh); font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+  #tab-noble .ag .ad { font-size: 11px; color: var(--muted); line-height: 1.7; }
+  @media (max-width: 768px) {
+    #tab-noble .mg { grid-template-columns: 1fr; }
+    #tab-noble .nb-sub-hdr { padding: 12px 16px; }
+    #tab-noble .nav { padding: 0 6px; }
+  }
 </style>
 </head>
 <body>
+
+<!-- ═══════════════════ LOGIN ═══════════════════ -->
 <div id="login-screen" class="login-overlay">
   <div class="login-box">
     <div class="lock-icon">🔒</div>
@@ -123,6 +306,8 @@
     <div class="err" id="pwd-err"></div>
   </div>
 </div>
+
+<!-- ═══════════════════ MAINTENANCE MODAL (Master) ═══════════════════ -->
 <div class="modal-overlay" id="maint-modal">
   <div class="modal-box">
     <h2>🔧 Add Maintenance Invoice <button class="modal-close" onclick="closeMaintModal()">×</button></h2>
@@ -141,18 +326,61 @@
     <div class="modal-actions"><button class="secondary" onclick="closeMaintModal()">Cancel</button><button class="primary" id="maint-submit" onclick="submitMaintenance()">Save Invoice</button></div>
   </div>
 </div>
+
+<!-- ═══════════════════ CHAT PANEL ═══════════════════ -->
 <div class="chat-panel" id="chat-panel">
-  <div class="chat-header"><h3><span class="dot"></span>Ask Claude</h3><div style="display:flex;gap:8px;align-items:center"><button class="chat-close" onclick="newChat()" title="Start new conversation" style="font-size:13px;padding:4px 8px;border:1px solid #1e2d42;border-radius:6px">↻ New</button><button class="chat-close" onclick="toggleChat()">×</button></div></div>
-  <div class="chat-hint">Try: "Which LLC was most profitable last month?"</div>
+  <div class="chat-header">
+    <h3><span class="dot"></span>Ask Claude<span class="chat-context-tag" id="chat-context-tag">PORTFOLIO</span></h3>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="chat-close" onclick="newChat()" title="Start new conversation" style="font-size:13px;padding:4px 8px;border:1px solid #1e2d42;border-radius:6px">↻ New</button>
+      <button class="chat-close" onclick="toggleChat()">×</button>
+    </div>
+  </div>
+  <div class="chat-hint" id="chat-hint">Try: "Which LLC was most profitable last month?"</div>
   <div class="chat-messages" id="chat-messages"></div>
   <div class="chat-input-row"><input type="text" class="chat-input" id="chat-input" placeholder="Ask a question..." onkeypress="if(event.key==='Enter')sendChat()"><button class="chat-send" id="chat-send" onclick="sendChat()">Send</button></div>
 </div>
+
+<!-- ═══════════════════ NOBLE: SAVE / CONFIRM MODALS ═══════════════════ -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3>⚠️ Start Renewal</h3>
+    <p>This will <strong>archive the current policy numbers to history</strong> (strikethrough) and clear the card for new data.<br><br>Make sure you have the new policy info ready.<br><br><strong>This cannot be undone.</strong></p>
+    <div class="modal-btns">
+      <button class="m-yes" onclick="confirmRenewal()">✓ Yes — Archive & Continue</button>
+      <button class="m-no" onclick="cancelRenewal()">✕ Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="save-modal-bg" id="save-modal">
+  <div class="save-modal">
+    <h3>💾 Save Dashboard</h3>
+    <label class="sm-label">Who is saving? *</label>
+    <select id="save-initials" class="sm-select">
+      <option value="">— Select —</option>
+      <option value="R.M">R.M — Ron Moscovich</option>
+      <option value="O.M">O.M — Oshrat Moscovich</option>
+      <option value="N.S">N.S — Nir Shay</option>
+    </select>
+    <label class="sm-label">Date Updated *</label>
+    <input type="date" id="save-date" class="sm-date">
+    <div id="sm-warn" class="sm-warn">⚠️ Please select who is saving and confirm the date.</div>
+    <div class="modal-btns">
+      <button class="m-yes" onclick="confirmSave()">✓ Confirm &amp; Download</button>
+      <button class="m-no" onclick="closeSaveModal()">✕ Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" style="position:fixed;bottom:24px;left:24px;display:none;z-index:999;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:10px 18px;border-radius:6px;background:#00c97a22;border:1px solid #00c97a;color:#00c97a"></div>
+
+<!-- ═══════════════════ MAIN APP ═══════════════════ -->
 <div class="container" id="main-container" style="display:none">
   <button class="chat-fab" id="chat-fab" onclick="toggleChat()" title="Ask Claude about your portfolio">💬</button>
   <button class="maint-fab" id="maint-fab" onclick="openMaintModal()" title="Add maintenance invoice">🔧</button>
-  <header>
+
+  <header class="app-header">
     <div class="header-left">
-      <h1><span class="accent">●</span> NIRON MASTER PORTFOLIO</h1>
+      <h1><span class="accent">●</span> NIRON DASHBOARDS</h1>
       <select id="header-month-select" class="header-month-select" onchange="onMonthChange(this.value)"><option>Loading…</option></select>
     </div>
     <div class="meta">
@@ -160,37 +388,660 @@
       <div><span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span><button class="logout-btn" onclick="logout()">Logout</button></div>
     </div>
   </header>
-  <div id="content"><div class="loading"><div class="spinner"></div><div>Loading portfolio data...</div></div></div>
+
+  <!-- MAIN TAB SWITCHER -->
+  <div class="main-tabs" role="tablist">
+    <button class="main-tab active" id="main-tab-master" onclick="switchMainTab('master')">📊 Master Portfolio</button>
+    <button class="main-tab" id="main-tab-noble" onclick="switchMainTab('noble')">🛡️ Noble Insurance</button>
+  </div>
+
+  <!-- ─────────── MASTER PORTFOLIO PANE ─────────── -->
+  <div id="tab-master" class="main-pane active">
+    <div id="content"><div class="loading"><div class="spinner"></div><div>Loading portfolio data...</div></div></div>
+  </div>
+
+  <!-- ─────────── NOBLE INSURANCE PANE ─────────── -->
+  <div id="tab-noble" class="main-pane">
+
+    <div class="nb-sub-hdr">
+      <div class="hdr-logo">NN</div>
+      <div>
+        <div class="hdr-t">Niron Noble · Insurance Tracker</div>
+        <div class="hdr-s">ALL ENTITIES &nbsp;·&nbsp; RESTRUCTURED APR 2026 &nbsp;·&nbsp; v2.3</div>
+      </div>
+      <div class="hdr-right">
+        <div class="hdr-dt" id="dt"></div>
+        <button class="owner-btn" onclick="ownerLogin()" title="">🔑</button>
+        <a class="drive-btn" href="https://drive.google.com/drive/folders/1X_YzNQetvuBbgi0yp6Dwe_8i8HaKfknf" target="_blank">📁 Policy Documents (Drive)</a>
+      </div>
+    </div>
+
+    <div class="edit-banner">
+      ✏️ LIVE EDITABLE DASHBOARD &nbsp;·&nbsp;
+      <span>Each tab has an amber renewal card — click any amber field to edit. Use "Copy to Clipboard" to save changes, or paste new info to Claude at renewal time.</span>
+    </div>
+
+    <div class="search-wrap">
+      <input type="text" id="search" class="search-input" placeholder="🔍  Search address, carrier, policy #, LLC name..." oninput="doSearch(this.value)">
+    </div>
+
+    <div class="owner-panel" id="owner-panel">
+      <button class="owner-close" onclick="closeOwner()">✕</button>
+      <h3>🔑 Owner Mode — Renewal Workflow</h3>
+      <div class="wf-links">
+        <a class="wf-link" href="https://niron-noble-insurance.netlify.app" target="_blank">🌐 Live Dashboard</a>
+        <a class="wf-link" href="https://github.com/moscoron-collab/niron-noble-insurance" target="_blank">📁 GitHub Repo</a>
+        <a class="wf-link" href="https://www.dropbox.com/scl/fo/ru6vz6m7f3dgnkn3wh0h0/AOiiYpqxkku9KnuSPnPkLGM?rlkey=o67kyddqkd5wr8xp9ks5vbjei&st=jr2bavgn&dl=0" target="_blank">📄 Policy PDFs (Dropbox)</a>
+      </div>
+      <div class="wf-grid">
+        <div class="wf-step">
+          <div class="n">01</div>
+          <div class="t">Get New Policy Info</div>
+          <div class="d">Upload PDF to <b>Gemini or ChatGPT</b><br>Prompt: <b>"Extract all policy details — carrier, policy #, coverage, deductible, premium, payment schedule, dates, agent info — clean list only"</b><br>Copy the extracted text.</div>
+        </div>
+        <div class="wf-step">
+          <div class="n">02</div>
+          <div class="t">Update Dashboard Locally</div>
+          <div class="d">Open <b>local index.html</b> in Chrome<br>Go to correct tab (Divando / Dorado / Donald / Yale)<br>Click <b>🔄 Start Renewal</b> → confirm popup<br>Old numbers move to history ✅<br>Type new numbers in amber fields<br>Paste new Dropbox PDF link</div>
+        </div>
+        <div class="wf-step">
+          <div class="n">03</div>
+          <div class="t">Save Master Copy</div>
+          <div class="d">Click <b>💾 Save & Download</b><br>Select initials: <b>R.M / O.M / N.S</b><br>Confirm date<br>New file saves to PC as <b>index.html</b></div>
+        </div>
+        <div class="wf-step">
+          <div class="n">04</div>
+          <div class="t">Publish to Web</div>
+          <div class="d">Go to <b>github.com → niron-noble-insurance</b><br>Click <b>Add file → Upload files</b><br>Drop new <b>index.html</b> → replace old one<br>Commit message: <b>"Renewal [month/year]"</b><br>Click <b>Commit changes</b><br>Wait 30 sec → site auto-updates ✅</div>
+        </div>
+        <div class="wf-step">
+          <div class="n">05</div>
+          <div class="t">Claude Update (if needed)</div>
+          <div class="d">If agent info changed:<br>Paste Gemini/GPT extract to <b>Claude</b><br>Ask: <b>"Update only the [tab name] renewal card with this info"</b><br>Claude updates → repeat Steps 3-4</div>
+        </div>
+      </div>
+      <div class="st" style="margin-top:4px">Agent Contacts</div>
+      <div class="agents-grid">
+        <div class="ag"><div class="an">Divando — State Farm</div><div class="ad">Kevin Schult Ins Agency Inc<br>📞 (303) 989-3847 · (303) 989-3849<br>✉️ kevin.schult.l4wu@statefarm.com</div></div>
+        <div class="ag"><div class="an">Donald — Westfield</div><div class="ad">Wren Arbuthnot<br>Arrow Insurance Management<br>📞 970-668-3500<br>✉️ warbuthnot@arrowinsurance.net</div></div>
+        <div class="ag"><div class="an">Dorado — Berkshire Hathaway</div><div class="ad">Hannah Burford — IMA Select LLC<br>📞 Direct: (303) 615-7840<br>📞 Office: (303) 534-4567<br>✉️ hannah.burford@imacorp.com</div></div>
+        <div class="ag"><div class="an">Yale — Acuity</div><div class="ad">Nathan Fonseca<br>CRS Insurance Brokerage · #7118-BL<br>📞 720-727-6049</div></div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <button class="tb on" onclick="nobleShow('summary',this)">📊 Summary</button>
+      <button class="tb" onclick="nobleShow('divando',this)">🏠 Divando</button>
+      <button class="tb" onclick="nobleShow('dorado',this)">🏢 Dorado</button>
+      <button class="tb" onclick="nobleShow('yale',this)">🏛️ Yale</button>
+      <button class="tb" onclick="nobleShow('donald',this)">🏘️ Donald</button>
+      <button class="tb" onclick="nobleShow('archive',this)">📁 Archive</button>
+    </nav>
+
+    <div class="con">
+
+      <!-- ═══════════════ SUMMARY ═══════════════ -->
+      <div id="p-summary" class="pane on">
+        <div class="mg">
+          <div class="mc">
+            <div class="ml">💰 Total Monthly · All Active</div>
+            <div class="mv">$5,574<span style="font-size:17px">.54</span></div>
+            <div class="ms">Divando $2,885.83 + Donald $1,210.84 + Yale $1,024.54 + Dorado $453.33<br><span style="color:var(--warn)">Memphis TN — verify status</span></div>
+          </div>
+          <div class="mc">
+            <div class="ml">📅 Next Renewals Coming Up</div>
+            <div class="mv" style="font-size:17px;padding-top:4px">Sep 20, 2026</div>
+            <div class="ms">Donald LLC (Westfield Superior)<br>Nov 6, 2026 — Dorado (Berkshire Hathaway)<br>Dec 15, 2026 — Divando SFRs (State Farm)<br>Feb 22, 2027 — Yale (Acuity)</div>
+          </div>
+          <div class="mc">
+            <div class="ml">🏘️ Properties / Units Covered</div>
+            <div class="mv">35+</div>
+            <div class="ms">CO SFRs: 13 · Donald duplexes: 8 units · Yale: 5 units<br>Fourplex: 4 units · FL: 5 · TN: 2 ⚠️ verify</div>
+          </div>
+        </div>
+
+        <div class="st">Monthly Cost by LLC / Portfolio</div>
+        <div class="lg">
+          <div class="lc">
+            <div class="ln">Divando — CO SFRs</div>
+            <div class="la">$2,885<span style="font-size:14px">.83/mo</span></div>
+            <div class="ld">State Farm · Kevin Schult 303-989-3847<br>13 SFRs · SFPP auto-draft<br>Dec 15, 2025 → Dec 15, 2026</div>
+          </div>
+          <div class="lc">
+            <div class="ln">Donald — 4 Duplexes</div>
+            <div class="la">$1,210<span style="font-size:14px">.84/mo</span></div>
+            <div class="ld">Westfield Superior · 499841Y<br>Donald acct · 2nd of month<br>Sep 20, 2025 → Sep 20, 2026</div>
+          </div>
+          <div class="lc">
+            <div class="ln">Yale — Townhomes</div>
+            <div class="la">$1,024<span style="font-size:14px">.54/mo</span></div>
+            <div class="ld">Acuity · Policy ZM1786-01<br>CRS Insurance / Nathan Fonseca<br>Feb 22, 2026 → Feb 22, 2027</div>
+          </div>
+          <div class="lc">
+            <div class="ln">Dorado — Fourplex</div>
+            <div class="la">$453<span style="font-size:14px">.33/mo</span></div>
+            <div class="ld">Berkshire Hathaway · 1460 W 41st<br>IMA Select 303-534-4567<br>Nov 6, 2025 → Nov 6, 2026</div>
+          </div>
+          <div class="lc" style="border-color:#f0a50030">
+            <div class="ln" style="color:var(--warn)">Memphis TN</div>
+            <div class="la" style="font-size:15px;color:var(--warn);padding-top:6px">⚠️ Verify Status</div>
+            <div class="ld">Fortegra expired ~mid-2024<br>Roxana Rios 901-321-1124<br>Confirm if renewed or sold</div>
+          </div>
+        </div>
+
+        <div class="st">Renewal Calendar — All Policies</div>
+        <div class="rl">
+          <div class="rh">Status Overview</div>
+          <div class="rr"><div class="dot d-a"></div><div class="re">Divando CO SFRs</div><div class="rc-r">State Farm · 13 props · Kevin Schult (303) 989-3847 · Blackhawk Dec 4 ⚠️</div><div class="rd">Dec 15, 2025 → Dec 15, 2026</div><div class="badge b-a">ACTIVE</div></div>
+          <div class="rr"><div class="dot d-a"></div><div class="re">Donald — 4 Duplexes</div><div class="rc-r">Westfield Superior · 499841Y · Wren Arbuthnot 970-668-3500 · $14,530/yr</div><div class="rd">Sep 20 → Sep 20, 2026</div><div class="badge b-a">ACTIVE</div></div>
+          <div class="rr"><div class="dot d-a"></div><div class="re">Yale — Townhomes</div><div class="rc-r">Acuity · ZM1786-01 · CRS Insurance / Nathan Fonseca · $11,248/yr</div><div class="rd">Feb 22, 2026 → Feb 22, 2027</div><div class="badge b-a">ACTIVE</div></div>
+          <div class="rr"><div class="dot d-a"></div><div class="re">Dorado Fourplex</div><div class="rc-r">Berkshire Hathaway 02PRM080318-06 · IMA Select 303-534-4567 · $5,440/yr</div><div class="rd">Nov 6, 2025 → Nov 6, 2026</div><div class="badge b-a">ACTIVE</div></div>
+          <div class="rr"><div class="dot d-w"></div><div class="re">Memphis TN</div><div class="rc-r">Fortegra Specialty · 2 props · Last contact Roxana Rios 901-321-1124</div><div class="rd">Last: mid-2024</div><div class="badge b-w">VERIFY</div></div>
+          <div class="rr" style="opacity:.4"><div class="dot d-e"></div><div class="re te">Divando CO</div><div class="rc-r te">Westfield / State Farm (Kevin Schult 303-989-3847) canceled Sep 20, 2025</div><div class="rd te">Dec 2024 → Dec 2025</div><div class="badge b-e">EXPIRED</div></div>
+        </div>
+
+        <div class="st">Action Items</div>
+        <div class="pc">
+          <div class="pf"><label>Dorado → Divando Transfer</label><div class="v wn">$138/month for Jamaica St + Enid Way share in Divando policy. <strong>End manually Dec 2026.</strong></div></div>
+          <div class="pf"><label>Memphis TN</label><div class="v wn">Fortegra expired mid-2024. Confirm if properties still owned and if new coverage was issued.</div></div>
+          <div class="pf"><label>Policy Documents</label><div class="v"><a href="https://drive.google.com/drive/folders/1X_YzNQetvuBbgi0yp6Dwe_8i8HaKfknf" target="_blank" style="color:var(--accent)">📁 Upload all PDFs to Drive folder →</a><br><span style="font-size:11px;color:var(--muted)">One folder per policy, drag PDF in</span></div></div>
+          <div class="pf"><label>Dorado — BH Renewal Nov 2026</label><div class="v wn">Call IMA Select by Oct 2026 to get renewal quote. Compare with previous years' premiums.</div></div>
+        </div>
+      </div>
+
+      <!-- ═══════════════ DIVANDO ═══════════════ -->
+      <div id="p-divando" class="pane">
+        <div class="st">✏️ Current Policy Renewal Card — Update Each Year</div>
+        <div class="renewal-card">
+          <div class="rc-grid">
+            <div class="rf"><label>Carrier</label><div class="ev hi">State Farm Fire &amp; Casualty Company</div></div>
+            <div class="rf"><label>Policy Period</label><div class="ev editable ok" contenteditable="true" spellcheck="false">Dec 15, 2025 → Dec 15, 2026</div></div>
+            <div class="rf"><label>Payment Plan</label><div class="ev hi">State Farm Payment Plan (SFPP)</div></div>
+            <div class="rf"><label>Annual Premium (13 props)</label><div class="ev editable" contenteditable="true" spellcheck="false">$34,630</div></div>
+            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$2,885.83</div></div>
+            <div class="rf"><label>Deductible</label><div class="ev hi">1% of building value per property</div></div>
+            <div class="rf"><label>Payment Source</label><div class="ev editable" contenteditable="true" spellcheck="false">Auto-draft Divando acct · 2nd of month</div></div>
+            <div class="rf"><label>Agent</label><div class="ev hi">Kevin Schult Ins Agency Inc</div></div>
+            <div class="rf"><label>Agent Phone</label><div class="ev hi">(303) 989-3847 · (303) 989-3849</div></div>
+            <div class="rf"><label>Agent Email</label><div class="ev hi">kevin.schult.l4wu@statefarm.com</div></div>
+            <div class="rf"><label>Medical Payments</label><div class="ev hi">$1,000 per person</div></div>
+            <div class="rf"><label>Loss of Rents</label><div class="ev hi">Actual Loss Sustained</div></div>
+            <div class="rf"><label>Last Updated</label><div class="ev editable" contenteditable="true" spellcheck="false">Apr 2026</div></div>
+            <div class="rf"><label>Notes</label><div class="ev editable" contenteditable="true" spellcheck="false">13 SFRs — 11 Divando owned, 2 Dorado owned (Jamaica + Enid). Dorado credits $138/mo back to Divando. Stop Dec 2026.</div></div>
+            <div class="rf" style="grid-column:1/-1"><label>📎 Policy Documents — Paste Dropbox Link</label><div class="ev editable" contenteditable="true" spellcheck="false" id="db-divando" style="color:var(--accent)">Paste Dropbox link here...</div></div>
+          </div>
+          <div class="renewal-actions">
+            <button class="ra-btn ra-renew" onclick="startRenewal('divando')">🔄 Start Renewal</button>
+            <button class="ra-btn ra-save" onclick="saveDownload()">💾 Save & Download</button>
+            <div class="ra-note">Click "Start Renewal" first — archives current numbers before you enter new ones.</div>
+          </div>
+        </div>
+
+        <div class="st">13 SFRs — State Farm Coverage Detail 2025–2026</div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Address</th><th>Policy #</th><th>Period</th><th>Building</th><th>Dwelling Ext.</th><th>Personal Prop</th><th>Deductible (1%)</th><th>Annual</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td>1724 Boston St, Aurora CO 80010</td><td class="mn">96-E4-G680-1</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$331,200</td><td class="mn">$39,500</td><td class="mn">$49,680</td><td class="mn">$3,312</td><td class="mn ta">$2,364</td><td class="tn">Liability $500K/$1M</td></tr>
+              <tr><td>2332 Oakland St, Aurora CO 80010</td><td class="mn">96-E4-G665-0</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$420,100</td><td class="mn">$42,010</td><td class="mn">$63,015</td><td class="mn">$4,201</td><td class="mn ta">$2,612</td><td></td></tr>
+              <tr class="tw-wn"><td>2397 Jamaica St, Aurora CO 80010 <span style="font-family:var(--fm);font-size:9px;color:var(--warn)">[DORADO]</span></td><td class="mn">96-E4-G683-7</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$378,800</td><td class="mn">$37,880</td><td class="mn">$56,820</td><td class="mn">$3,788</td><td class="mn ta">$2,425</td><td class="tn wn">Dorado→Divando $138/mo. Stop Dec 2026.</td></tr>
+              <tr><td>3225 Tucson St, Aurora CO 80011</td><td class="mn">96-E4-G667-4</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$336,400</td><td class="mn">$33,640</td><td class="mn">$50,460</td><td class="mn">$3,364</td><td class="mn ta">$2,255</td><td></td></tr>
+              <tr><td>3630 Holly St, Denver CO 80207</td><td class="mn">96-E4-G670-0</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$444,800</td><td class="mn">$44,480</td><td class="mn">$66,720</td><td class="mn">$4,448</td><td class="mn ta">$2,693</td><td></td></tr>
+              <tr class="tw-wn"><td>4641 Enid Way, Denver CO 80239 <span style="font-family:var(--fm);font-size:9px;color:var(--warn)">[DORADO]</span></td><td class="mn">96-E4-G684-9</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$361,100</td><td class="mn">$36,110</td><td class="mn">$54,165</td><td class="mn">$3,611</td><td class="mn ta">$2,528</td><td class="tn wn">Dorado→Divando $138/mo. Stop Dec 2026.</td></tr>
+              <tr><td>4776 Blackhawk Way, Denver CO 80239</td><td class="mn">96-E4-G672-4</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$525,500</td><td class="mn">$52,550</td><td class="mn">$78,825</td><td class="mn">$5,255</td><td class="mn ta">$3,320</td><td></td></tr>
+              <tr><td>5101 Crown Blvd, Denver CO 80239</td><td class="mn">96-E4-G673-6</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$397,100</td><td class="mn">$39,710</td><td class="mn">$59,565</td><td class="mn">$3,971</td><td class="mn ta">$2,702</td><td></td></tr>
+              <tr><td>5538 Dearborn St, Denver CO 80239</td><td class="mn">96-E4-G675-1</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$417,300</td><td class="mn">$41,730</td><td class="mn">$62,595</td><td class="mn">$4,173</td><td class="mn ta">$2,610</td><td></td></tr>
+              <tr><td>11795 E Virginia Dr, Aurora CO 80012</td><td class="mn">96-E4-G678-7</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$378,800</td><td class="mn">$37,880</td><td class="mn">$56,820</td><td class="mn">$3,788</td><td class="mn ta">$2,443</td><td></td></tr>
+              <tr><td>14790 E 43rd Ave, Denver CO 80239</td><td class="mn">96-E4-G677-5</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$384,500</td><td class="mn">$38,450</td><td class="mn">$57,675</td><td class="mn">$3,845</td><td class="mn ta">$2,642</td><td></td></tr>
+              <tr><td>15559 E Bates Ave, Aurora CO 80013</td><td class="mn">96-E4-G679-9</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$393,400</td><td class="mn">$39,340</td><td class="mn">$59,010</td><td class="mn">$3,934</td><td class="mn ta">$2,507</td><td class="tn wn">Revised PDF pending from agent</td></tr>
+              <tr><td>15655 E 13th Ave, Aurora CO 80011</td><td class="mn">96-E4-G681-3</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$618,900</td><td class="mn">$61,890</td><td class="mn">$92,835</td><td class="mn">$6,189</td><td class="mn ta">$3,529</td><td></td></tr>
+            </tbody>
+            <tfoot><tr><td colspan="7">TOTAL — 13 Properties · Kevin Schult (303) 989-3847</td><td>$34,630/yr · $2,885.83/mo</td><td></td></tr></tfoot>
+          </table>
+        </div>
+
+        <div class="st">Premium History — CO SFR Portfolio</div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Period</th><th>Carrier</th><th>Annual Premium</th><th>Monthly</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td class="mn ta">Dec 15, 2025 → Dec 15, 2026</td><td>State Farm (Kevin Schult)</td><td class="mn ta">$34,630</td><td class="mn ta">$2,885.83</td><td class="tn">SFPP auto-draft · 13 individual policies</td></tr>
+              <tr class="hist"><td class="mn te">Dec 15, 2024 → Dec 15, 2025</td><td class="te">State Farm (Kevin Schult)</td><td class="mn te">$31,729</td><td class="mn te">$2,644.10</td><td class="tn te">Divando $1,581 + Donald $1,063 split. Ended Sep 20, 2025.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="st">Memphis TN (Divando) — ⚠️ Verify</div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Address</th><th>Carrier</th><th>Policy #</th><th>Last Period</th><th>Premium</th><th>Status</th><th>Contact</th></tr></thead>
+            <tbody>
+              <tr><td>6580 Stockport Dr, Memphis TN 38141</td><td class="te">Fortegra Specialty</td><td class="mn te">#GAIP1052582</td><td class="mn te">6/18/23 → 6/18/24</td><td class="mn te">$1,095.92</td><td><span class="badge b-e">EXPIRED</span></td><td class="tn">Roxana Rios · 714-379-0163</td></tr>
+              <tr><td>3899 Joest Dr, Memphis TN 38127</td><td class="te">Fortegra Specialty</td><td class="mn te">#OSCESIN02</td><td class="mn te">4/12/23 → 4/12/24</td><td class="mn te">$534.29</td><td><span class="badge b-e">EXPIRED</span></td><td class="tn">Roxana Rios · 901-321-1124</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════════════ DORADO ═══════════════ -->
+      <div id="p-dorado" class="pane">
+        <div class="st">✏️ Fourplex Renewal Card — 1460 W. 41st Ave, Denver CO 80211</div>
+        <div class="renewal-card">
+          <div class="rc-grid">
+            <div class="rf"><label>Carrier</label><div class="ev hi">Berkshire Hathaway Homestate</div></div>
+            <div class="rf"><label>Policy Number (Current)</label><div class="ev editable" contenteditable="true" spellcheck="false">02PRM080318-06</div></div>
+            <div class="rf"><label>Policy Number (Expiring)</label><div class="ev hi">02PRM080318-05</div></div>
+            <div class="rf"><label>Policy Period</label><div class="ev editable ok" contenteditable="true" spellcheck="false">Nov 6, 2025 → Nov 6, 2026</div></div>
+            <div class="rf"><label>Annual Premium</label><div class="ev editable" contenteditable="true" spellcheck="false">$5,440</div></div>
+            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$453.33</div></div>
+            <div class="rf"><label>Payment Source</label><div class="ev hi">Dorado LLC debit card · auto-drafted monthly</div></div>
+            <div class="rf"><label>Building Coverage</label><div class="ev hi">$775,000</div></div>
+            <div class="rf"><label>Business Income</label><div class="ev hi">$60,600</div></div>
+            <div class="rf"><label>Deductible — Standard</label><div class="ev editable" contenteditable="true" spellcheck="false">$2,500</div></div>
+            <div class="rf"><label>Deductible — Wind/Hail</label><div class="ev editable" contenteditable="true" spellcheck="false" style="color:var(--warn)">$15,500</div></div>
+            <div class="rf"><label>Prop Premium</label><div class="ev hi">$5,070</div></div>
+            <div class="rf"><label>Liability Premium</label><div class="ev hi">$370</div></div>
+            <div class="rf"><label>Liability Limits</label><div class="ev hi">$1M each occ · $2M aggregate<br>Fire Legal: $100K · Med: $5K</div></div>
+            <div class="rf"><label>Agent</label><div class="ev hi">Hannah Burford — IMA Select, LLC<br>1705 17th St Ste 100, Denver CO</div></div>
+            <div class="rf"><label>Mortgagees</label><div class="ev hi">ANB Bank ISAOA<br>Collegiate Peaks Bank · Div of Glacier Bank</div></div>
+            <div class="rf"><label>Agent Phone / Email</label><div class="ev hi">Office: (303) 534-4567<br>Direct: (303) 615-7840<br>hannah.burford@imacorp.com</div></div>
+            <div class="rf"><label>Billing Account #</label><div class="ev hi">240311</div></div>
+            <div class="rf"><label>Billing Services</label><div class="ev hi">1-877-680-2442<br>billing@bhhomestate.com</div></div>
+            <div class="rf"><label>Last Updated</label><div class="ev editable" contenteditable="true" spellcheck="false">Apr 2026 — verified from Gemini extract</div></div>
+            <div class="rf"><label>Notes</label><div class="ev editable" contenteditable="true" spellcheck="false">Recurring monthly. Cancel ≥3 days before due. Wind/Hail deductible $15,500 — note for claims.</div></div>
+            <div class="rf" style="grid-column:1/-1"><label>📎 Policy Document — Paste Dropbox Link</label><div class="ev editable" contenteditable="true" spellcheck="false" id="db-dorado" style="color:var(--accent)">Paste Dropbox link here...</div></div>
+          </div>
+          <div class="renewal-actions">
+            <button class="ra-btn ra-renew" onclick="startRenewal('dorado')">🔄 Start Renewal</button>
+            <button class="ra-btn ra-save" onclick="saveDownload()">💾 Save & Download</button>
+            <div class="ra-note">Click "Start Renewal" first — archives current numbers before you enter new ones. Never loses old data.</div>
+          </div>
+        </div>
+
+        <div class="st">Payment Schedule — Current Policy (02PRM080318-06)</div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Due Date</th><th>Amount</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr class="hist"><td class="mn te">10/06/2025</td><td class="mn te">$453.67 (first month)</td><td class="te">Paid</td></tr>
+              <tr class="hist"><td class="mn te">11/06/2025</td><td class="mn te">$453.33</td><td class="te">Paid</td></tr>
+              <tr class="hist"><td class="mn te">12/06/2025</td><td class="mn te">$453.33</td><td class="te">Paid</td></tr>
+              <tr class="hist"><td class="mn te">01/06/2026</td><td class="mn te">$453.33</td><td class="te">Paid</td></tr>
+              <tr class="hist"><td class="mn te">02/06/2026</td><td class="mn te">$453.33</td><td class="te">Paid</td></tr>
+              <tr class="hist"><td class="mn te">03/06/2026</td><td class="mn te">$453.33</td><td class="te">Paid</td></tr>
+              <tr class="hist"><td class="mn te">04/06/2026</td><td class="mn te">$453.33</td><td class="te">Paid</td></tr>
+              <tr><td class="mn ta">05/06/2026</td><td class="mn ta">$453.33</td><td><span class="badge b-a">UPCOMING</span></td></tr>
+              <tr><td class="mn">06/06/2026</td><td class="mn">$453.33</td><td><span class="badge" style="border:1px solid var(--border);color:var(--muted)">FUTURE</span></td></tr>
+              <tr><td class="mn">07/06/2026</td><td class="mn">$453.33</td><td><span class="badge" style="border:1px solid var(--border);color:var(--muted)">FUTURE</span></td></tr>
+              <tr><td class="mn">08/06/2026</td><td class="mn">$453.33</td><td><span class="badge" style="border:1px solid var(--border);color:var(--muted)">FUTURE</span></td></tr>
+              <tr><td class="mn">09/06/2026</td><td class="mn">$453.33</td><td><span class="badge" style="border:1px solid var(--border);color:var(--muted)">FUTURE</span></td></tr>
+            </tbody>
+            <tfoot><tr><td>Annual Total</td><td>$5,440</td><td></td></tr></tfoot>
+          </table>
+        </div>
+
+        <div class="st">Fourplex Premium History (All Years)</div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Period</th><th>Carrier</th><th>Policy #</th><th>Building</th><th>Deductible</th><th>Annual</th><th>Monthly</th><th>YoY</th></tr></thead>
+            <tbody>
+              <tr><td class="mn ta">Nov 2025 → Nov 2026</td><td>Berkshire Hathaway</td><td class="mn">02PRM080318-06</td><td class="mn">$775,000</td><td class="mn">$2,500</td><td class="mn ta">$5,440</td><td class="mn ta">$453.33</td><td class="mn ta">+2.5%</td></tr>
+              <tr class="hist"><td class="mn te">Nov 2024 → Nov 2025</td><td class="te">Berkshire Hathaway</td><td class="mn te">02PRM080318-05</td><td class="mn te">$775,000</td><td class="mn te">$2,500</td><td class="mn te">$5,309</td><td class="mn te">$442.39</td><td class="mn te">—</td></tr>
+              <tr class="hist"><td class="mn te">Nov 2023 → Nov 2024</td><td class="te">Berkshire Hathaway</td><td class="mn te">02PRM080318-04</td><td class="mn te">$775,000</td><td class="mn te">$2,500</td><td class="mn te">$5,309</td><td class="mn te">$442.39</td><td class="mn te">—</td></tr>
+              <tr class="hist"><td class="mn te">Nov 2022 → Nov 2023</td><td class="te">IMA Berkshire Hathaway</td><td class="mn te">02PRM080318-03</td><td class="mn te">$775,000</td><td class="mn te">$2,500</td><td class="mn te">~$5,200</td><td class="mn te">—</td><td class="mn te">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="st">All Dorado-Owned Properties — Full Coverage Overview</div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Address</th><th>Type</th><th>Policy #</th><th>Carrier</th><th>Building</th><th>Annual</th><th>Deductible</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr style="background:#00BFFF08"><td><strong>1460 W 41st Ave, Denver CO 80211</strong></td><td>4-Plex</td><td class="mn">02PRM080318-06</td><td>Berkshire Hathaway</td><td class="mn">$775,000</td><td class="mn ta">$5,440/yr · $453.33/mo</td><td class="mn">$2,500 std · $15,500 wind/hail</td><td class="tn">Dorado's own BH policy. Nov 2025 → Nov 2026. IMA Select (303)534-4567</td></tr>
+              <tr><td>2397 Jamaica St, Aurora CO 80010</td><td>SFR</td><td class="mn">96-E4-G683-7</td><td>State Farm</td><td class="mn">$378,800</td><td class="mn ta">$2,425/yr</td><td class="mn">$3,788 (1%)</td><td class="tn wn">Insured under Divando. Dorado pays $138/mo. <strong>Stop Dec 2026.</strong></td></tr>
+              <tr><td>4641 Enid Way, Denver CO 80239</td><td>SFR</td><td class="mn">96-E4-G684-9</td><td>State Farm</td><td class="mn">$361,100</td><td class="mn ta">$2,528/yr</td><td class="mn">$3,611 (1%)</td><td class="tn wn">Insured under Divando. Dorado pays $138/mo. <strong>Stop Dec 2026.</strong></td></tr>
+            </tbody>
+            <tfoot><tr><td colspan="4">TOTAL — 3 Properties / 6 Units (4-plex + 2 SFRs)</td><td>$1,514,900</td><td>$10,393/yr combined</td><td colspan="2"></td></tr></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════════════ DONALD ═══════════════ -->
+      <div id="p-donald" class="pane">
+        <div class="st">✏️ Donald LLC — 4 Duplexes · Renewal Card</div>
+        <div class="renewal-card">
+          <div class="rc-grid">
+            <div class="rf"><label>Named Insured</label><div class="ev hi">5070 E Donald Ave Denver LLC</div></div>
+            <div class="rf"><label>Carrier</label><div class="ev hi">Westfield Superior Insurance</div></div>
+            <div class="rf"><label>Policy Number</label><div class="ev editable" contenteditable="true" spellcheck="false">499841Y</div></div>
+            <div class="rf"><label>Policy Period</label><div class="ev editable ok" contenteditable="true" spellcheck="false">Sep 20, 2025 → Sep 20, 2026</div></div>
+            <div class="rf"><label>Annual Premium</label><div class="ev editable" contenteditable="true" spellcheck="false">$14,530</div></div>
+            <div class="rf"><label>Property Premium</label><div class="ev hi">$13,500</div></div>
+            <div class="rf"><label>Liability Premium</label><div class="ev hi">$1,028</div></div>
+            <div class="rf"><label>CO Hazard Fee</label><div class="ev hi">$2.00</div></div>
+            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$1,210.84</div></div>
+            <div class="rf"><label>Payment Source</label><div class="ev hi">Donald LLC account · 2nd of month</div></div>
+            <div class="rf"><label>Coverage / Duplex</label><div class="ev hi">$1,125,500 ($562,750 × 2 units)</div></div>
+            <div class="rf"><label>Business Income</label><div class="ev hi">$15,000/building · 60-day</div></div>
+            <div class="rf"><label>Ordinance / Law</label><div class="ev hi">$225,000 (B/C combined)</div></div>
+            <div class="rf"><label>Liability</label><div class="ev hi">$2M each occ · $4M aggregate<br>Products $4M · Premises Rented $1M<br>Medical: Excluded</div></div>
+            <div class="rf"><label>Deductible — Standard</label><div class="ev editable" contenteditable="true" spellcheck="false">$10,000</div></div>
+            <div class="rf"><label>Deductible — Biz Personal Prop</label><div class="ev hi">$1,000</div></div>
+            <div class="rf"><label>Deductible — Wind/Hail</label><div class="ev hi">$0 — not applicable</div></div>
+            <div class="rf"><label>Deductible — Crime</label><div class="ev hi">$500 per occurrence</div></div>
+            <div class="rf"><label>Deductible — Valuable Papers</label><div class="ev hi">$500</div></div>
+            <div class="rf"><label>Crime Limits</label><div class="ev hi">Employee Theft $25K · Forgery $25K<br>Inside Premises $25K · Outside $25K<br>Money Orders $2,500</div></div>
+            <div class="rf"><label>Accounts Receivable</label><div class="ev hi">$100,000</div></div>
+            <div class="rf"><label>Mortgageholder</label><div class="ev hi">CBRE Loan Services Inc</div></div>
+            <div class="rf"><label>Additional Insured</label><div class="ev hi">Laureate LTD</div></div>
+            <div class="rf"><label>Excess Liability</label><div class="ev hi">Rejected</div></div>
+            <div class="rf"><label>Agent</label><div class="ev hi">Wren Arbuthnot<br>Arrow Insurance Management Inc<br>PO Box 5000, Frisco CO 80443</div></div>
+            <div class="rf"><label>Agent Phone / Email</label><div class="ev hi">970-668-3500<br>warbuthnot@arrowinsurance.net</div></div>
+            <div class="rf"><label>Billing Account #</label><div class="ev hi">6000129933</div></div>
+            <div class="rf"><label>Exclusions</label><div class="ev hi">Virus/Bacteria · Cannabis · Cyber<br>Asbestos · Professional Liability</div></div>
+            <div class="rf"><label>Last Updated</label><div class="ev editable" contenteditable="true" spellcheck="false">Apr 2026 — verified from Gemini</div></div>
+            <div class="rf"><label>Notes</label><div class="ev editable" contenteditable="true" spellcheck="false">Annual paper invoice. Monthly $1,210.84 drafted from Donald acct on 2nd.</div></div>
+            <div class="rf" style="grid-column:1/-1"><label>📎 Policy Document — Paste Dropbox Link</label><div class="ev editable" contenteditable="true" spellcheck="false" id="db-donald" style="color:var(--accent)">Paste Dropbox link here...</div></div>
+          </div>
+          <div class="renewal-actions">
+            <button class="ra-btn ra-renew" onclick="startRenewal('donald')">🔄 Start Renewal</button>
+            <button class="ra-btn ra-save" onclick="saveDownload()">💾 Save & Download</button>
+            <div class="ra-note">Click "Start Renewal" first — archives current numbers before entering new ones.</div>
+          </div>
+        </div>
+
+        <div class="st">4 Duplexes — Coverage Detail</div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Duplex</th><th>Unit Addresses</th><th>Per Building</th><th>Per Duplex</th><th>Biz Income</th><th>Std Deductible</th></tr></thead>
+            <tbody>
+              <tr><td>Duplex 1</td><td>5060 &amp; 5062 E Donald Ave, Denver CO 80222</td><td class="mn">$562,750 × 2</td><td class="mn ta">$1,125,500</td><td class="mn">$15,000</td><td class="mn">$10,000</td></tr>
+              <tr><td>Duplex 2</td><td>5064 &amp; 5066 E Donald Ave, Denver CO 80222</td><td class="mn">$562,750 × 2</td><td class="mn ta">$1,125,500</td><td class="mn">$15,000</td><td class="mn">$10,000</td></tr>
+              <tr><td>Duplex 3</td><td>5070 &amp; 5072 E Donald Ave, Denver CO 80222</td><td class="mn">$562,750 × 2</td><td class="mn ta">$1,125,500</td><td class="mn">$15,000</td><td class="mn">$10,000</td></tr>
+              <tr><td>Duplex 4</td><td>5080 &amp; 5082 E Donald Ave, Denver CO 80222</td><td class="mn">$562,750 × 2</td><td class="mn ta">$1,125,500</td><td class="mn">$15,000</td><td class="mn">$10,000</td></tr>
+            </tbody>
+            <tfoot><tr><td colspan="2">TOTAL — 4 Duplexes / 8 Units</td><td>$4,502,000</td><td>$4,502,000</td><td>$60,000</td><td></td></tr></tfoot>
+          </table>
+        </div>
+
+        <div class="st">Premium History</div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Period</th><th>Carrier</th><th>Policy #</th><th>Annual</th><th>Monthly</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td class="mn ta">Sep 2025 → Sep 2026</td><td>Westfield Superior</td><td class="mn">499841Y</td><td class="mn ta">$14,530</td><td class="mn ta">$1,210.84</td><td class="tn">Donald acct · 2nd of month</td></tr>
+              <tr class="hist"><td class="mn te">Sep 2024 → Sep 2025</td><td class="te">State Farm (Kevin Schult)</td><td class="mn te">—</td><td class="mn te">—</td><td class="mn te">$1,062.66</td><td class="tn te">Donald's share of split Divando policy</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════════════ YALE ═══════════════ -->
+      <div id="p-yale" class="pane">
+        <div class="st">✏️ Yale LLC — 2991-2999 W Yale Ave · Renewal Card</div>
+        <div class="renewal-card">
+          <div class="rc-grid">
+            <div class="rf"><label>Named Insured</label><div class="ev hi">Yale Townhomes LLC</div></div>
+            <div class="rf"><label>Carrier</label><div class="ev hi">Acuity, A Mutual Insurance Company</div></div>
+            <div class="rf"><label>Policy Number</label><div class="ev editable" contenteditable="true" spellcheck="false">ZM1786-01</div></div>
+            <div class="rf"><label>Policy Period</label><div class="ev editable ok" contenteditable="true" spellcheck="false">Feb 22, 2026 → Feb 22, 2027</div></div>
+            <div class="rf"><label>Property Address</label><div class="ev hi">2991-2999 W Yale Ave, Denver CO</div></div>
+            <div class="rf"><label>Building Coverage</label><div class="ev editable" contenteditable="true" spellcheck="false">$1,900,799</div></div>
+            <div class="rf"><label>Personal Property</label><div class="ev hi">$65,862</div></div>
+            <div class="rf"><label>Annual Premium</label><div class="ev editable" contenteditable="true" spellcheck="false">$11,248</div></div>
+            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$1,024.54 (11-pay · $1,024.56 down)</div></div>
+            <div class="rf"><label>Payment Source</label><div class="ev hi">Yale LLC dedicated acct · debit card · 24th of month</div></div>
+            <div class="rf"><label>Deductible — Standard</label><div class="ev editable" contenteditable="true" spellcheck="false">$5,000</div></div>
+            <div class="rf"><label>Deductible — Wind/Hail</label><div class="ev editable" contenteditable="true" spellcheck="false" style="color:var(--warn)">2% per building</div></div>
+            <div class="rf"><label>Liability (Bis-Pak)</label><div class="ev hi">$1M each occ · $3M aggregate<br>Products $3M · Premises Rented $300K<br>Medical $10K per person</div></div>
+            <div class="rf"><label>Liability (Excess)</label><div class="ev hi">$2M each occ · $2M aggregate<br>Products $2M · Hired/Nonowned Auto incl.</div></div>
+            <div class="rf"><label>Additional Named Insureds</label><div class="ev hi" style="color:var(--warn)">Nir Shay · Ron Moscovich</div></div>
+            <div class="rf"><label>Agent</label><div class="ev hi">CRS Insurance Brokerage<br>Nathan Michael Fonseca · Agency #7118-BL</div></div>
+            <div class="rf"><label>Endorsements</label><div class="ev hi">Acuity Property — Platinum<br>Acuity Liability — Gold<br>Equipment Breakdown · Terrorism $353<br>Roof cosmetic damage excluded</div></div>
+            <div class="rf"><label>Last Updated</label><div class="ev editable" contenteditable="true" spellcheck="false">Apr 2026 — verified from Gemini</div></div>
+            <div class="rf"><label>Notes</label><div class="ev editable" contenteditable="true" spellcheck="false">—</div></div>
+            <div class="rf" style="grid-column:1/-1"><label>📎 Policy Document — Paste Dropbox Link</label><div class="ev editable" contenteditable="true" spellcheck="false" id="db-yale" style="color:var(--accent)">Paste Dropbox link here...</div></div>
+          </div>
+          <div class="renewal-actions">
+            <button class="ra-btn ra-renew" onclick="startRenewal('yale')">🔄 Start Renewal</button>
+            <button class="ra-btn ra-save" onclick="saveDownload()">💾 Save & Download</button>
+            <div class="ra-note">Next renewal: Feb 22, 2027 — contact CRS Insurance Brokerage ~Jan 2027</div>
+          </div>
+        </div>
+
+        <div class="st">Premium History</div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Period</th><th>Carrier</th><th>Policy #</th><th>Building Coverage</th><th>Annual</th><th>Monthly</th></tr></thead>
+            <tbody>
+              <tr><td class="mn ta">Feb 22, 2026 → Feb 22, 2027</td><td>Acuity</td><td class="mn">ZM1786-01</td><td class="mn">$1,900,799</td><td class="mn ta">$11,248</td><td class="mn ta">$1,024.54</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════════════ ARCHIVE ═══════════════ -->
+      <div id="p-archive" class="pane">
+        <div class="st">2024 Quote Comparison — State Farm vs Travelers (CO SFRs)</div>
+        <div class="tw">
+          <table>
+            <thead><tr><th>Property</th><th>SF Coverage</th><th>SF Annual</th><th>SF Monthly</th><th>Travelers Coverage</th><th>TRV Annual</th><th>TRV Deductible</th></tr></thead>
+            <tbody>
+              <tr class="hist"><td class="te">1724 Boston St Aurora</td><td class="mn te">$321,500</td><td class="mn te">—</td><td class="mn te">$0</td><td class="mn te">$323,000</td><td class="mn te">$1,658</td><td class="mn te">$2,500</td></tr>
+              <tr class="hist"><td class="te">2332 Oakland St Aurora</td><td class="mn te">$407,800</td><td class="mn te">$2,157</td><td class="mn te">$179.75</td><td class="mn te">$500,000</td><td class="mn te">$2,703</td><td class="mn te">$2,500</td></tr>
+              <tr class="hist"><td class="te">3225 Tucson St Aurora</td><td class="mn te">$326,600</td><td class="mn te">$2,378</td><td class="mn te">$198.17</td><td class="mn te">$320,000</td><td class="mn te">$1,810</td><td class="mn te">$2,500</td></tr>
+              <tr class="hist"><td class="te">3630 Holly St Denver</td><td class="mn te">$432,200</td><td class="mn te">$2,464</td><td class="mn te">$205.33</td><td class="mn te">$350,000</td><td class="mn te">$1,752</td><td class="mn te">$2,500</td></tr>
+              <tr class="hist"><td class="te">4776 Blackhawk Way Denver</td><td class="mn te">$510,000</td><td class="mn te">$3,012</td><td class="mn te">$251.00</td><td class="mn te">$389,000</td><td class="mn te">$2,427</td><td class="mn te">$2,500</td></tr>
+              <tr class="hist"><td class="te">5101 Crown Blvd Denver</td><td class="mn te">$385,900</td><td class="mn te">$2,460</td><td class="mn te">$205.00</td><td class="mn te">$380,000</td><td class="mn te">$2,284</td><td class="mn te">$2,500</td></tr>
+              <tr class="hist"><td class="te">5538 Dearborn St Denver</td><td class="mn te">$405,500</td><td class="mn te">$2,375</td><td class="mn te">$197.92</td><td class="mn te">$400,000</td><td class="mn te">$2,080</td><td class="mn te">$2,500</td></tr>
+              <tr class="hist"><td class="te">14790 E 43rd Ave Denver</td><td class="mn te">$373,600</td><td class="mn te">$2,405</td><td class="mn te">$200.42</td><td class="mn te">$370,000</td><td class="mn te">$2,215</td><td class="mn te">$2,500</td></tr>
+              <tr class="hist"><td class="te">11795 E Virginia Dr Aurora</td><td class="mn te">$367,700</td><td class="mn te">$2,220</td><td class="mn te">$185.00</td><td class="mn te">$370,000</td><td class="mn te">$2,107</td><td class="mn te">$2,500</td></tr>
+              <tr class="hist"><td class="te">15559 E Bates Ave Aurora</td><td class="mn te">$393,400</td><td class="mn te">$2,509</td><td class="mn te">$209.08</td><td class="mn te">$382,000</td><td class="mn te">$2,280</td><td class="mn te">$2,500</td></tr>
+              <tr class="hist"><td class="te">15655 E 13th Ave Aurora</td><td class="mn te">$600,800</td><td class="mn te">$3,185</td><td class="mn te">$265.42</td><td class="mn te">$743,000</td><td class="mn te">$2,920</td><td class="mn te">$2,500</td></tr>
+              <tr class="hist"><td class="te">2397 Jamaica St Aurora</td><td class="mn te">$321,500</td><td class="mn te">$3,185</td><td class="mn te">$265.42</td><td class="mn te">$318,000</td><td class="mn te">$1,491</td><td class="mn te">$2,500</td></tr>
+              <tr class="hist"><td class="te">4641 Enid Way Denver</td><td class="mn te">$367,700</td><td class="mn te">$2,210</td><td class="mn te">$184.17</td><td class="mn te">$320,000</td><td class="mn te">$2,011</td><td class="mn te">$2,500</td></tr>
+            </tbody>
+            <tfoot><tr><td colspan="2">Totals (SF / Travelers)</td><td>$30,560</td><td>$2,546.67/mo</td><td></td><td>$27,738</td><td></td></tr></tfoot>
+          </table>
+        </div>
+
+        <div class="st">Expired — State Farm Kevin Schult (Dec 2024 → Dec 2025)</div>
+        <div class="pc" style="opacity:.5">
+          <div class="pf"><label>Carrier</label><div class="v ex">State Farm</div></div>
+          <div class="pf"><label>Agent</label><div class="v ex">Kevin Schult · 303-989-3847</div></div>
+          <div class="pf"><label>Period</label><div class="v ex">Dec 15, 2024 → Dec 15, 2025</div></div>
+          <div class="pf"><label>Monthly Feb 2025</label><div class="v ex">$2,644.10 total</div></div>
+          <div class="pf"><label>Split</label><div class="v ex">Divando $1,581.44 · Donald $1,062.66</div></div>
+          <div class="pf"><label>Canceled</label><div class="v ex">Sep 20, 2025 — ACH moved to Donald acct</div></div>
+        </div>
+
+        <div class="st">Expired — Berkshire Hathaway (Nov 2024 → Nov 2025 · CO SFRs)</div>
+        <div class="pc" style="opacity:.5">
+          <div class="pf"><label>Carrier</label><div class="v ex">Berkshire Hathaway</div></div>
+          <div class="pf"><label>Policy #</label><div class="v ex">02PRM080318-03</div></div>
+          <div class="pf"><label>Agent</label><div class="v ex">IMA Select / Rosella Sheehan</div></div>
+          <div class="pf"><label>Period</label><div class="v ex">11/6/2024 → 11/6/2025</div></div>
+          <div class="pf"><label>Properties</label><div class="v ex">14 CO properties</div></div>
+          <div class="pf"><label>Deductible</label><div class="v ex">$1,000</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
 <script>
+/* ============================================================
+   AUTH
+   ============================================================ */
 const PASSWORD_HASH = "76818309665bee769203a5117621375d41ef7f7aa9cee390dc8ec586e2dd664c";
 const API_URL = "https://script.google.com/macros/s/AKfycbzXtgU_bEQx-3B15FoV4SrolI1int0s6PUo9WKnHJ2Wz8zV5jq62MWNFQLjI51OqsWH/exec";
 let PORTFOLIO_DATA = null;
 let SELECTED_MONTH = null;
+let ACTIVE_MAIN_TAB = 'master';
+
 async function sha256(text) { const buf = new TextEncoder().encode(text); const hash = await crypto.subtle.digest("SHA-256", buf); return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join(""); }
 async function tryLogin() { const input = document.getElementById("pwd-input"); const err = document.getElementById("pwd-err"); const pwd = input.value; if (!pwd) return; const h = await sha256(pwd); if (h === PASSWORD_HASH) { localStorage.setItem("niron_auth", "ok"); showDashboard(); } else { err.textContent = "Incorrect password"; input.value = ""; input.focus(); } }
-function showDashboard() { document.getElementById("login-screen").style.display = "none"; document.getElementById("main-container").style.display = "block"; load(); }
+function showDashboard() {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("main-container").style.display = "block";
+  // honor ?tab= deep link
+  const params = new URLSearchParams(location.search);
+  const initial = params.get('tab') === 'noble' ? 'noble' : 'master';
+  switchMainTab(initial, true);
+  load();
+  initNoble();
+}
+function logout() { localStorage.removeItem("niron_auth"); location.reload(); }
+
+/* ============================================================
+   MAIN TAB SWITCHING (Master / Noble)
+   ============================================================ */
+function switchMainTab(tab, skipUrl) {
+  ACTIVE_MAIN_TAB = tab;
+  document.querySelectorAll('.main-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('main-tab-' + tab).classList.add('active');
+
+  // Show/hide tab-specific UI
+  const maintFab = document.getElementById('maint-fab');
+  const monthSelect = document.getElementById('header-month-select');
+  if (tab === 'master') {
+    maintFab.style.display = 'flex';
+    monthSelect.style.display = '';
+  } else {
+    maintFab.style.display = 'none';
+    monthSelect.style.display = 'none';
+  }
+
+  // Update chat context tag
+  const tag = document.getElementById('chat-context-tag');
+  const hint = document.getElementById('chat-hint');
+  if (tab === 'noble') {
+    tag.textContent = 'INSURANCE';
+    hint.textContent = 'Try: "When does Donald LLC renewal expire?"';
+  } else {
+    tag.textContent = 'PORTFOLIO';
+    hint.textContent = 'Try: "Which LLC was most profitable last month?"';
+  }
+
+  // Update URL
+  if (!skipUrl) {
+    const url = new URL(location.href);
+    if (tab === 'noble') url.searchParams.set('tab', 'noble');
+    else url.searchParams.delete('tab');
+    history.replaceState({}, '', url);
+  }
+}
+
+/* ============================================================
+   MASTER PORTFOLIO — MAINTENANCE MODAL
+   ============================================================ */
 function openMaintModal() { document.getElementById("maint-modal").classList.add("open"); const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, "0"); const dd = String(today.getDate()).padStart(2, "0"); document.getElementById("maint-date").value = yyyy + "-" + mm + "-" + dd; document.getElementById("maint-msg").className = "form-msg"; document.getElementById("maint-msg").textContent = ""; populatePropertyDropdown(); }
 function populatePropertyDropdown() { const sel = document.getElementById("maint-property"); if (!sel || !PORTFOLIO_DATA) return; const properties = PORTFOLIO_DATA.properties || []; const grouped = {}; properties.forEach(p => { if (!grouped[p.llc]) grouped[p.llc] = []; grouped[p.llc].push(p); }); let html = '<option value="">-- Select Property --</option>'; Object.keys(grouped).sort().forEach(llc => { html += '<optgroup label="' + llc + '">'; grouped[llc].forEach(p => { const label = p.notes ? p.address + ' (' + p.notes + ')' : p.address; html += '<option value="' + p.address + '" data-llc="' + p.llc + '">' + label + '</option>'; }); html += '</optgroup>'; }); sel.innerHTML = html; }
 function onPropertyChange(sel) { const opt = sel.options[sel.selectedIndex]; const llc = opt ? opt.getAttribute("data-llc") || "" : ""; document.getElementById("maint-llc").value = llc; }
 function closeMaintModal() { document.getElementById("maint-modal").classList.remove("open"); ["maint-property", "maint-llc", "maint-sub", "maint-category", "maint-desc", "maint-amount"].forEach(id => { document.getElementById(id).value = ""; }); }
 function onSubChange(sel) { if (sel.value === "__add_new__") { const newSub = prompt("Enter the new sub/vendor name:"); if (newSub && newSub.trim()) { const opt = document.createElement("option"); opt.value = newSub.trim(); opt.text = newSub.trim(); sel.insertBefore(opt, sel.lastElementChild); sel.value = newSub.trim(); } else { sel.value = ""; } } }
 async function submitMaintenance() { const msgEl = document.getElementById("maint-msg"); const btn = document.getElementById("maint-submit"); const data = { action: "add_maintenance", date: document.getElementById("maint-date").value, property: document.getElementById("maint-property").value, llc: document.getElementById("maint-llc").value, sub: document.getElementById("maint-sub").value, category: document.getElementById("maint-category").value, description: document.getElementById("maint-desc").value, amount: parseFloat(document.getElementById("maint-amount").value) || 0, entered_by: "Dashboard" }; if (!data.date || !data.property || !data.llc || !data.amount) { msgEl.className = "form-msg err"; msgEl.textContent = "Please fill in Date, Property, and Amount."; return; } btn.disabled = true; msgEl.className = "form-msg"; msgEl.textContent = "Saving..."; try { const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(data) }); const result = await res.json(); if (result.error) { msgEl.className = "form-msg err"; msgEl.textContent = "Error: " + result.error; } else { msgEl.className = "form-msg ok"; msgEl.textContent = "✅ Saved! Refreshing dashboard..."; setTimeout(() => { closeMaintModal(); load(); }, 1000); } } catch (e) { msgEl.className = "form-msg err"; msgEl.textContent = "Network error: " + e.message; } finally { btn.disabled = false; } }
+
+/* ============================================================
+   UNIFIED CHATBOT (with localStorage persistence + tab context)
+   ============================================================ */
+const CHAT_STORAGE_KEY = 'niron_chat_history_v2';
 let chatHistory = [];
+
+function loadChatHistory() {
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (raw) {
+      chatHistory = JSON.parse(raw);
+      const msgs = document.getElementById('chat-messages');
+      msgs.innerHTML = '';
+      chatHistory.forEach(m => {
+        const kind = m.role === 'user' ? 'user' : 'bot';
+        const el = document.createElement('div');
+        el.className = 'chat-msg ' + kind;
+        el.textContent = m.content;
+        msgs.appendChild(el);
+      });
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+  } catch (e) { chatHistory = []; }
+}
+function saveChatHistory() {
+  try { localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(chatHistory)); } catch (e) {}
+}
+
 function toggleChat() { const panel = document.getElementById("chat-panel"); const fab = document.getElementById("chat-fab"); if (panel.classList.contains("open")) { panel.classList.remove("open"); fab.style.display = "flex"; } else { panel.classList.add("open"); fab.style.display = "none"; document.getElementById("chat-input").focus(); } }
-function newChat() { chatHistory = []; document.getElementById("chat-messages").innerHTML = ""; }
+function newChat() { chatHistory = []; saveChatHistory(); document.getElementById("chat-messages").innerHTML = ""; }
 function appendChatMsg(text, kind) { const el = document.createElement("div"); el.className = "chat-msg " + kind; el.textContent = text; const msgs = document.getElementById("chat-messages"); msgs.appendChild(el); msgs.scrollTop = msgs.scrollHeight; return el; }
-async function sendChat() { const input = document.getElementById("chat-input"); const sendBtn = document.getElementById("chat-send"); const q = input.value.trim(); if (!q) return; appendChatMsg(q, "user"); chatHistory.push({ role: "user", content: q }); input.value = ""; sendBtn.disabled = true; const typingEl = appendChatMsg("Thinking…", "bot typing"); try { const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "chat", messages: chatHistory }) }); const data = await res.json(); typingEl.remove(); if (data.error) { appendChatMsg("Error: " + data.error, "bot err"); chatHistory.pop(); } else { const answer = data.answer || "(no response)"; appendChatMsg(answer, "bot"); chatHistory.push({ role: "assistant", content: answer }); } } catch (e) { typingEl.remove(); appendChatMsg("Network error: " + e.message, "bot err"); chatHistory.pop(); } finally { sendBtn.disabled = false; input.focus(); } }
-function logout() { localStorage.removeItem("niron_auth"); location.reload(); }
-document.getElementById("pwd-btn").addEventListener("click", tryLogin);
-document.getElementById("pwd-input").addEventListener("keypress", e => { if (e.key === "Enter") tryLogin(); });
-if (localStorage.getItem("niron_auth") === "ok") showDashboard(); else document.getElementById("pwd-input").focus();
+
+function extractNobleContext() {
+  // Extract visible Noble Insurance content as text so chatbot has data to answer about
+  const noble = document.getElementById('tab-noble');
+  if (!noble) return '';
+  // Just the active sub-tab + summary header
+  const activePane = noble.querySelector('.pane.on');
+  const summary = noble.querySelector('#p-summary');
+  let chunks = [];
+  if (summary) chunks.push('--- INSURANCE SUMMARY ---\n' + summary.innerText);
+  if (activePane && activePane !== summary) chunks.push('--- ACTIVE SUB-TAB ---\n' + activePane.innerText);
+  return chunks.join('\n\n').slice(0, 8000);
+}
+
+async function sendChat() {
+  const input = document.getElementById("chat-input");
+  const sendBtn = document.getElementById("chat-send");
+  const q = input.value.trim();
+  if (!q) return;
+  appendChatMsg(q, "user");
+  chatHistory.push({ role: "user", content: q });
+  saveChatHistory();
+  input.value = "";
+  sendBtn.disabled = true;
+  const typingEl = appendChatMsg("Thinking…", "bot typing");
+  try {
+    const payload = {
+      action: "chat",
+      messages: chatHistory,
+      active_tab: ACTIVE_MAIN_TAB,
+      noble_context: ACTIVE_MAIN_TAB === 'noble' ? extractNobleContext() : extractNobleContext().slice(0, 2000)
+    };
+    const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    typingEl.remove();
+    if (data.error) {
+      appendChatMsg("Error: " + data.error, "bot err");
+      chatHistory.pop();
+      saveChatHistory();
+    } else {
+      const answer = data.answer || "(no response)";
+      appendChatMsg(answer, "bot");
+      chatHistory.push({ role: "assistant", content: answer });
+      saveChatHistory();
+    }
+  } catch (e) {
+    typingEl.remove();
+    appendChatMsg("Network error: " + e.message, "bot err");
+    chatHistory.pop();
+    saveChatHistory();
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
+  }
+}
+
+/* ============================================================
+   FORMATTING HELPERS
+   ============================================================ */
 const fmt = n => "$" + (Number(n) || 0).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const fmtShort = n => { n = Number(n) || 0; if (Math.abs(n) >= 1e6) return "$" + (n/1e6).toFixed(2) + "M"; if (Math.abs(n) >= 1e3) return "$" + (n/1e3).toFixed(1) + "K"; return "$" + n.toFixed(0); };
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const monthLabel = ym => { if (!ym) return ""; const parts = ym.split("-"); return MONTH_NAMES[parseInt(parts[1],10)-1] + " " + parts[0]; };
 function maintenanceFor(maintenance, llc, period) { if (!maintenance || !llc || !period) return 0; return maintenance.filter(m => m.llc && m.llc.trim() === llc.trim() && m.period === period).reduce((s, m) => s + (m.amount || 0), 0); }
 function recalcNet(row, maintenance) { const m = maintenanceFor(maintenance, row.llc, row.period_start); return row.disbursement - row.mortgage - row.tax_mo - row.ins_mo - m; }
+
 async function load() { try { const res = await fetch(API_URL); const data = await res.json(); PORTFOLIO_DATA = data; initialRender(data); } catch (e) { document.getElementById("content").innerHTML = '<div class="error">Failed to load: ' + e.message + '</div>'; document.getElementById("status").textContent = "● Offline"; document.getElementById("status").style.color = "#ff4455"; } }
 function initialRender(data) { document.getElementById("last-updated").textContent = new Date(data.last_updated).toLocaleString(); const history = data.history || []; const months = [...new Set(history.map(h => h.period_start))].sort().reverse(); SELECTED_MONTH = months[0] || ""; renderAll(); }
 function renderAll() {
@@ -246,6 +1097,154 @@ function renderChart(history, months) {
   datasets.push({ type: 'line', label: 'TOTAL Portfolio', data: totalData, borderColor: '#ffffff', backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 3, pointRadius: 5, pointBackgroundColor: '#ffffff', pointBorderColor: '#0c1a2e', pointBorderWidth: 2, tension: 0.3, fill: false, order: 1 });
   new Chart(document.getElementById('trendChart'), { type: 'bar', data: { labels: sortedMonths, datasets: datasets }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { labels: { color: '#ccd9ea', font: { size: 12 } } }, tooltip: { backgroundColor: '#0c1a2e', borderColor: '#1e2d42', borderWidth: 1, titleColor: '#ffffff', bodyColor: '#ccd9ea' } }, scales: { x: { ticks: { color: '#4e6d8c' }, grid: { color: '#182030' } }, y: { ticks: { color: '#4e6d8c', callback: v => fmtShort(v) }, grid: { color: '#182030' } } } } });
 }
+
+/* ============================================================
+   NOBLE INSURANCE — original logic, scoped where needed
+   ============================================================ */
+function initNoble() {
+  const dt = document.getElementById('dt');
+  if (dt) dt.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function ownerLogin() {
+  const pin = prompt('');
+  if (pin === '2703') document.getElementById('owner-panel').classList.add('on');
+}
+function closeOwner() { document.getElementById('owner-panel').classList.remove('on'); }
+
+function nobleShow(id, btn) {
+  const noble = document.getElementById('tab-noble');
+  noble.querySelectorAll('.pane').forEach(p => p.classList.remove('on'));
+  noble.querySelectorAll('.tb').forEach(b => b.classList.remove('on'));
+  document.getElementById('p-' + id).classList.add('on');
+  btn.classList.add('on');
+}
+
+function showToast(msg, warn) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  t.style.background = warn ? '#f0a50022' : '#00c97a22';
+  t.style.borderColor = warn ? '#f0a500' : '#00c97a';
+  t.style.color = warn ? '#f0a500' : '#00c97a';
+  setTimeout(() => t.style.display = 'none', 3200);
+}
+
+let _ent = null;
+function startRenewal(entity) {
+  const card = document.getElementById('p-' + entity).querySelector('.renewal-card');
+  let hasData = false;
+  card.querySelectorAll('.ev.editable').forEach(el => {
+    const v = el.textContent.trim();
+    if (v && v !== 'Paste Dropbox link here...') hasData = true;
+  });
+  if (!hasData) { showToast('⚠️ Card is already empty — enter new numbers directly', true); return; }
+  _ent = entity;
+  document.getElementById('modal').classList.add('on');
+}
+function cancelRenewal() { document.getElementById('modal').classList.remove('on'); _ent = null; }
+function confirmRenewal() {
+  document.getElementById('modal').classList.remove('on');
+  const pane = document.getElementById('p-' + _ent);
+  const card = pane.querySelector('.renewal-card');
+  let period = '—', carrier = '—', annual = '—', monthly = '—', policyNum = '—';
+  card.querySelectorAll('.rf').forEach(f => {
+    const lbl = f.querySelector('label').textContent.toLowerCase();
+    const val = f.querySelector('.ev').textContent.trim();
+    if (lbl.includes('period')) period = val;
+    if (lbl.includes('carrier')) carrier = val;
+    if (lbl.includes('annual')) annual = val;
+    if (lbl.includes('monthly')) monthly = val;
+    if (lbl.includes('policy number') && !lbl.includes('expiring')) policyNum = val;
+  });
+  pane.querySelectorAll('.tw table').forEach(t => {
+    if (!t.querySelector('tr.hist')) return;
+    const cols = t.querySelector('thead tr').cells.length;
+    const tr = document.createElement('tr');
+    tr.className = 'hist';
+    const data = [period, carrier, policyNum, annual, monthly, 'Auto-archived at renewal'];
+    let cells = '';
+    for (let i = 0; i < cols; i++) cells += `<td class="mn te">${data[i] || '—'}</td>`;
+    tr.innerHTML = cells;
+    const first = t.querySelector('tbody tr.hist');
+    if (first) first.parentNode.insertBefore(tr, first);
+    else t.querySelector('tbody').appendChild(tr);
+  });
+  card.querySelectorAll('.ev.editable').forEach(el => {
+    if (el.id && el.id.startsWith('db-')) return;
+    el.textContent = '';
+    el.style.borderColor = '#f0a500';
+  });
+  const first = card.querySelector('.ev.editable');
+  if (first) first.focus();
+  showToast('✓ Archived to history — enter new renewal numbers');
+  _ent = null;
+}
+
+function saveDownload() {
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('save-date').value = today;
+  document.getElementById('save-initials').value = '';
+  document.getElementById('sm-warn').style.display = 'none';
+  document.getElementById('save-modal').classList.add('on');
+}
+function closeSaveModal() { document.getElementById('save-modal').classList.remove('on'); }
+function confirmSave() {
+  const initials = document.getElementById('save-initials').value;
+  const date = document.getElementById('save-date').value;
+  if (!initials || !date) { document.getElementById('sm-warn').style.display = 'block'; return; }
+  document.getElementById('save-modal').classList.remove('on');
+  document.querySelectorAll('#tab-noble .renewal-card .rf').forEach(f => {
+    if (f.querySelector('label').textContent.toLowerCase().includes('last updated')) {
+      f.querySelector('.ev').textContent = date + ' — ' + initials;
+    }
+  });
+  let blanks = 0;
+  document.querySelectorAll('#tab-noble .renewal-card .ev.editable').forEach(el => {
+    if (!(el.id && el.id.startsWith('db-')) && !el.textContent.trim()) blanks++;
+  });
+  if (blanks > 0 && !confirm(`⚠️ ${blanks} field(s) are empty. Save anyway?`)) return;
+  const filename = 'Niron_Noble_Insurance_' + date + '_' + initials.replace('.', '') + '_' + '.html';
+  const blob = new Blob(['<!DOCTYPE html>\n' + document.documentElement.outerHTML], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  showToast('✓ Saved by ' + initials + ' on ' + date);
+}
+
+function doSearch(q) {
+  q = q.toLowerCase().trim();
+  const noble = document.getElementById('tab-noble');
+  if (!q) {
+    noble.querySelectorAll('tbody tr').forEach(r => r.classList.remove('row-hide', 'row-match'));
+    noble.querySelectorAll('.tb').forEach(b => b.style.opacity = '1');
+    return;
+  }
+  noble.querySelectorAll('tbody tr').forEach(r => {
+    const txt = r.textContent.toLowerCase();
+    if (txt.includes(q)) { r.classList.remove('row-hide'); r.classList.add('row-match'); }
+    else { r.classList.add('row-hide'); r.classList.remove('row-match'); }
+  });
+  noble.querySelectorAll('.pane').forEach(pane => {
+    const txt = pane.textContent.toLowerCase();
+    const tabId = pane.id.replace('p-', '');
+    const tab = noble.querySelector(`[onclick="nobleShow('${tabId}',this)"]`);
+    if (tab) tab.style.opacity = txt.includes(q) ? '1' : '0.4';
+  });
+}
+
+document.getElementById('save-modal').addEventListener('click', function(e) { if (e.target === this) closeSaveModal(); });
+document.getElementById('modal').addEventListener('click', function(e) { if (e.target === this) cancelRenewal(); });
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+document.getElementById("pwd-btn").addEventListener("click", tryLogin);
+document.getElementById("pwd-input").addEventListener("keypress", e => { if (e.key === "Enter") tryLogin(); });
+loadChatHistory();
+if (localStorage.getItem("niron_auth") === "ok") showDashboard();
+else document.getElementById("pwd-input").focus();
 </script>
 </body>
 </html>
