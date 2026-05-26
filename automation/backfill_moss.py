@@ -21,6 +21,7 @@ PDF layout (Moss Owner Packet):
 import os
 import re
 import json
+import time
 import base64
 import zipfile
 import tempfile
@@ -31,6 +32,7 @@ import pdfplumber
 from playwright.sync_api import sync_playwright
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 APPFOLIO_URL    = "https://laureatetld.appfolio.com/oportal/users/log_in"
 APPFOLIO_EMAIL  = os.environ["APPFOLIO_EMAIL"]
@@ -84,73 +86,47 @@ def get_sheets_service():
     return build("sheets", "v4", credentials=creds).spreadsheets()
 
 
-def read_sheet(sheets, range_name):
-    return sheets.values().get(spreadsheetId=SHEET_ID, range=range_name).execute().get("values", [])
-
-
-def append_row(sheets, tab, row):
-    sheets.values().append(
-        spreadsheetId=SHEET_ID,
-        range=f"'{tab}'!A1",
-        valueInputOption="USER_ENTERED",
-        insertDataOption="INSERT_ROWS",
-        body={"values": [row]},
-    ).execute()
-
-
-def get_sheet_gid(sheets, tab_name):
-    """Numeric sheetId for a tab — required by batchUpdate row deletions."""
-    meta = sheets.get(spreadsheetId=SHEET_ID, fields="sheets(properties(sheetId,title))").execute()
-    for s in meta.get("sheets", []):
-        if s["properties"]["title"] == tab_name:
-            return s["properties"]["sheetId"]
-    return None
-
-
-def _row_month_matches(period_val, target_ym):
-    """True if a History column-B value falls in target year-month (YYYY-MM).
-    Tolerates the date formats that have appeared in the sheet over time."""
-    period = str(period_val).strip()
-    matched = False
-    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%Y/%m/%d"):
+def _execute(request, what="API call"):
+    """Run a Sheets API request, retrying with backoff on rate-limit (429) and
+    transient (500/503) errors so a momentary quota hit doesn't abort the run."""
+    delay = 2
+    for attempt in range(6):
         try:
-            d = datetime.datetime.strptime(period, fmt)
-            if d.strftime("%Y-%m") == target_ym:
-                matched = True
-            break
-        except ValueError:
-            continue
-    return matched or (target_ym in period)
+            return request.execute()
+        except HttpError as e:
+            status = e.resp.status if getattr(e, "resp", None) is not None else None
+            if status in (429, 500, 503) and attempt < 5:
+                print(f"  {what}: HTTP {status} — backing off {delay}s (retry {attempt + 1}/5)")
+                time.sleep(delay)
+                delay = min(delay * 2, 60)
+                continue
+            raise
 
 
-def already_recorded(sheets, name, month_label):
-    """True if (name in column C) already has a row in target month."""
-    rows = read_sheet(sheets, "History!A:C")
-    target_ym = month_label[:7]
-    for row in rows[1:]:
-        if len(row) < 3 or row[2].strip() != name.strip():
-            continue
-        if _row_month_matches(row[1], target_ym):
-            return True
-    return False
+def read_sheet(sheets, range_name):
+    return _execute(sheets.values().get(spreadsheetId=SHEET_ID, range=range_name),
+                    f"read {range_name}").get("values", [])
 
 
-def delete_legacy_total_rows(sheets, month_label, gid):
-    """Remove old single 'Moss Investments, LLC' total rows for this month so
-    the per-property rows replace them without leftover duplicates."""
-    if gid is None:
-        return 0
-    rows = read_sheet(sheets, "History!A:C")
-    target_ym = month_label[:7]
-    to_delete = []
-    for idx, row in enumerate(rows):
-        if idx == 0:  # header
-            continue
-        if len(row) < 3 or row[2].strip() != LEGACY_TOTAL_NAME:
-            continue
-        if _row_month_matches(row[1], target_ym):
-            to_delete.append(idx)  # 0-based sheet row index
-    if not to_delete:
+def append_rows(sheets, tab, rows):
+    """Append many rows in a single write request (one API call, not one per row)."""
+    if not rows:
+        return
+    _execute(
+        sheets.values().append(
+            spreadsheetId=SHEET_ID,
+            range=f"'{tab}'!A1",
+            valueInputOption="USER_ENTERED",
+            insertDataOption="INSERT_ROWS",
+            body={"values": rows},
+        ),
+        f"append {len(rows)} row(s)",
+    )
+
+
+def batch_delete_rows(sheets, gid, row_indices):
+    """Delete the given 0-based sheet row indices in one batchUpdate."""
+    if gid is None or not row_indices:
         return 0
     # Delete bottom-up so earlier deletions don't shift later indices.
     requests = [{
@@ -158,9 +134,55 @@ def delete_legacy_total_rows(sheets, month_label, gid):
             "range": {"sheetId": gid, "dimension": "ROWS",
                       "startIndex": i, "endIndex": i + 1},
         }
-    } for i in sorted(to_delete, reverse=True)]
-    sheets.batchUpdate(spreadsheetId=SHEET_ID, body={"requests": requests}).execute()
-    return len(to_delete)
+    } for i in sorted(set(row_indices), reverse=True)]
+    _execute(sheets.batchUpdate(spreadsheetId=SHEET_ID, body={"requests": requests}),
+             f"delete {len(requests)} row(s)")
+    return len(requests)
+
+
+def get_sheet_gid(sheets, tab_name):
+    """Numeric sheetId for a tab — required by batchUpdate row deletions."""
+    meta = _execute(sheets.get(spreadsheetId=SHEET_ID, fields="sheets(properties(sheetId,title))"),
+                    "get metadata")
+    for s in meta.get("sheets", []):
+        if s["properties"]["title"] == tab_name:
+            return s["properties"]["sheetId"]
+    return None
+
+
+def _period_to_ym(period_val):
+    """Best-effort YYYY-MM for a History column-B value across known formats."""
+    period = str(period_val).strip()
+    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%Y/%m/%d"):
+        try:
+            return datetime.datetime.strptime(period, fmt).strftime("%Y-%m")
+        except ValueError:
+            continue
+    m = re.match(r"(\d{4})[-/](\d{2})", period)
+    if m:
+        return f"{m.group(1)}-{m.group(2)}"
+    return None
+
+
+def scan_history(sheets):
+    """Read History once. Returns (existing, legacy_rows):
+      existing    — set of (name, 'YYYY-MM') already present (for dedup);
+      legacy_rows — list of (0-based row index, 'YYYY-MM') for the old single
+                    'Moss Investments, LLC' total rows."""
+    rows = read_sheet(sheets, "History!A:C")
+    existing = set()
+    legacy_rows = []
+    for idx, row in enumerate(rows):
+        if idx == 0 or len(row) < 3:  # skip header / short rows
+            continue
+        name = row[2].strip()
+        ym = _period_to_ym(row[1])
+        if ym is None:
+            continue
+        existing.add((name, ym))
+        if name == LEGACY_TOTAL_NAME:
+            legacy_rows.append((idx, ym))
+    return existing, legacy_rows
 
 
 # ── PDF parsing (per-property — mirrors run_moss.py) ─────────────────
@@ -435,6 +457,25 @@ def get_pdf_path(file_path, tmp_dir, name):
     return None
 
 
+def build_row(pkt, prop, r, now_str):
+    fixed = PROPERTY_FIXED_COSTS.get(prop, {"mortgage": 0, "ins_mo": 0})
+    mortgage     = fixed["mortgage"]
+    ins_mo       = fixed["ins_mo"]
+    tax_mo       = 0  # Tax paid by escrow — not on Owner Packet
+    maintenance  = r["maintenance"]
+    disbursement = r["disbursement"]
+    mgmt_fee     = r["mgmt_fee"]
+    net = disbursement - mortgage - tax_mo - ins_mo - maintenance
+    row = [
+        pkt["date_range"], pkt["month_label"], prop,
+        disbursement, mgmt_fee,
+        mortgage, tax_mo, ins_mo,
+        maintenance, net,
+        "System — Backfill", now_str,
+    ]
+    return row, disbursement, net
+
+
 def main():
     print(f"Starting Moss per-property backfill — up to {MAX_MONTHS} months...")
     sheets      = get_sheets_service()
@@ -442,9 +483,18 @@ def main():
     if history_gid is None:
         print("WARNING: Could not resolve History sheetId — legacy total rows "
               "will NOT be auto-removed.")
+
+    # Read History once up front; dedup + legacy lookup happen in memory so the
+    # whole run makes only a couple of API writes (avoids the per-row write
+    # quota of 60/min that throttled the v2.0 implementation).
+    existing, legacy_rows = scan_history(sheets)
+    print(f"History has {len(existing)} (property, month) entries; "
+          f"{len(legacy_rows)} legacy 'Moss Investments, LLC' total row(s).")
+
+    pending     = []      # rows to append, accumulated then written in one call
+    cleanup_yms = set()   # months that now have per-property data
     written = 0
     skipped = 0
-    removed = 0
     errors  = []
 
     with sync_playwright() as p:
@@ -465,71 +515,51 @@ def main():
 
                 for pkt in packets:
                     month_label = pkt["month_label"]
+                    ym = month_label[:7]
 
                     print(f"  [{month_label}] downloading...")
-                    file_path = os.path.join(tmp_dir, f"moss_{month_label}{pkt['ext']}")
                     try:
+                        file_path = os.path.join(tmp_dir, f"moss_{month_label}{pkt['ext']}")
                         download_via_url(page, pkt["href"], file_path)
+                        pdf_path = get_pdf_path(file_path, tmp_dir, f"moss_{month_label}")
+                        if not pdf_path:
+                            errors.append(f"{month_label}: Owner Packet.pdf not found")
+                            continue
+                        per_property = extract_per_property_from_pdf(pdf_path)
                     except Exception as e:
-                        errors.append(f"{month_label}: download {e}")
+                        errors.append(f"{month_label}: {e}")
                         continue
 
-                    pdf_path = get_pdf_path(file_path, tmp_dir, f"moss_{month_label}")
-                    if not pdf_path:
-                        errors.append(f"{month_label}: Owner Packet.pdf not found")
-                        continue
-
-                    per_property = extract_per_property_from_pdf(pdf_path)
                     if not per_property:
                         errors.append(f"{month_label}: no property pages parsed")
                         continue
 
+                    cleanup_yms.add(ym)  # this month now has per-property data
                     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-                    # Write per-property rows (skip ones already present).
                     for r in per_property:
                         prop = r["property"]
-                        if already_recorded(sheets, prop, month_label):
+                        if (prop, ym) in existing:
                             print(f"  [{month_label}] {prop} already recorded — skip")
                             skipped += 1
                             continue
-                        fixed = PROPERTY_FIXED_COSTS.get(prop, {"mortgage": 0, "ins_mo": 0})
-                        mortgage     = fixed["mortgage"]
-                        ins_mo       = fixed["ins_mo"]
-                        tax_mo       = 0  # Tax paid by escrow — not on Owner Packet
-                        maintenance  = r["maintenance"]
-                        disbursement = r["disbursement"]
-                        mgmt_fee     = r["mgmt_fee"]
-                        net = disbursement - mortgage - tax_mo - ins_mo - maintenance
-                        row = [
-                            pkt["date_range"], month_label, prop,
-                            disbursement, mgmt_fee,
-                            mortgage, tax_mo, ins_mo,
-                            maintenance, net,
-                            "System — Backfill", now_str,
-                        ]
-                        append_row(sheets, "History", row)
+                        row, disbursement, net = build_row(pkt, prop, r, now_str)
+                        pending.append(row)
+                        existing.add((prop, ym))
                         written += 1
                         print(f"  [{month_label}] {prop} -> Disb ${disbursement:,.2f}, Net ${net:,.2f}")
 
                     # Cabo plug — only fires for months in the plug window.
-                    if cabo_should_plug(month_label) and not already_recorded(sheets, CABO_PROPERTY, month_label):
-                        row = [
+                    if cabo_should_plug(month_label) and (CABO_PROPERTY, ym) not in existing:
+                        pending.append([
                             pkt["date_range"], month_label, CABO_PROPERTY,
                             CABO_DISBURSEMENT_PLUG, 0,
                             0, 0, 0, 0, CABO_DISBURSEMENT_PLUG,
                             "Manual plug (Cabo $2,300/mo through Dec 2026)", now_str,
-                        ]
-                        append_row(sheets, "History", row)
+                        ])
+                        existing.add((CABO_PROPERTY, ym))
                         written += 1
                         print(f"  [{month_label}] {CABO_PROPERTY} (Cabo plug) -> ${CABO_DISBURSEMENT_PLUG:,.2f}")
-
-                    # Replace any legacy single total row(s) for this month now
-                    # that per-property rows are in place.
-                    n = delete_legacy_total_rows(sheets, month_label, history_gid)
-                    if n:
-                        removed += n
-                        print(f"  [{month_label}] removed {n} legacy 'Moss Investments, LLC' total row(s)")
 
             except Exception as e:
                 errors.append(str(e))
@@ -537,6 +567,26 @@ def main():
                 print(traceback.format_exc())
 
         browser.close()
+
+    # One batched write for all new rows.
+    print(f"\nWriting {len(pending)} new row(s)...")
+    try:
+        append_rows(sheets, "History", pending)
+    except Exception as e:
+        errors.append(f"append batch: {e}")
+        written = 0
+        print(f"ERROR appending rows: {e}")
+        print(traceback.format_exc())
+
+    # Remove legacy single total rows for every month we imported, in one call.
+    removed = 0
+    legacy_to_delete = [idx for (idx, ym) in legacy_rows if ym in cleanup_yms]
+    try:
+        removed = batch_delete_rows(sheets, history_gid, legacy_to_delete)
+    except Exception as e:
+        errors.append(f"delete legacy totals: {e}")
+        print(f"ERROR deleting legacy totals: {e}")
+        print(traceback.format_exc())
 
     print(f"\n=== DONE ===")
     print(f"Rows written:          {written}")
