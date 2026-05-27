@@ -1,0 +1,31 @@
+name: Deduplicate Moss History (Manual Only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Type 'yes' to actually delete duplicates. Anything else = preview only."
+        required: true
+        default: "no"
+
+jobs:
+  dedupe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install google-auth google-auth-httplib2 google-api-python-client
+
+      - name: Deduplicate history
+        env:
+          MOSS_SHEET_ID: ${{ secrets.MOSS_SHEET_ID }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          APPLY: ${{ inputs.apply }}
+        run: python automation/dedupe_history.py
