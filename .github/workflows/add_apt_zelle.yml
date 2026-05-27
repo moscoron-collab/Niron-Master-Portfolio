@@ -1,0 +1,25 @@
+name: Add Apt Zelle Months — Moss (Manual Only)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  add-apt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install google-auth google-auth-httplib2 google-api-python-client
+
+      - name: Add apt Zelle months
+        env:
+          MOSS_SHEET_ID: ${{ secrets.MOSS_SHEET_ID }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+        run: python automation/add_apt_zelle.py

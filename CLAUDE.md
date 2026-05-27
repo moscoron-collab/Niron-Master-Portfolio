@@ -104,6 +104,14 @@ Page 4: KENTON, 1443              ← normalized to "1443 S Kenton St"
 Page 5: KENTON, 1453              ← normalized to "1453 S Kenton St"
 ```
 
+> ⚠️ **This 5-page layout applies from the Jul 2025 statement onward.** Before then,
+> the 1959 apartment was rented and paid directly to the owner by **Zelle**, so it was
+> **NOT on AppFolio**: Jan–Jun 2025 packets have **4 pages / 3 properties** (no apt page;
+> the house "KEARNEY, 1959" sits on page 2). A new tenant moved in with the Jul 2025
+> statement and the apt joined AppFolio (summary then reads "4 properties"). The 6 missing
+> Zelle months (Jan–Jun 2025, $1,850 net each) are added manually by
+> `automation/add_apt_zelle.py` — they are not parseable from any PDF.
+
 Each property page has a "Property Cash Summary" block with:
 - Beginning Balance / Cash In / Cash Out / Management Fees / Owner Disbursements / Ending Cash Balance
 
@@ -129,7 +137,8 @@ Niron sheet History column "LLC":
 ### Moss (`run_moss.py`)
 Moss sheet History column "LLC" stores **property names**, not LLC names:
 - `1959 S Kearney Way`        ← mortgage $2,328.99, ins/12 $321.58
-- `1959 S Kearney Way Apt`    ← no separate mortgage/insurance (shared with main)
+- `1959 S Kearney Way Apt`    ← no separate mortgage/insurance. Zelle-only (NOT on
+  AppFolio) Jan–Jun 2025 → $1,850/mo manual via `add_apt_zelle.py`; on AppFolio from Jul 2025.
 - `1443 S Kenton St`          ← mortgage $1,763.39, ins/12 $229.00
 - `1453 S Kenton St`          ← mortgage $2,054.04, ins/12 $228.67
 - `524 Galeras`               ← NOT on AppFolio. $2,300/mo plug May–Dec 2026.
