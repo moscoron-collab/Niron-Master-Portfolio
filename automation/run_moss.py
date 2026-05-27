@@ -99,11 +99,27 @@ def require_approval(sheets):
     return val.strip().upper() != "NO"
 
 
+def _month_key(value):
+    """Normalize a History period cell or a 'YYYY-MM-01' label to 'YYYY-MM'.
+    Sheets stores the month as a date and may return it formatted (e.g.
+    '5/1/2026'), so a raw string compare against 'YYYY-MM-01' misses — which
+    made the daily automation append a duplicate every run."""
+    s = str(value).strip()
+    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%Y/%m/%d"):
+        try:
+            return datetime.datetime.strptime(s, fmt).strftime("%Y-%m")
+        except ValueError:
+            continue
+    m = re.match(r"(\d{4})[-/](\d{2})", s)
+    return f"{m.group(1)}-{m.group(2)}" if m else s
+
+
 def already_recorded(sheets, property_name, month_label):
     """Check if a given property + month is already in History."""
+    target = _month_key(month_label)
     rows = read_sheet(sheets, "History!A:C")
     for row in rows[1:]:
-        if len(row) >= 3 and row[1] == month_label and row[2] == property_name:
+        if len(row) >= 3 and row[2].strip() == property_name and _month_key(row[1]) == target:
             return True
     return False
 
