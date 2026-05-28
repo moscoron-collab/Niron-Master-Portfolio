@@ -979,8 +979,9 @@ function openDistModal() {
   document.getElementById("dist-msg").className = "form-msg";
   document.getElementById("dist-msg").textContent = "";
   const sel = document.getElementById("dist-llc");
-  const llcs = (PORTFOLIO_DATA && PORTFOLIO_DATA.llcs) ? PORTFOLIO_DATA.llcs : ["Yale Townhomes, LLC", "5070 Donald, LLC", "Divando LLC", "Dorado LLC"];
-  sel.innerHTML = '<option value="">-- Select LLC --</option>' + llcs.map(l => '<option value="' + l + '">' + l + '</option>').join('');
+  const raw = (PORTFOLIO_DATA && PORTFOLIO_DATA.llcs && PORTFOLIO_DATA.llcs.length) ? PORTFOLIO_DATA.llcs : ["Yale Townhomes, LLC", "5070 Donald, LLC", "Divando LLC", "Dorado LLC"];
+  const names = raw.map(l => (typeof l === "string") ? l : l.name).filter(Boolean);
+  sel.innerHTML = '<option value="">-- Select LLC --</option>' + names.map(n => '<option value="' + n + '">' + n + '</option>').join('');
 }
 function closeDistModal() {
   document.getElementById("dist-modal").classList.remove("open");
