@@ -93,6 +93,8 @@
   .chat-fab:hover { transform: scale(1.05); }
   .maint-fab { position: fixed; bottom: 92px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #f0a500, #ff9100); border: none; cursor: pointer; z-index: 1000; box-shadow: 0 4px 20px rgba(240, 165, 0, 0.4); font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
   .maint-fab:hover { transform: scale(1.05); }
+  .dist-fab { position: fixed; bottom: 160px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #00c97a, #00a862); border: none; cursor: pointer; z-index: 1000; box-shadow: 0 4px 20px rgba(0, 201, 122, 0.4); font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+  .dist-fab:hover { transform: scale(1.05); }
 
   /* Master Portfolio modals */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center; z-index: 2000; }
@@ -327,6 +329,21 @@
   </div>
 </div>
 
+<!-- ═══════════════════ DISTRIBUTION MODAL ═══════════════════ -->
+<div class="modal-overlay" id="dist-modal">
+  <div class="modal-box">
+    <h2>💰 Add Distribution <button class="modal-close" onclick="closeDistModal()">×</button></h2>
+    <label>Date Sent</label><input type="date" id="dist-date">
+    <label>LLC</label>
+    <select id="dist-llc"><option value="">-- Select LLC --</option></select>
+    <label>Your Amount ($)</label><input type="number" id="dist-your-amount" step="0.01" placeholder="0.00">
+    <label>Partner Amount ($)</label><input type="number" id="dist-partner-amount" step="0.01" placeholder="0.00">
+    <label>Notes (optional)</label><textarea id="dist-notes" placeholder="e.g. Q1 distribution"></textarea>
+    <div class="form-msg" id="dist-msg"></div>
+    <div class="modal-actions"><button class="secondary" onclick="closeDistModal()">Cancel</button><button class="primary" id="dist-submit" onclick="submitDistribution()">Save Distribution</button></div>
+  </div>
+</div>
+
 <!-- ═══════════════════ CHAT PANEL ═══════════════════ -->
 <div class="chat-panel" id="chat-panel">
   <div class="chat-header">
@@ -377,6 +394,7 @@
 <div class="container" id="main-container" style="display:none">
   <button class="chat-fab" id="chat-fab" onclick="toggleChat()" title="Ask Claude about your portfolio">💬</button>
   <button class="maint-fab" id="maint-fab" onclick="openMaintModal()" title="Add maintenance invoice">🔧</button>
+  <button class="dist-fab" id="dist-fab" onclick="openDistModal()" title="Add distribution">💰</button>
 
   <header class="app-header">
     <div class="header-left">
@@ -906,12 +924,15 @@ function switchMainTab(tab, skipUrl) {
 
   // Show/hide tab-specific UI
   const maintFab = document.getElementById('maint-fab');
+  const distFab = document.getElementById('dist-fab');
   const monthSelect = document.getElementById('header-month-select');
   if (tab === 'master') {
     maintFab.style.display = 'flex';
+    distFab.style.display = 'flex';
     monthSelect.style.display = '';
   } else {
     maintFab.style.display = 'none';
+    distFab.style.display = 'none';
     monthSelect.style.display = 'none';
   }
 
@@ -944,6 +965,64 @@ function onPropertyChange(sel) { const opt = sel.options[sel.selectedIndex]; con
 function closeMaintModal() { document.getElementById("maint-modal").classList.remove("open"); ["maint-property", "maint-llc", "maint-sub", "maint-category", "maint-desc", "maint-amount"].forEach(id => { document.getElementById(id).value = ""; }); }
 function onSubChange(sel) { if (sel.value === "__add_new__") { const newSub = prompt("Enter the new sub/vendor name:"); if (newSub && newSub.trim()) { const opt = document.createElement("option"); opt.value = newSub.trim(); opt.text = newSub.trim(); sel.insertBefore(opt, sel.lastElementChild); sel.value = newSub.trim(); } else { sel.value = ""; } } }
 async function submitMaintenance() { const msgEl = document.getElementById("maint-msg"); const btn = document.getElementById("maint-submit"); const data = { action: "add_maintenance", date: document.getElementById("maint-date").value, property: document.getElementById("maint-property").value, llc: document.getElementById("maint-llc").value, sub: document.getElementById("maint-sub").value, category: document.getElementById("maint-category").value, description: document.getElementById("maint-desc").value, amount: parseFloat(document.getElementById("maint-amount").value) || 0, entered_by: "Dashboard" }; if (!data.date || !data.property || !data.llc || !data.amount) { msgEl.className = "form-msg err"; msgEl.textContent = "Please fill in Date, Property, and Amount."; return; } btn.disabled = true; msgEl.className = "form-msg"; msgEl.textContent = "Saving..."; try { const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(data) }); const result = await res.json(); if (result.error) { msgEl.className = "form-msg err"; msgEl.textContent = "Error: " + result.error; } else { msgEl.className = "form-msg ok"; msgEl.textContent = "✅ Saved! Refreshing dashboard..."; setTimeout(() => { closeMaintModal(); load(); }, 1000); } } catch (e) { msgEl.className = "form-msg err"; msgEl.textContent = "Network error: " + e.message; } finally { btn.disabled = false; } }
+
+/* ============================================================
+   MASTER PORTFOLIO — DISTRIBUTION MODAL
+   ============================================================ */
+function openDistModal() {
+  document.getElementById("dist-modal").classList.add("open");
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  document.getElementById("dist-date").value = yyyy + "-" + mm + "-" + dd;
+  document.getElementById("dist-msg").className = "form-msg";
+  document.getElementById("dist-msg").textContent = "";
+  const sel = document.getElementById("dist-llc");
+  const llcs = (PORTFOLIO_DATA && PORTFOLIO_DATA.llcs) ? PORTFOLIO_DATA.llcs : ["Yale Townhomes, LLC", "5070 Donald, LLC", "Divando LLC", "Dorado LLC"];
+  sel.innerHTML = '<option value="">-- Select LLC --</option>' + llcs.map(l => '<option value="' + l + '">' + l + '</option>').join('');
+}
+function closeDistModal() {
+  document.getElementById("dist-modal").classList.remove("open");
+  ["dist-llc", "dist-your-amount", "dist-partner-amount", "dist-notes"].forEach(id => { document.getElementById(id).value = ""; });
+}
+async function submitDistribution() {
+  const msgEl = document.getElementById("dist-msg");
+  const btn = document.getElementById("dist-submit");
+  const data = {
+    action: "add_distribution",
+    date: document.getElementById("dist-date").value,
+    llc: document.getElementById("dist-llc").value,
+    your_amount: parseFloat(document.getElementById("dist-your-amount").value) || 0,
+    partner_amount: parseFloat(document.getElementById("dist-partner-amount").value) || 0,
+    notes: document.getElementById("dist-notes").value
+  };
+  if (!data.date || !data.llc || (!data.your_amount && !data.partner_amount)) {
+    msgEl.className = "form-msg err";
+    msgEl.textContent = "Please fill in Date, LLC, and at least one amount.";
+    return;
+  }
+  btn.disabled = true;
+  msgEl.className = "form-msg";
+  msgEl.textContent = "Saving...";
+  try {
+    const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(data) });
+    const result = await res.json();
+    if (result.error) {
+      msgEl.className = "form-msg err";
+      msgEl.textContent = "Error: " + result.error;
+    } else {
+      msgEl.className = "form-msg ok";
+      msgEl.textContent = "✅ Saved! Refreshing dashboard...";
+      setTimeout(() => { closeDistModal(); load(); }, 1000);
+    }
+  } catch (e) {
+    msgEl.className = "form-msg err";
+    msgEl.textContent = "Network error: " + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
 
 /* ============================================================
    UNIFIED CHATBOT (with localStorage persistence + tab context)
