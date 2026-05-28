@@ -62,10 +62,11 @@ def require_approval(sheets):
 
 
 def already_recorded(sheets, llc, month_label):
-    rows = read_sheet(sheets, "History!A:C")
-    for row in rows[1:]:
-        if len(row) >= 3 and row[1] == month_label and row[2] == llc:
-            return True
+    for tab in ("History", "Pending Review"):
+        rows = read_sheet(sheets, f"'{tab}'!A:C")
+        for row in rows[1:]:
+            if len(row) >= 3 and row[1] == month_label and row[2] == llc:
+                return True
     return False
 
 
