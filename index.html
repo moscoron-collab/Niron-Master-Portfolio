@@ -182,6 +182,8 @@
   #tab-noble .renewal-card { background: #0d1825; border: 1px solid var(--edit-border); border-radius: 9px; padding: 22px; margin-bottom: 26px; position: relative; }
   #tab-noble .renewal-card::before { content: '✏️ EDITABLE — Click any amber field to update at renewal'; position: absolute; top: -1px; right: 16px; background: #0d1825; padding: 0 8px; font-family: var(--fm); font-size: 9px; letter-spacing: 1px; color: var(--warn); border: 1px solid var(--edit-border); border-radius: 3px; transform: translateY(-50%); }
   #tab-noble .rc-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 16px; }
+  #tab-noble .rc-grid .rz { grid-column: 1/-1; font-family: var(--fm); font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 6px; margin: 12px 0 -4px; }
+  #tab-noble .rc-grid .rz:first-child { margin-top: 0; }
   #tab-noble .rf label { display: block; font-family: var(--fm); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
   #tab-noble .rf .ev { font-family: var(--fm); font-size: 13px; color: var(--text); min-height: 22px; padding: 3px 6px; border-radius: 4px; border: 1px solid transparent; line-height: 1.5; word-break: break-word; }
   #tab-noble .rf .ev.editable { background: var(--edit-bg); border-color: var(--edit-border); color: var(--warn); cursor: text; }
@@ -595,18 +597,29 @@
         <div class="st">✏️ Current Policy Renewal Card — Update Each Year</div>
         <div class="renewal-card">
           <div class="rc-grid">
+            <div class="rz">① Policy</div>
             <div class="rf"><label>Carrier</label><div class="ev hi">State Farm Fire &amp; Casualty Company</div></div>
             <div class="rf"><label>Policy Period</label><div class="ev editable ok" contenteditable="true" spellcheck="false">Dec 15, 2025 → Dec 15, 2026</div></div>
-            <div class="rf"><label>Payment Plan</label><div class="ev hi">State Farm Payment Plan (SFPP)</div></div>
             <div class="rf"><label>Annual Premium (13 props)</label><div class="ev editable" contenteditable="true" spellcheck="false">$34,630</div></div>
+
+            <div class="rz">② Payment</div>
             <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$2,885.83</div></div>
-            <div class="rf"><label>Deductible</label><div class="ev hi">1% of building value per property</div></div>
             <div class="rf"><label>Payment Source</label><div class="ev editable" contenteditable="true" spellcheck="false">Auto-draft Divando acct · 2nd of month</div></div>
+            <div class="rf"><label>Payment Plan</label><div class="ev hi">State Farm Payment Plan (SFPP)</div></div>
+
+            <div class="rz">③ Coverage &amp; Limits</div>
+            <div class="rf"><label>Medical Payments</label><div class="ev hi">$1,000 per person</div></div>
+            <div class="rf"><label>Loss of Rents</label><div class="ev hi">Actual Loss Sustained</div></div>
+
+            <div class="rz">④ Deductibles</div>
+            <div class="rf"><label>Deductible</label><div class="ev hi">1% of building value per property</div></div>
+
+            <div class="rz">⑤ Contacts &amp; Parties</div>
             <div class="rf"><label>Agent</label><div class="ev hi">Kevin Schult Ins Agency Inc</div></div>
             <div class="rf"><label>Agent Phone</label><div class="ev hi">(303) 989-3847 · (303) 989-3849</div></div>
             <div class="rf"><label>Agent Email</label><div class="ev hi">kevin.schult.l4wu@statefarm.com</div></div>
-            <div class="rf"><label>Medical Payments</label><div class="ev hi">$1,000 per person</div></div>
-            <div class="rf"><label>Loss of Rents</label><div class="ev hi">Actual Loss Sustained</div></div>
+
+            <div class="rz">⑥ Admin</div>
             <div class="rf"><label>Last Updated</label><div class="ev editable" contenteditable="true" spellcheck="false">Apr 2026</div></div>
             <div class="rf"><label>Notes</label><div class="ev editable" contenteditable="true" spellcheck="false">13 SFRs — 11 Divando owned, 2 Dorado owned (Jamaica + Enid). Dorado credits $138/mo back to Divando. Stop Dec 2026.</div></div>
             <div class="rf" style="grid-column:1/-1"><label>📎 Policy Documents — Paste Dropbox Link</label><div class="ev editable" contenteditable="true" spellcheck="false" id="db-divando" style="color:var(--accent)">Paste Dropbox link here...</div></div>
@@ -669,25 +682,36 @@
         <div class="st">✏️ Fourplex Renewal Card — 1460 W. 41st Ave, Denver CO 80211</div>
         <div class="renewal-card">
           <div class="rc-grid">
+            <div class="rz">① Policy</div>
             <div class="rf"><label>Carrier</label><div class="ev hi">Berkshire Hathaway Homestate</div></div>
             <div class="rf"><label>Policy Number (Current)</label><div class="ev editable" contenteditable="true" spellcheck="false">02PRM080318-06</div></div>
             <div class="rf"><label>Policy Number (Expiring)</label><div class="ev hi">02PRM080318-05</div></div>
             <div class="rf"><label>Policy Period</label><div class="ev editable ok" contenteditable="true" spellcheck="false">Nov 6, 2025 → Nov 6, 2026</div></div>
             <div class="rf"><label>Annual Premium</label><div class="ev editable" contenteditable="true" spellcheck="false">$5,440</div></div>
-            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$453.33</div></div>
-            <div class="rf"><label>Payment Source</label><div class="ev hi">Dorado LLC debit card · auto-drafted monthly on the 6th</div></div>
-            <div class="rf"><label>Building Coverage</label><div class="ev hi">$775,000</div></div>
-            <div class="rf"><label>Business Income</label><div class="ev hi">$60,600</div></div>
-            <div class="rf"><label>Deductible — Standard</label><div class="ev editable" contenteditable="true" spellcheck="false">$2,500</div></div>
-            <div class="rf"><label>Deductible — Wind/Hail</label><div class="ev editable" contenteditable="true" spellcheck="false" style="color:var(--warn)">$15,500</div></div>
             <div class="rf"><label>Prop Premium</label><div class="ev hi">$5,070</div></div>
             <div class="rf"><label>Liability Premium</label><div class="ev hi">$370</div></div>
-            <div class="rf"><label>Liability Limits</label><div class="ev hi">$1M each occ · $2M aggregate<br>Fire Legal: $100K · Med: $5K</div></div>
-            <div class="rf"><label>Agent</label><div class="ev hi">Hannah Burford — IMA Select, LLC<br>1705 17th St Ste 100, Denver CO</div></div>
-            <div class="rf"><label>Mortgagees</label><div class="ev hi">ANB Bank ISAOA<br>Collegiate Peaks Bank · Div of Glacier Bank</div></div>
-            <div class="rf"><label>Agent Phone / Email</label><div class="ev hi">Office: (303) 534-4567<br>Direct: (303) 615-7840<br>hannah.burford@imacorp.com</div></div>
+
+            <div class="rz">② Payment</div>
+            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$453.33</div></div>
+            <div class="rf"><label>Payment Source</label><div class="ev hi">Dorado LLC debit card · auto-drafted monthly on the 6th</div></div>
             <div class="rf"><label>Billing Account #</label><div class="ev hi">240311</div></div>
             <div class="rf"><label>Billing Services</label><div class="ev hi">1-877-680-2442<br>billing@bhhomestate.com</div></div>
+
+            <div class="rz">③ Coverage &amp; Limits</div>
+            <div class="rf"><label>Building Coverage</label><div class="ev hi">$775,000</div></div>
+            <div class="rf"><label>Business Income</label><div class="ev hi">$60,600</div></div>
+            <div class="rf"><label>Liability Limits</label><div class="ev hi">$1M each occ · $2M aggregate<br>Fire Legal: $100K · Med: $5K</div></div>
+
+            <div class="rz">④ Deductibles</div>
+            <div class="rf"><label>Deductible — Standard</label><div class="ev editable" contenteditable="true" spellcheck="false">$2,500</div></div>
+            <div class="rf"><label>Deductible — Wind/Hail</label><div class="ev editable" contenteditable="true" spellcheck="false" style="color:var(--warn)">$15,500</div></div>
+
+            <div class="rz">⑤ Contacts &amp; Parties</div>
+            <div class="rf"><label>Agent</label><div class="ev hi">Hannah Burford — IMA Select, LLC<br>1705 17th St Ste 100, Denver CO</div></div>
+            <div class="rf"><label>Agent Phone / Email</label><div class="ev hi">Office: (303) 534-4567<br>Direct: (303) 615-7840<br>hannah.burford@imacorp.com</div></div>
+            <div class="rf"><label>Mortgagees</label><div class="ev hi">ANB Bank ISAOA<br>Collegiate Peaks Bank · Div of Glacier Bank</div></div>
+
+            <div class="rz">⑥ Admin</div>
             <div class="rf"><label>Last Updated</label><div class="ev editable" contenteditable="true" spellcheck="false">Apr 2026 — verified from Gemini extract</div></div>
             <div class="rf"><label>Notes</label><div class="ev editable" contenteditable="true" spellcheck="false">Recurring monthly. Cancel ≥3 days before due. Wind/Hail deductible $15,500 — note for claims.</div></div>
             <div class="rf" style="grid-column:1/-1"><label>📎 Policy Document — Paste Dropbox Link</label><div class="ev editable" contenteditable="true" spellcheck="false" id="db-dorado" style="color:var(--accent)">Paste Dropbox link here...</div></div>
@@ -753,6 +777,7 @@
         <div class="st">✏️ Donald LLC — 4 Duplexes · Renewal Card</div>
         <div class="renewal-card">
           <div class="rc-grid">
+            <div class="rz">① Policy</div>
             <div class="rf"><label>Named Insured</label><div class="ev hi">5070 E Donald Ave Denver LLC</div></div>
             <div class="rf"><label>Carrier</label><div class="ev hi">Westfield Superior Insurance</div></div>
             <div class="rf"><label>Policy Number</label><div class="ev editable" contenteditable="true" spellcheck="false">499841Y</div></div>
@@ -761,26 +786,36 @@
             <div class="rf"><label>Property Premium</label><div class="ev hi">$13,500</div></div>
             <div class="rf"><label>Liability Premium</label><div class="ev hi">$1,028</div></div>
             <div class="rf"><label>CO Hazard Fee</label><div class="ev hi">$2.00</div></div>
+
+            <div class="rz">② Payment</div>
             <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$1,210.84</div></div>
             <div class="rf"><label>Payment Source</label><div class="ev hi">Donald LLC account · 2nd of month</div></div>
+            <div class="rf"><label>Billing Account #</label><div class="ev hi">6000129933</div></div>
+
+            <div class="rz">③ Coverage &amp; Limits</div>
             <div class="rf"><label>Coverage / Duplex</label><div class="ev hi">$1,125,500 ($562,750 × 2 units)</div></div>
             <div class="rf"><label>Business Income</label><div class="ev hi">$15,000/building · 60-day</div></div>
             <div class="rf"><label>Ordinance / Law</label><div class="ev hi">$225,000 (B/C combined)</div></div>
             <div class="rf"><label>Liability</label><div class="ev hi">$2M each occ · $4M aggregate<br>Products $4M · Premises Rented $1M<br>Medical: Excluded</div></div>
+            <div class="rf"><label>Excess Liability</label><div class="ev hi">Rejected</div></div>
+            <div class="rf"><label>Crime Limits</label><div class="ev hi">Employee Theft $25K · Forgery $25K<br>Inside Premises $25K · Outside $25K<br>Money Orders $2,500</div></div>
+            <div class="rf"><label>Accounts Receivable</label><div class="ev hi">$100,000</div></div>
+            <div class="rf"><label>Exclusions</label><div class="ev hi">Virus/Bacteria · Cannabis · Cyber<br>Asbestos · Professional Liability</div></div>
+
+            <div class="rz">④ Deductibles</div>
             <div class="rf"><label>Deductible — Standard</label><div class="ev editable" contenteditable="true" spellcheck="false">$10,000</div></div>
             <div class="rf"><label>Deductible — Biz Personal Prop</label><div class="ev hi">$1,000</div></div>
             <div class="rf"><label>Deductible — Wind/Hail</label><div class="ev hi">$0 — not applicable</div></div>
             <div class="rf"><label>Deductible — Crime</label><div class="ev hi">$500 per occurrence</div></div>
             <div class="rf"><label>Deductible — Valuable Papers</label><div class="ev hi">$500</div></div>
-            <div class="rf"><label>Crime Limits</label><div class="ev hi">Employee Theft $25K · Forgery $25K<br>Inside Premises $25K · Outside $25K<br>Money Orders $2,500</div></div>
-            <div class="rf"><label>Accounts Receivable</label><div class="ev hi">$100,000</div></div>
-            <div class="rf"><label>Mortgageholder</label><div class="ev hi">CBRE Loan Services Inc</div></div>
-            <div class="rf"><label>Additional Insured</label><div class="ev hi">Laureate LTD</div></div>
-            <div class="rf"><label>Excess Liability</label><div class="ev hi">Rejected</div></div>
+
+            <div class="rz">⑤ Contacts &amp; Parties</div>
             <div class="rf"><label>Agent</label><div class="ev hi">Wren Arbuthnot<br>Arrow Insurance Management Inc<br>PO Box 5000, Frisco CO 80443</div></div>
             <div class="rf"><label>Agent Phone / Email</label><div class="ev hi">970-668-3500<br>warbuthnot@arrowinsurance.net</div></div>
-            <div class="rf"><label>Billing Account #</label><div class="ev hi">6000129933</div></div>
-            <div class="rf"><label>Exclusions</label><div class="ev hi">Virus/Bacteria · Cannabis · Cyber<br>Asbestos · Professional Liability</div></div>
+            <div class="rf"><label>Mortgageholder</label><div class="ev hi">CBRE Loan Services Inc</div></div>
+            <div class="rf"><label>Additional Insured</label><div class="ev hi">Laureate LTD</div></div>
+
+            <div class="rz">⑥ Admin</div>
             <div class="rf"><label>Last Updated</label><div class="ev editable" contenteditable="true" spellcheck="false">Apr 2026 — verified from Gemini</div></div>
             <div class="rf"><label>Notes</label><div class="ev editable" contenteditable="true" spellcheck="false">Annual paper invoice. Monthly $1,210.84 drafted from Donald acct on 2nd.</div></div>
             <div class="rf" style="grid-column:1/-1"><label>📎 Policy Document — Paste Dropbox Link</label><div class="ev editable" contenteditable="true" spellcheck="false" id="db-donald" style="color:var(--accent)">Paste Dropbox link here...</div></div>
@@ -823,23 +858,34 @@
         <div class="st">✏️ Yale LLC — 2991-2999 W Yale Ave · Renewal Card</div>
         <div class="renewal-card">
           <div class="rc-grid">
+            <div class="rz">① Policy</div>
             <div class="rf"><label>Named Insured</label><div class="ev hi">Yale Townhomes LLC</div></div>
             <div class="rf"><label>Carrier</label><div class="ev hi">Acuity, A Mutual Insurance Company</div></div>
             <div class="rf"><label>Policy Number</label><div class="ev editable" contenteditable="true" spellcheck="false">ZM1786-01</div></div>
             <div class="rf"><label>Policy Period</label><div class="ev editable ok" contenteditable="true" spellcheck="false">Feb 22, 2026 → Feb 22, 2027</div></div>
             <div class="rf"><label>Property Address</label><div class="ev hi">2991-2999 W Yale Ave, Denver CO</div></div>
-            <div class="rf"><label>Building Coverage</label><div class="ev editable" contenteditable="true" spellcheck="false">$1,900,799</div></div>
-            <div class="rf"><label>Personal Property</label><div class="ev hi">$65,862</div></div>
             <div class="rf"><label>Annual Premium</label><div class="ev editable" contenteditable="true" spellcheck="false">$11,248</div></div>
+
+            <div class="rz">② Payment</div>
             <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$1,024.54 (11-pay · $1,024.56 down)</div></div>
             <div class="rf"><label>Payment Source</label><div class="ev hi">Yale LLC dedicated acct · debit card · 24th of month</div></div>
-            <div class="rf"><label>Deductible — Standard</label><div class="ev editable" contenteditable="true" spellcheck="false">$5,000</div></div>
-            <div class="rf"><label>Deductible — Wind/Hail</label><div class="ev editable" contenteditable="true" spellcheck="false" style="color:var(--warn)">2% per building</div></div>
+
+            <div class="rz">③ Coverage &amp; Limits</div>
+            <div class="rf"><label>Building Coverage</label><div class="ev editable" contenteditable="true" spellcheck="false">$1,900,799</div></div>
+            <div class="rf"><label>Personal Property</label><div class="ev hi">$65,862</div></div>
             <div class="rf"><label>Liability (Bis-Pak)</label><div class="ev hi">$1M each occ · $3M aggregate<br>Products $3M · Premises Rented $300K<br>Medical $10K per person</div></div>
             <div class="rf"><label>Liability (Excess)</label><div class="ev hi">$2M each occ · $2M aggregate<br>Products $2M · Hired/Nonowned Auto incl.</div></div>
-            <div class="rf"><label>Additional Named Insureds</label><div class="ev hi" style="color:var(--warn)">Nir Shay · Ron Moscovich</div></div>
-            <div class="rf"><label>Agent</label><div class="ev hi">CRS Insurance Brokerage<br>Nathan Michael Fonseca · Agency #7118-BL</div></div>
             <div class="rf"><label>Endorsements</label><div class="ev hi">Acuity Property — Platinum<br>Acuity Liability — Gold<br>Equipment Breakdown · Terrorism $353<br>Roof cosmetic damage excluded</div></div>
+
+            <div class="rz">④ Deductibles</div>
+            <div class="rf"><label>Deductible — Standard</label><div class="ev editable" contenteditable="true" spellcheck="false">$5,000</div></div>
+            <div class="rf"><label>Deductible — Wind/Hail</label><div class="ev editable" contenteditable="true" spellcheck="false" style="color:var(--warn)">2% per building</div></div>
+
+            <div class="rz">⑤ Contacts &amp; Parties</div>
+            <div class="rf"><label>Agent</label><div class="ev hi">CRS Insurance Brokerage<br>Nathan Michael Fonseca · Agency #7118-BL</div></div>
+            <div class="rf"><label>Additional Named Insureds</label><div class="ev hi" style="color:var(--warn)">Nir Shay · Ron Moscovich</div></div>
+
+            <div class="rz">⑥ Admin</div>
             <div class="rf"><label>Last Updated</label><div class="ev editable" contenteditable="true" spellcheck="false">Apr 2026 — verified from Gemini</div></div>
             <div class="rf"><label>Notes</label><div class="ev editable" contenteditable="true" spellcheck="false">—</div></div>
             <div class="rf" style="grid-column:1/-1"><label>📎 Policy Document — Paste Dropbox Link</label><div class="ev editable" contenteditable="true" spellcheck="false" id="db-yale" style="color:var(--accent)">Paste Dropbox link here...</div></div>
