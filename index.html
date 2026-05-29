@@ -1139,16 +1139,21 @@ function newChat() { chatHistory = []; saveChatHistory(); document.getElementByI
 function appendChatMsg(text, kind) { const el = document.createElement("div"); el.className = "chat-msg " + kind; el.textContent = text; const msgs = document.getElementById("chat-messages"); msgs.appendChild(el); msgs.scrollTop = msgs.scrollHeight; return el; }
 
 function extractNobleContext() {
-  // Extract visible Noble Insurance content as text so chatbot has data to answer about
+  // Extract ALL Noble Insurance content (every sub-tab) as text so the chatbot can
+  // answer insurance questions from any main tab. Uses textContent (not innerText)
+  // because hidden panes (display:none) return empty innerText.
   const noble = document.getElementById('tab-noble');
   if (!noble) return '';
-  // Just the active sub-tab + summary header
-  const activePane = noble.querySelector('.pane.on');
-  const summary = noble.querySelector('#p-summary');
+  const clean = el => (el.textContent || '').replace(/[ \t]+/g, ' ').replace(/\n\s*\n\s*\n+/g, '\n\n').trim();
   let chunks = [];
-  if (summary) chunks.push('--- INSURANCE SUMMARY ---\n' + summary.innerText);
-  if (activePane && activePane !== summary) chunks.push('--- ACTIVE SUB-TAB ---\n' + activePane.innerText);
-  return chunks.join('\n\n').slice(0, 8000);
+  const summary = noble.querySelector('#p-summary');
+  if (summary) chunks.push('--- INSURANCE SUMMARY ---\n' + clean(summary));
+  noble.querySelectorAll('.pane').forEach(pane => {
+    if (pane === summary) return;
+    const txt = clean(pane);
+    if (txt) chunks.push('--- ' + (pane.id || 'SECTION') + ' ---\n' + txt);
+  });
+  return chunks.join('\n\n').slice(0, 12000);
 }
 
 async function sendChat() {
@@ -1167,7 +1172,7 @@ async function sendChat() {
       action: "chat",
       messages: chatHistory,
       active_tab: ACTIVE_MAIN_TAB,
-      noble_context: ACTIVE_MAIN_TAB === 'noble' ? extractNobleContext() : extractNobleContext().slice(0, 2000)
+      noble_context: extractNobleContext()
     };
     const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload) });
     const data = await res.json();
