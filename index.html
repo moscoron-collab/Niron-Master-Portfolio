@@ -95,6 +95,8 @@
   .maint-fab:hover { transform: scale(1.05); }
   .dist-fab { position: fixed; bottom: 160px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #00c97a, #00a862); border: none; cursor: pointer; z-index: 1000; box-shadow: 0 4px 20px rgba(0, 201, 122, 0.4); font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
   .dist-fab:hover { transform: scale(1.05); }
+  .stmt-fab { position: fixed; bottom: 228px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #5b21b6); border: none; cursor: pointer; z-index: 1000; box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4); font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+  .stmt-fab:hover { transform: scale(1.05); }
 
   /* Master Portfolio modals */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center; z-index: 2000; }
@@ -344,6 +346,26 @@
   </div>
 </div>
 
+<!-- ═══════════════════ ADD STATEMENT MODAL (Suncoast / MidSouth) ═══════════════════ -->
+<div class="modal-overlay" id="stmt-modal">
+  <div class="modal-box">
+    <h2>📋 Add Monthly Statement <button class="modal-close" onclick="closeStmtModal()">×</button></h2>
+    <label>Month</label>
+    <input type="month" id="stmt-month">
+    <label>Property</label>
+    <select id="stmt-property">
+      <option value="">-- Select Property --</option>
+      <option value="8222 Hare Ave">8222 Hare Ave (Jacksonville FL — Suncoast)</option>
+      <option value="3899 Joest Rd">3899 Joest Rd (Memphis TN — MidSouth)</option>
+      <option value="6580 Stockport Dr">6580 Stockport Dr (Memphis TN — MidSouth)</option>
+    </select>
+    <label>Net Operating Income / NOI ($)</label>
+    <input type="number" id="stmt-noi" step="0.01" placeholder="0.00">
+    <div class="form-msg" id="stmt-msg"></div>
+    <div class="modal-actions"><button class="secondary" onclick="closeStmtModal()">Cancel</button><button class="primary" id="stmt-submit" onclick="submitStatement()" style="background:linear-gradient(135deg,#7c3aed,#5b21b6)">Save Statement</button></div>
+  </div>
+</div>
+
 <!-- ═══════════════════ CHAT PANEL ═══════════════════ -->
 <div class="chat-panel" id="chat-panel">
   <div class="chat-header">
@@ -395,6 +417,7 @@
   <button class="chat-fab" id="chat-fab" onclick="toggleChat()" title="Ask Claude about your portfolio">💬</button>
   <button class="maint-fab" id="maint-fab" onclick="openMaintModal()" title="Add maintenance invoice">🔧</button>
   <button class="dist-fab" id="dist-fab" onclick="openDistModal()" title="Add distribution">💰</button>
+  <button class="stmt-fab" id="stmt-fab" onclick="openStmtModal()" title="Add monthly statement (Suncoast/MidSouth)">📋</button>
 
   <header class="app-header">
     <div class="header-left">
@@ -925,14 +948,17 @@ function switchMainTab(tab, skipUrl) {
   // Show/hide tab-specific UI
   const maintFab = document.getElementById('maint-fab');
   const distFab = document.getElementById('dist-fab');
+  const stmtFab = document.getElementById('stmt-fab');
   const monthSelect = document.getElementById('header-month-select');
   if (tab === 'master') {
     maintFab.style.display = 'flex';
     distFab.style.display = 'flex';
+    stmtFab.style.display = 'flex';
     monthSelect.style.display = '';
   } else {
     maintFab.style.display = 'none';
     distFab.style.display = 'none';
+    stmtFab.style.display = 'none';
     monthSelect.style.display = 'none';
   }
 
@@ -1016,6 +1042,61 @@ async function submitDistribution() {
       msgEl.className = "form-msg ok";
       msgEl.textContent = "✅ Saved! Refreshing dashboard...";
       setTimeout(() => { closeDistModal(); load(); }, 1000);
+    }
+  } catch (e) {
+    msgEl.className = "form-msg err";
+    msgEl.textContent = "Network error: " + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ============================================================
+   MASTER PORTFOLIO — ADD STATEMENT MODAL (Suncoast / MidSouth)
+   ============================================================ */
+function openStmtModal() {
+  document.getElementById("stmt-modal").classList.add("open");
+  // Default to previous month
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  document.getElementById("stmt-month").value = yyyy + "-" + mm;
+  document.getElementById("stmt-msg").className = "form-msg";
+  document.getElementById("stmt-msg").textContent = "";
+}
+function closeStmtModal() {
+  document.getElementById("stmt-modal").classList.remove("open");
+  ["stmt-property", "stmt-noi"].forEach(id => { document.getElementById(id).value = ""; });
+}
+async function submitStatement() {
+  const msgEl = document.getElementById("stmt-msg");
+  const btn = document.getElementById("stmt-submit");
+  const data = {
+    action: "add_statement",
+    month: document.getElementById("stmt-month").value,
+    property: document.getElementById("stmt-property").value,
+    noi: parseFloat(document.getElementById("stmt-noi").value) || 0
+  };
+  if (!data.month || !data.property || !data.noi) {
+    msgEl.className = "form-msg err";
+    msgEl.textContent = "Please fill in Month, Property, and NOI.";
+    return;
+  }
+  btn.disabled = true;
+  msgEl.className = "form-msg";
+  msgEl.textContent = "Saving...";
+  try {
+    const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(data) });
+    const result = await res.json();
+    if (result.error) {
+      msgEl.className = "form-msg err";
+      msgEl.textContent = "Error: " + result.error;
+    } else {
+      msgEl.className = "form-msg ok";
+      msgEl.textContent = "✅ Saved! Refreshing dashboard...";
+      setTimeout(() => { closeStmtModal(); load(); }, 1000);
     }
   } catch (e) {
     msgEl.className = "form-msg err";
