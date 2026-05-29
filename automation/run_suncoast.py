@@ -91,11 +91,34 @@ def download_statement(email, password, download_dir):
         pw_field.fill(password)
         print("  Password filled")
 
+        # DIAGNOSTIC: dump every interactive element on the login page so we can
+        # identify the exact submit control. Remove once selectors are confirmed.
+        elements = page.evaluate("""() => {
+            const out = [];
+            document.querySelectorAll('button, input, a, [role="button"]').forEach(el => {
+                out.push({
+                    tag: el.tagName,
+                    type: el.getAttribute('type'),
+                    name: el.getAttribute('name'),
+                    id: el.id || null,
+                    cls: el.className || null,
+                    value: el.getAttribute('value'),
+                    text: (el.innerText || '').trim().slice(0, 40) || null,
+                });
+            });
+            return out;
+        }""")
+        print("  --- LOGIN PAGE ELEMENTS ---")
+        for el in elements:
+            print(f"    {el}")
+        print("  --- END ELEMENTS ---")
+
         # Submit — try clicking a button, then fall back to pressing Enter
         clicked = False
         for sel in [
             'button[type="submit"]',
             'input[type="submit"]',
+            'input[type="button"]',
             'button:has-text("Log In")',
             'button:has-text("Sign In")',
             'button:has-text("Login")',
@@ -113,8 +136,15 @@ def download_statement(email, password, download_dir):
             print("  Submit via Enter key")
 
         # Wait for login form to disappear (works with hash-based SPA routing)
-        page.wait_for_selector('input[type="password"]', state="hidden", timeout=60_000)
-        print(f"  Logged in. URL: {page.url}")
+        try:
+            page.wait_for_selector('input[type="password"]', state="hidden", timeout=30_000)
+            print(f"  Logged in. URL: {page.url}")
+        except Exception:
+            # Login didn't clear the form — dump any error message visible on page
+            body_text = page.evaluate("() => document.body.innerText.slice(0, 600)")
+            print("  LOGIN DID NOT COMPLETE. Visible page text:")
+            print("  " + body_text.replace("\n", "\n  "))
+            raise
 
         # Navigate to documents page
         page.goto(f"{PROPERTYWARE_URL}{DOCS_HASH}")
