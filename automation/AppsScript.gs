@@ -838,11 +838,15 @@ function handleChatWithHistory(messages) {
   }
 
   var context = buildPortfolioContext();
-  var systemPrompt = 'You are a friendly real estate portfolio analyst. Answer questions about the user\'s rental property portfolio based ONLY on the data below. Be concise, friendly, and use bullet points for lists. Remember the conversation context so follow-up questions make sense.\n\nPORTFOLIO DATA:\n' + context;
+  var systemPrompt = 'You are a sharp real estate portfolio analyst for Ronen Moscovich (Ron), a Denver-based investor.\n'
+    + 'Answer questions about the portfolio using ONLY the data provided below. Never say data is missing if it appears in the data.\n'
+    + 'When asked for totals, YTD, or annual figures: READ them directly from the pre-computed annual summary tables — do NOT try to re-add individual rows.\n'
+    + 'Be concise. Use dollar amounts with commas. No emojis unless Ron uses them first.\n\n'
+    + context;
 
   var payload = {
-    model: 'claude-haiku-4-5',
-    max_tokens: 1024,
+    model: 'claude-sonnet-4-6',
+    max_tokens: 2048,
     system: systemPrompt,
     messages: messages
   };
@@ -1176,92 +1180,125 @@ function getDashboardJson() {
 function buildPortfolioContext() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var tz = ss.getSpreadsheetTimeZone();
-  var summary = { history: [], settings: [], loans: [], distributions: [], maintenance: [] };
 
   function dateStr(v, fmt) {
-    if (!(v instanceof Date)) return String(v || '');
+    if (!(v instanceof Date)) return String(v || '').slice(0, 10);
     return Utilities.formatDate(v, tz, fmt || 'yyyy-MM-dd');
   }
+  function dollar(n) { return '$' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
 
+  // ── History ──────────────────────────────────────────────────────────────
+  var rows = [];
   var hist = ss.getSheetByName('History');
-  var histLast = hist.getLastRow();
+  var histLast = hist ? hist.getLastRow() : 1;
   if (histLast >= 2) {
-    var histRows = hist.getRange(2, 1, histLast - 1, 12).getValues();
-    histRows.forEach(function(r) {
-      if (r[2]) {
-        summary.history.push({
-          month: dateStr(r[1], 'yyyy-MM') + ' (' + dateStr(r[1], 'MMM yyyy') + ')',
-          llc: r[2], disbursement: Number(r[3]) || 0,
-          mgmt_fees: Number(r[4]) || 0, mortgage: Number(r[5]) || 0,
-          tax: Number(r[6]) || 0, insurance: Number(r[7]) || 0,
-          maintenance: Number(r[8]) || 0, net: Number(r[9]) || 0
-        });
-      }
+    hist.getRange(2, 1, histLast - 1, 12).getValues().forEach(function(r) {
+      if (!r[2]) return;
+      var ps = dateStr(r[1]);          // "2024-06-01" or "2024-06-01"
+      var yr = ps.slice(0, 4);
+      var mo = ps.slice(0, 7);         // "2024-06"
+      rows.push({ yr: yr, mo: mo, llc: String(r[2]),
+        disb: Number(r[3]) || 0, mgmt: Number(r[4]) || 0,
+        mort: Number(r[5]) || 0, tax: Number(r[6]) || 0,
+        ins: Number(r[7]) || 0, maint: Number(r[8]) || 0,
+        net: Number(r[9]) || 0 });
     });
   }
 
-  var st = ss.getSheetByName('Settings');
-  st.getRange('A:E').getValues().forEach(function(r) {
-    if (r[0] && typeof r[1] === 'number') {
-      summary.settings.push({
-        llc: r[0], monthly_mortgage: Number(r[1]),
-        annual_tax: Number(r[2]), annual_insurance: Number(r[3]),
-        property_value: Number(r[4])
-      });
-    }
+  // ── Pre-compute annual totals (all LLCs combined) ─────────────────────
+  var annTot = {};   // { "2024": { disb, net, months: Set } }
+  var annLlc = {};   // { "2024": { "Yale...": { disb, net, months: Set } } }
+  rows.forEach(function(r) {
+    if (!annTot[r.yr]) annTot[r.yr] = { disb: 0, net: 0, mos: {} };
+    annTot[r.yr].disb += r.disb;
+    annTot[r.yr].net  += r.net;
+    annTot[r.yr].mos[r.mo] = 1;
+
+    if (!annLlc[r.yr]) annLlc[r.yr] = {};
+    if (!annLlc[r.yr][r.llc]) annLlc[r.yr][r.llc] = { disb: 0, net: 0, mos: {} };
+    annLlc[r.yr][r.llc].disb += r.disb;
+    annLlc[r.yr][r.llc].net  += r.net;
+    annLlc[r.yr][r.llc].mos[r.mo] = 1;
   });
 
+  // ── Build readable context string ─────────────────────────────────────
+  var years = Object.keys(annTot).sort();
+  var allMos = rows.map(function(r){ return r.mo; });
+  var earliest = allMos.length ? allMos.sort()[0] : 'N/A';
+  var latest   = allMos.length ? allMos.sort().reverse()[0] : 'N/A';
+  var llcNames = [];
+  rows.forEach(function(r){ if (llcNames.indexOf(r.llc) < 0) llcNames.push(r.llc); });
+  llcNames.sort();
+
+  var ctx = '=== NIRON PORTFOLIO DATA ===\n';
+  ctx += 'Data range: ' + earliest + ' through ' + latest + '\n';
+  ctx += 'LLCs: ' + llcNames.join(', ') + '\n\n';
+
+  ctx += '=== ANNUAL TOTALS (all LLCs combined) ===\n';
+  years.forEach(function(yr) {
+    var t = annTot[yr];
+    var nMos = Object.keys(t.mos).length;
+    ctx += yr + ': Gross Income ' + dollar(t.disb) + ' | Net Cashflow ' + dollar(t.net) + ' | ' + nMos + ' month(s) of data\n';
+  });
+
+  ctx += '\n=== PER-LLC ANNUAL TOTALS ===\n';
+  years.forEach(function(yr) {
+    ctx += yr + ':\n';
+    Object.keys(annLlc[yr]).sort().forEach(function(llc) {
+      var a = annLlc[yr][llc];
+      var nMos = Object.keys(a.mos).length;
+      ctx += '  ' + llc + ': Gross ' + dollar(a.disb) + ' | Net ' + dollar(a.net) + ' | ' + nMos + ' mo\n';
+    });
+  });
+
+  ctx += '\n=== MONTHLY HISTORY (newest first) ===\n';
+  ctx += 'Month     | LLC                    | Gross Income  | Net Cashflow  | Mortgage | Maintenance\n';
+  rows.slice().sort(function(a,b){ return b.mo.localeCompare(a.mo); }).forEach(function(r) {
+    ctx += r.mo + '  | ' + (r.llc + '                        ').slice(0,22) + ' | '
+      + (dollar(r.disb) + '          ').slice(0,13) + ' | '
+      + (dollar(r.net)  + '          ').slice(0,13) + ' | '
+      + (dollar(r.mort) + '      ').slice(0,8) + ' | '
+      + dollar(r.maint) + '\n';
+  });
+
+  // ── Loans ────────────────────────────────────────────────────────────────
   var ln = ss.getSheetByName('Loans');
   if (ln && ln.getLastRow() >= 5) {
+    ctx += '\n=== LOANS ===\n';
     ln.getRange(5, 1, ln.getLastRow() - 4, 12).getValues().forEach(function(r) {
       if (r[0] && r[1]) {
-        summary.loans.push({
-          llc: r[0], lender: r[1],
-          monthly_payment: Number(r[8]) || 0,
-          remaining_balance: Number(r[10]) || Number(r[11]) || 0,
-          maturity: dateStr(r[9], 'yyyy-MM-dd')
-        });
+        ctx += r[0] + ' | ' + r[1] + ' | payment ' + dollar(Number(r[8])||0)
+          + ' | balance ' + dollar(Number(r[10])||Number(r[11])||0)
+          + ' | maturity ' + dateStr(r[9]) + '\n';
       }
     });
   }
 
+  // ── Distributions ────────────────────────────────────────────────────────
   var dist = ss.getSheetByName('Distributions');
   if (dist && dist.getLastRow() >= 5) {
+    ctx += '\n=== DISTRIBUTIONS (Ron\'s share) ===\n';
     dist.getRange(5, 1, dist.getLastRow() - 4, 5).getValues().forEach(function(r) {
-      if (r[0]) {
-        var d = r[0] instanceof Date ? r[0] : new Date(r[0]);
-        if (isNaN(d)) return;
-        summary.distributions.push({
-          date: dateStr(d, 'yyyy-MM-dd'),
-          month: dateStr(d, 'MMM yyyy'),
-          llc: r[1] || "",
-          your_amount: Number(r[2]) || 0,
-          partner_amount: Number(r[3]) || 0
-        });
-      }
+      if (!r[0]) return;
+      var d = r[0] instanceof Date ? r[0] : new Date(r[0]);
+      if (isNaN(d)) return;
+      ctx += dateStr(d) + ' | ' + (r[1]||'') + ' | Ron: ' + dollar(Number(r[2])||0) + ' | Nir: ' + dollar(Number(r[3])||0) + '\n';
     });
   }
 
+  // ── Maintenance ──────────────────────────────────────────────────────────
   var maint = ss.getSheetByName('Maintenance Log');
   if (maint && maint.getLastRow() >= 5) {
+    ctx += '\n=== MAINTENANCE LOG ===\n';
     maint.getRange(5, 1, maint.getLastRow() - 4, 7).getValues().forEach(function(r) {
-      if (r[0] && r[1]) {
-        var d = r[0] instanceof Date ? r[0] : new Date(r[0]);
-        if (isNaN(d)) return;
-        summary.maintenance.push({
-          date: dateStr(d, 'yyyy-MM-dd'),
-          month: dateStr(d, 'MMM yyyy'),
-          llc: r[1],
-          sub: r[2] || "",
-          category: r[3] || "",
-          description: r[4] || "",
-          amount: Number(r[5]) || 0
-        });
-      }
+      if (!r[0] || !r[1]) return;
+      var d = r[0] instanceof Date ? r[0] : new Date(r[0]);
+      if (isNaN(d)) return;
+      ctx += dateStr(d) + ' | ' + r[1] + ' | ' + (r[3]||'') + ' | ' + (r[4]||'') + ' | ' + dollar(Number(r[5])||0) + '\n';
     });
   }
 
-  return JSON.stringify(summary);
+  return ctx;
 }
 function setupProperties() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
