@@ -65,7 +65,14 @@ def download_statement(email, password, download_dir):
     """Log into Propertyware, download the most recent Owner Statement PDF."""
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
-        ctx  = browser.new_context(accept_downloads=True)
+        ctx  = browser.new_context(
+            accept_downloads=True,
+            user_agent=(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+            ),
+            viewport={"width": 1280, "height": 800},
+        )
         page = ctx.new_page()
 
         page.goto(PROPERTYWARE_URL)
@@ -73,67 +80,30 @@ def download_statement(email, password, download_dir):
         page.wait_for_selector('input[type="password"]', timeout=30_000)
         print("  Login form visible")
 
-        # Fill email — try common input patterns
-        for sel in [
-            'input[type="email"]',
-            'input[name="username"]',
-            'input[placeholder*="email" i]',
-            'input[placeholder*="user" i]',
-            'input:not([type="password"]):not([type="hidden"])',
-        ]:
-            locs = page.locator(sel)
-            if locs.count():
-                locs.first.fill(email)
-                print(f"  Email filled ({sel})")
-                break
-
-        pw_field = page.locator('input[type="password"]').first
-        pw_field.fill(password)
+        # Fill credentials (exact fields confirmed from page dump)
+        page.fill("#loginEmail", email)
+        print("  Email filled")
+        page.fill('input[type="password"]', password)
         print("  Password filled")
 
-        # DIAGNOSTIC: dump every interactive element on the login page so we can
-        # identify the exact submit control. Remove once selectors are confirmed.
-        elements = page.evaluate("""() => {
-            const out = [];
-            document.querySelectorAll('button, input, a, [role="button"]').forEach(el => {
-                out.push({
-                    tag: el.tagName,
-                    type: el.getAttribute('type'),
-                    name: el.getAttribute('name'),
-                    id: el.id || null,
-                    cls: el.className || null,
-                    value: el.getAttribute('value'),
-                    text: (el.innerText || '').trim().slice(0, 40) || null,
-                });
-            });
-            return out;
-        }""")
-        print("  --- LOGIN PAGE ELEMENTS ---")
-        for el in elements:
-            print(f"    {el}")
-        print("  --- END ELEMENTS ---")
+        # reCAPTCHA detection — is an (invisible) reCAPTCHA on this page?
+        captcha_frames = [f.url for f in page.frames
+                          if "recaptcha" in (f.url or "").lower()]
+        grecaptcha = page.evaluate(
+            "() => typeof window.grecaptcha !== 'undefined'")
+        captcha_field = page.evaluate(
+            "() => !!document.querySelector('[name*=captcha i],[id*=captcha i]')")
+        print(f"  reCAPTCHA iframes: {captcha_frames}")
+        print(f"  window.grecaptcha present: {grecaptcha}")
+        print(f"  captcha field present: {captcha_field}")
 
-        # Submit — try clicking a button, then fall back to pressing Enter
-        clicked = False
-        for sel in [
-            'button[type="submit"]',
-            'input[type="submit"]',
-            'input[type="button"]',
-            'button:has-text("Log In")',
-            'button:has-text("Sign In")',
-            'button:has-text("Login")',
-            'a:has-text("Log In")',
-            '[role="button"]:has-text("Log In")',
-        ]:
-            locs = page.locator(sel)
-            if locs.count():
-                locs.first.click()
-                clicked = True
-                print(f"  Submit clicked ({sel})")
-                break
-        if not clicked:
-            pw_field.press("Enter")
-            print("  Submit via Enter key")
+        # Click the exact 'Sign Me In' button, then wait for the network to settle
+        page.click('input[value="Sign Me In"]')
+        print("  Clicked 'Sign Me In'")
+        try:
+            page.wait_for_load_state("networkidle", timeout=20_000)
+        except Exception:
+            pass
 
         # Wait for login form to disappear (works with hash-based SPA routing)
         try:
