@@ -1,0 +1,34 @@
+name: Monthly Propertyware Pull — Suncoast + MidSouth
+
+on:
+  schedule:
+    # Runs daily at 12pm EDT / 4pm UTC from the 15th to 25th of each month
+    - cron: "0 16 15-25 * *"
+  workflow_dispatch:  # allows manual trigger from GitHub UI
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install playwright pdfplumber google-auth google-auth-httplib2 google-api-python-client
+          playwright install chromium
+
+      - name: Run automation
+        env:
+          SUNCOAST_EMAIL: ${{ secrets.SUNCOAST_EMAIL }}
+          SUNCOAST_PASSWORD: ${{ secrets.SUNCOAST_PASSWORD }}
+          MIDSOUTH_PASSWORD: ${{ secrets.MIDSOUTH_PASSWORD }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+        run: python automation/run_suncoast.py
