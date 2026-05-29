@@ -1,0 +1,42 @@
+name: Manual Entry — Suncoast + MidSouth Properties
+
+on:
+  workflow_dispatch:
+    inputs:
+      month:
+        description: "Statement month (format: YYYY-MM, e.g. 2026-04)"
+        required: true
+      hare_noi:
+        description: "8222 Hare Ave — Net Operating Income (leave blank to skip)"
+        required: false
+      joest_noi:
+        description: "3899 Joest Rd — Net Operating Income (leave blank to skip)"
+        required: false
+      stockport_noi:
+        description: "6580 Stockport Dr — Net Operating Income (leave blank to skip)"
+        required: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install google-auth google-auth-httplib2 google-api-python-client
+
+      - name: Write rows
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          MONTH: ${{ github.event.inputs.month }}
+          HARE_NOI: ${{ github.event.inputs.hare_noi }}
+          JOEST_NOI: ${{ github.event.inputs.joest_noi }}
+          STOCKPORT_NOI: ${{ github.event.inputs.stockport_noi }}
+        run: python automation/enter_suncoast_manual.py
