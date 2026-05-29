@@ -9,7 +9,7 @@ Net cashflow = Net Operating Income (mgmt fees + repairs already deducted by man
 No mortgage, no insurance on any of these properties.
 """
 
-import os, re, json, base64, datetime, tempfile, time
+import os, re, json, datetime, tempfile, time
 import pdfplumber
 from playwright.sync_api import sync_playwright
 from google.oauth2.service_account import Credentials
@@ -33,7 +33,7 @@ MEMPHIS_PROPERTIES = ["3899 Joest Rd", "6580 Stockport Dr"]
 # ── Google Sheets helpers ─────────────────────────────────────────────────────
 
 def sheets_client():
-    info  = json.loads(base64.b64decode(CREDS_B64))
+    info  = json.loads(CREDS_B64)
     creds = Credentials.from_service_account_info(info, scopes=SCOPES)
     return build("sheets", "v4", credentials=creds).spreadsheets()
 
