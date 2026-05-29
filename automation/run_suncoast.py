@@ -69,7 +69,9 @@ def download_statement(email, password, download_dir):
         page = ctx.new_page()
 
         page.goto(PROPERTYWARE_URL)
+        print(f"  Loaded: {page.url}")
         page.wait_for_selector('input[type="password"]', timeout=30_000)
+        print("  Login form visible")
 
         # Fill email — try common input patterns
         for sel in [
@@ -77,12 +79,16 @@ def download_statement(email, password, download_dir):
             'input[name="username"]',
             'input[placeholder*="email" i]',
             'input[placeholder*="user" i]',
+            'input:not([type="password"]):not([type="hidden"])',
         ]:
-            if page.locator(sel).count():
-                page.locator(sel).first.fill(email)
+            locs = page.locator(sel)
+            if locs.count():
+                locs.first.fill(email)
+                print(f"  Email filled ({sel})")
                 break
 
         page.locator('input[type="password"]').first.fill(password)
+        print("  Password filled")
 
         # Submit
         for sel in [
@@ -93,13 +99,18 @@ def download_statement(email, password, download_dir):
         ]:
             if page.locator(sel).count():
                 page.locator(sel).first.click()
+                print(f"  Submit clicked ({sel})")
                 break
 
-        # Wait for portal to load then navigate to documents
-        page.wait_for_url("**/ownerportal/**", timeout=60_000)
+        # Wait for login form to disappear (works with hash-based SPA routing)
+        page.wait_for_selector('input[type="password"]', state="hidden", timeout=60_000)
+        print(f"  Logged in. URL: {page.url}")
+
+        # Navigate to documents page
         page.goto(f"{PROPERTYWARE_URL}{DOCS_HASH}")
         page.wait_for_selector("table tbody tr", timeout=30_000)
         time.sleep(2)  # let React finish rendering rows
+        print("  Documents table loaded")
 
         # Click first Download PDF button (most recent statement)
         with page.expect_download(timeout=30_000) as dl_info:
