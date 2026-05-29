@@ -23,6 +23,8 @@ The two pipelines write to **separate Google Sheets** (separate `GOOGLE_SHEET_ID
 - **Technical level**: NOT a developer. Communicates business-side.
 - Step-by-step instructions, copyable commands, explain WHAT each does.
 - Decisive when path is clear — don't over-confirm.
+- **ALWAYS** put every value, secret, URL, or command in its own code block (` ``` ` or `` ` `` ) so the copy button appears. Never put copyable values inside a table cell or inline prose — the user cannot copy them that way.
+- **ALWAYS** make URLs clickable markdown links `[text](url)`, never plain text URLs.
 
 ---
 
