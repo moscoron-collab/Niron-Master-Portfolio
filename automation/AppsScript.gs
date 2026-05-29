@@ -826,7 +826,7 @@ function doPost(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function handleChatWithHistory(messages) {
+function handleChatWithHistory(messages, activeTab, nobleContext) {
   if (!messages || !messages.length) {
     return ContentService.createTextOutput(JSON.stringify({error: 'No messages'}))
       .setMimeType(ContentService.MimeType.JSON);
@@ -839,10 +839,20 @@ function handleChatWithHistory(messages) {
 
   var context = buildPortfolioContext();
   var systemPrompt = 'You are a sharp real estate portfolio analyst for Ronen Moscovich (Ron), a Denver-based investor.\n'
-    + 'Answer questions about the portfolio using ONLY the data provided below. Never say data is missing if it appears in the data.\n'
+    + 'Answer questions using ONLY the data provided below. Never say data is missing if it appears in the data.\n'
     + 'When asked for totals, YTD, or annual figures: READ them directly from the pre-computed annual summary tables — do NOT try to re-add individual rows.\n'
+    + 'The data has TWO sections: PORTFOLIO (cashflow/income) and INSURANCE (policies, renewal/expiry dates, premiums). '
+    + 'For insurance questions (next payment, renewal date, policy details, premiums), use the INSURANCE section. '
+    + 'Insurance renewal/expiry dates ARE the relevant dates for "next payment" questions — a policy renews (and is paid) on its renewal date.\n'
     + 'Be concise. Use dollar amounts with commas. No emojis unless Ron uses them first.\n\n'
     + context;
+
+  if (nobleContext && String(nobleContext).trim()) {
+    systemPrompt += '\n\n=== INSURANCE DATA (Noble Insurance tab) ===\n' + nobleContext;
+  }
+  if (activeTab === 'noble') {
+    systemPrompt += '\n\n[Ron is currently viewing the INSURANCE tab — prioritize insurance answers.]';
+  }
 
   var payload = {
     model: 'claude-sonnet-4-6',
@@ -1021,12 +1031,12 @@ function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
     if (body.action === 'chat' && body.messages) {
-      return handleChatWithHistory(body.messages);
+      return handleChatWithHistory(body.messages, body.active_tab, body.noble_context);
     }
     if (body.action === 'add_maintenance') {
       return addMaintenanceEntry(body);
     }
-        if (body.action === 'add_distribution') {
+    if (body.action === 'add_distribution') {
       return addDistributionEntry(body);
     }
     if (body.action === 'add_statement') {
