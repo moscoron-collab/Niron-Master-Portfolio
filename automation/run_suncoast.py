@@ -87,20 +87,30 @@ def download_statement(email, password, download_dir):
                 print(f"  Email filled ({sel})")
                 break
 
-        page.locator('input[type="password"]').first.fill(password)
+        pw_field = page.locator('input[type="password"]').first
+        pw_field.fill(password)
         print("  Password filled")
 
-        # Submit
+        # Submit — try clicking a button, then fall back to pressing Enter
+        clicked = False
         for sel in [
             'button[type="submit"]',
+            'input[type="submit"]',
             'button:has-text("Log In")',
             'button:has-text("Sign In")',
             'button:has-text("Login")',
+            'a:has-text("Log In")',
+            '[role="button"]:has-text("Log In")',
         ]:
-            if page.locator(sel).count():
-                page.locator(sel).first.click()
+            locs = page.locator(sel)
+            if locs.count():
+                locs.first.click()
+                clicked = True
                 print(f"  Submit clicked ({sel})")
                 break
+        if not clicked:
+            pw_field.press("Enter")
+            print("  Submit via Enter key")
 
         # Wait for login form to disappear (works with hash-based SPA routing)
         page.wait_for_selector('input[type="password"]', state="hidden", timeout=60_000)
