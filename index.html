@@ -1284,7 +1284,7 @@ function renderAll() {
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Total Mortgage / Mo</div><div class="value">' + fmtShort(totalMortgage) + '</div><div class="sublabel">Across all LLCs</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Portfolio Value</div><div class="value">' + fmtShort(totalValue) + '</div><div class="sublabel">Estimated</div></div></div>';
   html += '</div>';
-  html += '<div class="section"><h2><span class="dot"></span><span>Monthly Breakdown — ' + (monthLabel(SELECTED_MONTH) || '') + '</span></h2><div class="llc-grid">';
+  html += '<div class="section"><h2><span class="dot"></span><span>Monthly Breakdown</span><select id="inline-month-select" class="header-month-select" onchange="onMonthChange(this.value)">' + monthOptions + '</select></h2><div class="llc-grid">';
   groupedSelected.forEach(r => { const net = r.net_cashflow; const cls = net >= 0 ? 'green' : 'red'; let taxLabel = 'Tax / 12'; if (isTaxEscrowed(r.llc)) { taxLabel += ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(paid by escrow)</span>'; } else if (isTaxAnnual(r.llc)) { taxLabel += ' <span title="Paid lump-sum April 2026. Not deducted from monthly net." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(paid Apr 2026 ⓘ)</span>'; } const distRows = distributions.filter(d => d.llc === r.llc && d.period === r.period_start); const distYou = distRows.reduce((s,d) => s + (d.your_amount||0), 0); const distNir = distRows.reduce((s,d) => s + (d.partner_amount||0), 0); const distHtml = (distYou || distNir) ? '<div class="llc-row" style="border-top:1px solid #1e2d42;margin-top:6px;padding-top:6px"><span class="k" style="color:#00c97a">Distribution</span><span class="v" style="color:#00c97a;font-size:12px">You: ' + fmt(distYou) + ' &nbsp;|&nbsp; Nir: ' + fmt(distNir) + '</span></div>' : ''; html += '<div class="llc-card"><h3>' + r.llc + '</h3><div class="llc-row"><span class="k">Disbursement</span><span class="v">' + fmt(r.disbursement) + '</span></div><div class="llc-row"><span class="k">Mgmt Fees</span><span class="v">' + fmt(r.mgmt_fee) + '</span></div><div class="llc-row"><span class="k">Mortgage</span><span class="v">' + fmt(r.mortgage) + '</span></div><div class="llc-row"><span class="k">' + taxLabel + '</span><span class="v">' + fmt(r.tax_mo) + '</span></div><div class="llc-row"><span class="k">Insurance / 12</span><span class="v">' + fmt(r.ins_mo) + '</span></div><div class="llc-row"><span class="k">Maintenance</span><span class="v">' + fmt(r.maintenance) + '</span></div><div class="llc-row total"><span class="k">Net Cashflow</span><span class="v ' + cls + '">' + fmt(net) + '</span></div>' + distHtml + '</div>'; });
   if (!groupedSelected.length) html += '<div style="color:#4e6d8c">No data for this month.</div>';
   html += '</div></div>';
@@ -1297,7 +1297,14 @@ function renderAll() {
   el.innerHTML = html;
   if (months.length > 1) renderChart(enrichedHistory, months);
 }
-function onMonthChange(newMonth) { SELECTED_MONTH = newMonth; renderAll(); }
+function onMonthChange(newMonth) {
+  SELECTED_MONTH = newMonth;
+  const h = document.getElementById('header-month-select');
+  if (h) h.value = newMonth;
+  const i = document.getElementById('inline-month-select');
+  if (i) i.value = newMonth;
+  renderAll();
+}
 function renderChart(history, months) {
   const sortedMonths = months.slice().reverse();
   const llcNames = [...new Set(history.map(h => h.llc))].sort();
