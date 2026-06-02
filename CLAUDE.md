@@ -3,6 +3,14 @@
 > Read this BEFORE asking the user about repo structure, automation, or AppFolio.
 > See also: `combined-portfolio/CLAUDE.md` for the React dashboard side.
 
+> 📝 **User shorthand:**
+> - **`db`** = dashboard.
+> - **"combined"** OR **"moss"** = the **bigger combined db** = the Moss **+** Niron
+>   combined version. Its GitHub repo is **`moscoron-collab/Moss-Investments-Niron-combined`**
+>   (NOT `combined-portfolio` — that older name in this file is wrong; the React
+>   dashboard for both Moss and Niron lives in the `Moss-Investments-Niron-combined`
+>   repo). When the user says either word, switch context to that repo.
+
 ---
 
 ## 🔒 CRITICAL SECURITY CONSTRAINT
@@ -192,6 +200,14 @@ and are entered **manually each month** by the user through the dashboard:
 `✅ already added` (and disables it) or `⬜ not yet`, plus an "X of 3 entered"
 line. So the user does **NOT** need to open Google Sheets to check what's done —
 `refreshStmtStatus()` in `index.html`. (Server still blocks true duplicates.)
+
+> ❓ **OPEN QUESTION (resolve from the `combined-portfolio` repo):** Does the
+> "Niron Master Portfolio" tab inside the **Moss combined db** read from the Niron
+> sheet (`GOOGLE_SHEET_ID`) live, or does it keep its own copy/source? If it reads
+> the Niron sheet, manual entries here show up there automatically; if not, they
+> won't sync. Also: the ✅/⬜ "already added" indicator is a code change to THIS
+> repo's `index.html` only — it is NOT in the combined React db unless rebuilt
+> there. Both must be verified/built from inside `combined-portfolio`.
 
 > 🧠 **Memory rule:** after any change to how the dashboard or automation works,
 > update THIS file so it survives between sessions. The user should never have to
