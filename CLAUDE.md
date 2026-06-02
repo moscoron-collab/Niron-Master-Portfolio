@@ -152,6 +152,45 @@ Mortgage + insurance/12 defaults live in `PROPERTY_FIXED_COSTS` (top of `run_mos
 
 ---
 
+## 🌴 Suncoast / MidSouth properties (manual entry, roll up under Divando)
+
+Three out-of-state, mortgage-free, fully-owned properties are **NOT on AppFolio**
+and are entered **manually each month** by the user through the dashboard:
+
+| Property | Manager | Location |
+|---|---|---|
+| `8222 Hare Ave` | Suncoast Property Management | Jacksonville FL |
+| `3899 Joest Rd` | Mid South Best Rentals | Memphis TN |
+| `6580 Stockport Dr` | Mid South Best Rentals | Memphis TN |
+
+**Key rules (do NOT re-ask the user):**
+
+- All three **roll up under `Divando LLC`** on the dashboard. We deliberately did
+  **NOT** create separate cards for them — they belong to Divando.
+- In the `History` tab they are written with **LLC = `Divando LLC`**, and the
+  property name is kept in the **Source** column as `Manual Entry: <property>`
+  (e.g. `Manual Entry: 8222 Hare Ave`). That Source string is how the 3 are told
+  apart and how the duplicate-check works (`addStatementEntry` in `AppsScript.gs`).
+- The user enters them via the dashboard's **📋 Add Monthly Statement** modal
+  (`index.html`, `openStmtModal`/`submitStatement` → Apps Script `add_statement`).
+- **Which dollar amount to enter:** the user enters **what actually hit the bank**
+  (the deposited amount), NOT the statement's stated NOI/Owner Draw, because the
+  two can differ (e.g. May 2026 Suncoast: statement said $1,205.75 but only
+  $1,125.40 was deposited — an $80 gap).
+- No mortgage, no insurance on these → `net_cashflow == NOI` entered.
+
+**"Already added?" indicator:** the Add Monthly Statement modal reads
+`PORTFOLIO_DATA.history` and, for the selected month, marks each property with
+`✅ already added` (and disables it) or `⬜ not yet`, plus an "X of 3 entered"
+line. So the user does **NOT** need to open Google Sheets to check what's done —
+`refreshStmtStatus()` in `index.html`. (Server still blocks true duplicates.)
+
+> 🧠 **Memory rule:** after any change to how the dashboard or automation works,
+> update THIS file so it survives between sessions. The user should never have to
+> re-explain prior work — if it's not in `CLAUDE.md`, it's forgotten next session.
+
+---
+
 ## 🔄 How a monthly run works (high-level)
 
 1. GitHub Actions wakes up at cron time
