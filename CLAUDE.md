@@ -201,13 +201,14 @@ and are entered **manually each month** by the user through the dashboard:
 line. So the user does **NOT** need to open Google Sheets to check what's done —
 `refreshStmtStatus()` in `index.html`. (Server still blocks true duplicates.)
 
-> ❓ **OPEN QUESTION (resolve from the `combined-portfolio` repo):** Does the
-> "Niron Master Portfolio" tab inside the **Moss combined db** read from the Niron
-> sheet (`GOOGLE_SHEET_ID`) live, or does it keep its own copy/source? If it reads
-> the Niron sheet, manual entries here show up there automatically; if not, they
-> won't sync. Also: the ✅/⬜ "already added" indicator is a code change to THIS
-> repo's `index.html` only — it is NOT in the combined React db unless rebuilt
-> there. Both must be verified/built from inside `combined-portfolio`.
+> ❓ **OPEN QUESTION (resolve from the `Moss-Investments-Niron-combined` repo):**
+> Does the "Niron Master Portfolio" tab inside the **Moss combined db** read LIVE
+> from the Niron sheet (`GOOGLE_SHEET_ID`)? All Niron work — entries, features,
+> changes, the 4 LLCs, Suncoast, MidSouth — is done on THIS standalone Niron db
+> only. The Moss combined db's Niron tab should only DISPLAY that data (read-only).
+> If it reads the Niron sheet live, everything reflects automatically. If not,
+> that's the gap to fix. No features or modals need to be rebuilt in the Moss db —
+> it just needs to show what's here.
 
 > 🧠 **Memory rule:** after any change to how the dashboard or automation works,
 > update THIS file so it survives between sessions. The user should never have to
