@@ -167,6 +167,14 @@ and are entered **manually each month** by the user through the dashboard:
 
 - All three **roll up under `Divando LLC`** on the dashboard. We deliberately did
   **NOT** create separate cards for them — they belong to Divando.
+- The dashboard **sums every `Divando LLC` row** for a month into the single
+  Divando card (`groupedSelected` in `index.html`). So a manual entry is added to
+  the Divando totals automatically — the card's Disbursement and Net Cashflow both
+  rise by the entered amount (e.g. May 2026: AppFolio $36,481.31 + Suncoast
+  $1,125.40 = ~$37,606.71 shown). No separate total to maintain.
+- It also appears as a normal row in the **History tab** of Google Sheets
+  (LLC = `Divando LLC`, amount in Owner Disbursements, identified by the Source
+  column `Manual Entry: <property>`). Search "Hare"/"Joest"/"Stockport" to find it.
 - In the `History` tab they are written with **LLC = `Divando LLC`**, and the
   property name is kept in the **Source** column as `Manual Entry: <property>`
   (e.g. `Manual Entry: 8222 Hare Ave`). That Source string is how the 3 are told
