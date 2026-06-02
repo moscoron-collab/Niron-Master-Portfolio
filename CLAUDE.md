@@ -3,7 +3,13 @@
 > Read this BEFORE asking the user about repo structure, automation, or AppFolio.
 > See also: `combined-portfolio/CLAUDE.md` for the React dashboard side.
 
-> 📝 **User shorthand:** when the user writes **`db`** they mean **dashboard**.
+> 📝 **User shorthand:**
+> - **`db`** = dashboard.
+> - **"combined"** OR **"moss"** = the **bigger combined db** = the Moss **+** Niron
+>   combined version. Its GitHub repo is **`moscoron-collab/Moss-Investments-Niron-combined`**
+>   (NOT `combined-portfolio` — that older name in this file is wrong; the React
+>   dashboard for both Moss and Niron lives in the `Moss-Investments-Niron-combined`
+>   repo). When the user says either word, switch context to that repo.
 
 ---
 
