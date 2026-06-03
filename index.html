@@ -1482,6 +1482,13 @@ function renderPropertyDetailSection(data, maintenance) {
     '<select class="header-month-select" onchange="pdSetMetric(this.value)" title="Chart metric">' + metricOpts + '</select>' +
     '</h2>';
 
+  // Plain-English caption so it's always obvious what the chart/table is showing.
+  const metricLabel = { net: 'Net Cashflow', disbursement: 'Disbursement', cash_in: 'Income', occupancy: 'Occupancy %' }[PD_METRIC];
+  let windowText;
+  if (singleMonth) { windowText = 'Single month: ' + monthLabel(anchor); }
+  else { const span = '(' + monthLabel(months[0]) + ' – ' + monthLabel(months[months.length - 1]) + ')'; windowText = (PD_RANGE === 0 ? 'All months ' : 'Last ' + PD_RANGE + ' months ') + span; }
+  html += '<div style="color:#7e9cbf;font-size:13px;margin:-6px 0 14px 18px">Showing <b style="color:#00c97a">' + metricLabel + '</b> &nbsp;·&nbsp; <b style="color:#ccd9ea">' + windowText + '</b> &nbsp;·&nbsp; ' + (PD_CHART === 'bars' ? 'Bars' : 'Trend lines') + ' view</div>';
+
   // Chart first, then table.
   html += '<div class="chart-container" style="height:' + (PD_CHART === 'bars' ? Math.max(380, ordered.length * 30 + 60) : 380) + 'px"><canvas id="propChart"></canvas></div>';
 
