@@ -117,17 +117,32 @@ A per-property monitor for Divando's 18 properties (15 AppFolio + 3 manual out-o
   ⚠️ There are 3 identical `getDashboardJson()` defs — Apps Script uses the LAST one (the
   one with the richer `maintenance` fields + `properties` + `property_detail`). Edit that one.
 - **index.html** renders a "Divando — Per-Property Monitor" section between Recent
-  Maintenance and History: a Chart.js line chart (metric switch: Net / Disbursement /
-  Income / Occupancy %) + a table (Property | Status | Income | Disbursement | Repairs |
-  Net | YTD Net | Occ %), with a 3/6/9/12/All month range filter (`PD_RANGE`, `PD_METRIC`).
+  Maintenance and History: a Chart.js chart + a table (Property | Status | Income |
+  Disbursement | Repairs | Net | YTD Net | Occ %).
+  - **4 dropdowns**: Chart style (`PD_CHART` bars|lines) · Month picker (`PD_MONTH`,
+    anchor month = table columns + right edge of chart) · Range (`PD_RANGE` 3/6/9/12/All) ·
+    Metric (`PD_METRIC` net|disbursement|cash_in|occupancy).
+  - **Chart default = horizontal bars** (one bar per property for the selected month,
+    green positive / red negative, blue for occupancy) — the line view had 18 overlapping
+    lines and was unreadable. Toggle to **trend lines** for month-over-month movement;
+    lines have **hover-highlight** (hovered property thickens, rest fade via `onHover`).
   - Ordering = `PD_ORDER` (grouped by building, A-Z within group).
   - The 3 manual out-of-state props (Hare/Joest/Stockport) are pulled from History rows
     whose Source matches `Manual Entry: <prop>` (they're not in Property Detail).
-  - Controls: a **month picker** (`PD_MONTH`, anchor month for the table + right edge of
-    the chart window), a range filter (`PD_RANGE` 3/6/9/12/All), and a metric switch (`PD_METRIC`).
   - Vacancy = `Status` column ("vacant" → Vacant badge); "no rent in" rule set by run_divando.py.
   - Per-property net = disbursement − mortgage − ins_mo − repairs (tax is annual/0 for Divando).
     Repairs come from the Maintenance Log matched by property-name substring.
+
+### 🐛 Multi-row double-count fix (important)
+LLCs can have **multiple History rows in one month** (Divando = AppFolio statement +
+manual Suncoast/MidSouth entries). Maintenance and the Divando property mortgage are
+**whole-LLC monthly costs**, so applying them per-row and summing counted them N times
+(e.g. $8k maintenance shown as $16k; property mortgage subtracted twice → wrong Net).
+Fixed via **`aggregateLlcPeriod(rows, maintenance)`** in `index.html`: collapse to one row
+per (LLC, month), sum only the additive fields, then apply maintenance + `extraMortgage`
+**once**. Used by the Divando card (`groupedSelected`), headline Net/YTD/Total-Mortgage,
+the trend chart, and the History table. **Any new per-LLC monthly cost must be applied at
+the (LLC, period) level, never per-row.**
 
 ### ✅ Divando card corrected (3-month bank-statement verified)
 The Divando LLC card previously showed only the **$2,334/mo SBA** draft as "Mortgage" and
@@ -140,7 +155,11 @@ omitted all property mortgages. Verified across **Mar/Apr/May 2026** bank statem
 
 The **Loan Balances** table also lists the 6 Divando building loans individually
 (`DIVANDO_PROPERTY_LOANS` in `index.html`, $12,199.86/mo total) alongside the SBA line —
-they're not in the Loans sheet tab so they're injected on the frontend.
+they're not in the Loans sheet tab so they're injected on the frontend. Their Original /
+Remaining columns show **"—"** because the user has NOT provided those balances yet
+(bank statements only show the monthly transfer, not the balance). When the user gives
+remaining balances per acct (0210–0215), fill them in (and decide: Loans sheet tab vs
+hardcoded). Left blank for now per user.
 
 `index.html` now adds the property mortgages back via `DIVANDO_PROPERTY_MORTGAGE = 12199.86`
 + `extraMortgage(llc)`, wired into `recalcNet`, the enriched-net maps, and `totalMortgage`.
