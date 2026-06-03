@@ -1306,10 +1306,14 @@ let PD_METRIC = 'net';   // chart metric: net | disbursement | cash_in | occupan
 let PD_MONTH = '';       // anchor month ('' = newest); table columns + chart window end here
 let PD_CHART = 'bars';   // chart style: bars (selected month) | lines (trend over range)
 let PD_CACHE = null;     // last-built dataset, used by the chart renderer
-function pdSetRange(v) { PD_RANGE = parseInt(v, 10); renderAll(); }
 function pdSetMetric(v) { PD_METRIC = v; renderAll(); }
-function pdSetMonth(v) { PD_MONTH = v; renderAll(); }
 function pdSetChart(v) { PD_CHART = v; renderAll(); }
+// One dropdown drives both: a range ("r:3".."r:0"=All) or a single month ("m:2026-05-01").
+function pdSetView(v) {
+  if (v.indexOf('m:') === 0) { PD_MONTH = v.slice(2); PD_RANGE = 1; }
+  else { PD_RANGE = parseInt(v.slice(2), 10); PD_MONTH = ''; }
+  renderAll();
+}
 // Match a maintenance row to a property by address substring (Maintenance Log
 // stores the property name in its own column).
 function maintenanceForProp(maintenance, prop, period) {
@@ -1459,24 +1463,31 @@ function renderPropertyDetailSection(data, maintenance) {
 
   PD_CACHE = { months: months, properties: ordered, recs: inRange, latest: latestMonth };
 
-  // Range + metric controls.
-  const rangeOpts = [[3,'3 mo'],[6,'6 mo'],[9,'9 mo'],[12,'12 mo'],[0,'All']]
-    .map(o => '<option value="' + o[0] + '"' + (o[0] === PD_RANGE ? ' selected' : '') + '>' + o[1] + '</option>').join('');
   const metricOpts = [['net','Net Cashflow'],['disbursement','Disbursement'],['cash_in','Income (Cash In)'],['occupancy','Occupancy %']]
     .map(o => '<option value="' + o[0] + '"' + (o[0] === PD_METRIC ? ' selected' : '') + '>' + o[1] + '</option>').join('');
-  // Month picker: pick which month the table reflects (and where the chart window ends).
-  const monthPickOpts = allMonthsAsc.slice().reverse()
-    .map(m => '<option value="' + m + '"' + (m === anchor ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
-
   const chartOpts = [['bars','📊 Bars (month)'],['lines','📈 Trend (over time)']]
     .map(o => '<option value="' + o[0] + '"' + (o[0] === PD_CHART ? ' selected' : '') + '>' + o[1] + '</option>').join('');
+  // Combined view dropdown: a range (3/6/9/12/All) OR a single month, in one list.
+  const singleMonth = PD_MONTH !== '';
+  const rangeGroup = [[3,'3 mo'],[6,'6 mo'],[9,'9 mo'],[12,'12 mo'],[0,'All']]
+    .map(o => '<option value="r:' + o[0] + '"' + (!singleMonth && o[0] === PD_RANGE ? ' selected' : '') + '>' + o[1] + '</option>').join('');
+  const monthGroup = allMonthsAsc.slice().reverse()
+    .map(m => '<option value="m:' + m + '"' + (singleMonth && m === PD_MONTH ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
+  const viewOpts = '<optgroup label="Range">' + rangeGroup + '</optgroup>' +
+    '<optgroup label="Single month">' + monthGroup + '</optgroup>';
 
   let html = '<div class="section"><h2><span class="dot"></span><span>Divando — Per-Property Monitor</span>' +
     '<select class="header-month-select" onchange="pdSetChart(this.value)" title="Chart style">' + chartOpts + '</select>' +
-    '<select class="header-month-select" onchange="pdSetMonth(this.value)" title="Month to show">' + monthPickOpts + '</select>' +
-    '<select class="header-month-select" onchange="pdSetRange(this.value)" title="How many months to show">' + rangeOpts + '</select>' +
+    '<select class="header-month-select" onchange="pdSetView(this.value)" title="Range or single month">' + viewOpts + '</select>' +
     '<select class="header-month-select" onchange="pdSetMetric(this.value)" title="Chart metric">' + metricOpts + '</select>' +
     '</h2>';
+
+  // Plain-English caption so it's always obvious what the chart/table is showing.
+  const metricLabel = { net: 'Net Cashflow', disbursement: 'Disbursement', cash_in: 'Income', occupancy: 'Occupancy %' }[PD_METRIC];
+  let windowText;
+  if (singleMonth) { windowText = 'Single month: ' + monthLabel(anchor); }
+  else { const span = '(' + monthLabel(months[0]) + ' – ' + monthLabel(months[months.length - 1]) + ')'; windowText = (PD_RANGE === 0 ? 'All months ' : 'Last ' + PD_RANGE + ' months ') + span; }
+  html += '<div style="color:#7e9cbf;font-size:13px;margin:-6px 0 14px 18px">Showing <b style="color:#00c97a">' + metricLabel + '</b> &nbsp;·&nbsp; <b style="color:#ccd9ea">' + windowText + '</b> &nbsp;·&nbsp; ' + (PD_CHART === 'bars' ? 'Bars' : 'Trend lines') + ' view</div>';
 
   // Chart first, then table.
   html += '<div class="chart-container" style="height:' + (PD_CHART === 'bars' ? Math.max(380, ordered.length * 30 + 60) : 380) + 'px"><canvas id="propChart"></canvas></div>';
