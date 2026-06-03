@@ -1569,7 +1569,19 @@ function renderPropertyChart() {
   window._propChart = new Chart(c, {
     type: 'line',
     data: { labels: months.map(monthLabel), datasets: datasets },
-    options: commonScales({ interaction: { mode: 'nearest', intersect: false },
+    options: commonScales({ interaction: { mode: 'nearest', intersect: false, axis: 'xy' },
+      // Hover a line to spotlight it: thicken the hovered property and fade the rest.
+      onHover: (e, active, chart) => {
+        const hovered = active.length ? active[0].datasetIndex : null;
+        let changed = false;
+        chart.data.datasets.forEach((ds, i) => {
+          if (!ds._base) ds._base = ds.borderColor;
+          const want = hovered === null ? { bw: 2, col: ds._base }
+            : (i === hovered ? { bw: 4, col: ds._base } : { bw: 1, col: ds._base + '1f' });
+          if (ds.borderWidth !== want.bw || ds.borderColor !== want.col) { ds.borderWidth = want.bw; ds.borderColor = want.col; changed = true; }
+        });
+        if (changed) chart.update('none');
+      },
       scales: { x: { ticks: { color: '#4e6d8c' }, grid: { color: '#182030' } },
         y: { ticks: { color: '#4e6d8c', callback: v => isOcc ? v + '%' : fmtShort(v) }, grid: { color: '#182030' } } } })
   });
