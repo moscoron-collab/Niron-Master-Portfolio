@@ -152,7 +152,7 @@ rows are a planned addition. AppFolio code → address → annual insurance:
 | AppFolio code | Address | Insurance/yr |
 |---|---|---|
 | `13TH,15655` | 15655 E 13th Pl, Aurora CO 80011 | $3,529 |
-| `13TH,15675` | 15675 E 13th Pl, Aurora CO 80011 | ⚠️ NOT on insurance tab |
+| `13TH,15675` | 15675 E 13th Pl, Aurora CO 80011 | under 15655 policy (3-way $1,176.33/yr) |
 | `43RD,14790` | 14790 E 43rd Ave, Denver CO 80239 | $2,642 |
 | `BATES,15559 LOWER` | 15559 E Bates Ave, Lower, Aurora CO 80013 | shared $2,507 (1 policy w/ Upper) |
 | `BATES,15559 UPPER` | 15559 E Bates Ave, Upper/A, Aurora CO 80013 | shared $2,507 (1 policy w/ Lower) |
@@ -162,7 +162,7 @@ rows are a planned addition. AppFolio code → address → annual insurance:
 | `CROWN,5101B` | 5101 Crown Blvd, Unit B, Denver CO 80239 | shared $2,702 (1 policy w/ A) |
 | `DEAR,5538` | 5538 Dearborn St, Denver CO 80239 | $2,610 |
 | `HOLLY,3630` | 3630 Holly St, Denver CO 80207 | $2,693 |
-| `IDALI,1310` | 1310 Idalia Ct, Aurora CO 80011 | ⚠️ NOT on insurance tab |
+| `IDALI,1310` | 1310 Idalia Ct, Aurora CO 80011 | under 15655 policy (3-way $1,176.33/yr) |
 | `OAK,2332` | 2332 Oakland St, Aurora CO 80010 | $2,612 |
 | `TUCSO,3225` | 3225 Tucson St, Aurora CO 80011 | $2,255 |
 | `VIRG,11795` | 11795 E Virginia Dr, Aurora CO 80012 | $2,443 |
@@ -176,8 +176,17 @@ mortgage/insurance): `8222 Hare Ave`, `3899 Joest Rd`, `6580 Stockport Dr`.
   policy minus the 2 Dorado-owned units below).
 - **Tax** — Divando is `isTaxAnnual` in `index.html`: Tax/12 shown (~$2,635/mo ≈
   $31,620/yr) but **paid lump-sum in April, NOT deducted from monthly net.**
-- **Mortgage** — Divando total ≈ **$2,334/mo**; most properties owned free & clear.
-  Per-property mortgage split still TBD from the user.
+- **Mortgage** — Divando actually carries **6 loans totaling ~$12,199.86/mo** (NOT the
+  ~$2,334/mo the dashboard card shows — that figure is stale/understated). The monthly
+  "AUTOMATIC TRANSFER FROM DDA" line in each loan CSV = the cash cost we subtract
+  (= principal + interest). Split rule: **50/50 at building level, then 50/50 within a
+  duplex** (matches insurance grouping). Per-property:
+  - `13TH 0210` $2,352.90 → 15655 + 15675 E 13th Pl + 1310 Idalia (3-way **$784.30** ea)
+  - `43RD BATES 0211` $1,718.36 → 14790 E 43rd **$859.18**; Bates Lower/Upper **$429.59** ea
+  - `BLACK CROWN 0213` $2,014.78 → 4776 Blackhawk **$1,007.39**; Crown A/B **$503.70** ea
+  - `HOLLY OAKLAND 0214` $2,107.42 → 3630 Holly + 2332 Oakland **$1,053.71** ea
+  - `DEAR VIRGINIA 0212` $2,315.84 → 5538 Dearborn + 11795 Virginia **$1,157.92** ea
+  - `TUCSON BOSTON 0215` $1,690.56 → 3225 Tucson + 1724 Boston **$845.28** ea
 
 #### 🛡️ Noble Insurance tab = authoritative per-property insurance source
 The standalone Niron dashboard (`index.html`) has a **Noble Insurance** tab (2nd main
@@ -190,8 +199,9 @@ tab) with per-property insurance for ALL properties (Divando, Dorado, Yale, Dona
   **4641 Enid Way** ($2,528). Dorado credits **$138/mo** back to Divando. **Stop Dec 2026.**
 - Two Divando AppFolio units **share one policy each**: 5101 Crown A+B ($2,702) and
   15559 Bates Lower+Upper ($2,507) → split per-unit for per-property net.
-- ⚠️ Two Divando AppFolio properties have **NO entry** on the insurance tab:
-  **15675 E 13th Pl** and **1310 Idalia Ct** — unresolved; confirm with user.
+- The **15655 E 13th Pl policy ($3,529/yr) covers 3 units**: 15655 + 15675 E 13th Pl +
+  1310 Idalia Ct → split 3-way = **$1,176.33/yr ($98.03/mo) each**. 15675 and Idalia
+  have no separate policy line — they sit under the 15655 policy. (Resolved w/ user.)
 
 ### Moss (`run_moss.py`)
 Moss sheet History column "LLC" stores **property names**, not LLC names:
