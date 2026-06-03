@@ -187,6 +187,13 @@ mortgage/insurance): `8222 Hare Ave`, `3899 Joest Rd`, `6580 Stockport Dr`.
   - `HOLLY OAKLAND 0214` $2,107.42 → 3630 Holly + 2332 Oakland **$1,053.71** ea
   - `DEAR VIRGINIA 0212` $2,315.84 → 5538 Dearborn + 11795 Virginia **$1,157.92** ea
   - `TUCSON BOSTON 0215` $1,690.56 → 3225 Tucson + 1724 Boston **$845.28** ea
+- **SBA loans** — the **$2,334/mo** the dashboard card shows as "Mortgage" is actually
+  **6 SBA loan payments** ($48 + $731 + $64 + $273 + $487 + $731, drafted on the 1st of
+  the month, seen on the Divando operating acct `3 Divando LLC 3442`). These are
+  **general Divando business debt, NOT tied to any property** → keep as ONE LLC-level
+  line; do NOT spread across the per-property table. **Total Divando monthly debt =
+  $12,199.86 property mortgages + $2,334.00 SBA = $14,533.86/mo.** (The card currently
+  counts only the $2,334 SBA portion and omits all property mortgages.)
 
 #### 🛡️ Noble Insurance tab = authoritative per-property insurance source
 The standalone Niron dashboard (`index.html`) has a **Noble Insurance** tab (2nd main
