@@ -119,10 +119,15 @@ A per-property monitor for Divando's 18 properties (15 AppFolio + 3 manual out-o
 - **index.html** renders a "Divando — Per-Property Monitor" section between Recent
   Maintenance and History: a Chart.js chart + a table (Property | Status | Income |
   Disbursement | Repairs | Net | YTD Net | Occ %).
-  - **4 dropdowns**: Chart style (`PD_CHART` bars|lines) · Month picker (`PD_MONTH`,
-    anchor month = table columns + right edge of chart) · Range (`PD_RANGE` 3/6/9/12/All) ·
-    Metric (`PD_METRIC` net|disbursement|cash_in|occupancy).
-  - **Chart default = horizontal bars** (one bar per property for the selected month,
+  - **3 dropdowns**: Chart style (`PD_CHART` bars|lines) · **View** · Metric (`PD_METRIC`
+    net|disbursement|cash_in|occupancy).
+  - **View dropdown is merged** (`pdSetView`, value `r:N` for a range or `m:YYYY-MM-DD` for
+    a single month): one `<select>` with an "Range" optgroup (3/6/9/12/All → `PD_RANGE`) and
+    a "Single month" optgroup (every available month → `PD_MONTH`, sets `PD_RANGE=1`). Only
+    ONE is ever selected so it's unambiguous. The old separate month-picker was removed.
+  - A **plain-English caption** under the title states the current view, e.g.
+    "Showing **Net Cashflow** · **Single month: Apr 2026** · Bars view".
+  - **Chart default = horizontal bars** (one bar per property for the selected/anchor month,
     green positive / red negative, blue for occupancy) — the line view had 18 overlapping
     lines and was unreadable. Toggle to **trend lines** for month-over-month movement;
     lines have **hover-highlight** (hovered property thickens, rest fade via `onHover`).
