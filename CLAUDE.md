@@ -123,6 +123,8 @@ A per-property monitor for Divando's 18 properties (15 AppFolio + 3 manual out-o
   - Ordering = `PD_ORDER` (grouped by building, A-Z within group).
   - The 3 manual out-of-state props (Hare/Joest/Stockport) are pulled from History rows
     whose Source matches `Manual Entry: <prop>` (they're not in Property Detail).
+  - Controls: a **month picker** (`PD_MONTH`, anchor month for the table + right edge of
+    the chart window), a range filter (`PD_RANGE` 3/6/9/12/All), and a metric switch (`PD_METRIC`).
   - Vacancy = `Status` column ("vacant" → Vacant badge); "no rent in" rule set by run_divando.py.
   - Per-property net = disbursement − mortgage − ins_mo − repairs (tax is annual/0 for Divando).
     Repairs come from the Maintenance Log matched by property-name substring.
@@ -135,6 +137,10 @@ omitted all property mortgages. Verified across **Mar/Apr/May 2026** bank statem
   0211 $1,718.36 + 0212 $2,315.84 + 0213 $2,014.78 + 0214 $2,107.42 + 0215 $1,690.56).
 - **SBA Loans = `$2,334.00`/mo** (6 SBA drafts on the 1st: $48+$731+$64+$273+$487+$731).
 - **Total Divando monthly debt = `$14,533.86`/mo.**
+
+The **Loan Balances** table also lists the 6 Divando building loans individually
+(`DIVANDO_PROPERTY_LOANS` in `index.html`, $12,199.86/mo total) alongside the SBA line —
+they're not in the Loans sheet tab so they're injected on the frontend.
 
 `index.html` now adds the property mortgages back via `DIVANDO_PROPERTY_MORTGAGE = 12199.86`
 + `extraMortgage(llc)`, wired into `recalcNet`, the enriched-net maps, and `totalMortgage`.
