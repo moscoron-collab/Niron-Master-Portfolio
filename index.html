@@ -1337,6 +1337,17 @@ function buildPropertyRecords(data, maintenance) {
   return recs;
 }
 function recalcNet(row, maintenance) { const m = maintenanceFor(maintenance, row.llc, row.period_start); return row.disbursement - row.mortgage - extraMortgage(row.llc) - effectiveTax(row) - row.ins_mo - m; }
+// Collapse rows to one per (LLC, month): sum the additive fields, then apply
+// maintenance + Divando property mortgage ONCE so multi-row months aren't double-counted.
+function aggregateLlcPeriod(rows, maintenance) {
+  const acc = {};
+  rows.forEach(r => {
+    const key = r.llc + '|' + r.period_start;
+    if (!acc[key]) acc[key] = Object.assign({}, r, { disbursement: 0, mgmt_fee: 0, mortgage: 0, tax_mo: 0, ins_mo: 0 });
+    ["disbursement","mgmt_fee","mortgage","tax_mo","ins_mo"].forEach(k => { acc[key][k] += (r[k] || 0); });
+  });
+  return Object.values(acc).map(g => { const m = maintenanceFor(maintenance, g.llc, g.period_start); g.maintenance = m; g.net_cashflow = g.disbursement - g.mortgage - extraMortgage(g.llc) - effectiveTax(g) - g.ins_mo - m; return g; });
+}
 
 async function load() { try { const res = await fetch(API_URL); const data = await res.json(); PORTFOLIO_DATA = data; initialRender(data); } catch (e) { document.getElementById("content").innerHTML = '<div class="error">Failed to load: ' + e.message + '</div>'; document.getElementById("status").textContent = "● Offline"; document.getElementById("status").style.color = "#ff4455"; } }
 function initialRender(data) { document.getElementById("last-updated").textContent = new Date(data.last_updated).toLocaleString(); const history = data.history || []; const months = [...new Set(history.map(h => h.period_start))].sort().reverse(); SELECTED_MONTH = months[0] || ""; renderAll(); }
@@ -1349,23 +1360,31 @@ function renderAll() {
   const enrichedSelected = selectedRows.map(r => { const m = maintenanceFor(maintenance, r.llc, r.period_start); return Object.assign({}, r, { maintenance: m, net_cashflow: r.disbursement - r.mortgage - extraMortgage(r.llc) - effectiveTax(r) - r.ins_mo - m }); });
   // Combine multiple rows for the same LLC in this month into one card (e.g. Divando's
   // AppFolio statement + manually-entered Suncoast/MidSouth properties).
+  // Only the additive per-row fields are summed. Maintenance and the Divando property
+  // mortgage are whole-LLC monthly costs, so they're applied ONCE per group below —
+  // otherwise an LLC with N rows in a month would count them N times.
   const groupedSelected = Object.values(enrichedSelected.reduce((acc, r) => {
     if (!acc[r.llc]) { acc[r.llc] = Object.assign({}, r); }
-    else { ["disbursement","mgmt_fee","mortgage","tax_mo","ins_mo","maintenance","net_cashflow"].forEach(k => { acc[r.llc][k] = (acc[r.llc][k] || 0) + (r[k] || 0); }); }
+    else { ["disbursement","mgmt_fee","mortgage","tax_mo","ins_mo"].forEach(k => { acc[r.llc][k] = (acc[r.llc][k] || 0) + (r[k] || 0); }); }
     return acc;
-  }, {})).sort((a, b) => a.llc.localeCompare(b.llc));
-  const totalDisb = enrichedSelected.reduce((s, r) => s + r.disbursement, 0);
-  const totalNet = enrichedSelected.reduce((s, r) => s + r.net_cashflow, 0);
-  const totalMortgage = enrichedSelected.reduce((s, r) => s + r.mortgage + extraMortgage(r.llc), 0);
+  }, {})).map(g => { const m = maintenanceFor(maintenance, g.llc, g.period_start); g.maintenance = m; g.net_cashflow = g.disbursement - g.mortgage - extraMortgage(g.llc) - effectiveTax(g) - g.ins_mo - m; return g; }).sort((a, b) => a.llc.localeCompare(b.llc));
+  // Totals come from groupedSelected (one row per LLC) so per-LLC monthly costs
+  // (maintenance, Divando property mortgage) are not double-counted for LLCs with
+  // multiple rows in the month.
+  const totalDisb = groupedSelected.reduce((s, r) => s + r.disbursement, 0);
+  const totalNet = groupedSelected.reduce((s, r) => s + r.net_cashflow, 0);
+  const totalMortgage = groupedSelected.reduce((s, r) => s + r.mortgage + extraMortgage(r.llc), 0);
   const totalValue = llcs.reduce((s, l) => s + l.property_value, 0);
   const selectedYear = SELECTED_MONTH ? SELECTED_MONTH.slice(0, 4) : "";
   const ytdRows = history.filter(h => h.period_start && h.period_start.slice(0,4) === selectedYear && h.period_start <= SELECTED_MONTH);
   const ytdDisb = ytdRows.reduce((s, r) => s + r.disbursement, 0);
-  const ytdNet = ytdRows.reduce((s, r) => s + recalcNet(r, maintenance), 0);
+  const ytdNet = aggregateLlcPeriod(ytdRows, maintenance).reduce((s, r) => s + r.net_cashflow, 0);
   const distThisMonth = distributions.filter(d => d.period === SELECTED_MONTH).reduce((s, d) => s + (d.your_amount || 0), 0);
   const distYtd = distributions.filter(d => d.period && d.period.slice(0,4) === selectedYear && d.period <= SELECTED_MONTH).reduce((s, d) => s + (d.your_amount || 0), 0);
   const ytdSubLabel = "Jan – " + monthLabel(SELECTED_MONTH).split(' ')[0] + " " + selectedYear;
-  const enrichedHistory = history.map(r => { const m = maintenanceFor(maintenance, r.llc, r.period_start); return Object.assign({}, r, { maintenance: m, net_cashflow: r.disbursement - r.mortgage - extraMortgage(r.llc) - effectiveTax(r) - r.ins_mo - m }); });
+  // Collapsed to one row per (LLC, month) so the History table and trend chart don't
+  // double-count maintenance / property mortgage for LLCs with multiple rows in a month.
+  const enrichedHistory = aggregateLlcPeriod(history, maintenance);
   const sortedHistory = enrichedHistory.slice().sort((a, b) => { if (a.period_start !== b.period_start) return b.period_start > a.period_start ? 1 : -1; return a.llc.localeCompare(b.llc); });
   const monthOptions = months.map(m => '<option value="' + m + '"' + (m === SELECTED_MONTH ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
   const headerSelect = document.getElementById('header-month-select'); if (headerSelect) headerSelect.innerHTML = monthOptions;
