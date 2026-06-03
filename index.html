@@ -1273,6 +1273,17 @@ function effectiveTax(row) { return (isTaxEscrowed(row.llc) || isTaxAnnual(row.l
 // = $12,199.86 property mortgages + $2,334 SBA = $14,533.86/mo.
 const DIVANDO_PROPERTY_MORTGAGE = 12199.86;
 function extraMortgage(llc) { return (llc && llc.toLowerCase().includes('divando')) ? DIVANDO_PROPERTY_MORTGAGE : 0; }
+// The 6 Divando building loans (= $12,199.86/mo total) are not in the Loans sheet tab
+// (which only holds the $2,334 SBA line), so add them to the Loan Balances display.
+// Amounts verified across Mar/Apr/May 2026 bank statements (acct 3 Divando LLC 3442).
+const DIVANDO_PROPERTY_LOANS = [
+  { llc: 'Divando LLC', lender: 'Property Mortgage — 15655 / 15675 E 13th Pl + 1310 Idalia Ct (acct 0210)', monthly_payment: 2352.90 },
+  { llc: 'Divando LLC', lender: 'Property Mortgage — 14790 E 43rd + 15559 E Bates Lower/Upper (acct 0211)', monthly_payment: 1718.36 },
+  { llc: 'Divando LLC', lender: 'Property Mortgage — 5538 Dearborn + 11795 E Virginia (acct 0212)', monthly_payment: 2315.84 },
+  { llc: 'Divando LLC', lender: 'Property Mortgage — 4776 Blackhawk + 5101 Crown Unit A/B (acct 0213)', monthly_payment: 2014.78 },
+  { llc: 'Divando LLC', lender: 'Property Mortgage — 3630 Holly + 2332 Oakland (acct 0214)', monthly_payment: 2107.42 },
+  { llc: 'Divando LLC', lender: 'Property Mortgage — 3225 Tucson + 1724 Boston (acct 0215)', monthly_payment: 1690.56 },
+];
 
 /* ============================================================
    DIVANDO PER-PROPERTY MONITORING
@@ -1292,9 +1303,11 @@ const PD_ORDER = [
 ];
 let PD_RANGE = 12;       // months shown in table/chart (3/6/9/12/0=all)
 let PD_METRIC = 'net';   // chart metric: net | disbursement | cash_in | occupancy
+let PD_MONTH = '';       // anchor month ('' = newest); table columns + chart window end here
 let PD_CACHE = null;     // last-built dataset, used by the chart renderer
 function pdSetRange(v) { PD_RANGE = parseInt(v, 10); renderAll(); }
 function pdSetMetric(v) { PD_METRIC = v; renderAll(); }
+function pdSetMonth(v) { PD_MONTH = v; renderAll(); }
 // Match a maintenance row to a property by address substring (Maintenance Log
 // stores the property name in its own column).
 function maintenanceForProp(maintenance, prop, period) {
@@ -1401,7 +1414,8 @@ function renderAll() {
   if (!groupedSelected.length) html += '<div style="color:#4e6d8c">No data for this month.</div>';
   html += '</div></div>';
   if (months.length > 1) html += '<div class="section"><h2><span class="dot"></span>Cashflow Trend (Bars per LLC + Total Line)</h2><div class="chart-container"><canvas id="trendChart"></canvas></div></div>';
-  if (loans.length) { html += '<div class="section"><h2><span class="dot"></span>Loan Balances</h2><table><thead><tr><th>LLC</th><th>Lender</th><th>Original</th><th>Remaining</th><th>Monthly</th><th>Maturity</th></tr></thead><tbody>'; loans.forEach(l => { html += '<tr><td>' + l.llc + '</td><td>' + l.lender + '</td><td>' + fmt(l.original_balance) + '</td><td style="color:#f0a500;font-weight:600">' + fmt(l.balance_override || l.calculated_balance) + '</td><td>' + fmt(l.monthly_payment) + '</td><td>' + (l.maturity_date || '—') + '</td></tr>'; }); html += '</tbody></table></div>'; }
+  const allLoans = loans.concat(DIVANDO_PROPERTY_LOANS).slice().sort((a, b) => a.llc.localeCompare(b.llc));
+  if (allLoans.length) { html += '<div class="section"><h2><span class="dot"></span>Loan Balances</h2><table><thead><tr><th>LLC</th><th>Lender</th><th>Original</th><th>Remaining</th><th>Monthly</th><th>Maturity</th></tr></thead><tbody>'; allLoans.forEach(l => { const orig = l.original_balance === undefined ? '—' : fmt(l.original_balance); const remain = l.original_balance === undefined ? '—' : fmt(l.balance_override || l.calculated_balance); html += '<tr><td>' + l.llc + '</td><td style="font-size:12px">' + l.lender + '</td><td>' + orig + '</td><td style="color:#f0a500;font-weight:600">' + remain + '</td><td>' + fmt(l.monthly_payment) + '</td><td>' + (l.maturity_date || '—') + '</td></tr>'; }); html += '</tbody></table></div>'; }
   if (maintenance.length) { html += '<div class="section"><h2><span class="dot"></span>Recent Maintenance Invoices</h2><table><thead><tr><th>Date</th><th>LLC</th><th>Property</th><th>Sub</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead><tbody>'; maintenance.slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 20).forEach(m => { html += '<tr><td>' + m.date + '</td><td>' + m.llc + '</td><td style="font-size:12px">' + (m.property || '—') + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td></tr>'; }); html += '</tbody></table></div>'; }
   html += renderPropertyDetailSection(data, maintenance);
   html += '<div class="section"><h2><span class="dot"></span>History (newest first)</h2><table><thead><tr><th>Month</th><th>LLC</th><th>Disbursement</th><th>Mortgage</th><th>Maintenance</th><th>Net</th></tr></thead><tbody>';
@@ -1423,12 +1437,17 @@ function renderPropertyDetailSection(data, maintenance) {
       '<div style="color:#4e6d8c">No per-property data yet. Run the <b>Monthly AppFolio Per-Property Pull — Divando</b> ' +
       'workflow (or its backfill) to populate the <b>Property Detail</b> tab.</div></div>';
   }
-  // All months present, newest first; then apply the range filter.
-  const allMonths = [...new Set(recs.map(r => r.period))].sort().reverse();
-  const months = (PD_RANGE > 0 ? allMonths.slice(0, PD_RANGE) : allMonths).slice().sort(); // oldest→newest for chart
+  // All months present (ascending). The anchor month (PD_MONTH, or newest) is the
+  // column the table reflects and the right edge of the chart window; the range
+  // filter then takes that many months ending at the anchor.
+  const allMonthsAsc = [...new Set(recs.map(r => r.period))].sort();
+  const anchor = (PD_MONTH && allMonthsAsc.includes(PD_MONTH)) ? PD_MONTH : allMonthsAsc[allMonthsAsc.length - 1];
+  let windowMonths = allMonthsAsc.filter(m => m <= anchor);
+  if (PD_RANGE > 0) windowMonths = windowMonths.slice(-PD_RANGE);
+  const months = windowMonths; // oldest→newest for chart
   const monthSet = new Set(months);
   const inRange = recs.filter(r => monthSet.has(r.period));
-  const latestMonth = months[months.length - 1];
+  const latestMonth = anchor;
   const year = latestMonth ? latestMonth.slice(0, 4) : '';
 
   // Order properties: known order first, then any extras alphabetically.
@@ -1443,8 +1462,12 @@ function renderPropertyDetailSection(data, maintenance) {
     .map(o => '<option value="' + o[0] + '"' + (o[0] === PD_RANGE ? ' selected' : '') + '>' + o[1] + '</option>').join('');
   const metricOpts = [['net','Net Cashflow'],['disbursement','Disbursement'],['cash_in','Income (Cash In)'],['occupancy','Occupancy %']]
     .map(o => '<option value="' + o[0] + '"' + (o[0] === PD_METRIC ? ' selected' : '') + '>' + o[1] + '</option>').join('');
+  // Month picker: pick which month the table reflects (and where the chart window ends).
+  const monthPickOpts = allMonthsAsc.slice().reverse()
+    .map(m => '<option value="' + m + '"' + (m === anchor ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
 
   let html = '<div class="section"><h2><span class="dot"></span><span>Divando — Per-Property Monitor</span>' +
+    '<select class="header-month-select" onchange="pdSetMonth(this.value)" title="Month to show">' + monthPickOpts + '</select>' +
     '<select class="header-month-select" onchange="pdSetRange(this.value)" title="How many months to show">' + rangeOpts + '</select>' +
     '<select class="header-month-select" onchange="pdSetMetric(this.value)" title="Chart metric">' + metricOpts + '</select>' +
     '</h2>';
