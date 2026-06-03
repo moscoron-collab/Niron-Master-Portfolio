@@ -419,9 +419,18 @@ line. So the user does **NOT** need to open Google Sheets to check what's done �
 > that's the gap to fix. No features or modals need to be rebuilt in the Moss db —
 > it just needs to show what's here.
 
-> 🧠 **Memory rule:** after any change to how the dashboard or automation works,
-> update THIS file so it survives between sessions. The user should never have to
-> re-explain prior work — if it's not in `CLAUDE.md`, it's forgotten next session.
+> 🧠 **Memory rule (STRICT):** after EVERY change — code, dashboard, numbers, user
+> preferences, decisions, workflow steps, anything — update THIS file **before** opening
+> the PR. The user should NEVER have to re-explain prior work. If it happened in a
+> session and it's not in `CLAUDE.md`, it will be forgotten. When in doubt, write it
+> down here. This includes:
+> - All automation scripts (what they do, what they parse, what they write)
+> - All dashboard sections (how they work, what data they read)
+> - All bank-verified numbers (mortgage, insurance, fixed costs)
+> - All user decisions (split rules, what to include/exclude, layout choices)
+> - All user preferences (PR default, tone, formatting, copy-button rule)
+> - All "going live" steps for any new feature
+> - All known issues, open questions, and next steps
 
 ---
 
