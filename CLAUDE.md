@@ -144,6 +144,55 @@ Niron sheet History column "LLC":
 
 (See `LLC_MAP` in `run.py` for the AppFolio-name → internal-name mapping.)
 
+#### Divando LLC — full per-property list (15 AppFolio pages + 3 manual)
+The Divando Owner Packet PDF is **per-property** (one page each; page 1 = consolidated
+summary). `run.py` currently saves only ONE consolidated Divando total — per-property
+rows are a planned addition. AppFolio code → address → annual insurance:
+
+| AppFolio code | Address | Insurance/yr |
+|---|---|---|
+| `13TH,15655` | 15655 E 13th Pl, Aurora CO 80011 | $3,529 |
+| `13TH,15675` | 15675 E 13th Pl, Aurora CO 80011 | ⚠️ NOT on insurance tab |
+| `43RD,14790` | 14790 E 43rd Ave, Denver CO 80239 | $2,642 |
+| `BATES,15559 LOWER` | 15559 E Bates Ave, Lower, Aurora CO 80013 | shared $2,507 (1 policy w/ Upper) |
+| `BATES,15559 UPPER` | 15559 E Bates Ave, Upper/A, Aurora CO 80013 | shared $2,507 (1 policy w/ Lower) |
+| `BLACK,4776` | 4776 Blackhawk Way, Denver CO 80239 | $3,320 |
+| `BOSTO,1724` | 1724 Boston St, Aurora CO 80010 | $2,364 |
+| `CROWN,5101A` | 5101 Crown Blvd, Unit A, Denver CO 80239 | shared $2,702 (1 policy w/ B) |
+| `CROWN,5101B` | 5101 Crown Blvd, Unit B, Denver CO 80239 | shared $2,702 (1 policy w/ A) |
+| `DEAR,5538` | 5538 Dearborn St, Denver CO 80239 | $2,610 |
+| `HOLLY,3630` | 3630 Holly St, Denver CO 80207 | $2,693 |
+| `IDALI,1310` | 1310 Idalia Ct, Aurora CO 80011 | ⚠️ NOT on insurance tab |
+| `OAK,2332` | 2332 Oakland St, Aurora CO 80010 | $2,612 |
+| `TUCSO,3225` | 3225 Tucson St, Aurora CO 80011 | $2,255 |
+| `VIRG,11795` | 11795 E Virginia Dr, Aurora CO 80012 | $2,443 |
+
+Plus 3 out-of-state manual (roll up under Divando; owned free & clear, NO
+mortgage/insurance): `8222 Hare Ave`, `3899 Joest Rd`, `6580 Stockport Dr`.
+
+**Divando fixed costs:**
+- **Insurance** — authoritative source is the **Noble Insurance tab** of `index.html`
+  (see below). Divando-owned policies total **$29,677/yr** ($34,630/yr full State Farm
+  policy minus the 2 Dorado-owned units below).
+- **Tax** — Divando is `isTaxAnnual` in `index.html`: Tax/12 shown (~$2,635/mo ≈
+  $31,620/yr) but **paid lump-sum in April, NOT deducted from monthly net.**
+- **Mortgage** — Divando total ≈ **$2,334/mo**; most properties owned free & clear.
+  Per-property mortgage split still TBD from the user.
+
+#### 🛡️ Noble Insurance tab = authoritative per-property insurance source
+The standalone Niron dashboard (`index.html`) has a **Noble Insurance** tab (2nd main
+tab) with per-property insurance for ALL properties (Divando, Dorado, Yale, Donald).
+**Read it from `index.html` before ever asking the user for insurance amounts.**
+- Divando = State Farm, agent **Kevin Schult (303) 989-3847**, Dec 15 2025 → Dec 15 2026.
+- Full policy = **$34,630/yr = $2,885.83/mo** across **13 SFR policies = 11 Divando-owned
+  + 2 Dorado-owned**.
+- The 2 Dorado-owned units sit on the Divando policy: **2397 Jamaica St** ($2,425) +
+  **4641 Enid Way** ($2,528). Dorado credits **$138/mo** back to Divando. **Stop Dec 2026.**
+- Two Divando AppFolio units **share one policy each**: 5101 Crown A+B ($2,702) and
+  15559 Bates Lower+Upper ($2,507) → split per-unit for per-property net.
+- ⚠️ Two Divando AppFolio properties have **NO entry** on the insurance tab:
+  **15675 E 13th Pl** and **1310 Idalia Ct** — unresolved; confirm with user.
+
 ### Moss (`run_moss.py`)
 Moss sheet History column "LLC" stores **property names**, not LLC names:
 - `1959 S Kearney Way`        ← mortgage $2,328.99, ins/12 $321.58
