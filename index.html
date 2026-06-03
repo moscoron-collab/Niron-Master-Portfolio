@@ -530,8 +530,8 @@
         <div class="mg">
           <div class="mc">
             <div class="ml">💰 Total Monthly · All Active</div>
-            <div class="mv">$5,574<span style="font-size:17px">.54</span></div>
-            <div class="ms">Divando $2,885.83 + Donald $1,210.84 + Yale $1,024.54 + Dorado $453.33</div>
+            <div class="mv">$5,587<span style="font-size:17px">.55</span></div>
+            <div class="ms">Divando $2,885.83 + Donald $1,210.84 + Yale $1,037.55 + Dorado $453.33</div>
           </div>
           <div class="mc">
             <div class="ml">📅 Next Renewals Coming Up</div>
@@ -559,7 +559,7 @@
           </div>
           <div class="lc">
             <div class="ln">Yale — Townhomes</div>
-            <div class="la">$1,024<span style="font-size:14px">.54/mo</span></div>
+            <div class="la">$1,037<span style="font-size:14px">.55/mo</span></div>
             <div class="ld">Acuity · Policy ZM1786-01<br>CRS Insurance / Nathan Fonseca<br>Feb 22, 2026 → Feb 22, 2027</div>
           </div>
           <div class="lc">
@@ -854,7 +854,7 @@
             <div class="rf"><label>Annual Premium</label><div class="ev editable" contenteditable="true" spellcheck="false">$11,248</div></div>
 
             <div class="rz">② Payment</div>
-            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$1,024.54 (11-pay · $1,024.56 down)</div></div>
+            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$1,037.55/mo (actual bank draft; policy quote $11,248/yr)</div></div>
             <div class="rf"><label>Payment Source</label><div class="ev hi">Yale LLC dedicated acct · debit card · 24th of month</div></div>
 
             <div class="rz">③ Coverage &amp; Limits</div>
@@ -889,7 +889,7 @@
           <table>
             <thead><tr><th>Period</th><th>Carrier</th><th>Policy #</th><th>Building Coverage</th><th>Annual</th><th>Monthly</th></tr></thead>
             <tbody>
-              <tr><td class="mn ta">Feb 22, 2026 → Feb 22, 2027</td><td>Acuity</td><td class="mn">ZM1786-01</td><td class="mn">$1,900,799</td><td class="mn ta">$11,248</td><td class="mn ta">$1,024.54</td></tr>
+              <tr><td class="mn ta">Feb 22, 2026 → Feb 22, 2027</td><td>Acuity</td><td class="mn">ZM1786-01</td><td class="mn">$1,900,799</td><td class="mn ta">$11,248</td><td class="mn ta">$1,037.55</td></tr>
             </tbody>
           </table>
         </div>
@@ -1291,16 +1291,30 @@ const DIVANDO_PROPERTY_LOANS = [
    run_divando.py / backfill_divando.py) + the 3 manual out-of-state properties
    pulled from History rows whose Source = "Manual Entry: <property>".
    ============================================================ */
-// Display order: grouped by building (matching the loan/insurance groupings), A-Z within group.
-const PD_ORDER = [
-  "15655 E 13th Pl", "15675 E 13th Pl", "1310 Idalia Ct",          // 13th triplex
-  "14790 E 43rd Ave", "15559 E Bates Ave Lower", "15559 E Bates Ave Upper", // 43rd + Bates
-  "4776 Blackhawk Way", "5101 Crown Blvd Unit A", "5101 Crown Blvd Unit B", // Blackhawk + Crown
-  "11795 E Virginia Dr", "5538 Dearborn St",                       // Dearborn + Virginia
-  "3630 Holly St", "2332 Oakland St",                              // Holly + Oakland
-  "1724 Boston St", "3225 Tucson St",                              // Tucson + Boston
-  "8222 Hare Ave", "3899 Joest Rd", "6580 Stockport Dr"            // out-of-state (manual)
-];
+// Each LLC with a per-property monitor gets a config: a label, a substring used to
+// match its Property Detail rows (robust to "Divando, LLC" vs "Divando LLC"), and a
+// display order (grouped by building, matching the loan/insurance groupings).
+const PD_LLC_CONFIG = {
+  divando: {
+    label: 'Divando', match: 'divando',
+    order: [
+      "15655 E 13th Pl", "15675 E 13th Pl", "1310 Idalia Ct",          // 13th triplex
+      "14790 E 43rd Ave", "15559 E Bates Ave Lower", "15559 E Bates Ave Upper", // 43rd + Bates
+      "4776 Blackhawk Way", "5101 Crown Blvd Unit A", "5101 Crown Blvd Unit B", // Blackhawk + Crown
+      "11795 E Virginia Dr", "5538 Dearborn St",                       // Dearborn + Virginia
+      "3630 Holly St", "2332 Oakland St",                              // Holly + Oakland
+      "1724 Boston St", "3225 Tucson St",                              // Tucson + Boston
+      "8222 Hare Ave", "3899 Joest Rd", "6580 Stockport Dr"            // out-of-state (manual)
+    ]
+  },
+  yale: {
+    label: 'Yale', match: 'yale',
+    // 5 townhome units, one Lument mortgage + one Acuity policy split evenly across them.
+    order: ["2991 W Yale Ave", "2993 W Yale Ave", "2995 W Yale Ave", "2997 W Yale Ave", "2999 W Yale Ave"]
+  }
+};
+let PD_LLC = 'divando';  // which LLC's per-property monitor is shown
+function pdSetLlc(v) { PD_LLC = v; renderAll(); }
 let PD_RANGE = 12;       // months shown in table/chart (3/6/9/12/0=all)
 let PD_METRIC = 'net';   // chart metric: net | disbursement | cash_in | occupancy
 let PD_MONTH = '';       // anchor month ('' = newest); table columns + chart window end here
@@ -1331,7 +1345,7 @@ function buildPropertyRecords(data, maintenance) {
     const repairs = maintenanceForProp(maintenance, r.property, period);
     const occupied = String(r.status || '').toLowerCase().indexOf('vac') === -1;
     recs.push({
-      property: r.property, period: period, status: occupied ? 'Occupied' : 'Vacant',
+      property: r.property, period: period, llc: r.llc || '', status: occupied ? 'Occupied' : 'Vacant',
       occupied: occupied, cash_in: r.cash_in || 0, disbursement: r.disbursement || 0,
       mortgage: r.mortgage || 0, ins_mo: r.ins_mo || 0, repairs: repairs,
       net: (r.disbursement || 0) - (r.mortgage || 0) - (r.ins_mo || 0) - repairs,
@@ -1347,7 +1361,7 @@ function buildPropertyRecords(data, maintenance) {
     const period = r.period_start;
     const repairs = maintenanceForProp(maintenance, prop, period);
     recs.push({
-      property: prop, period: period, status: 'Occupied', occupied: true,
+      property: prop, period: period, llc: 'Divando LLC', status: 'Occupied', occupied: true,
       cash_in: r.disbursement || 0, disbursement: r.disbursement || 0,
       mortgage: 0, ins_mo: 0, repairs: repairs,
       net: (r.disbursement || 0) - repairs, source: 'Manual'
@@ -1436,12 +1450,28 @@ function renderAll() {
    DIVANDO PER-PROPERTY SECTION (table + chart)
    ============================================================ */
 function renderPropertyDetailSection(data, maintenance) {
-  const recs = buildPropertyRecords(data, maintenance);
+  const recsAll = buildPropertyRecords(data, maintenance);
+  if (!recsAll.length) {
+    PD_CACHE = null;
+    return '<div class="section"><h2><span class="dot"></span>Per-Property Monitor</h2>' +
+      '<div style="color:#4e6d8c">No per-property data yet. Run a <b>Monthly AppFolio Per-Property Pull</b> ' +
+      'workflow (or its backfill) to populate the <b>Property Detail</b> tab.</div></div>';
+  }
+  // LLC switcher: show one LLC's units at a time. Offer every configured LLC that
+  // has at least one record (so Yale appears automatically once its data lands).
+  const llcKeys = Object.keys(PD_LLC_CONFIG).filter(k =>
+    recsAll.some(r => (r.llc || '').toLowerCase().includes(PD_LLC_CONFIG[k].match)));
+  if (llcKeys.length && !llcKeys.includes(PD_LLC)) PD_LLC = llcKeys[0];
+  const cfg = PD_LLC_CONFIG[PD_LLC] || PD_LLC_CONFIG.divando;
+  const PD_ORDER = cfg.order;
+  const llcOpts = llcKeys.map(k => '<option value="' + k + '"' + (k === PD_LLC ? ' selected' : '') +
+    '>' + PD_LLC_CONFIG[k].label + '</option>').join('');
+  const recs = recsAll.filter(r => (r.llc || '').toLowerCase().includes(cfg.match));
   if (!recs.length) {
     PD_CACHE = null;
-    return '<div class="section"><h2><span class="dot"></span>Divando — Per-Property Monitor</h2>' +
-      '<div style="color:#4e6d8c">No per-property data yet. Run the <b>Monthly AppFolio Per-Property Pull — Divando</b> ' +
-      'workflow (or its backfill) to populate the <b>Property Detail</b> tab.</div></div>';
+    return '<div class="section"><h2><span class="dot"></span>' + cfg.label + ' — Per-Property Monitor' +
+      '<select class="header-month-select" onchange="pdSetLlc(this.value)" title="LLC">' + llcOpts + '</select></h2>' +
+      '<div style="color:#4e6d8c">No per-property data yet for ' + cfg.label + '.</div></div>';
   }
   // All months present (ascending). The anchor month (PD_MONTH, or newest) is the
   // column the table reflects and the right edge of the chart window; the range
@@ -1476,7 +1506,8 @@ function renderPropertyDetailSection(data, maintenance) {
   const viewOpts = '<optgroup label="Range">' + rangeGroup + '</optgroup>' +
     '<optgroup label="Single month">' + monthGroup + '</optgroup>';
 
-  let html = '<div class="section"><h2><span class="dot"></span><span>Divando — Per-Property Monitor</span>' +
+  let html = '<div class="section"><h2><span class="dot"></span><span>' + cfg.label + ' — Per-Property Monitor</span>' +
+    '<select class="header-month-select" onchange="pdSetLlc(this.value)" title="LLC">' + llcOpts + '</select>' +
     '<select class="header-month-select" onchange="pdSetChart(this.value)" title="Chart style">' + chartOpts + '</select>' +
     '<select class="header-month-select" onchange="pdSetView(this.value)" title="Range or single month">' + viewOpts + '</select>' +
     '<select class="header-month-select" onchange="pdSetMetric(this.value)" title="Chart metric">' + metricOpts + '</select>' +

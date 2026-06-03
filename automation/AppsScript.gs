@@ -1534,7 +1534,9 @@ function getDashboardJson() {
   }
 
   // Property Detail tab — per-property monthly rows written by run_divando.py /
-  // backfill_divando.py. Header in row 1, data from row 2. Columns (A-M):
+  // backfill_divando.py (Divando units) and run_yale.py / backfill_yale.py (Yale
+  // townhome units). Read generically by LLC, so new LLCs flow through with no edit
+  // here. Header in row 1, data from row 2. Columns (A-M):
   // Date Range, Month, LLC, Property, Cash In, Rent Collected, Mgmt Fee,
   // Disbursement, Mortgage, Insurance/12, Status, Source, Updated.
   var pd = ss.getSheetByName('Property Detail');
