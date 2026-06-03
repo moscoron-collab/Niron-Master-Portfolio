@@ -33,6 +33,7 @@ The two pipelines write to **separate Google Sheets** (separate `GOOGLE_SHEET_ID
 - Decisive when path is clear — don't over-confirm.
 - **ALWAYS** put every value, secret, URL, or command in its own code block (` ``` ` or `` ` `` ) so the copy button appears. Never put copyable values inside a table cell or inline prose — the user cannot copy them that way.
 - **ALWAYS** make URLs clickable markdown links `[text](url)`, never plain text URLs.
+- **PR default (do NOT re-ask):** when work is committed/pushed and ready, **open the pull request automatically** (`mcp__github__create_pull_request`, base `main`). The user has standing approval — never ask "want me to open the PR?". Just open it and give the link.
 
 ---
 
@@ -119,14 +120,19 @@ A per-property monitor for Divando's 18 properties (15 AppFolio + 3 manual out-o
 - **index.html** renders a "Divando — Per-Property Monitor" section between Recent
   Maintenance and History: a Chart.js chart + a table (Property | Status | Income |
   Disbursement | Repairs | Net | YTD Net | Occ %).
-  - **4 dropdowns**: Chart style (`PD_CHART` bars|lines) · Month picker (`PD_MONTH`,
-    anchor month = table columns + right edge of chart) · Range (`PD_RANGE` 3/6/9/12/All) ·
-    Metric (`PD_METRIC` net|disbursement|cash_in|occupancy).
-  - **Chart default = horizontal bars** (one bar per property for the selected month,
+  - **3 dropdowns**: Chart style (`PD_CHART` bars|lines) · **View** · Metric (`PD_METRIC`
+    net|disbursement|cash_in|occupancy).
+  - **View dropdown is merged** (`pdSetView`, value `r:N` for a range or `m:YYYY-MM-DD` for
+    a single month): one `<select>` with an "Range" optgroup (3/6/9/12/All → `PD_RANGE`) and
+    a "Single month" optgroup (every available month → `PD_MONTH`, sets `PD_RANGE=1`). Only
+    ONE is ever selected so it's unambiguous. The old separate month-picker was removed.
+  - A **plain-English caption** under the title states the current view, e.g.
+    "Showing **Net Cashflow** · **Single month: Apr 2026** · Bars view".
+  - **Chart default = horizontal bars** (one bar per property for the selected/anchor month,
     green positive / red negative, blue for occupancy) — the line view had 18 overlapping
     lines and was unreadable. Toggle to **trend lines** for month-over-month movement;
     lines have **hover-highlight** (hovered property thickens, rest fade via `onHover`).
-  - Ordering = `PD_ORDER` (grouped by building, A-Z within group).
+  - Ordering = `PD_LLC_CONFIG[key].order` (grouped by building, A-Z within group).
   - The 3 manual out-of-state props (Hare/Joest/Stockport) are pulled from History rows
     whose Source matches `Manual Entry: <prop>` (they're not in Property Detail).
   - Vacancy = `Status` column ("vacant" → Vacant badge); "no rent in" rule set by run_divando.py.
@@ -170,6 +176,73 @@ lump-sum stays excluded from monthly net.
 
 > ⏳ **TODO (Moss combined repo)**: mirror this per-property section read-only on the Niron
 > tab of `moscoron-collab/Moss-Investments-Niron-combined` (view-only — all editing is here).
+
+---
+
+## 📡 Yale per-property monitoring (BUILT — same pattern as Divando)
+
+Per-unit monitor for Yale Townhomes, LLC's **5 townhome units** at 2991–2999 W Yale Ave,
+Denver. Built exactly like Divando but adapted to Yale's different PDF structure.
+
+- **Automation**: `automation/run_yale.py` (monthly) + `automation/backfill_yale.py`
+  (imports `run_yale` for parsing so they never drift). Both write ONLY to the shared
+  **`Property Detail`** tab (LLC = `Yale Townhomes, LLC`) — never touch History or the
+  consolidated Yale card. Workflows: `monthly_yale.yml` (daily 15–25, **12pm UTC** — one
+  hour after Divando's 11am so they don't race on AppFolio cookies) + `backfill_yale.yml`
+  (manual, `BACKFILL_MONTHS` default 18).
+
+### ⚠️ Yale PDF is STRUCTURALLY DIFFERENT from Divando
+- Divando = one PDF **page per property** (clean per-property summary blocks, 15 pages).
+- Yale = **ONE consolidated property** ("YALE, 2991-2999") with a single Property Cash
+  Summary (2-page packet). The 5 units (2991/2993/2995/2997/2999) appear ONLY as a
+  **prefix inside the Transactions table line descriptions** (e.g. "2991 - Rent Income").
+  There is **NO per-unit Owner Disbursement or per-unit Management Fee** — those exist
+  only at the whole-Yale level (one pooled disbursement, four unlabeled mgmt-fee checks).
+
+### How `run_yale.py` parses it
+- Walks the Transactions table using the running **Balance column** to classify each
+  line as cash-in or cash-out by the **delta sign** (this nets NSF/reversal lines
+  correctly and avoids guessing which number is amount vs. balance).
+- **AppFolio wraps long descriptions**, so a reversal/deposit line's unit number +
+  category lands on the line(s) ABOVE the date+amount line. The parser stitches each
+  date line together with the non-date fragment lines since the previous date line
+  (a context window) before matching unit/keywords. **Without this, rent is overcounted
+  and cash-in falls short** (the bug that was caught & fixed during the build).
+- Per unit it recovers **Rent Collected** (net of reversals) + **occupancy** (rent
+  present = Occupied, absent = Vacant). The pooled **Management Fees + Owner Disbursement**
+  from the summary are then **allocated to each unit in proportion to its cash-in**, so
+  the per-unit disbursements **sum back exactly to the statement total** (verified:
+  $10,076.61 for the Apr16–May15 2026 statement).
+
+### Yale fixed costs (bank-verified: acct `2 Yale LLC 2321`, Mar/Apr/May 2026, all identical)
+- **Mortgage = Lument `$7,279.08`/mo** (LUMENT7313 ACH ~6th of month) → **÷5 = $1,455.82/unit**.
+- **Insurance = Acuity `$1,037.55`/mo** (ACUITY INS PREM, policy ZM1786) → **÷5 = $207.51/unit**.
+  ⚠️ This is the **real bank draft**, NOT the old card figure ($1,024.54) or the policy
+  quote ($11,248/yr). The dashboard card + Noble tab were **corrected to $1,037.55**.
+- **SBA Loan `$225`/mo** = LLC-level business debt (like Divando's SBA) — kept at LLC
+  level, **NOT** spread across the per-unit table.
+- **Tax** = escrowed in the mortgage (`isTaxEscrowed` includes Yale) → tax NOT deducted
+  in per-unit net.
+- Fixed costs are split **equally 1/5** per user decision (one mortgage + one policy
+  covers all 5 units). Vacant 2993 still carries mortgage/5 + ins/5 → shows a vacancy
+  loss, and per-unit nets sum to the Yale LLC-level net.
+
+### Dashboard (index.html) — now multi-LLC
+- The per-property section is **no longer Divando-only**. `PD_LLC_CONFIG` holds one entry
+  per LLC (`divando`, `yale`) with a `label`, a `match` substring (robust to "Divando, LLC"
+  vs "Divando LLC"), and a per-LLC `order`. `PD_LLC` + `pdSetLlc()` drive an **LLC dropdown**
+  added to the section header (only LLCs that have data appear). The section title, table,
+  chart, and ordering all switch with it.
+- `buildPropertyRecords` tags each record with `llc`; the section filters `recsAll` by the
+  selected LLC's `match`. Everything else (metric/view/chart dropdowns, caption, bars/trend,
+  occupancy, YTD) is shared and unchanged.
+- AppsScript `getDashboardJson()` Property Detail reader is **generic by LLC** — Yale rows
+  flow through with no Apps Script edit (only a comment updated).
+
+> 🔜 **Next LLCs**: Donald + Dorado follow the SAME pattern. Check each one's Owner Packet
+> structure first — if per-page like Divando, copy run_divando.py; if single-consolidated
+> like Yale, copy run_yale.py. Add a `PD_LLC_CONFIG` entry + per-LLC fixed costs verified
+> against 3 months of that LLC's bank CSV.
 
 ---
 
