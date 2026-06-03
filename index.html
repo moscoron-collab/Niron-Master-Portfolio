@@ -1331,6 +1331,7 @@ function pdSetChart(v) { PD_CHART = v; renderAll(); }
 // One dropdown drives both: a range ("r:3".."r:0"=All) or a single month ("m:2026-05-01").
 function pdSetView(v) {
   if (v.indexOf('m:') === 0) { PD_MONTH = v.slice(2); PD_RANGE = 1; }
+  else if (v === 'r:ytd') { PD_RANGE = 'ytd'; PD_MONTH = ''; }
   else { PD_RANGE = parseInt(v.slice(2), 10); PD_MONTH = ''; }
   renderAll();
 }
@@ -1441,7 +1442,7 @@ function renderAll() {
   html += '</div></div>';
   if (months.length > 1) html += '<div class="section"><h2><span class="dot"></span>Cashflow Trend (Bars per LLC + Total Line)</h2><div class="chart-container"><canvas id="trendChart"></canvas></div></div>';
   const allLoans = loans.concat(DIVANDO_PROPERTY_LOANS).slice().sort((a, b) => a.llc.localeCompare(b.llc));
-  if (allLoans.length) { html += '<div class="section"><h2><span class="dot"></span>Loan Balances</h2><table><thead><tr><th>LLC</th><th>Lender</th><th>Original</th><th>Remaining</th><th>Monthly</th><th>Maturity</th></tr></thead><tbody>'; allLoans.forEach(l => { const orig = l.original_balance === undefined ? '—' : fmt(l.original_balance); const remain = l.original_balance === undefined ? '—' : fmt(l.balance_override || l.calculated_balance); html += '<tr><td>' + l.llc + '</td><td style="font-size:12px">' + l.lender + '</td><td>' + orig + '</td><td style="color:#f0a500;font-weight:600">' + remain + '</td><td>' + fmt(l.monthly_payment) + '</td><td>' + (l.maturity_date || '—') + '</td></tr>'; }); html += '</tbody></table></div>'; }
+  if (allLoans.length) { html += '<div class="section"><h2><span class="dot"></span>Loan Details per LLC</h2><table><thead><tr><th>LLC</th><th>Lender</th><th>Original</th><th>Remaining</th><th>Monthly</th><th>Maturity</th></tr></thead><tbody>'; allLoans.forEach(l => { const orig = l.original_balance === undefined ? '—' : fmt(l.original_balance); const remain = l.original_balance === undefined ? '—' : fmt(l.balance_override || l.calculated_balance); html += '<tr><td>' + l.llc + '</td><td style="font-size:12px">' + l.lender + '</td><td>' + orig + '</td><td style="color:#f0a500;font-weight:600">' + remain + '</td><td>' + fmt(l.monthly_payment) + '</td><td>' + (l.maturity_date || '—') + '</td></tr>'; }); html += '</tbody></table></div>'; }
   if (maintenance.length) { html += '<div class="section"><h2><span class="dot"></span>Recent Maintenance Invoices</h2><table><thead><tr><th>Date</th><th>LLC</th><th>Property</th><th>Sub</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead><tbody>'; maintenance.slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 20).forEach(m => { html += '<tr><td>' + m.date + '</td><td>' + m.llc + '</td><td style="font-size:12px">' + (m.property || '—') + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td></tr>'; }); html += '</tbody></table></div>'; }
   html += renderPropertyDetailSection(data, maintenance);
   html += '<div class="section"><h2><span class="dot"></span>History (newest first)</h2><table><thead><tr><th>Month</th><th>LLC</th><th>Disbursement</th><th>Mortgage</th><th>Maintenance</th><th>Net</th></tr></thead><tbody>';
@@ -1485,7 +1486,8 @@ function renderPropertyDetailSection(data, maintenance) {
   const allMonthsAsc = [...new Set(recs.map(r => r.period))].sort();
   const anchor = (PD_MONTH && allMonthsAsc.includes(PD_MONTH)) ? PD_MONTH : allMonthsAsc[allMonthsAsc.length - 1];
   let windowMonths = allMonthsAsc.filter(m => m <= anchor);
-  if (PD_RANGE > 0) windowMonths = windowMonths.slice(-PD_RANGE);
+  if (PD_RANGE === 'ytd') { const yStart = (anchor ? anchor.slice(0, 4) : '') + '-01'; windowMonths = windowMonths.filter(m => m >= yStart); }
+  else if (PD_RANGE > 0) windowMonths = windowMonths.slice(-PD_RANGE);
   const months = windowMonths; // oldest→newest for chart
   const monthSet = new Set(months);
   const inRange = recs.filter(r => monthSet.has(r.period));
@@ -1505,7 +1507,7 @@ function renderPropertyDetailSection(data, maintenance) {
     .map(o => '<option value="' + o[0] + '"' + (o[0] === PD_CHART ? ' selected' : '') + '>' + o[1] + '</option>').join('');
   // Combined view dropdown: a range (3/6/9/12/All) OR a single month, in one list.
   const singleMonth = PD_MONTH !== '';
-  const rangeGroup = [[3,'3 mo'],[6,'6 mo'],[9,'9 mo'],[12,'12 mo'],[0,'All']]
+  const rangeGroup = [[3,'3 mo'],[6,'6 mo'],[9,'9 mo'],[12,'12 mo'],['ytd','YTD'],[0,'All']]
     .map(o => '<option value="r:' + o[0] + '"' + (!singleMonth && o[0] === PD_RANGE ? ' selected' : '') + '>' + o[1] + '</option>').join('');
   const monthGroup = allMonthsAsc.slice().reverse()
     .map(m => '<option value="m:' + m + '"' + (singleMonth && m === PD_MONTH ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
@@ -1523,7 +1525,7 @@ function renderPropertyDetailSection(data, maintenance) {
   const metricLabel = { net: 'Net Cashflow', disbursement: 'Disbursement', cash_in: 'Income', occupancy: 'Occupancy %' }[PD_METRIC];
   let windowText;
   if (singleMonth) { windowText = 'Single month: ' + monthLabel(anchor); }
-  else { const span = '(' + monthLabel(months[0]) + ' – ' + monthLabel(months[months.length - 1]) + ')'; windowText = (PD_RANGE === 0 ? 'All months ' : 'Last ' + PD_RANGE + ' months ') + span; }
+  else { const span = '(' + monthLabel(months[0]) + ' – ' + monthLabel(months[months.length - 1]) + ')'; const prefix = PD_RANGE === 'ytd' ? ('YTD ' + (anchor ? anchor.slice(0, 4) : '') + ' ') : (PD_RANGE === 0 ? 'All months ' : 'Last ' + PD_RANGE + ' months '); windowText = prefix + span; }
   html += '<div style="color:#7e9cbf;font-size:13px;margin:-6px 0 14px 18px">Showing <b style="color:#00c97a">' + metricLabel + '</b> &nbsp;·&nbsp; <b style="color:#ccd9ea">' + windowText + '</b> &nbsp;·&nbsp; ' + (PD_CHART === 'bars' ? 'Bars' : 'Trend lines') + ' view</div>';
 
   // Chart first, then table.
