@@ -1267,7 +1267,76 @@ function maintenanceFor(maintenance, llc, period) { if (!maintenance || !llc || 
 function isTaxEscrowed(llc) { if (!llc) return false; const n = llc.toLowerCase(); return n.includes('donald') || n.includes('yale'); }
 function isTaxAnnual(llc) { if (!llc) return false; return llc.toLowerCase().includes('divando'); }
 function effectiveTax(row) { return (isTaxEscrowed(row.llc) || isTaxAnnual(row.llc)) ? 0 : (row.tax_mo || 0); }
-function recalcNet(row, maintenance) { const m = maintenanceFor(maintenance, row.llc, row.period_start); return row.disbursement - row.mortgage - effectiveTax(row) - row.ins_mo - m; }
+// Divando carries 6 building mortgages totalling $12,199.86/mo that are NOT in the
+// sheet's "mortgage" field (that field only holds the $2,334 SBA business-debt draft).
+// Add them back so the Divando card and all net/YTD totals reflect true monthly debt
+// = $12,199.86 property mortgages + $2,334 SBA = $14,533.86/mo.
+const DIVANDO_PROPERTY_MORTGAGE = 12199.86;
+function extraMortgage(llc) { return (llc && llc.toLowerCase().includes('divando')) ? DIVANDO_PROPERTY_MORTGAGE : 0; }
+
+/* ============================================================
+   DIVANDO PER-PROPERTY MONITORING
+   Data: PORTFOLIO_DATA.property_detail (15 AppFolio properties, written by
+   run_divando.py / backfill_divando.py) + the 3 manual out-of-state properties
+   pulled from History rows whose Source = "Manual Entry: <property>".
+   ============================================================ */
+// Display order: grouped by building (matching the loan/insurance groupings), A-Z within group.
+const PD_ORDER = [
+  "15655 E 13th Pl", "15675 E 13th Pl", "1310 Idalia Ct",          // 13th triplex
+  "14790 E 43rd Ave", "15559 E Bates Ave Lower", "15559 E Bates Ave Upper", // 43rd + Bates
+  "4776 Blackhawk Way", "5101 Crown Blvd Unit A", "5101 Crown Blvd Unit B", // Blackhawk + Crown
+  "11795 E Virginia Dr", "5538 Dearborn St",                       // Dearborn + Virginia
+  "3630 Holly St", "2332 Oakland St",                              // Holly + Oakland
+  "1724 Boston St", "3225 Tucson St",                              // Tucson + Boston
+  "8222 Hare Ave", "3899 Joest Rd", "6580 Stockport Dr"            // out-of-state (manual)
+];
+let PD_RANGE = 12;       // months shown in table/chart (3/6/9/12/0=all)
+let PD_METRIC = 'net';   // chart metric: net | disbursement | cash_in | occupancy
+let PD_CACHE = null;     // last-built dataset, used by the chart renderer
+function pdSetRange(v) { PD_RANGE = parseInt(v, 10); renderAll(); }
+function pdSetMetric(v) { PD_METRIC = v; renderAll(); }
+// Match a maintenance row to a property by address substring (Maintenance Log
+// stores the property name in its own column).
+function maintenanceForProp(maintenance, prop, period) {
+  if (!maintenance || !prop) return 0;
+  const key = prop.toLowerCase();
+  return maintenance.filter(m => m.period === period && m.property &&
+    (m.property.toLowerCase().includes(key) || key.includes(m.property.toLowerCase())))
+    .reduce((s, m) => s + (m.amount || 0), 0);
+}
+// Build a flat list of per-property monthly records across all sources.
+function buildPropertyRecords(data, maintenance) {
+  const recs = [];
+  (data.property_detail || []).forEach(r => {
+    const period = r.period_start;
+    const repairs = maintenanceForProp(maintenance, r.property, period);
+    const occupied = String(r.status || '').toLowerCase().indexOf('vac') === -1;
+    recs.push({
+      property: r.property, period: period, status: occupied ? 'Occupied' : 'Vacant',
+      occupied: occupied, cash_in: r.cash_in || 0, disbursement: r.disbursement || 0,
+      mortgage: r.mortgage || 0, ins_mo: r.ins_mo || 0, repairs: repairs,
+      net: (r.disbursement || 0) - (r.mortgage || 0) - (r.ins_mo || 0) - repairs,
+      source: 'AppFolio'
+    });
+  });
+  // 3 manual out-of-state properties live in History as Divando rows, identified by Source.
+  (data.history || []).forEach(r => {
+    const src = String(r.source || '');
+    const m = src.match(/Manual Entry:\s*(.+)$/i);
+    if (!m) return;
+    const prop = m[1].trim();
+    const period = r.period_start;
+    const repairs = maintenanceForProp(maintenance, prop, period);
+    recs.push({
+      property: prop, period: period, status: 'Occupied', occupied: true,
+      cash_in: r.disbursement || 0, disbursement: r.disbursement || 0,
+      mortgage: 0, ins_mo: 0, repairs: repairs,
+      net: (r.disbursement || 0) - repairs, source: 'Manual'
+    });
+  });
+  return recs;
+}
+function recalcNet(row, maintenance) { const m = maintenanceFor(maintenance, row.llc, row.period_start); return row.disbursement - row.mortgage - extraMortgage(row.llc) - effectiveTax(row) - row.ins_mo - m; }
 
 async function load() { try { const res = await fetch(API_URL); const data = await res.json(); PORTFOLIO_DATA = data; initialRender(data); } catch (e) { document.getElementById("content").innerHTML = '<div class="error">Failed to load: ' + e.message + '</div>'; document.getElementById("status").textContent = "● Offline"; document.getElementById("status").style.color = "#ff4455"; } }
 function initialRender(data) { document.getElementById("last-updated").textContent = new Date(data.last_updated).toLocaleString(); const history = data.history || []; const months = [...new Set(history.map(h => h.period_start))].sort().reverse(); SELECTED_MONTH = months[0] || ""; renderAll(); }
@@ -1277,7 +1346,7 @@ function renderAll() {
   const history = data.history || []; const llcs = data.llcs || []; const loans = data.loans || []; const distributions = data.distributions || []; const maintenance = data.maintenance || [];
   const months = [...new Set(history.map(h => h.period_start))].sort().reverse();
   const selectedRows = history.filter(h => h.period_start === SELECTED_MONTH); selectedRows.sort((a, b) => a.llc.localeCompare(b.llc));
-  const enrichedSelected = selectedRows.map(r => { const m = maintenanceFor(maintenance, r.llc, r.period_start); return Object.assign({}, r, { maintenance: m, net_cashflow: r.disbursement - r.mortgage - effectiveTax(r) - r.ins_mo - m }); });
+  const enrichedSelected = selectedRows.map(r => { const m = maintenanceFor(maintenance, r.llc, r.period_start); return Object.assign({}, r, { maintenance: m, net_cashflow: r.disbursement - r.mortgage - extraMortgage(r.llc) - effectiveTax(r) - r.ins_mo - m }); });
   // Combine multiple rows for the same LLC in this month into one card (e.g. Divando's
   // AppFolio statement + manually-entered Suncoast/MidSouth properties).
   const groupedSelected = Object.values(enrichedSelected.reduce((acc, r) => {
@@ -1287,7 +1356,7 @@ function renderAll() {
   }, {})).sort((a, b) => a.llc.localeCompare(b.llc));
   const totalDisb = enrichedSelected.reduce((s, r) => s + r.disbursement, 0);
   const totalNet = enrichedSelected.reduce((s, r) => s + r.net_cashflow, 0);
-  const totalMortgage = enrichedSelected.reduce((s, r) => s + r.mortgage, 0);
+  const totalMortgage = enrichedSelected.reduce((s, r) => s + r.mortgage + extraMortgage(r.llc), 0);
   const totalValue = llcs.reduce((s, l) => s + l.property_value, 0);
   const selectedYear = SELECTED_MONTH ? SELECTED_MONTH.slice(0, 4) : "";
   const ytdRows = history.filter(h => h.period_start && h.period_start.slice(0,4) === selectedYear && h.period_start <= SELECTED_MONTH);
@@ -1296,7 +1365,7 @@ function renderAll() {
   const distThisMonth = distributions.filter(d => d.period === SELECTED_MONTH).reduce((s, d) => s + (d.your_amount || 0), 0);
   const distYtd = distributions.filter(d => d.period && d.period.slice(0,4) === selectedYear && d.period <= SELECTED_MONTH).reduce((s, d) => s + (d.your_amount || 0), 0);
   const ytdSubLabel = "Jan – " + monthLabel(SELECTED_MONTH).split(' ')[0] + " " + selectedYear;
-  const enrichedHistory = history.map(r => { const m = maintenanceFor(maintenance, r.llc, r.period_start); return Object.assign({}, r, { maintenance: m, net_cashflow: r.disbursement - r.mortgage - effectiveTax(r) - r.ins_mo - m }); });
+  const enrichedHistory = history.map(r => { const m = maintenanceFor(maintenance, r.llc, r.period_start); return Object.assign({}, r, { maintenance: m, net_cashflow: r.disbursement - r.mortgage - extraMortgage(r.llc) - effectiveTax(r) - r.ins_mo - m }); });
   const sortedHistory = enrichedHistory.slice().sort((a, b) => { if (a.period_start !== b.period_start) return b.period_start > a.period_start ? 1 : -1; return a.llc.localeCompare(b.llc); });
   const monthOptions = months.map(m => '<option value="' + m + '"' + (m === SELECTED_MONTH ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
   const headerSelect = document.getElementById('header-month-select'); if (headerSelect) headerSelect.innerHTML = monthOptions;
@@ -1309,17 +1378,130 @@ function renderAll() {
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Portfolio Value</div><div class="value">' + fmtShort(totalValue) + '</div><div class="sublabel">Estimated</div></div></div>';
   html += '</div>';
   html += '<div class="section"><h2><span class="dot"></span><span>Monthly Breakdown</span><select id="inline-month-select" class="header-month-select" onchange="onMonthChange(this.value)">' + monthOptions + '</select></h2><div class="llc-grid">';
-  groupedSelected.forEach(r => { const net = r.net_cashflow; const cls = net >= 0 ? 'green' : 'red'; let taxLabel = 'Tax / 12'; if (isTaxEscrowed(r.llc)) { taxLabel += ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(paid by escrow)</span>'; } else if (isTaxAnnual(r.llc)) { taxLabel += ' <span title="Paid lump-sum April 2026. Not deducted from monthly net." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(paid Apr 2026 ⓘ)</span>'; } const distRows = distributions.filter(d => d.llc === r.llc && d.period === r.period_start); const distYou = distRows.reduce((s,d) => s + (d.your_amount||0), 0); const distNir = distRows.reduce((s,d) => s + (d.partner_amount||0), 0); const distHtml = (distYou || distNir) ? '<div class="llc-row" style="border-top:1px solid #1e2d42;margin-top:6px;padding-top:6px"><span class="k" style="color:#00c97a">Distribution</span><span class="v" style="color:#00c97a;font-size:12px">You: ' + fmt(distYou) + ' &nbsp;|&nbsp; Nir: ' + fmt(distNir) + '</span></div>' : ''; html += '<div class="llc-card"><h3>' + r.llc + '</h3><div class="llc-row"><span class="k">Disbursement</span><span class="v">' + fmt(r.disbursement) + '</span></div><div class="llc-row"><span class="k">Mgmt Fees</span><span class="v">' + fmt(r.mgmt_fee) + '</span></div><div class="llc-row"><span class="k">Mortgage</span><span class="v">' + fmt(r.mortgage) + '</span></div><div class="llc-row"><span class="k">' + taxLabel + '</span><span class="v">' + fmt(r.tax_mo) + '</span></div><div class="llc-row"><span class="k">Insurance / 12</span><span class="v">' + fmt(r.ins_mo) + '</span></div><div class="llc-row"><span class="k">Maintenance</span><span class="v">' + fmt(r.maintenance) + '</span></div><div class="llc-row total"><span class="k">Net Cashflow</span><span class="v ' + cls + '">' + fmt(net) + '</span></div>' + distHtml + '</div>'; });
+  groupedSelected.forEach(r => { const net = r.net_cashflow; const cls = net >= 0 ? 'green' : 'red'; let taxLabel = 'Tax / 12'; if (isTaxEscrowed(r.llc)) { taxLabel += ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(paid by escrow)</span>'; } else if (isTaxAnnual(r.llc)) { taxLabel += ' <span title="Paid lump-sum April 2026. Not deducted from monthly net." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(paid Apr 2026 ⓘ)</span>'; } const distRows = distributions.filter(d => d.llc === r.llc && d.period === r.period_start); const distYou = distRows.reduce((s,d) => s + (d.your_amount||0), 0); const distNir = distRows.reduce((s,d) => s + (d.partner_amount||0), 0); const distHtml = (distYou || distNir) ? '<div class="llc-row" style="border-top:1px solid #1e2d42;margin-top:6px;padding-top:6px"><span class="k" style="color:#00c97a">Distribution</span><span class="v" style="color:#00c97a;font-size:12px">You: ' + fmt(distYou) + ' &nbsp;|&nbsp; Nir: ' + fmt(distNir) + '</span></div>' : ''; html += '<div class="llc-card"><h3>' + r.llc + '</h3><div class="llc-row"><span class="k">Disbursement</span><span class="v">' + fmt(r.disbursement) + '</span></div><div class="llc-row"><span class="k">Mgmt Fees</span><span class="v">' + fmt(r.mgmt_fee) + '</span></div>' + (extraMortgage(r.llc) ? '<div class="llc-row"><span class="k">Property Mortgages <span title="6 building loans drafted to the property loan accounts (15655/15675/Idalia, 43rd/Bates, Dearborn/Virginia, Blackhawk/Crown, Holly/Oakland, Tucson/Boston)." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(6 loans ⓘ)</span></span><span class="v">' + fmt(extraMortgage(r.llc)) + '</span></div><div class="llc-row"><span class="k">SBA Loans <span title="6 SBA payments drafted on the 1st — general Divando business debt, not tied to any property." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(business debt ⓘ)</span></span><span class="v">' + fmt(r.mortgage) + '</span></div>' : '<div class="llc-row"><span class="k">Mortgage</span><span class="v">' + fmt(r.mortgage) + '</span></div>') + '<div class="llc-row"><span class="k">' + taxLabel + '</span><span class="v">' + fmt(r.tax_mo) + '</span></div><div class="llc-row"><span class="k">Insurance / 12</span><span class="v">' + fmt(r.ins_mo) + '</span></div><div class="llc-row"><span class="k">Maintenance</span><span class="v">' + fmt(r.maintenance) + '</span></div><div class="llc-row total"><span class="k">Net Cashflow</span><span class="v ' + cls + '">' + fmt(net) + '</span></div>' + distHtml + '</div>'; });
   if (!groupedSelected.length) html += '<div style="color:#4e6d8c">No data for this month.</div>';
   html += '</div></div>';
   if (months.length > 1) html += '<div class="section"><h2><span class="dot"></span>Cashflow Trend (Bars per LLC + Total Line)</h2><div class="chart-container"><canvas id="trendChart"></canvas></div></div>';
   if (loans.length) { html += '<div class="section"><h2><span class="dot"></span>Loan Balances</h2><table><thead><tr><th>LLC</th><th>Lender</th><th>Original</th><th>Remaining</th><th>Monthly</th><th>Maturity</th></tr></thead><tbody>'; loans.forEach(l => { html += '<tr><td>' + l.llc + '</td><td>' + l.lender + '</td><td>' + fmt(l.original_balance) + '</td><td style="color:#f0a500;font-weight:600">' + fmt(l.balance_override || l.calculated_balance) + '</td><td>' + fmt(l.monthly_payment) + '</td><td>' + (l.maturity_date || '—') + '</td></tr>'; }); html += '</tbody></table></div>'; }
   if (maintenance.length) { html += '<div class="section"><h2><span class="dot"></span>Recent Maintenance Invoices</h2><table><thead><tr><th>Date</th><th>LLC</th><th>Property</th><th>Sub</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead><tbody>'; maintenance.slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 20).forEach(m => { html += '<tr><td>' + m.date + '</td><td>' + m.llc + '</td><td style="font-size:12px">' + (m.property || '—') + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td></tr>'; }); html += '</tbody></table></div>'; }
+  html += renderPropertyDetailSection(data, maintenance);
   html += '<div class="section"><h2><span class="dot"></span>History (newest first)</h2><table><thead><tr><th>Month</th><th>LLC</th><th>Disbursement</th><th>Mortgage</th><th>Maintenance</th><th>Net</th></tr></thead><tbody>';
   sortedHistory.slice(0, 100).forEach(h => { html += '<tr><td>' + h.period_start + '</td><td>' + h.llc + '</td><td>' + fmt(h.disbursement) + '</td><td>' + fmt(h.mortgage) + '</td><td>' + fmt(h.maintenance) + '</td><td class="' + (h.net_cashflow >= 0 ? 'green' : 'red') + '">' + fmt(h.net_cashflow) + '</td></tr>'; });
   html += '</tbody></table></div>';
   el.innerHTML = html;
   if (months.length > 1) renderChart(enrichedHistory, months);
+  renderPropertyChart();
+}
+
+/* ============================================================
+   DIVANDO PER-PROPERTY SECTION (table + chart)
+   ============================================================ */
+function renderPropertyDetailSection(data, maintenance) {
+  const recs = buildPropertyRecords(data, maintenance);
+  if (!recs.length) {
+    PD_CACHE = null;
+    return '<div class="section"><h2><span class="dot"></span>Divando — Per-Property Monitor</h2>' +
+      '<div style="color:#4e6d8c">No per-property data yet. Run the <b>Monthly AppFolio Per-Property Pull — Divando</b> ' +
+      'workflow (or its backfill) to populate the <b>Property Detail</b> tab.</div></div>';
+  }
+  // All months present, newest first; then apply the range filter.
+  const allMonths = [...new Set(recs.map(r => r.period))].sort().reverse();
+  const months = (PD_RANGE > 0 ? allMonths.slice(0, PD_RANGE) : allMonths).slice().sort(); // oldest→newest for chart
+  const monthSet = new Set(months);
+  const inRange = recs.filter(r => monthSet.has(r.period));
+  const latestMonth = months[months.length - 1];
+  const year = latestMonth ? latestMonth.slice(0, 4) : '';
+
+  // Order properties: known order first, then any extras alphabetically.
+  const seen = [...new Set(inRange.map(r => r.property))];
+  const ordered = PD_ORDER.filter(p => seen.includes(p))
+    .concat(seen.filter(p => !PD_ORDER.includes(p)).sort());
+
+  PD_CACHE = { months: months, properties: ordered, recs: inRange };
+
+  // Range + metric controls.
+  const rangeOpts = [[3,'3 mo'],[6,'6 mo'],[9,'9 mo'],[12,'12 mo'],[0,'All']]
+    .map(o => '<option value="' + o[0] + '"' + (o[0] === PD_RANGE ? ' selected' : '') + '>' + o[1] + '</option>').join('');
+  const metricOpts = [['net','Net Cashflow'],['disbursement','Disbursement'],['cash_in','Income (Cash In)'],['occupancy','Occupancy %']]
+    .map(o => '<option value="' + o[0] + '"' + (o[0] === PD_METRIC ? ' selected' : '') + '>' + o[1] + '</option>').join('');
+
+  let html = '<div class="section"><h2><span class="dot"></span><span>Divando — Per-Property Monitor</span>' +
+    '<select class="header-month-select" onchange="pdSetRange(this.value)" title="How many months to show">' + rangeOpts + '</select>' +
+    '<select class="header-month-select" onchange="pdSetMetric(this.value)" title="Chart metric">' + metricOpts + '</select>' +
+    '</h2>';
+
+  // Chart first, then table.
+  html += '<div class="chart-container"><canvas id="propChart"></canvas></div>';
+
+  html += '<table style="margin-top:18px"><thead><tr><th>Property</th><th>Status</th>' +
+    '<th>Income</th><th>Disbursement</th><th>Repairs</th><th>Net (' + monthLabel(latestMonth) + ')</th>' +
+    '<th>YTD Net (' + year + ')</th><th>Occ %</th></tr></thead><tbody>';
+
+  ordered.forEach(prop => {
+    const rowsFor = inRange.filter(r => r.property === prop);
+    const latest = rowsFor.find(r => r.period === latestMonth);
+    // YTD = sum of net for months in the selected year up to latest month.
+    const ytdNet = rowsFor.filter(r => r.period.slice(0,4) === year && r.period <= latestMonth)
+      .reduce((s, r) => s + r.net, 0);
+    // Occupancy across the months in range.
+    const occMonths = rowsFor.length;
+    const occCount = rowsFor.filter(r => r.occupied).length;
+    const occPct = occMonths ? Math.round(occCount / occMonths * 100) : 0;
+    const statusBadge = latest
+      ? (latest.occupied
+          ? '<span style="color:#00c97a;font-weight:600">● Occupied</span>'
+          : '<span style="color:#ff4455;font-weight:600">● Vacant</span>')
+      : '<span style="color:#4e6d8c">—</span>';
+    const netCls = latest ? (latest.net >= 0 ? 'green' : 'red') : '';
+    const ytdCls = ytdNet >= 0 ? 'green' : 'red';
+    const occCls = occPct >= 100 ? 'green' : (occPct >= 50 ? '' : 'red');
+    html += '<tr><td style="font-size:13px">' + prop + '</td>' +
+      '<td>' + statusBadge + '</td>' +
+      '<td>' + (latest ? fmt(latest.cash_in) : '—') + '</td>' +
+      '<td>' + (latest ? fmt(latest.disbursement) : '—') + '</td>' +
+      '<td class="' + (latest && latest.repairs ? 'red' : '') + '">' + (latest ? fmt(latest.repairs) : '—') + '</td>' +
+      '<td class="' + netCls + '">' + (latest ? fmt(latest.net) : '—') + '</td>' +
+      '<td class="' + ytdCls + '">' + fmt(ytdNet) + '</td>' +
+      '<td class="' + occCls + '">' + occPct + '%</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function renderPropertyChart() {
+  const c = document.getElementById('propChart');
+  if (!c || !PD_CACHE) return;
+  const { months, properties, recs } = PD_CACHE;
+  const palette = ['#00c97a','#0080cc','#f0a500','#ff4455','#00BFFF','#a78bfa',
+    '#ff8c42','#2ecc71','#e056fd','#22a6b3','#eb4d4b','#f9ca24',
+    '#6ab04c','#be2edd','#4834d4','#ff7979','#badc58','#7ed6df'];
+  const metric = PD_METRIC;
+  const isOcc = metric === 'occupancy';
+  const datasets = properties.map((prop, i) => {
+    const col = palette[i % palette.length];
+    const dataPts = months.map(m => {
+      const r = recs.find(x => x.property === prop && x.period === m);
+      if (!r) return 0;
+      if (isOcc) return r.occupied ? 100 : 0;
+      return r[metric] || 0;
+    });
+    return { label: prop, data: dataPts, borderColor: col,
+      backgroundColor: col + '22', borderWidth: 2, pointRadius: 2,
+      tension: 0.3, fill: false };
+  });
+  if (window._propChart) window._propChart.destroy();
+  window._propChart = new Chart(c, {
+    type: 'line',
+    data: { labels: months.map(monthLabel), datasets: datasets },
+    options: { responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'nearest', intersect: false },
+      plugins: { legend: { labels: { color: '#ccd9ea', font: { size: 11 }, boxWidth: 12 } },
+        tooltip: { backgroundColor: '#0c1a2e', borderColor: '#1e2d42', borderWidth: 1,
+          titleColor: '#ffffff', bodyColor: '#ccd9ea',
+          callbacks: { label: ctx => ctx.dataset.label + ': ' + (isOcc ? ctx.parsed.y + '%' : fmt(ctx.parsed.y)) } } },
+      scales: { x: { ticks: { color: '#4e6d8c' }, grid: { color: '#182030' } },
+        y: { ticks: { color: '#4e6d8c', callback: v => isOcc ? v + '%' : fmtShort(v) }, grid: { color: '#182030' } } } }
+  });
 }
 function onMonthChange(newMonth) {
   SELECTED_MONTH = newMonth;

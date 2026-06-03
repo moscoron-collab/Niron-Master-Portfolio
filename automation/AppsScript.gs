@@ -1447,7 +1447,7 @@ function addMaintenanceEntry(data) {
 // Override: getDashboardJson with properties + new maintenance structure
 function getDashboardJson() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], settings: {} };
+  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], settings: {} };
 
   var hist = ss.getSheetByName('History');
   var histLast = hist.getLastRow();
@@ -1529,6 +1529,26 @@ function getDashboardJson() {
     props.getRange(5, 1, props.getLastRow() - 4, 3).getValues().forEach(function(r) {
       if (r[0] && r[1]) data.properties.push({
         address: r[0], llc: r[1], notes: r[2] || ""
+      });
+    });
+  }
+
+  // Property Detail tab — per-property monthly rows written by run_divando.py /
+  // backfill_divando.py. Header in row 1, data from row 2. Columns (A-M):
+  // Date Range, Month, LLC, Property, Cash In, Rent Collected, Mgmt Fee,
+  // Disbursement, Mortgage, Insurance/12, Status, Source, Updated.
+  var pd = ss.getSheetByName('Property Detail');
+  if (pd && pd.getLastRow() >= 2) {
+    pd.getRange(2, 1, pd.getLastRow() - 1, 13).getValues().forEach(function(r) {
+      if (r[3]) data.property_detail.push({
+        date_range: r[0],
+        period_start: r[1] instanceof Date ? r[1].toISOString().slice(0,10) : r[1],
+        llc: r[2], property: r[3],
+        cash_in: Number(r[4])||0, rent_collected: Number(r[5])||0,
+        mgmt_fee: Number(r[6])||0, disbursement: Number(r[7])||0,
+        mortgage: Number(r[8])||0, ins_mo: Number(r[9])||0,
+        status: r[10] || "", source: r[11] || "",
+        updated: r[12] instanceof Date ? r[12].toISOString() : r[12]
       });
     });
   }

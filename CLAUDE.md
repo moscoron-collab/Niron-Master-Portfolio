@@ -103,6 +103,51 @@ If a secret is missing, the run crashes with `KeyError` at script start.
 
 ---
 
+## 📡 Divando per-property monitoring (BUILT)
+
+A per-property monitor for Divando's 18 properties (15 AppFolio + 3 manual out-of-state).
+
+- **Automation**: `automation/run_divando.py` (monthly) + `automation/backfill_divando.py`
+  (history to Jan 2025, `BACKFILL_MONTHS=18`). Both write ONLY to a new **`Property Detail`**
+  Google Sheet tab (header: Date Range, Month, LLC, Property, Cash In, Rent Collected,
+  Mgmt Fee, Disbursement, Mortgage, Insurance/12, Status, Source, Updated). They NEVER touch
+  `History` or the existing consolidated Divando row — partner-visible cards stay untouched.
+  Workflows: `monthly_divando.yml` (daily 15–25, 11am UTC) + `backfill_divando.yml` (manual).
+- **AppsScript.gs** `getDashboardJson()` now serves `data.property_detail` from that tab.
+  ⚠️ There are 3 identical `getDashboardJson()` defs — Apps Script uses the LAST one (the
+  one with the richer `maintenance` fields + `properties` + `property_detail`). Edit that one.
+- **index.html** renders a "Divando — Per-Property Monitor" section between Recent
+  Maintenance and History: a Chart.js line chart (metric switch: Net / Disbursement /
+  Income / Occupancy %) + a table (Property | Status | Income | Disbursement | Repairs |
+  Net | YTD Net | Occ %), with a 3/6/9/12/All month range filter (`PD_RANGE`, `PD_METRIC`).
+  - Ordering = `PD_ORDER` (grouped by building, A-Z within group).
+  - The 3 manual out-of-state props (Hare/Joest/Stockport) are pulled from History rows
+    whose Source matches `Manual Entry: <prop>` (they're not in Property Detail).
+  - Vacancy = `Status` column ("vacant" → Vacant badge); "no rent in" rule set by run_divando.py.
+  - Per-property net = disbursement − mortgage − ins_mo − repairs (tax is annual/0 for Divando).
+    Repairs come from the Maintenance Log matched by property-name substring.
+
+### ✅ Divando card corrected (3-month bank-statement verified)
+The Divando LLC card previously showed only the **$2,334/mo SBA** draft as "Mortgage" and
+omitted all property mortgages. Verified across **Mar/Apr/May 2026** bank statements
+(acct `3 Divando LLC 3442`) — both numbers are identical every month:
+- **Property Mortgages = `$12,199.86`/mo** (6 building loan transfers: 0210 $2,352.90 +
+  0211 $1,718.36 + 0212 $2,315.84 + 0213 $2,014.78 + 0214 $2,107.42 + 0215 $1,690.56).
+- **SBA Loans = `$2,334.00`/mo** (6 SBA drafts on the 1st: $48+$731+$64+$273+$487+$731).
+- **Total Divando monthly debt = `$14,533.86`/mo.**
+
+`index.html` now adds the property mortgages back via `DIVANDO_PROPERTY_MORTGAGE = 12199.86`
++ `extraMortgage(llc)`, wired into `recalcNet`, the enriched-net maps, and `totalMortgage`.
+The card shows two lines: **Property Mortgages $12,199.86** + **SBA Loans $2,334.00**. This
+DOES lower Divando's net (it was overstated before) — intentional, the card is now 100%.
+State Farm insurance still comes from the Noble Insurance tab (authoritative); April tax
+lump-sum stays excluded from monthly net.
+
+> ⏳ **TODO (Moss combined repo)**: mirror this per-property section read-only on the Niron
+> tab of `moscoron-collab/Moss-Investments-Niron-combined` (view-only — all editing is here).
+
+---
+
 ## 📄 Moss Owner Packet PDF structure
 
 Pages:
