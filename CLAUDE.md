@@ -33,7 +33,8 @@ The two pipelines write to **separate Google Sheets** (separate `GOOGLE_SHEET_ID
 - Decisive when path is clear — don't over-confirm.
 - **ALWAYS** put every value, secret, URL, or command in its own code block (` ``` ` or `` ` `` ) so the copy button appears. Never put copyable values inside a table cell or inline prose — the user cannot copy them that way.
 - **ALWAYS** make URLs clickable markdown links `[text](url)`, never plain text URLs.
-- **PR default (do NOT re-ask):** when work is committed/pushed and ready, **open the pull request automatically** (`mcp__github__create_pull_request`, base `main`). The user has standing approval — never ask "want me to open the PR?". Just open it and give the link.
+- **PR default (do NOT re-ask):** when work is committed/pushed and ready, **open AND merge the pull request automatically** (`mcp__github__create_pull_request` then `mcp__github__merge_pull_request`, base `main`). The user has standing approval — never ask "want me to open/merge the PR?". Just do it and give the link.
+- **IMPORTANT — straggler commits:** After merging a PR, always verify the merge commit contains ALL expected files before reporting it as done. If commits were pushed to the branch AFTER the PR was already merged, they will NOT be on `main`. In that case: open a new PR immediately and merge it. Do not wait for the user to notice. (This happened with PR #23 — the Donald files landed on the branch after merge, only CLAUDE.md made it to main; PR #24 was the fix.)
 
 ---
 
