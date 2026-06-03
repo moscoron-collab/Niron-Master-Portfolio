@@ -33,6 +33,7 @@ The two pipelines write to **separate Google Sheets** (separate `GOOGLE_SHEET_ID
 - Decisive when path is clear — don't over-confirm.
 - **ALWAYS** put every value, secret, URL, or command in its own code block (` ``` ` or `` ` `` ) so the copy button appears. Never put copyable values inside a table cell or inline prose — the user cannot copy them that way.
 - **ALWAYS** make URLs clickable markdown links `[text](url)`, never plain text URLs.
+- **PR default (do NOT re-ask):** when work is committed/pushed and ready, **open the pull request automatically** (`mcp__github__create_pull_request`, base `main`). The user has standing approval — never ask "want me to open the PR?". Just open it and give the link.
 
 ---
 
