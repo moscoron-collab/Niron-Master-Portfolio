@@ -239,10 +239,46 @@ Denver. Built exactly like Divando but adapted to Yale's different PDF structure
 - AppsScript `getDashboardJson()` Property Detail reader is **generic by LLC** — Yale rows
   flow through with no Apps Script edit (only a comment updated).
 
-> 🔜 **Next LLCs**: Donald + Dorado follow the SAME pattern. Check each one's Owner Packet
-> structure first — if per-page like Divando, copy run_divando.py; if single-consolidated
-> like Yale, copy run_yale.py. Add a `PD_LLC_CONFIG` entry + per-LLC fixed costs verified
-> against 3 months of that LLC's bank CSV.
+> 🔜 **Next LLCs**: Dorado follows the SAME pattern. Check its Owner Packet structure
+> first — if per-page like Divando, copy run_divando.py; if single-consolidated like Yale,
+> copy run_yale.py. Add a `PD_LLC_CONFIG` entry + per-LLC fixed costs verified against 3
+> months of that LLC's bank CSV.
+
+---
+
+## 📡 Donald per-property monitoring (BUILT — clean Divando-style pattern)
+
+Per-unit monitor for 5070 Donald, LLC's **8 units = 4 duplexes** (5060 & 5062, 5064 &
+5066, 5070 & 5072, 5080 & 5082 E Donald Ave, Denver). Donald's Owner Packet is the
+**clean Divando structure** — 9 pages, one page per unit (page 1 = consolidated
+summary), each with its own Property Cash Summary including a **per-unit Owner
+Disbursement**. So `run_donald.py` is essentially `run_divando.py` with Donald's
+`PROPERTY_CODE_MAP` + fixed costs — no allocation/estimation like Yale needed.
+
+- **Automation**: `automation/run_donald.py` (monthly) + `automation/backfill_donald.py`
+  (imports `run_donald` for parsing + fixed costs so they never drift). Both write ONLY
+  to the shared **`Property Detail`** tab (LLC = `5070 Donald, LLC`) — never touch History
+  or the consolidated Donald card. Workflows: `monthly_donald.yml` (daily 15–25, **1pm UTC**
+  — one hour after Yale's 12pm so they don't race on AppFolio cookies) + `backfill_donald.yml`
+  (manual, `BACKFILL_MONTHS` default 18). Page header format: `DONALD, NNNN - NNNN E Donald
+  Ave, ...` → `PROPERTY_CODE_MAP` key is `DONALD, NNNN`.
+
+### Donald fixed costs (bank-verified: acct `1 Donald LLC 9364`, Mar/Apr/May 2026, all identical)
+- **Mortgage = CBRE `$13,708.00`/mo** (CBRE LOAN SERV PAYMENT, one blanket loan) → split
+  **equally ÷8 = $1,713.50/unit** (per user; units valued equally at $562,750 each).
+- **Insurance = Westfield `$1,210.84`/mo** (OH WESTFIELD BILLPAY, policy 499841Y, one policy
+  for all 8) → **÷8 = $151.36/unit**. ✅ This matches the existing card figure — no correction.
+- **SBA Loan `$444`/mo** = LLC-level business debt (like Divando/Yale SBA) — kept at LLC
+  level, **NOT** spread across the per-unit table.
+- **Tax** = escrowed in the mortgage (`isTaxEscrowed` includes Donald) → tax NOT deducted
+  in per-unit net.
+- All 8 units are on AppFolio (no manual entries). Per-unit nets sum to the Donald LLC-level
+  net (verified: 8 disbursements = $20,705.21 for Apr16–May15 2026 → net ≈ $5,786).
+
+### Dashboard
+- `PD_LLC_CONFIG.donald` added (label `Donald`, match `donald`, 8-unit order by duplex).
+  The shared LLC dropdown picks it up automatically; nothing else changed. AppsScript
+  Property Detail reader is generic by LLC — Donald rows flow through with no edit.
 
 ---
 
