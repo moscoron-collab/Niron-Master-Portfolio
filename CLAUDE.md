@@ -133,6 +133,16 @@ A per-property monitor for Divando's 18 properties (15 AppFolio + 3 manual out-o
   unit) moved out end of May 2026** → its May packet shows a Property Reserve hold (no Owner
   Disbursement, Net Owner Funds −$364.61), so that month reads $0 disbursement (correct — same
   as other props' reserve/turnover months); it shows **Vacant** from June until re-rented.
+- **✅ Per-property backfill COMPLETE & verified (Jun 4 2026).** Three `backfill_divando.yml`
+  re-runs filled every unit: run #1 = 234 rows (13 props, pre-Bates); run #2 (comma-space fix)
+  added 30 (18 Bates Lower + 12 Bates Upper); run #3 (BAT alias) added the final 6 Bates Upper
+  months (Dec 2024–May 2025). **`Property Detail` now = 504 rows = 28 units × 18 months**
+  (Divando 15×18=270, Yale 5×18=90, Donald 8×18=144). Yale & Donald were already complete
+  (counts were exactly 5×18 and 8×18) — Bates was the only gap. The daily `monthly_*` workflows
+  keep it current. Reusable lesson: AppFolio page codes are inconsistent (comma-spacing,
+  case, **and abbreviation** like `BAT`↔`BATES`); `_match_code` is whitespace/case-insensitive
+  and the backfill prints a skip-warning for any unmatched property page — watch that log when
+  adding a new LLC so a unit never goes missing silently again.
 - **AppsScript.gs** `getDashboardJson()` now serves `data.property_detail` from that tab.
   ⚠️ There are 3 identical `getDashboardJson()` defs — Apps Script uses the LAST one (the
   one with the richer `maintenance` fields + `properties` + `property_detail`). Edit that one.
