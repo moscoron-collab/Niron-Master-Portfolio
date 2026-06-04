@@ -313,13 +313,17 @@ def save_cookies(context):
     print(f"::set-output name=new_cookies::{encoded}")
 
 
+STATEMENTS_URL = "https://laureatetld.appfolio.com/oportal/statements"
+
 def login(page):
-    page.goto(APPFOLIO_URL)
+    page.goto(STATEMENTS_URL)
     page.wait_for_load_state("networkidle")
     if "log_in" not in page.url:
         print("Already logged in via cookies.")
         return
     print("Logging in with credentials...")
+    page.goto(APPFOLIO_URL)
+    page.wait_for_load_state("networkidle")
     page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
     page.fill("input[name='user[password]']", APPFOLIO_PASS)
     page.click("input[type='submit']")

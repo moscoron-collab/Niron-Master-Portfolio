@@ -157,14 +157,20 @@ def load_cookies():
     except Exception: return []
 
 
+STATEMENTS_URL = "https://laureatetld.appfolio.com/oportal/statements"
+
 def login(page):
-    print("Navigating to login page...")
-    page.goto(APPFOLIO_URL)
+    # Go to statements; if cookies are valid we stay there (no login needed).
+    # Only fall back to credentials if AppFolio redirects us to the login page.
+    print("Navigating to portal...")
+    page.goto(STATEMENTS_URL)
     page.wait_for_load_state("networkidle")
     if "log_in" not in page.url:
         print("Already logged in via cookies.")
         return
     print("Logging in with credentials...")
+    page.goto(APPFOLIO_URL)
+    page.wait_for_load_state("networkidle")
     page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
     page.fill("input[name='user[password]']", APPFOLIO_PASS)
     page.click("input[type='submit']")
