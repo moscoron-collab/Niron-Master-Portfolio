@@ -1443,7 +1443,20 @@ function renderAll() {
   if (months.length > 1) html += '<div class="section"><h2><span class="dot"></span>Cashflow Trend (Bars per LLC + Total Line)</h2><div class="chart-container"><canvas id="trendChart"></canvas></div></div>';
   const allLoans = loans.concat(DIVANDO_PROPERTY_LOANS).slice().sort((a, b) => a.llc.localeCompare(b.llc));
   if (allLoans.length) { html += '<div class="section"><h2><span class="dot"></span>Loan Details per LLC</h2><table><thead><tr><th>LLC</th><th>Lender</th><th>Original</th><th>Remaining</th><th>Monthly</th><th>Maturity</th></tr></thead><tbody>'; allLoans.forEach(l => { const orig = l.original_balance === undefined ? '—' : fmt(l.original_balance); const remain = l.original_balance === undefined ? '—' : fmt(l.balance_override || l.calculated_balance); html += '<tr><td>' + l.llc + '</td><td style="font-size:12px">' + l.lender + '</td><td>' + orig + '</td><td style="color:#f0a500;font-weight:600">' + remain + '</td><td>' + fmt(l.monthly_payment) + '</td><td>' + (l.maturity_date || '—') + '</td></tr>'; }); html += '</tbody></table></div>'; }
-  if (maintenance.length) { html += '<div class="section"><h2><span class="dot"></span>Recent Maintenance Invoices</h2><table><thead><tr><th>Date</th><th>LLC</th><th>Property</th><th>Sub</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead><tbody>'; maintenance.slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 20).forEach(m => { html += '<tr><td>' + m.date + '</td><td>' + m.llc + '</td><td style="font-size:12px">' + (m.property || '—') + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td></tr>'; }); html += '</tbody></table></div>'; }
+  if (maintenance.length) {
+    // Filter maintenance to the per-property selected month when one is set.
+    const maintMonth = PD_MONTH || '';
+    const maintFiltered = maintMonth
+      ? maintenance.filter(m => m.period === maintMonth)
+      : maintenance.slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 20);
+    const maintLabel = maintMonth ? (' <span style="font-size:13px;font-weight:400;color:#7e9cbf">— ' + monthLabel(maintMonth) + '</span>') : '';
+    const maintTotal = maintFiltered.reduce((s, m) => s + (m.amount || 0), 0);
+    html += '<div class="section"><h2><span class="dot"></span>Recent Maintenance Invoices' + maintLabel + '</h2>';
+    html += '<table><thead><tr><th>Date</th><th>LLC</th><th>Property</th><th>Sub</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead><tbody>';
+    maintFiltered.forEach(m => { html += '<tr><td>' + m.date + '</td><td>' + m.llc + '</td><td style="font-size:12px">' + (m.property || '—') + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td></tr>'; });
+    html += '<tr style="font-weight:700;border-top:2px solid #1e2d42;color:#ccd9ea"><td colspan="6">Total</td><td class="red">' + fmt(maintTotal) + '</td></tr>';
+    html += '</tbody></table></div>';
+  }
   html += renderPropertyDetailSection(data, maintenance);
   html += '<div class="section"><h2><span class="dot"></span>History (newest first)</h2><table><thead><tr><th>Month</th><th>LLC</th><th>Disbursement</th><th>Mortgage</th><th>Maintenance</th><th>Net</th></tr></thead><tbody>';
   sortedHistory.slice(0, 100).forEach(h => { html += '<tr><td>' + h.period_start + '</td><td>' + h.llc + '</td><td>' + fmt(h.disbursement) + '</td><td>' + fmt(h.mortgage) + '</td><td>' + fmt(h.maintenance) + '</td><td class="' + (h.net_cashflow >= 0 ? 'green' : 'red') + '">' + fmt(h.net_cashflow) + '</td></tr>'; });
@@ -1562,6 +1575,20 @@ function renderPropertyDetailSection(data, maintenance) {
       '<td class="' + ytdCls + '">' + fmt(ytdNet) + '</td>' +
       '<td class="' + occCls + '">' + occPct + '%</td></tr>';
   });
+  // Totals row
+  const totCashIn = ordered.reduce((s, prop) => { const r = inRange.find(x => x.property === prop && x.period === latestMonth); return s + (r ? r.cash_in : 0); }, 0);
+  const totDisb   = ordered.reduce((s, prop) => { const r = inRange.find(x => x.property === prop && x.period === latestMonth); return s + (r ? r.disbursement : 0); }, 0);
+  const totRepairs= ordered.reduce((s, prop) => { const r = inRange.find(x => x.property === prop && x.period === latestMonth); return s + (r ? r.repairs : 0); }, 0);
+  const totNet    = ordered.reduce((s, prop) => { const r = inRange.find(x => x.property === prop && x.period === latestMonth); return s + (r ? r.net : 0); }, 0);
+  const totYtd    = ordered.reduce((s, prop) => s + recs.filter(r => r.property === prop && r.period.slice(0,4) === year && r.period <= latestMonth).reduce((a, r) => a + r.net, 0), 0);
+  html += '<tr style="font-weight:700;border-top:2px solid #1e2d42;color:#ccd9ea">' +
+    '<td>Total</td><td></td>' +
+    '<td>' + fmt(totCashIn) + '</td>' +
+    '<td>' + fmt(totDisb) + '</td>' +
+    '<td class="' + (totRepairs ? 'red' : '') + '">' + fmt(totRepairs) + '</td>' +
+    '<td class="' + (totNet >= 0 ? 'green' : 'red') + '">' + fmt(totNet) + '</td>' +
+    '<td class="' + (totYtd >= 0 ? 'green' : 'red') + '">' + fmt(totYtd) + '</td>' +
+    '<td></td></tr>';
   html += '</tbody></table></div>';
   return html;
 }
