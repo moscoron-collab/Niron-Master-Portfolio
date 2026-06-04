@@ -123,12 +123,15 @@ A per-property monitor for Divando's 18 properties (15 AppFolio + 3 manual out-o
   Disbursement | Repairs | Net | YTD Net | Occ %).
   - **3 dropdowns**: Chart style (`PD_CHART` bars|lines) · **View** · Metric (`PD_METRIC`
     net|disbursement|cash_in|occupancy).
-  - **View dropdown is merged** (`pdSetView`, value `r:N` for a range or `m:YYYY-MM-DD` for
-    a single month): one `<select>` with an "Range" optgroup (3/6/9/12/All → `PD_RANGE`) and
-    a "Single month" optgroup (every available month → `PD_MONTH`, sets `PD_RANGE=1`). Only
-    ONE is ever selected so it's unambiguous. The old separate month-picker was removed.
+  - **View dropdown = month picker ONLY** (`pdSetView`, value `m:YYYY-MM-DD` → `PD_MONTH`):
+    a plain `<select>` listing every available month (newest first), defaulting to the newest.
+    The table + bars chart always reflect that ONE selected month; the trend-line chart uses
+    the full month history. **The old 3/6/9/12/YTD/All range options were REMOVED** (user
+    request, PR #29) — they aggregated incorrectly and the range concept confused things. Do
+    NOT re-add a range filter unless the user explicitly asks. (`PD_RANGE` still exists in the
+    code but is effectively unused/dead for the dropdown.)
   - A **plain-English caption** under the title states the current view, e.g.
-    "Showing **Net Cashflow** · **Single month: Apr 2026** · Bars view".
+    "Showing **Net Cashflow** · **Month: Apr 2026** · Bars view".
   - **Chart default = horizontal bars** (one bar per property for the selected/anchor month,
     green positive / red negative, blue for occupancy) — the line view had 18 overlapping
     lines and was unreadable. Toggle to **trend lines** for month-over-month movement;
@@ -507,6 +510,11 @@ line. So the user does **NOT** need to open Google Sheets to check what's done �
    - `KeyError` → missing secret
    - `Timed out waiting for cards` → AppFolio login failed (cookies expired AND 2FA blocked)
    - `Could not extract disbursement from PDF` → Laureate changed PDF format
+   - `Page.fill: Timeout ... waiting for input[name='user[email]']` → **valid cookies caused a
+     client-side redirect off the login page before `fill()` ran.** FIXED (PR #28) in
+     `run_yale/donald.py` + `backfill_yale/donald.py`: `login()` now navigates to the
+     **STATEMENTS** page first and only falls back to the login page if AppFolio redirects
+     there. If you see this in `run.py`/`run_moss.py`/Divando, apply the same fix.
    - `WARNING: No card found for 'X'` → LLC name in `LLC_MAP` doesn't match AppFolio
 4. The fix is almost always:
    - Update `LLC_MAP` (Niron) or `PROPERTY_NAME_MAP` (Moss) if AppFolio renamed something
