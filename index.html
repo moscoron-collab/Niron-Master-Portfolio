@@ -1481,14 +1481,10 @@ function renderPropertyDetailSection(data, maintenance) {
       '<div style="color:#4e6d8c">No per-property data yet for ' + cfg.label + '.</div></div>';
   }
   // All months present (ascending). The anchor month (PD_MONTH, or newest) is the
-  // column the table reflects and the right edge of the chart window; the range
-  // filter then takes that many months ending at the anchor.
+  // month the table reflects. The chart trend uses the full month history.
   const allMonthsAsc = [...new Set(recs.map(r => r.period))].sort();
   const anchor = (PD_MONTH && allMonthsAsc.includes(PD_MONTH)) ? PD_MONTH : allMonthsAsc[allMonthsAsc.length - 1];
-  let windowMonths = allMonthsAsc.filter(m => m <= anchor);
-  if (PD_RANGE === 'ytd') { const yStart = (anchor ? anchor.slice(0, 4) : '') + '-01'; windowMonths = windowMonths.filter(m => m >= yStart); }
-  else if (PD_RANGE > 0) windowMonths = windowMonths.slice(-PD_RANGE);
-  const months = windowMonths; // oldest→newest for chart
+  const months = allMonthsAsc; // oldest→newest for chart
   const monthSet = new Set(months);
   const inRange = recs.filter(r => monthSet.has(r.period));
   const latestMonth = anchor;
@@ -1505,27 +1501,21 @@ function renderPropertyDetailSection(data, maintenance) {
     .map(o => '<option value="' + o[0] + '"' + (o[0] === PD_METRIC ? ' selected' : '') + '>' + o[1] + '</option>').join('');
   const chartOpts = [['bars','📊 Bars (month)'],['lines','📈 Trend (over time)']]
     .map(o => '<option value="' + o[0] + '"' + (o[0] === PD_CHART ? ' selected' : '') + '>' + o[1] + '</option>').join('');
-  // Combined view dropdown: a range (3/6/9/12/All) OR a single month, in one list.
-  const singleMonth = PD_MONTH !== '';
-  const rangeGroup = [[3,'3 mo'],[6,'6 mo'],[9,'9 mo'],[12,'12 mo'],['ytd','YTD'],[0,'All']]
-    .map(o => '<option value="r:' + o[0] + '"' + (!singleMonth && o[0] === PD_RANGE ? ' selected' : '') + '>' + o[1] + '</option>').join('');
-  const monthGroup = allMonthsAsc.slice().reverse()
-    .map(m => '<option value="m:' + m + '"' + (singleMonth && m === PD_MONTH ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
-  const viewOpts = '<optgroup label="Range">' + rangeGroup + '</optgroup>' +
-    '<optgroup label="Single month">' + monthGroup + '</optgroup>';
+  // Month picker: the table always reflects ONE selected month (defaults to newest).
+  const singleMonth = true;
+  const viewOpts = allMonthsAsc.slice().reverse()
+    .map(m => '<option value="m:' + m + '"' + (m === anchor ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
 
   let html = '<div class="section"><h2><span class="dot"></span><span>' + cfg.label + ' — Per-Property Monitor</span>' +
     '<select class="header-month-select" onchange="pdSetLlc(this.value)" title="LLC">' + llcOpts + '</select>' +
     '<select class="header-month-select" onchange="pdSetChart(this.value)" title="Chart style">' + chartOpts + '</select>' +
-    '<select class="header-month-select" onchange="pdSetView(this.value)" title="Range or single month">' + viewOpts + '</select>' +
+    '<select class="header-month-select" onchange="pdSetView(this.value)" title="Month">' + viewOpts + '</select>' +
     '<select class="header-month-select" onchange="pdSetMetric(this.value)" title="Chart metric">' + metricOpts + '</select>' +
     '</h2>';
 
   // Plain-English caption so it's always obvious what the chart/table is showing.
   const metricLabel = { net: 'Net Cashflow', disbursement: 'Disbursement', cash_in: 'Income', occupancy: 'Occupancy %' }[PD_METRIC];
-  let windowText;
-  if (singleMonth) { windowText = 'Single month: ' + monthLabel(anchor); }
-  else { const span = '(' + monthLabel(months[0]) + ' – ' + monthLabel(months[months.length - 1]) + ')'; const prefix = PD_RANGE === 'ytd' ? ('YTD ' + (anchor ? anchor.slice(0, 4) : '') + ' ') : (PD_RANGE === 0 ? 'All months ' : 'Last ' + PD_RANGE + ' months '); windowText = prefix + span; }
+  const windowText = 'Month: ' + monthLabel(anchor);
   html += '<div style="color:#7e9cbf;font-size:13px;margin:-6px 0 14px 18px">Showing <b style="color:#00c97a">' + metricLabel + '</b> &nbsp;·&nbsp; <b style="color:#ccd9ea">' + windowText + '</b> &nbsp;·&nbsp; ' + (PD_CHART === 'bars' ? 'Bars' : 'Trend lines') + ' view</div>';
 
   // Chart first, then table.
