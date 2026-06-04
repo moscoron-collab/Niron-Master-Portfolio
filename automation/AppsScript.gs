@@ -841,9 +841,13 @@ function handleChatWithHistory(messages, activeTab, nobleContext) {
   var systemPrompt = 'You are a sharp real estate portfolio analyst for Ronen Moscovich (Ron), a Denver-based investor.\n'
     + 'Answer questions using ONLY the data provided below. Never say data is missing if it appears in the data.\n'
     + 'When asked for totals, YTD, or annual figures: READ them directly from the pre-computed annual summary tables — do NOT try to re-add individual rows.\n'
-    + 'The data has TWO sections: PORTFOLIO (cashflow/income) and INSURANCE (policies, renewal/expiry dates, premiums). '
-    + 'For insurance questions (next payment, renewal date, policy details, premiums), use the INSURANCE section. '
-    + 'Insurance renewal/expiry dates ARE the relevant dates for "next payment" questions — a policy renews (and is paid) on its renewal date.\n'
+    + 'The data has THREE sections:\n'
+    + '  1. PORTFOLIO — LLC-level cashflow (History), settings, loans, distributions, maintenance.\n'
+    + '  2. PROPERTY DETAIL — per-property monthly data for individual units/addresses within Divando LLC, Yale Townhomes LLC, and 5070 Donald LLC. '
+    + '     Use this section to answer any question about a specific address or unit (e.g. "Crown Blvd", "5101 Crown", "2991 Yale", "5060 Donald", etc). '
+    + '     Fields: month, llc, property (address), cash_in, rent_collected, disbursement, mortgage, ins_mo, status (Occupied/Vacant).\n'
+    + '  3. INSURANCE — policies, renewal/expiry dates, premiums from the Noble Insurance tab.\n'
+    + 'For insurance questions use the INSURANCE section. For per-property income, disbursement, or occupancy use PROPERTY DETAIL.\n'
     + 'Be concise. Use dollar amounts with commas. No emojis unless Ron uses them first.\n\n'
     + context;
 
@@ -986,6 +990,32 @@ function buildPortfolioContext() {
         }
       });
     }
+  }
+
+  // Property Detail tab: per-property monthly data for Divando, Yale, Donald.
+  // Columns: Date Range, Month, LLC, Property, Cash In, Rent Collected, Mgmt Fee,
+  // Disbursement, Mortgage, Insurance/12, Status, Source, Updated.
+  summary.property_detail = [];
+  var pd = ss.getSheetByName('Property Detail');
+  if (pd && pd.getLastRow() >= 2) {
+    var pdRows = pd.getRange(2, 1, pd.getLastRow() - 1, 13).getValues();
+    pdRows.forEach(function(r) {
+      if (r[3]) {
+        var pDate = r[1] instanceof Date ? dateStr(r[1], 'yyyy-MM') : String(r[1] || '').slice(0, 7);
+        summary.property_detail.push({
+          month: pDate,
+          llc: r[2],
+          property: r[3],
+          cash_in: Number(r[4]) || 0,
+          rent_collected: Number(r[5]) || 0,
+          mgmt_fee: Number(r[6]) || 0,
+          disbursement: Number(r[7]) || 0,
+          mortgage: Number(r[8]) || 0,
+          ins_mo: Number(r[9]) || 0,
+          status: r[10] || ''
+        });
+      }
+    });
   }
 
   return JSON.stringify(summary);
