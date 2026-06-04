@@ -130,6 +130,10 @@ A per-property monitor for Divando's 18 properties (15 AppFolio + 3 manual out-o
     request, PR #29) — they aggregated incorrectly and the range concept confused things. Do
     NOT re-add a range filter unless the user explicitly asks. (`PD_RANGE` still exists in the
     code but is effectively unused/dead for the dropdown.)
+  - **Totals row** at the bottom of the per-property table (PR #34): dark background
+    (`#0d1e30`), label shows "TOTAL — May 2026" (updates with selected month), Net is
+    slightly larger (15px). Sums Income, Disbursement, Repairs, Net, YTD Net for the
+    selected month across all properties in view.
   - A **plain-English caption** under the title states the current view, e.g.
     "Showing **Net Cashflow** · **Month: Apr 2026** · Bars view".
   - **Chart default = horizontal bars** (one bar per property for the selected/anchor month,
@@ -560,6 +564,52 @@ For Niron: same formula but values come from `Settings` tab (`get_fixed_costs`) 
 - Whether to add the Cabo plug → Yes, already wired in `run_moss.py` for May-Dec 2026
 - That Moss disbursements are net of mgmt fees + supplies → Yes, established
 - Whether to use the same `APPFOLIO_COOKIES` secret for both Niron and Moss → Yes, single account
+
+---
+
+## 💬 Chatbot ("Ask Claude") — how it works
+
+The floating **💬** button in the dashboard opens a chat panel (bottom-right). It calls
+`AppsScript.gs → handleChatWithHistory()` which:
+
+1. Builds a portfolio context via `buildPortfolioContext()` — reads:
+   - **History** tab (LLC-level monthly cashflow)
+   - **Settings** tab (per-LLC mortgage, tax, insurance, property value)
+   - **Loans** tab (lender, monthly payment, remaining balance, maturity)
+   - **Distributions** tab (date, LLC, your/partner amounts)
+   - **Maintenance Log** tab (date, LLC, description, amount)
+   - **Property Detail** tab (per-property monthly data: address, cash_in, rent,
+     disbursement, mortgage, ins_mo, status — covers Divando, Yale, Donald units)
+2. Injects Noble Insurance tab text (`extractNobleContext()` from the frontend)
+3. Sends all of it as the system prompt + full conversation history to Claude API
+   (`claude-sonnet-4-6`, max 2048 tokens)
+
+### System prompt structure (as of PR #35)
+Three labeled sections:
+- **PORTFOLIO** — LLC-level data (History/Settings/Loans/Distributions/Maintenance)
+- **PROPERTY DETAIL** — per-unit/address data for Divando/Yale/Donald individually
+- **INSURANCE** — Noble Insurance tab content
+
+The model is explicitly told to use PROPERTY DETAIL for any address/unit question
+(e.g. "highest income for Crown?", "is 5060 Donald occupied?", "Yale 2991 rent history").
+
+### What the chatbot CAN answer
+- Per-LLC cashflow, net, YTD for any month in History
+- Per-property income, disbursement, occupancy for any Divando/Yale/Donald unit
+- Insurance details (renewal date, premium, agent, policy)
+- Loan details (lender, monthly payment, balance)
+- Maintenance invoices (date, LLC, description, cost)
+- Distribution history (when/how much per LLC)
+
+### What it CANNOT answer
+- Moss data (completely separate sheet, never sent to this chatbot)
+- Months with no data yet (backfill not yet run)
+- Dorado per-property (no `run_dorado.py` yet — only LLC-level totals)
+
+### Chat persistence
+History is stored in `localStorage` (key `niron_chat_history_v2`) — persists across
+page refreshes. "New chat" button clears it. Each message is appended before sending
+so context window grows with the conversation.
 
 ---
 
