@@ -826,6 +826,27 @@ function doPost(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// Static, authoritative facts the chatbot should always know but that are not all
+// stored in the Google Sheet (the fixed costs live in the dashboard code / CLAUDE.md).
+// Keep these in sync with index.html constants and CLAUDE.md whenever a number changes.
+function dashboardKnowledge() {
+  return '=== DASHBOARD REFERENCE KNOWLEDGE ===\n'
+    + 'NET CASHFLOW FORMULA (per LLC, per month): net = disbursement - mortgage - tax/12 - insurance/12 - maintenance.\n'
+    + '  - disbursement = owner payout from the AppFolio Owner Packet (already net of management fees and supplies).\n'
+    + '  - Divando property tax is paid as an ANNUAL April lump sum (about $31,620/yr, ~$2,635/mo): shown for reference but NOT subtracted from monthly net. Yale and Donald taxes are escrowed inside the mortgage, so their tax is $0 in net.\n'
+    + '  - maintenance comes from the Maintenance Log.\n\n'
+    + 'DIVANDO LLC -- total monthly debt = $14,533.86:\n'
+    + '  - Property mortgages $12,199.86/mo across 6 building loans: 0210 $2,352.90 (15655 + 15675 E 13th Pl + 1310 Idalia), 0211 $1,718.36 (14790 E 43rd + 15559 Bates Lower/Upper), 0212 $2,315.84 (5538 Dearborn + 11795 Virginia), 0213 $2,014.78 (4776 Blackhawk + 5101 Crown A/B), 0214 $2,107.42 (3630 Holly + 2332 Oakland), 0215 $1,690.56 (3225 Tucson + 1724 Boston).\n'
+    + '  - SBA loans $2,334.00/mo (6 drafts: $48 + $731 + $64 + $273 + $487 + $731) -- general business debt, NOT tied to any single property.\n'
+    + '  - Insurance: State Farm $34,630/yr ($2,885.83/mo) across 13 units; Divando-owned share $29,677/yr. Agent Kevin Schult (303) 989-3847; renews Dec 15, 2026.\n'
+    + '  - 3 out-of-state properties roll up under Divando, owned free and clear (NO mortgage/insurance), entered manually each month: 8222 Hare Ave (Jacksonville FL, Suncoast), 3899 Joest Rd and 6580 Stockport Dr (Memphis TN, Mid South).\n\n'
+    + 'YALE TOWNHOMES, LLC -- 5 units (2991-2999 W Yale Ave, Denver): mortgage Lument $7,279.08/mo (/5 = $1,455.82/unit); insurance Acuity $1,037.55/mo (/5 = $207.51/unit); SBA loan $225/mo (LLC-level, not per-unit); tax escrowed.\n\n'
+    + '5070 DONALD, LLC -- 8 units = 4 duplexes (5060-5082 E Donald Ave, Denver): mortgage CBRE $13,708.00/mo (/8 = $1,713.50/unit); insurance Westfield $1,210.84/mo (/8 = $151.36/unit); SBA loan $444/mo (LLC-level); tax escrowed.\n\n'
+    + 'DORADO LLC -- only LLC-level totals are tracked (no per-unit breakdown yet). Owns 2397 Jamaica St and 4641 Enid Way, both insured on Divando\'s State Farm policy (Dorado credits $138/mo back to Divando; ends Dec 2026).\n\n'
+    + 'MANUAL ENTRIES (Suncoast / Mid South): the owner enters the amount that actually hit the bank (the deposited amount), which can differ from the statement NOI. No mortgage/insurance, so net = amount entered.\n\n'
+    + 'HOW THE DASHBOARD WORKS: The top cards show gross income, net cashflow and YTD, plus one card per LLC (each LLC card sums all of that LLC\'s History rows for the month, including the manual Suncoast/Mid South rows that roll up under Divando). The Per-Property Monitor lets you pick an LLC and a month and shows each unit\'s Income (Cash In), Disbursement, Repairs, Net, YTD Net and Occupancy (Divando, Yale and Donald are covered per-unit). Other tabs: History (LLC monthly cashflow), Loans, Distributions (Ron vs partner payouts), Maintenance Log (invoices, auto-deducted that month), and Noble Insurance (authoritative per-property insurance).\n';
+}
+
 function handleChatWithHistory(messages, activeTab, nobleContext) {
   if (!messages || !messages.length) {
     return ContentService.createTextOutput(JSON.stringify({error: 'No messages'}))
@@ -838,18 +859,23 @@ function handleChatWithHistory(messages, activeTab, nobleContext) {
   }
 
   var context = buildPortfolioContext();
-  var systemPrompt = 'You are a sharp real estate portfolio analyst for Ronen Moscovich (Ron), a Denver-based investor.\n'
-    + 'Answer questions using ONLY the data provided below. Never say data is missing if it appears in the data.\n'
-    + 'When asked for totals, YTD, or annual figures: READ them directly from the pre-computed annual summary tables — do NOT try to re-add individual rows.\n'
-    + 'The data has THREE sections:\n'
-    + '  1. PORTFOLIO — LLC-level cashflow (History), settings, loans, distributions, maintenance.\n'
-    + '  2. PROPERTY DETAIL — per-property monthly data for individual units/addresses within Divando LLC, Yale Townhomes LLC, and 5070 Donald LLC. '
-    + '     Use this section to answer any question about a specific address or unit (e.g. "Crown Blvd", "5101 Crown", "2991 Yale", "5060 Donald", etc). '
-    + '     Fields: month, llc, property (address), cash_in, rent_collected, disbursement, mortgage, ins_mo, status (Occupied/Vacant).\n'
-    + '  3. INSURANCE — policies, renewal/expiry dates, premiums from the Noble Insurance tab.\n'
-    + 'For insurance questions use the INSURANCE section. For per-property income, disbursement, or occupancy use PROPERTY DETAIL.\n'
-    + 'Be concise. Use dollar amounts with commas. No emojis unless Ron uses them first.\n\n'
-    + context;
+  var systemPrompt = 'You are a sharp, friendly real estate portfolio analyst for Ronen Moscovich (Ron), a Denver-based investor. You know his Niron portfolio inside and out.\n'
+    + 'Answer using the data and reference knowledge below. Never say data is missing if it appears anywhere below.\n'
+    + 'For totals / YTD / annual figures, READ the pre-computed summary tables -- do NOT re-add individual rows. For a specific month or unit, read the detail rows.\n'
+    + '\nThe information below has FOUR sections:\n'
+    + '  1. PORTFOLIO -- LLC-level monthly cashflow (History), annual totals, loans, distributions, maintenance.\n'
+    + '  2. PROPERTY DETAIL -- per-UNIT monthly data for the individual addresses inside Divando LLC, Yale Townhomes LLC, and 5070 Donald LLC '
+    + '(e.g. "5101 Crown Blvd Unit A", "2991 W Yale Ave", "5060 E Donald Ave"). Use this for ANY question about a specific address or unit.\n'
+    + '  3. DASHBOARD REFERENCE KNOWLEDGE -- authoritative fixed costs (mortgages, SBA loans, taxes), the net-cashflow formula, manual-entry rules, and how the dashboard itself works.\n'
+    + '  4. INSURANCE -- policies, renewal dates, premiums (Noble Insurance tab).\n'
+    + '\nRULES:\n'
+    + '- "Income" for a single property or unit = its Cash In (the dashboard\'s Income column). If asked for net, use Disbursement - Mortgage - Insurance/12 (tax is escrowed/annual, not in monthly net).\n'
+    + '- A building/property can have several units (e.g. "Crown" = "5101 Crown Blvd Unit A" + "Unit B"; "Yale" = 5 units; "Donald" = 8 units). When asked about a whole property by name, SUM its units for each month before comparing months.\n'
+    + '- For per-unit income/disbursement/occupancy use PROPERTY DETAIL. For insurance use INSURANCE. For fixed costs or "how does X work" use DASHBOARD REFERENCE KNOWLEDGE.\n'
+    + '- This dashboard is NIRON only (Yale, Donald, Divando, Dorado). You have NO data on "Moss" -- it is a separate private portfolio; do not discuss or guess about it.\n'
+    + '- Be concise and concrete. Use dollar amounts with commas. State the month/figures you used. No emojis unless Ron uses them first.\n\n'
+    + context
+    + '\n\n' + dashboardKnowledge();
 
   if (nobleContext && String(nobleContext).trim()) {
     systemPrompt += '\n\n=== INSURANCE DATA (Noble Insurance tab) ===\n' + nobleContext;
@@ -860,8 +886,9 @@ function handleChatWithHistory(messages, activeTab, nobleContext) {
 
   var payload = {
     model: 'claude-sonnet-4-6',
-    max_tokens: 2048,
-    system: systemPrompt,
+    max_tokens: 4096,
+    // Cache the large data + reference context so multi-turn follow-ups are fast and cheap.
+    system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
     messages: messages
   };
 
@@ -1336,6 +1363,64 @@ function buildPortfolioContext() {
       if (isNaN(d)) return;
       ctx += dateStr(d) + ' | ' + r[1] + ' | ' + (r[3]||'') + ' | ' + (r[4]||'') + ' | ' + dollar(Number(r[5])||0) + '\n';
     });
+  }
+
+  // ── Property Detail (per-UNIT monthly: Divando, Yale, Donald) ──────────────
+  // Columns A-M: Date Range, Month, LLC, Property, Cash In, Rent Collected,
+  // Mgmt Fee, Disbursement, Mortgage, Insurance/12, Status, Source, Updated.
+  var pd = ss.getSheetByName('Property Detail');
+  if (pd && pd.getLastRow() >= 2) {
+    var pdRows = [];
+    pd.getRange(2, 1, pd.getLastRow() - 1, 13).getValues().forEach(function(r) {
+      if (!r[3]) return;
+      var pmo = r[1] instanceof Date ? dateStr(r[1], 'yyyy-MM') : String(r[1] || '').slice(0, 7);
+      pdRows.push({
+        mo: pmo, llc: String(r[2]), prop: String(r[3]),
+        cashIn: Number(r[4]) || 0, rent: Number(r[5]) || 0,
+        disb: Number(r[7]) || 0, mort: Number(r[8]) || 0,
+        ins: Number(r[9]) || 0, status: String(r[10] || '')
+      });
+    });
+
+    if (pdRows.length) {
+      // Per-unit aggregates so "highest / best / total" questions are reliable.
+      var perProp = {};
+      pdRows.forEach(function(p) {
+        if (!perProp[p.prop]) perProp[p.prop] = { llc: p.llc, totCashIn: 0, totDisb: 0, bestMo: '', bestCashIn: -1, latestMo: '', latestStatus: '' };
+        var a = perProp[p.prop];
+        a.totCashIn += p.cashIn;
+        a.totDisb += p.disb;
+        if (p.cashIn > a.bestCashIn) { a.bestCashIn = p.cashIn; a.bestMo = p.mo; }
+        if (p.mo > a.latestMo) { a.latestMo = p.mo; a.latestStatus = p.status; }
+      });
+      var pdLatest = pdRows.map(function(p){ return p.mo; }).sort().reverse()[0];
+
+      ctx += '\n=== PROPERTY DETAIL (per-UNIT monthly: Divando, Yale, Donald) ===\n';
+      ctx += 'Income for a unit = Cash In. Unit net = Disbursement - Mortgage - Insurance/12 (tax escrowed/annual). ';
+      ctx += 'A building/property has multiple units (e.g. Crown = "5101 Crown Blvd Unit A" + "Unit B"); SUM its units per month when asked about the whole property. Latest month on file: ' + pdLatest + '.\n';
+
+      ctx += '\n--- PER-UNIT SUMMARY (across all months on file) ---\n';
+      Object.keys(perProp).sort().forEach(function(prop) {
+        var a = perProp[prop];
+        ctx += a.llc + ' | ' + prop
+          + ' | highest Cash-In month: ' + a.bestMo + ' (' + dollar(a.bestCashIn) + ')'
+          + ' | total Cash-In: ' + dollar(a.totCashIn)
+          + ' | total Disbursement: ' + dollar(a.totDisb)
+          + ' | latest ' + a.latestMo + ': ' + (a.latestStatus || 'n/a') + '\n';
+      });
+
+      ctx += '\n--- PER-UNIT MONTHLY ROWS (newest first) ---\n';
+      ctx += 'Month   | Property                         | Cash In    | Rent       | Disburse   | Mortgage | Ins/mo  | Status\n';
+      pdRows.sort(function(a, b){ return b.mo.localeCompare(a.mo) || a.prop.localeCompare(b.prop); }).forEach(function(p) {
+        ctx += p.mo + ' | ' + (p.prop + '                                  ').slice(0, 32) + ' | '
+          + (dollar(p.cashIn) + '          ').slice(0, 10) + ' | '
+          + (dollar(p.rent)   + '          ').slice(0, 10) + ' | '
+          + (dollar(p.disb)   + '          ').slice(0, 10) + ' | '
+          + (dollar(p.mort)   + '        ').slice(0, 8) + ' | '
+          + (dollar(p.ins)    + '       ').slice(0, 7) + ' | '
+          + (p.status || '') + '\n';
+      });
+    }
   }
 
   return ctx;
