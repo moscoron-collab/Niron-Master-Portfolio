@@ -1326,6 +1326,8 @@ let PD_METRIC = 'net';   // chart metric: net | disbursement | cash_in | occupan
 let PD_MONTH = '';       // anchor month ('' = newest); table columns + chart window end here
 let PD_CHART = 'bars';   // chart style: bars (selected month) | lines (trend over range)
 let PD_CACHE = null;     // last-built dataset, used by the chart renderer
+let MAINT_MONTH = '';    // maintenance table month filter ('' = All months)
+function maintSetMonth(v) { MAINT_MONTH = v; renderAll(); }
 function pdSetMetric(v) { PD_METRIC = v; renderAll(); }
 function pdSetChart(v) { PD_CHART = v; renderAll(); }
 // One dropdown drives both: a range ("r:3".."r:0"=All) or a single month ("m:2026-05-01").
@@ -1444,20 +1446,24 @@ function renderAll() {
   const allLoans = loans.concat(DIVANDO_PROPERTY_LOANS).slice().sort((a, b) => a.llc.localeCompare(b.llc));
   if (allLoans.length) { html += '<div class="section"><h2><span class="dot"></span>Loan Details per LLC</h2><table><thead><tr><th>LLC</th><th>Lender</th><th>Original</th><th>Remaining</th><th>Monthly</th><th>Maturity</th></tr></thead><tbody>'; allLoans.forEach(l => { const orig = l.original_balance === undefined ? '—' : fmt(l.original_balance); const remain = l.original_balance === undefined ? '—' : fmt(l.balance_override || l.calculated_balance); html += '<tr><td>' + l.llc + '</td><td style="font-size:12px">' + l.lender + '</td><td>' + orig + '</td><td style="color:#f0a500;font-weight:600">' + remain + '</td><td>' + fmt(l.monthly_payment) + '</td><td>' + (l.maturity_date || '—') + '</td></tr>'; }); html += '</tbody></table></div>'; }
   if (maintenance.length) {
-    // Filter maintenance to the per-property selected month when one is set.
-    const maintMonth = PD_MONTH || '';
-    const maintFiltered = maintMonth
+    // Maintenance has its OWN independent month dropdown (defaults to All months)
+    // so past invoices are always reachable regardless of the per-property picker.
+    const maintMonths = [...new Set(maintenance.map(m => m.period))].filter(Boolean).sort().reverse();
+    const maintMonth = (MAINT_MONTH && maintMonths.includes(MAINT_MONTH)) ? MAINT_MONTH : '';
+    const maintFiltered = (maintMonth
       ? maintenance.filter(m => m.period === maintMonth)
-      : maintenance.slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0, 20);
-    const maintLabel = maintMonth ? (' <span style="font-size:13px;font-weight:400;color:#7e9cbf">— ' + monthLabel(maintMonth) + '</span>') : '';
+      : maintenance.slice()).sort((a,b) => b.date.localeCompare(a.date));
     const maintTotal = maintFiltered.reduce((s, m) => s + (m.amount || 0), 0);
-    html += '<div class="section"><h2><span class="dot"></span>Recent Maintenance Invoices' + maintLabel + '</h2>';
+    const maintOpts = '<option value=""' + (maintMonth === '' ? ' selected' : '') + '>All months</option>' +
+      maintMonths.map(m => '<option value="' + m + '"' + (m === maintMonth ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
+    html += '<div class="section"><h2><span class="dot"></span><span>Maintenance Invoices</span>' +
+      '<select class="header-month-select" onchange="maintSetMonth(this.value)" title="Month">' + maintOpts + '</select></h2>';
     html += '<table><thead><tr><th>Date</th><th>LLC</th><th>Property</th><th>Sub</th><th>Category</th><th>Description</th><th>Amount</th></tr></thead><tbody>';
     if (!maintFiltered.length) {
       html += '<tr><td colspan="7" style="color:#7e9cbf;text-align:center;padding:14px">No maintenance invoices for ' + monthLabel(maintMonth) + '.</td></tr>';
     } else {
       maintFiltered.forEach(m => { html += '<tr><td>' + m.date + '</td><td>' + m.llc + '</td><td style="font-size:12px">' + (m.property || '—') + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td></tr>'; });
-      html += '<tr style="font-weight:700;border-top:2px solid #1e2d42;color:#ccd9ea"><td colspan="6">Total</td><td class="red">' + fmt(maintTotal) + '</td></tr>';
+      html += '<tr style="font-weight:700;border-top:2px solid #1e2d42;color:#ccd9ea"><td colspan="6">Total' + (maintMonth ? ' (' + monthLabel(maintMonth) + ')' : ' (all months)') + '</td><td class="red">' + fmt(maintTotal) + '</td></tr>';
     }
     html += '</tbody></table></div>';
   }
