@@ -124,8 +124,12 @@ A per-property monitor for Divando's 18 properties (15 AppFolio + 3 manual out-o
   `backfill_divando.py`: `_match_code` now strips ALL whitespace and uppercases both sides
   before comparing (strictly more permissive — cannot break the 13 that worked). Also added a
   skip-warning print to `backfill_divando.py` so future unmatched property pages are visible,
-  not silent. **After deploying, re-run `backfill_divando.yml`** to fill both Bates units
-  across all 18 months (dedup means it only adds the missing rows). Note: Bates **Upper (top
+  not silent. That warning then surfaced a SECOND quirk: in older months (Dec 2024–May 2025)
+  AppFolio abbreviates the upper unit as **`BAT, 15559 Upper`** (literally "BAT", not "BATES"),
+  so the first re-run still skipped those 6 months → only 30 of 36 Bates rows wrote (18 Lower +
+  12 Upper). Fix: added `BAT,15559 LOWER`/`BAT,15559 UPPER` aliases to `PROPERTY_CODE_MAP` in
+  both scripts (same canonical addresses). **After deploying, re-run `backfill_divando.yml`**
+  to fill both Bates units across all 18 months (dedup means it only adds the missing rows). Note: Bates **Upper (top
   unit) moved out end of May 2026** → its May packet shows a Property Reserve hold (no Owner
   Disbursement, Net Owner Funds −$364.61), so that month reads $0 disbursement (correct — same
   as other props' reserve/turnover months); it shows **Vacant** from June until re-rented.
