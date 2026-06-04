@@ -1591,12 +1591,12 @@ function renderPropertyDetailSection(data, maintenance) {
   const totRepairs= ordered.reduce((s, prop) => { const r = inRange.find(x => x.property === prop && x.period === latestMonth); return s + (r ? r.repairs : 0); }, 0);
   const totNet    = ordered.reduce((s, prop) => { const r = inRange.find(x => x.property === prop && x.period === latestMonth); return s + (r ? r.net : 0); }, 0);
   const totYtd    = ordered.reduce((s, prop) => s + recs.filter(r => r.property === prop && r.period.slice(0,4) === year && r.period <= latestMonth).reduce((a, r) => a + r.net, 0), 0);
-  html += '<tr style="font-weight:700;border-top:2px solid #1e2d42;color:#ccd9ea">' +
-    '<td>Total</td><td></td>' +
+  html += '<tr style="font-weight:700;border-top:2px solid #1e2d42;background:#0d1e30;color:#ccd9ea">' +
+    '<td style="color:#fff;letter-spacing:0.04em">TOTAL — ' + monthLabel(latestMonth) + '</td><td></td>' +
     '<td>' + fmt(totCashIn) + '</td>' +
     '<td>' + fmt(totDisb) + '</td>' +
     '<td class="' + (totRepairs ? 'red' : '') + '">' + fmt(totRepairs) + '</td>' +
-    '<td class="' + (totNet >= 0 ? 'green' : 'red') + '">' + fmt(totNet) + '</td>' +
+    '<td class="' + (totNet >= 0 ? 'green' : 'red') + '" style="font-size:15px">' + fmt(totNet) + '</td>' +
     '<td class="' + (totYtd >= 0 ? 'green' : 'red') + '">' + fmt(totYtd) + '</td>' +
     '<td></td></tr>';
   html += '</tbody></table></div>';
