@@ -1532,14 +1532,24 @@ function renderPropertyDetailSection(data, maintenance) {
   html += '<div class="chart-container" style="height:' + (PD_CHART === 'bars' ? Math.max(380, ordered.length * 30 + 60) : 380) + 'px"><canvas id="propChart"></canvas></div>';
 
   html += '<table style="margin-top:18px"><thead><tr><th>Property</th><th>Status</th>' +
-    '<th>Income</th><th>Disbursement</th><th>Repairs</th><th>Net (' + monthLabel(latestMonth) + ')</th>' +
+    '<th>Income</th><th>Disbursement</th><th>Repairs</th>' +
+    '<th>Net (' + (singleMonth ? monthLabel(latestMonth) : windowText.replace(/<[^>]+>/g,'')) + ')</th>' +
     '<th>YTD Net (' + year + ')</th><th>Occ %</th></tr></thead><tbody>';
 
   ordered.forEach(prop => {
     const rowsFor = inRange.filter(r => r.property === prop);
     const latest = rowsFor.find(r => r.period === latestMonth);
-    // YTD = sum of net for months in the selected year up to latest month.
-    const ytdNet = rowsFor.filter(r => r.period.slice(0,4) === year && r.period <= latestMonth)
+    // When a range is selected, aggregate across all window months; single month uses latest row only.
+    const aggCashIn      = rowsFor.reduce((s, r) => s + (r.cash_in || 0), 0);
+    const aggDisbursement= rowsFor.reduce((s, r) => s + (r.disbursement || 0), 0);
+    const aggRepairs     = rowsFor.reduce((s, r) => s + (r.repairs || 0), 0);
+    const aggNet         = rowsFor.reduce((s, r) => s + (r.net || 0), 0);
+    const dispCashIn      = singleMonth ? (latest ? latest.cash_in : null)       : aggCashIn;
+    const dispDisbursement= singleMonth ? (latest ? latest.disbursement : null)   : aggDisbursement;
+    const dispRepairs     = singleMonth ? (latest ? latest.repairs : null)        : aggRepairs;
+    const dispNet         = singleMonth ? (latest ? latest.net : null)            : aggNet;
+    // YTD = sum of net for months in the anchor year up to anchor month — uses ALL recs, not just window.
+    const ytdNet = recs.filter(r => r.property === prop && r.period.slice(0,4) === year && r.period <= latestMonth)
       .reduce((s, r) => s + r.net, 0);
     // Occupancy across the months in range.
     const occMonths = rowsFor.length;
@@ -1550,15 +1560,15 @@ function renderPropertyDetailSection(data, maintenance) {
           ? '<span style="color:#00c97a;font-weight:600">● Occupied</span>'
           : '<span style="color:#ff4455;font-weight:600">● Vacant</span>')
       : '<span style="color:#4e6d8c">—</span>';
-    const netCls = latest ? (latest.net >= 0 ? 'green' : 'red') : '';
+    const netCls = dispNet !== null ? (dispNet >= 0 ? 'green' : 'red') : '';
     const ytdCls = ytdNet >= 0 ? 'green' : 'red';
     const occCls = occPct >= 100 ? 'green' : (occPct >= 50 ? '' : 'red');
     html += '<tr><td style="font-size:13px">' + prop + '</td>' +
       '<td>' + statusBadge + '</td>' +
-      '<td>' + (latest ? fmt(latest.cash_in) : '—') + '</td>' +
-      '<td>' + (latest ? fmt(latest.disbursement) : '—') + '</td>' +
-      '<td class="' + (latest && latest.repairs ? 'red' : '') + '">' + (latest ? fmt(latest.repairs) : '—') + '</td>' +
-      '<td class="' + netCls + '">' + (latest ? fmt(latest.net) : '—') + '</td>' +
+      '<td>' + (dispCashIn !== null ? fmt(dispCashIn) : '—') + '</td>' +
+      '<td>' + (dispDisbursement !== null ? fmt(dispDisbursement) : '—') + '</td>' +
+      '<td class="' + (dispRepairs ? 'red' : '') + '">' + (dispRepairs !== null ? fmt(dispRepairs) : '—') + '</td>' +
+      '<td class="' + netCls + '">' + (dispNet !== null ? fmt(dispNet) : '—') + '</td>' +
       '<td class="' + ytdCls + '">' + fmt(ytdNet) + '</td>' +
       '<td class="' + occCls + '">' + occPct + '%</td></tr>';
   });
