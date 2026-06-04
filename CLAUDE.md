@@ -115,6 +115,20 @@ A per-property monitor for Divando's 18 properties (15 AppFolio + 3 manual out-o
   Mgmt Fee, Disbursement, Mortgage, Insurance/12, Status, Source, Updated). They NEVER touch
   `History` or the existing consolidated Divando row — partner-visible cards stay untouched.
   Workflows: `monthly_divando.yml` (daily 15–25, 11am UTC) + `backfill_divando.yml` (manual).
+- **🐛 Bates matching fix (PR — comma-space):** for months the per-property monitor existed,
+  **both Bates units were silently missing** (only 13 of 15 AppFolio props wrote rows →
+  `234 = 13×18`). Cause: AppFolio prints the Bates page header as **`BATES, 15559 LOWER`** /
+  **`BATES, 15559 Upper`** (a space after the comma + mixed case "Upper"), but every other
+  property has no space (`13TH,15655`, `CROWN,5101A`). `_match_code` required an exact `==`,
+  so both Bates pages failed and were skipped with no error. Fixed in `run_divando.py` +
+  `backfill_divando.py`: `_match_code` now strips ALL whitespace and uppercases both sides
+  before comparing (strictly more permissive — cannot break the 13 that worked). Also added a
+  skip-warning print to `backfill_divando.py` so future unmatched property pages are visible,
+  not silent. **After deploying, re-run `backfill_divando.yml`** to fill both Bates units
+  across all 18 months (dedup means it only adds the missing rows). Note: Bates **Upper (top
+  unit) moved out end of May 2026** → its May packet shows a Property Reserve hold (no Owner
+  Disbursement, Net Owner Funds −$364.61), so that month reads $0 disbursement (correct — same
+  as other props' reserve/turnover months); it shows **Vacant** from June until re-rented.
 - **AppsScript.gs** `getDashboardJson()` now serves `data.property_detail` from that tab.
   ⚠️ There are 3 identical `getDashboardJson()` defs — Apps Script uses the LAST one (the
   one with the richer `maintenance` fields + `properties` + `property_detail`). Edit that one.
@@ -341,8 +355,8 @@ rows are a planned addition. AppFolio code → address → annual insurance:
 | `13TH,15655` | 15655 E 13th Pl, Aurora CO 80011 | $3,529 |
 | `13TH,15675` | 15675 E 13th Pl, Aurora CO 80011 | under 15655 policy (3-way $1,176.33/yr) |
 | `43RD,14790` | 14790 E 43rd Ave, Denver CO 80239 | $2,642 |
-| `BATES,15559 LOWER` | 15559 E Bates Ave, Lower, Aurora CO 80013 | shared $2,507 (1 policy w/ Upper) |
-| `BATES,15559 UPPER` | 15559 E Bates Ave, Upper/A, Aurora CO 80013 | shared $2,507 (1 policy w/ Lower) |
+| `BATES, 15559 LOWER` | 15559 E Bates Ave, Lower Unit, Aurora CO 80013 | shared $2,507 (1 policy w/ Upper) |
+| `BATES, 15559 Upper` | 15559 E Bates Ave, A (top/upper), Aurora CO 80013 | shared $2,507 (1 policy w/ Lower) |
 | `BLACK,4776` | 4776 Blackhawk Way, Denver CO 80239 | $3,320 |
 | `BOSTO,1724` | 1724 Boston St, Aurora CO 80010 | $2,364 |
 | `CROWN,5101A` | 5101 Crown Blvd, Unit A, Denver CO 80239 | shared $2,702 (1 policy w/ B) |
