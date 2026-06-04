@@ -570,36 +570,49 @@ For Niron: same formula but values come from `Settings` tab (`get_fixed_costs`) 
 ## 💬 Chatbot ("Ask Claude") — how it works
 
 The floating **💬** button in the dashboard opens a chat panel (bottom-right). It calls
-`AppsScript.gs → handleChatWithHistory()` which:
+`AppsScript.gs → handleChatWithHistory()`, which builds a context via
+`buildPortfolioContext()`, appends the embedded `dashboardKnowledge()` block + the Noble
+Insurance text (`extractNobleContext()` from the frontend), and sends it all as a
+**prompt-cached** system prompt + full conversation history to the Claude API
+(`claude-sonnet-4-6`, `max_tokens: 4096`).
 
-1. Builds a portfolio context via `buildPortfolioContext()` — reads:
-   - **History** tab (LLC-level monthly cashflow)
-   - **Settings** tab (per-LLC mortgage, tax, insurance, property value)
-   - **Loans** tab (lender, monthly payment, remaining balance, maturity)
-   - **Distributions** tab (date, LLC, your/partner amounts)
-   - **Maintenance Log** tab (date, LLC, description, amount)
-   - **Property Detail** tab (per-property monthly data: address, cash_in, rent,
-     disbursement, mortgage, ins_mo, status — covers Divando, Yale, Donald units)
-2. Injects Noble Insurance tab text (`extractNobleContext()` from the frontend)
-3. Sends all of it as the system prompt + full conversation history to Claude API
-   (`claude-sonnet-4-6`, max 2048 tokens)
+### ⚠️ DUPLICATE-FUNCTION FOOTGUN — edit the LAST copy
+`AppsScript.gs` has **3** `buildPortfolioContext()` defs (~lines 715, 892, 1220) and a
+dead `handleChatRequest()` (older single-shot handler, haiku). **Apps Script runs the
+LAST `buildPortfolioContext` (~line 1220), which returns a formatted TEXT string `ctx`.**
+The other two are dead. **PR #35's bug:** it added the Property Detail read to the MIDDLE
+(dead) copy (line ~892, returns JSON) — so the chatbot never actually received any
+per-unit data, and "highest income for Crown?" fell back to LLC-level Divando totals.
+**Fixed (this PR):** per-unit Property Detail is now built into the LIVE (last) copy. When
+editing chat context, ALWAYS edit the **last** `buildPortfolioContext` + `handleChatWithHistory`.
 
-### System prompt structure (as of PR #35)
-Three labeled sections:
-- **PORTFOLIO** — LLC-level data (History/Settings/Loans/Distributions/Maintenance)
-- **PROPERTY DETAIL** — per-unit/address data for Divando/Yale/Donald individually
-- **INSURANCE** — Noble Insurance tab content
+### What the live context contains (4 labeled sections)
+1. **PORTFOLIO** — LLC-level **History** (monthly cashflow), pre-computed **annual totals**
+   (all-LLC + per-LLC), **Loans**, **Distributions**, **Maintenance Log**.
+2. **PROPERTY DETAIL** (per-UNIT, from the **Property Detail** tab — Divando/Yale/Donald):
+   - a **PER-UNIT SUMMARY** (highest Cash-In month + amount, total Cash-In, total
+     Disbursement, latest month's status) so "highest/best/total" questions are reliable, plus
+   - the **full PER-UNIT MONTHLY ROWS** (newest first: Cash In, Rent, Disburse, Mortgage,
+     Ins/mo, Status) so any specific month/trend is answerable.
+3. **DASHBOARD REFERENCE KNOWLEDGE** (`dashboardKnowledge()`) — embedded authoritative facts
+   NOT all in the sheet: net-cashflow formula, Divando $14,533.86/mo debt ($12,199.86
+   property loans + $2,334 SBA), Yale Lument $7,279.08 + Acuity $1,037.55 + SBA $225,
+   Donald CBRE $13,708 + Westfield $1,210.84 + SBA $444, tax rules, manual-entry rules, and
+   how every dashboard section works. **Keep these numbers in sync with `index.html` +
+   CLAUDE.md when they change** (they are hardcoded, not read from a sheet).
+4. **INSURANCE** — Noble Insurance tab content (injected from the frontend).
 
-The model is explicitly told to use PROPERTY DETAIL for any address/unit question
-(e.g. "highest income for Crown?", "is 5060 Donald occupied?", "Yale 2991 rent history").
+### Rules baked into the system prompt
+- **"Income" for a unit = its Cash In** (matches the dashboard's Income column).
+- A property name can map to **multiple units** (Crown = "5101 Crown Blvd Unit A" + "Unit B";
+  Yale = 5 units; Donald = 8 units) → the model is told to **SUM the units per month** before
+  comparing months when asked about a whole property.
+- **NIRON only** — the model is told it has NO Moss data and must not discuss/guess Moss.
 
-### What the chatbot CAN answer
-- Per-LLC cashflow, net, YTD for any month in History
-- Per-property income, disbursement, occupancy for any Divando/Yale/Donald unit
-- Insurance details (renewal date, premium, agent, policy)
-- Loan details (lender, monthly payment, balance)
-- Maintenance invoices (date, LLC, description, cost)
-- Distribution history (when/how much per LLC)
+### Prompt caching (cheap follow-ups)
+`system` is sent as `[{type:'text', text:..., cache_control:{type:'ephemeral'}}]`, so the
+large data+knowledge block is cached and multi-turn follow-ups in the same ~5-min window are
+fast and cheap. Cache invalidates when the data, Noble text, or active tab changes.
 
 ### What it CANNOT answer
 - Moss data (completely separate sheet, never sent to this chatbot)
@@ -608,8 +621,16 @@ The model is explicitly told to use PROPERTY DETAIL for any address/unit questio
 
 ### Chat persistence
 History is stored in `localStorage` (key `niron_chat_history_v2`) — persists across
-page refreshes. "New chat" button clears it. Each message is appended before sending
-so context window grows with the conversation.
+page refreshes. "New chat" button clears it. The whole `chatHistory` array is sent each
+turn, so follow-up questions keep full conversational context.
+
+### 🚀 Going live (REQUIRED — the repo file is NOT auto-deployed)
+`automation/AppsScript.gs` is only a copy. To make chatbot changes take effect:
+1. Open the dashboard's Google Sheet → **Extensions → Apps Script**.
+2. Replace the script with the new `automation/AppsScript.gs` contents (or paste the changed
+   functions: `buildPortfolioContext` (last copy), `handleChatWithHistory`, `dashboardKnowledge`).
+3. **Deploy → Manage deployments → Edit → New version → Deploy** (the web app URL stays the same).
+4. Hard-refresh the dashboard and ask a per-unit question to confirm.
 
 ---
 
