@@ -184,9 +184,11 @@ def _summary_value(lines, label):
 
 
 def _match_code(header):
-    code_part = header.split(" - ")[0].strip().upper()
+    # Whitespace/case-insensitive so 'BATES, 15559 LOWER' (AppFolio prints a space
+    # after the comma) and 'Upper' still match the 'BATES,15559 LOWER'/'UPPER' keys.
+    code_part = re.sub(r"\s+", "", header.split(" - ")[0]).upper()
     for code, canonical in PROPERTY_CODE_MAP.items():
-        if code_part == code.upper():
+        if code_part == re.sub(r"\s+", "", code).upper():
             return canonical
     return None
 
@@ -199,8 +201,13 @@ def extract_per_property_from_pdf(pdf_path):
             lines = [ln for ln in text.split("\n") if ln.strip()]
             if not lines:
                 continue
-            canonical = _match_code(lines[0].strip())
+            header = lines[0].strip()
+            canonical = _match_code(header)
             if not canonical:
+                # Surface real misses (a property page we failed to match) instead of
+                # skipping silently — that silence is why Bates went unnoticed.
+                if "Consolidated Summary" not in text:
+                    print(f"  Page {page_idx + 1}: '{header[:50]}' — no code match, skipped")
                 continue
             cash_in      = _summary_value(lines, "Cash In") or 0.0
             mgmt_fee      = _summary_value(lines, "Management Fees") or 0.0

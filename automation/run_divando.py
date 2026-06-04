@@ -192,10 +192,14 @@ def _summary_value(lines, label):
 
 
 def _match_code(header):
-    """Header looks like 'CODE - Full Address'. Return canonical address or None."""
-    code_part = header.split(" - ")[0].strip().upper()
+    """Header looks like 'CODE - Full Address'. Return canonical address or None.
+    Comparison ignores whitespace and case on the code, so AppFolio quirks like
+    'BATES, 15559 LOWER' (an extra space after the comma) and 'Upper' vs 'UPPER'
+    still match the map keys. Without this, both Bates pages were silently skipped
+    and never reached the Property Detail tab."""
+    code_part = re.sub(r"\s+", "", header.split(" - ")[0]).upper()
     for code, canonical in PROPERTY_CODE_MAP.items():
-        if code_part == code.upper():
+        if code_part == re.sub(r"\s+", "", code).upper():
             return canonical
     return None
 
