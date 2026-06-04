@@ -70,6 +70,10 @@ PROPERTY_CODE_MAP = {
     "43RD,14790":        "14790 E 43rd Ave",
     "BATES,15559 LOWER": "15559 E Bates Ave Lower",
     "BATES,15559 UPPER": "15559 E Bates Ave Upper",
+    # AppFolio abbreviated the upper unit as "BAT, 15559 Upper" in older months
+    # (Dec 2024–May 2025). Alias both abbreviations to the same canonical addresses.
+    "BAT,15559 LOWER":   "15559 E Bates Ave Lower",
+    "BAT,15559 UPPER":   "15559 E Bates Ave Upper",
     "BLACK,4776":        "4776 Blackhawk Way",
     "BOSTO,1724":        "1724 Boston St",
     "CROWN,5101A":       "5101 Crown Blvd Unit A",
