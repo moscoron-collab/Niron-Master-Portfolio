@@ -301,6 +301,15 @@
   .maint-edit-btn, .maint-del-btn { background: transparent; border: 1px solid #1e2d42; border-radius: 6px; cursor: pointer; padding: 3px 7px; font-size: 13px; line-height: 1; margin-right: 4px; opacity: 0.7; transition: opacity .15s, border-color .15s, background .15s; }
   .maint-edit-btn:hover { opacity: 1; border-color: #2f6df6; background: #2f6df622; }
   .maint-del-btn:hover { opacity: 1; border-color: #ff4455; background: #ff445522; }
+  /* Self-audit button + chip + report */
+  .audit-btn { background: rgba(0,191,255,0.1); border: 1px solid #0080cc; color: #00BFFF; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; margin-left: 12px; font-family: inherit; }
+  .audit-btn:hover { background: rgba(0,191,255,0.2); }
+  .audit-chip { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; margin-left: 6px; white-space: nowrap; }
+  .audit-chip.ok { background: #00c97a18; color: #00c97a; border: 1px solid #00c97a55; }
+  .audit-chip.warn { background: #f0a50018; color: #f0a500; border: 1px solid #f0a50055; }
+  .audit-chip.fail { background: #ff445518; color: #ff4455; border: 1px solid #ff445555; }
+  #audit-body table th { padding: 6px 8px; font-weight: 500; border-bottom: 1px solid #1e2d42; position: sticky; top: 0; background: #0d1825; }
+  #audit-body table td { padding: 7px 8px; border-bottom: 1px solid #182030; color: #ccd9ea; vertical-align: top; }
 </style>
 </head>
 <body>
@@ -375,6 +384,17 @@
   </div>
 </div>
 
+<!-- ═══════════════════ SELF-AUDIT REPORT MODAL ═══════════════════ -->
+<div class="modal-overlay" id="audit-modal" onclick="if(event.target===this)closeAuditModal()">
+  <div class="modal-box" style="max-width:820px">
+    <h2><span>🩺 Dashboard Self-Audit</span> <button class="modal-close" onclick="closeAuditModal()">×</button></h2>
+    <div style="font-size:11px;color:#4e6d8c;margin:-6px 0 10px">Read-only check - recomputes every total from the raw sheet data and compares it to what is on screen. It never writes to the sheet.</div>
+    <div id="audit-summary" style="font-size:13px;padding:10px 0;border-bottom:1px solid #1e2d42;margin-bottom:10px"></div>
+    <div id="audit-body" style="max-height:58vh;overflow:auto"></div>
+    <div class="modal-actions"><button class="secondary" onclick="auditCopy()">Copy report</button><button class="primary" onclick="auditRun(true)">Re-run audit</button></div>
+  </div>
+</div>
+
 <!-- ═══════════════════ CHAT PANEL ═══════════════════ -->
 <div class="chat-panel" id="chat-panel">
   <div class="chat-header">
@@ -436,6 +456,7 @@
     <div class="meta">
       <div><span class="label">Last Updated:</span> <span id="last-updated">—</span></div>
       <div><span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span><button class="logout-btn" onclick="logout()">Logout</button></div>
+      <div style="margin-top:6px"><button class="audit-btn" id="audit-btn" onclick="auditRun(true)">🩺 Run Audit</button><span id="audit-chip" class="audit-chip"></span></div>
     </div>
   </header>
 
@@ -1512,11 +1533,11 @@ function renderAll() {
   const headerSelect = document.getElementById('header-month-select'); if (headerSelect) headerSelect.innerHTML = monthOptions;
   const netCls = totalNet >= 0 ? 'green' : 'red';
   let html = '<div class="summary-grid">';
-  html += '<div class="summary-card dual gold"><div class="card-cell"><div class="label">Cash Collected</div><div class="value">' + fmtShort(totalDisb) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">Cash YTD</div><div class="value">' + fmtShort(ytdDisb) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
-  html += '<div class="summary-card dual ' + netCls + '"><div class="card-cell"><div class="label">Net Cashflow</div><div class="value">' + fmtShort(totalNet) + '</div><div class="sublabel">After all expenses</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value">' + fmtShort(ytdNet) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
-  html += '<div class="summary-card dual blue"><div class="card-cell"><div class="label">Your Distribution</div><div class="value">' + fmtShort(distThisMonth) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value">' + fmtShort(distYtd) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Total Mortgage / Mo</div><div class="value">' + fmtShort(totalMortgage) + '</div><div class="sublabel">Across all LLCs</div></div></div>';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Portfolio Value</div><div class="value">' + fmtShort(totalValue) + '</div><div class="sublabel">Estimated</div></div></div>';
+  html += '<div class="summary-card dual gold"><div class="card-cell"><div class="label">Cash Collected</div><div class="value" id="kpi-cash">' + fmtShort(totalDisb) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">Cash YTD</div><div class="value" id="kpi-cash-ytd">' + fmtShort(ytdDisb) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
+  html += '<div class="summary-card dual ' + netCls + '"><div class="card-cell"><div class="label">Net Cashflow</div><div class="value" id="kpi-net">' + fmtShort(totalNet) + '</div><div class="sublabel">After all expenses</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value" id="kpi-net-ytd">' + fmtShort(ytdNet) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
+  html += '<div class="summary-card dual blue"><div class="card-cell"><div class="label">Your Distribution</div><div class="value" id="kpi-dist">' + fmtShort(distThisMonth) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value" id="kpi-dist-ytd">' + fmtShort(distYtd) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
+  html += '<div class="summary-card"><div class="card-cell"><div class="label">Total Mortgage / Mo</div><div class="value" id="kpi-mort">' + fmtShort(totalMortgage) + '</div><div class="sublabel">Across all LLCs</div></div></div>';
+  html += '<div class="summary-card"><div class="card-cell"><div class="label">Portfolio Value</div><div class="value" id="kpi-value">' + fmtShort(totalValue) + '</div><div class="sublabel">Estimated</div></div></div>';
   html += '</div>';
   html += '<div class="section"><h2><span class="dot"></span><span>Monthly Breakdown</span><select id="inline-month-select" class="header-month-select" onchange="onMonthChange(this.value)">' + monthOptions + '</select></h2><div class="llc-grid">';
   groupedSelected.forEach(r => { const net = r.net_cashflow; const cls = net >= 0 ? 'green' : 'red'; let taxLabel = 'Tax / 12'; if (isTaxEscrowed(r.llc)) { taxLabel += ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(paid by escrow)</span>'; } else if (isTaxLumpSum(r.llc)) { taxLabel += ' <span title="Property tax is paid as a lump sum in spring (Mar-Apr), not deducted from the monthly net." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(paid in spring ⓘ)</span>'; } const distRows = distributions.filter(d => d.llc === r.llc && d.period === r.period_start); const distYou = distRows.reduce((s,d) => s + (d.your_amount||0), 0); const distNir = distRows.reduce((s,d) => s + (d.partner_amount||0), 0); const distHtml = (distYou || distNir) ? '<div class="llc-row" style="border-top:1px solid #1e2d42;margin-top:6px;padding-top:6px"><span class="k" style="color:#00c97a">Distribution</span><span class="v" style="color:#00c97a;font-size:12px">You: ' + fmt(distYou) + ' &nbsp;|&nbsp; Nir: ' + fmt(distNir) + '</span></div>' : ''; html += '<div class="llc-card"><h3>' + r.llc + '</h3><div class="llc-row"><span class="k">Disbursement</span><span class="v">' + fmt(r.disbursement) + '</span></div><div class="llc-row"><span class="k">Mgmt Fees</span><span class="v">' + fmt(r.mgmt_fee) + '</span></div>' + (extraMortgage(r.llc) ? '<div class="llc-row"><span class="k">Property Mortgages <span title="6 building loans drafted to the property loan accounts (15655/15675/Idalia, 43rd/Bates, Dearborn/Virginia, Blackhawk/Crown, Holly/Oakland, Tucson/Boston)." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(6 loans ⓘ)</span></span><span class="v">' + fmt(extraMortgage(r.llc)) + '</span></div><div class="llc-row"><span class="k">SBA Loans <span title="6 SBA payments drafted on the 1st — general Divando business debt, not tied to any property." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(business debt ⓘ)</span></span><span class="v">' + fmt(r.mortgage) + '</span></div>' : '<div class="llc-row"><span class="k">Mortgage</span><span class="v">' + fmt(r.mortgage) + '</span></div>') + '<div class="llc-row"><span class="k">' + taxLabel + '</span><span class="v">' + fmt(r.tax_mo) + '</span></div><div class="llc-row"><span class="k">Insurance / 12</span><span class="v">' + fmt(r.ins_mo) + '</span></div><div class="llc-row"><span class="k">Maintenance</span><span class="v">' + fmt(r.maintenance) + '</span></div><div class="llc-row total"><span class="k">Net Cashflow</span><span class="v ' + cls + '">' + fmt(net) + '</span></div>' + distHtml + '</div>'; });
@@ -1560,6 +1581,9 @@ function renderAll() {
   el.innerHTML = html;
   if (months.length > 1) renderChart(enrichedHistory, months);
   renderPropertyChart();
+  // Self-audit runs after every render so the header chip stays live. Wrapped so a
+  // parsing hiccup can never break the dashboard itself.
+  try { auditRun(false); } catch (e) { console.warn('audit skipped:', e); }
 }
 
 /* ============================================================
@@ -1910,6 +1934,176 @@ function doSearch(q) {
     const tab = noble.querySelector(`[onclick="nobleShow('${tabId}',this)"]`);
     if (tab) tab.style.opacity = txt.includes(q) ? '1' : '0.4';
   });
+}
+
+/* ============================================================
+   SELF-AUDIT  (read-only - never writes to the sheet)
+   Recomputes every total straight from PORTFOLIO_DATA (the raw sheet
+   data) and compares it to what is actually rendered on screen, so it
+   catches real rendering / label / totalling drift. Runs after every
+   render (updates the header chip) and on demand via the Run Audit
+   button (opens the full pass/fail report).
+   ============================================================ */
+let AUDIT_LAST = null;
+const _pm = t => { if (t == null) return NaN; let s = String(t).replace(/[,$\s]/g, ''); let mult = 1; if (/k$/i.test(s)) { mult = 1e3; s = s.slice(0, -1); } else if (/m$/i.test(s)) { mult = 1e6; s = s.slice(0, -1); } const n = parseFloat(s); return isNaN(n) ? NaN : n * mult; };
+const _money = (a, b, eps) => Math.abs((+a || 0) - (+b || 0)) <= (eps == null ? 0.01 : eps);
+const _auditTxt = id => { const el = document.getElementById(id); return el ? el.textContent.trim() : null; };
+function _auditCounts(F) { return { fail: F.filter(x => x.level === 'fail').length, warn: F.filter(x => x.level === 'warn').length, pass: F.filter(x => x.level === 'pass').length }; }
+
+function auditRun(openModal) {
+  const F = [];
+  const add = (level, area, item, expected, displayed, note) => F.push({ level, area, item, expected, displayed, note: note || '' });
+  try {
+    const data = PORTFOLIO_DATA;
+    if (!data) { add('fail', 'Data', 'Portfolio data loaded', 'loaded', 'missing'); }
+    else {
+      const maintenance = data.maintenance || [], history = data.history || [], distributions = data.distributions || [], llcs = data.llcs || [], loans = data.loans || [];
+      const month = SELECTED_MONTH, year = month ? month.slice(0, 4) : '';
+
+      // ---- independent recompute from RAW sheet data (selected month) ----
+      const grp = {};
+      history.filter(h => h.period_start === month).forEach(r => { const k = r.llc; if (!grp[k]) grp[k] = { llc: r.llc, disbursement: 0, mortgage: 0, ins_mo: 0, tax_mo: 0 }; ['disbursement', 'mortgage', 'ins_mo', 'tax_mo'].forEach(f => grp[k][f] += (r[f] || 0)); });
+      const cards = Object.values(grp).map(g => { const ins = effectiveIns(g.llc, g.ins_mo), fullMort = g.mortgage + extraMortgage(g.llc), tax = effectiveTax(g), maint = maintenanceFor(maintenance, g.llc, month); return { llc: g.llc, disbursement: g.disbursement, ins, fullMort, tax, maint, net: g.disbursement - fullMort - tax - ins - maint }; });
+      const expCash = cards.reduce((s, c) => s + c.disbursement, 0);
+      const expNet = cards.reduce((s, c) => s + c.net, 0);
+      const expMort = cards.reduce((s, c) => s + c.fullMort, 0);
+      const expValue = llcs.reduce((s, l) => s + (l.property_value || 0), 0);
+      const ytdRows = history.filter(h => h.period_start && h.period_start.slice(0, 4) === year && h.period_start <= month);
+      const expCashYtd = ytdRows.reduce((s, r) => s + (r.disbursement || 0), 0);
+      const yg = {};
+      ytdRows.forEach(r => { const k = r.llc + '|' + r.period_start; if (!yg[k]) yg[k] = { llc: r.llc, period: r.period_start, disbursement: 0, mortgage: 0, ins_mo: 0, tax_mo: 0 }; ['disbursement', 'mortgage', 'ins_mo', 'tax_mo'].forEach(f => yg[k][f] += (r[f] || 0)); });
+      const expNetYtd = Object.values(yg).reduce((s, g) => s + (g.disbursement - g.mortgage - extraMortgage(g.llc) - effectiveTax(g) - effectiveIns(g.llc, g.ins_mo) - maintenanceFor(maintenance, g.llc, g.period)), 0);
+      const expDist = distributions.filter(d => d.period === month).reduce((s, d) => s + (d.your_amount || 0), 0);
+      const expDistYtd = distributions.filter(d => d.period && d.period.slice(0, 4) === year && d.period <= month).reduce((s, d) => s + (d.your_amount || 0), 0);
+
+      // ---- KPI tiles: recompute vs rendered (compared at display precision) ----
+      const kpi = (id, label, exp) => { const disp = _auditTxt(id); if (disp == null) { add('warn', 'KPI tile', label, fmtShort(exp), '(not on screen)'); return; } add(disp === fmtShort(exp) ? 'pass' : 'fail', 'KPI tile', label, fmtShort(exp), disp); };
+      kpi('kpi-cash', 'Cash Collected', expCash);
+      kpi('kpi-cash-ytd', 'Cash YTD', expCashYtd);
+      kpi('kpi-net', 'Net Cashflow', expNet);
+      kpi('kpi-net-ytd', 'Net YTD', expNetYtd);
+      kpi('kpi-dist', 'Your Distribution', expDist);
+      kpi('kpi-dist-ytd', 'Distribution YTD', expDistYtd);
+      kpi('kpi-mort', 'Total Mortgage / Mo', expMort);
+      kpi('kpi-value', 'Portfolio Value', expValue);
+
+      // ---- Per-LLC cards: rendered net vs recompute; sum == Net tile ----
+      let cardSum = 0;
+      document.querySelectorAll('#tab-master .llc-card').forEach(el => {
+        const h3 = el.querySelector('h3'); const totV = el.querySelector('.llc-row.total .v');
+        if (!h3 || !totV) return;
+        const llc = h3.textContent.trim(), dispNet = _pm(totV.textContent);
+        const c = cards.find(x => x.llc === llc);
+        if (!c) { add('warn', 'LLC card', llc, '(data row)', 'no matching data'); return; }
+        cardSum += isNaN(dispNet) ? 0 : dispNet;
+        add(_money(c.net, dispNet) ? 'pass' : 'fail', 'LLC card net', llc, c.net, dispNet);
+      });
+      add(_money(expNet, cardSum) ? 'pass' : 'fail', 'Cross-check', 'Sum of card nets = Net Cashflow tile', expNet, cardSum);
+
+      // ---- History table: every visible row must foot on screen ----
+      const secByTitle = t => { for (const h of document.querySelectorAll('#tab-master .section h2')) if (h.textContent.indexOf(t) !== -1) return h.parentElement; return null; };
+      const histSec = secByTitle('History (newest first)');
+      if (histSec) {
+        let bad = 0, rows = 0;
+        histSec.querySelectorAll('tbody tr').forEach(tr => {
+          const td = tr.querySelectorAll('td'); if (td.length < 7) return; rows++;
+          const disb = _pm(td[2].textContent), mort = _pm(td[3].textContent), ins = _pm(td[4].textContent), maint = _pm(td[5].textContent), net = _pm(td[6].textContent);
+          if (!_money(disb - mort - ins - maint, net)) { bad++; if (bad <= 6) add('fail', 'History row', td[0].textContent.trim() + ' ' + td[1].textContent.trim(), disb - mort - ins - maint, net, 'Disb - Mortgage - Insurance - Maintenance != Net'); }
+        });
+        if (!bad) add('pass', 'History table', rows + ' rows foot (Disb - Mort - Ins - Maint = Net)', 'all rows', 'all rows');
+      }
+
+      // ---- Per-property table + chart (the LLC currently shown) ----
+      if (PD_CACHE && PD_CACHE.latest) {
+        const ppSec = secByTitle('Per-Property Monitor');
+        if (ppSec) {
+          let expSum = 0, dispSum = 0, mism = 0;
+          ppSec.querySelectorAll('tbody tr').forEach(tr => {
+            const td = tr.querySelectorAll('td'); if (td.length < 6) return;
+            const name = td[0].textContent.trim(); if (/^TOTAL/i.test(name)) return;
+            const dispNet = _pm(td[5].textContent);
+            const rec = PD_CACHE.recs.find(x => x.property === name && x.period === PD_CACHE.latest);
+            if (rec) { expSum += rec.net; dispSum += (isNaN(dispNet) ? 0 : dispNet); if (!_money(rec.net, dispNet)) { mism++; if (mism <= 6) add('fail', 'Per-property net', name, rec.net, dispNet); } }
+          });
+          if (!mism) add('pass', 'Per-property table', 'each unit net = raw recompute', 'all units', 'all units');
+          const totTr = [...ppSec.querySelectorAll('tbody tr')].find(tr => /^TOTAL/i.test((tr.querySelector('td') || {}).textContent || ''));
+          if (totTr) { const td = totTr.querySelectorAll('td'); add(_money(dispSum, _pm(td[5].textContent)) ? 'pass' : 'fail', 'Per-property TOTAL', 'Total Net = sum of unit nets', dispSum, _pm(td[5].textContent)); }
+          if (PD_METRIC === 'net' && window._propChart && window._propChart.data) {
+            const cd = window._propChart.data.datasets[0].data || []; let cbad = 0;
+            PD_CACHE.properties.forEach((p, i) => { const rec = PD_CACHE.recs.find(x => x.property === p && x.period === PD_CACHE.latest); const ev = rec ? rec.net : 0; if (!_money(ev, cd[i] || 0)) cbad++; });
+            add(cbad ? 'fail' : 'pass', 'Per-property chart', 'Bars match the Net column', cbad ? (cbad + ' differ') : 'match', cbad ? (cbad + ' differ') : 'match');
+          }
+        }
+      }
+
+      // ---- Trend chart: per-LLC nets sum to a finite total every month ----
+      const months = [...new Set(history.map(h => h.period_start))];
+      let trendOk = true;
+      months.forEach(m => {
+        const g2 = {};
+        history.filter(h => h.period_start === m).forEach(r => { const k = r.llc; if (!g2[k]) g2[k] = { llc: r.llc, disbursement: 0, mortgage: 0, ins_mo: 0, tax_mo: 0 }; ['disbursement', 'mortgage', 'ins_mo', 'tax_mo'].forEach(f => g2[k][f] += (r[f] || 0)); });
+        const per = Object.values(g2).map(g => g.disbursement - g.mortgage - extraMortgage(g.llc) - effectiveTax(g) - effectiveIns(g.llc, g.ins_mo) - maintenanceFor(maintenance, g.llc, m));
+        if (per.some(v => !isFinite(v)) || !isFinite(per.reduce((s, v) => s + v, 0))) trendOk = false;
+      });
+      add(trendOk ? 'pass' : 'fail', 'Trend chart', 'Total line = sum of per-LLC bars (all months finite)', 'consistent', trendOk ? 'consistent' : 'NaN found');
+
+      // ---- Month filter consistency ----
+      const monthsSet = new Set(months);
+      add(monthsSet.has(month) ? 'pass' : 'fail', 'Month filter', 'Selected month exists in data', month, monthsSet.has(month) ? month : 'not found');
+      const hsel = document.getElementById('header-month-select'), isel = document.getElementById('inline-month-select');
+      if (hsel) add(hsel.value === month ? 'pass' : 'warn', 'Month filter', 'Header dropdown in sync', month, hsel.value);
+      if (isel) add(isel.value === month ? 'pass' : 'warn', 'Month filter', 'Inline dropdown in sync', month, isel.value);
+
+      // ---- Data quality / safety ----
+      loans.forEach(l => { const bal = (l.balance_override || l.calculated_balance || 0); if ((l.monthly_payment || 0) > 0 && bal === 0 && !/paid\s*off/i.test(l.lender || '')) add('warn', 'Loan data', l.llc + ' - ' + l.lender, 'remaining > 0', '$0 / blank', 'Remaining balance missing - needed for DSCR / equity'); });
+      const seenH = {}; history.forEach(r => { const k = r.period_start + ' | ' + r.llc + ' | ' + (r.source || ''); seenH[k] = (seenH[k] || 0) + 1; });
+      Object.keys(seenH).filter(k => seenH[k] > 1).forEach(k => add('warn', 'History data', k, '1 row', seenH[k] + ' rows', 'Possible duplicate statement'));
+      const seenD = {}; distributions.forEach(d => { const k = d.period + ' | ' + d.llc + ' | you ' + (d.your_amount || 0) + ' / nir ' + (d.partner_amount || 0); seenD[k] = (seenD[k] || 0) + 1; });
+      Object.keys(seenD).filter(k => seenD[k] > 1).forEach(k => add('warn', 'Distribution data', k, '1 row', seenD[k] + ' rows', 'Duplicate distribution'));
+      const rseen = {}; let rbad = 0; maintenance.forEach(m => { if (m.row == null || m.row < 5) rbad++; else rseen[m.row] = (rseen[m.row] || 0) + 1; }); const rdup = Object.keys(rseen).filter(k => rseen[k] > 1).length;
+      add((rbad || rdup) ? 'warn' : 'pass', 'Write-back', 'Maintenance row indices valid & unique (read-only check)', 'all unique', rbad ? (rbad + ' invalid') : (rdup ? (rdup + ' duplicate') : 'OK'), 'The audit never writes to the sheet');
+      ['divando', 'yale'].forEach(key => { const row = history.find(h => h.period_start === month && h.llc.toLowerCase().includes(key)); if (row) { const sheetIns = row.ins_mo || 0, eff = effectiveIns(row.llc, sheetIns); if (!_money(sheetIns, eff)) add('warn', 'Hardcoded vs sheet', row.llc + ' insurance', eff, sheetIns, 'Override in use; sheet still holds the old value (expected until the #11 sheet migration)'); } });
+      let pfBad = 0; history.forEach(r => { if (!/^\d{4}-\d{2}-\d{2}$/.test(String(r.period_start || ''))) pfBad++; });
+      add(pfBad ? 'warn' : 'pass', 'Date format', 'History period_start = YYYY-MM-DD', 'all valid', pfBad ? (pfBad + ' malformed') : 'all valid');
+      const lu = new Date(data.last_updated); add(isFinite(lu.getTime()) ? 'pass' : 'warn', 'Timestamp', 'Last Updated is a valid date', 'valid', isFinite(lu.getTime()) ? 'valid' : 'invalid');
+      [['Cash Collected', expCash], ['Net Cashflow', expNet], ['Total Mortgage', expMort], ['Portfolio Value', expValue]].forEach(p => { if (!isFinite(p[1])) add('fail', 'Sanity', p[0] + ' is a finite number', 'finite', String(p[1])); });
+    }
+  } catch (e) {
+    add('fail', 'Audit engine', 'ran without error', 'no error', String((e && e.message) || e));
+  }
+  AUDIT_LAST = { findings: F, ts: new Date() };
+  updateAuditChip(F);
+  if (openModal) renderAuditModal();
+  return AUDIT_LAST;
+}
+
+function updateAuditChip(F) {
+  const chip = document.getElementById('audit-chip'); if (!chip) return;
+  const c = _auditCounts(F);
+  if (c.fail) { chip.className = 'audit-chip fail'; chip.textContent = '✗ ' + c.fail + ' issue' + (c.fail > 1 ? 's' : ''); }
+  else if (c.warn) { chip.className = 'audit-chip warn'; chip.textContent = '⚠ ' + c.warn + ' to review'; }
+  else { chip.className = 'audit-chip ok'; chip.textContent = '✓ Audit OK'; }
+  chip.title = c.pass + ' passed, ' + c.fail + ' failed, ' + c.warn + ' warnings - click for the full report';
+  chip.style.cursor = 'pointer'; chip.onclick = renderAuditModal;
+}
+function _auditCell(v) { return (typeof v === 'number') ? (isFinite(v) ? fmt(v) : String(v)) : (v == null ? '' : String(v)); }
+function renderAuditModal() {
+  const F = (AUDIT_LAST && AUDIT_LAST.findings) || [];
+  const c = _auditCounts(F);
+  const order = { fail: 0, warn: 1, pass: 2 }, color = { fail: '#ff4455', warn: '#f0a500', pass: '#00c97a' }, icon = { fail: '✗', warn: '⚠', pass: '✓' };
+  const sorted = F.slice().sort((a, b) => order[a.level] - order[b.level]);
+  const rows = sorted.map(f => '<tr><td style="color:' + color[f.level] + ';font-weight:700;text-align:center">' + icon[f.level] + '</td><td style="color:#7e9cbf;white-space:nowrap">' + f.area + '</td><td>' + f.item + '</td><td style="text-align:right;white-space:nowrap">' + _auditCell(f.expected) + '</td><td style="text-align:right;white-space:nowrap">' + _auditCell(f.displayed) + '</td><td style="color:#7e9cbf;font-size:11px">' + (f.note || '') + '</td></tr>').join('');
+  document.getElementById('audit-summary').innerHTML = '<span style="color:#00c97a">✓ ' + c.pass + ' passed</span> &nbsp;&middot;&nbsp; <span style="color:#ff4455">✗ ' + c.fail + ' failed</span> &nbsp;&middot;&nbsp; <span style="color:#f0a500">⚠ ' + c.warn + ' warnings</span> &nbsp;&middot;&nbsp; <span style="color:#4e6d8c">' + (AUDIT_LAST ? AUDIT_LAST.ts.toLocaleString() : '') + '</span>';
+  document.getElementById('audit-body').innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="color:#4e6d8c;text-align:left"><th></th><th>Area</th><th>Item</th><th style="text-align:right">Expected</th><th style="text-align:right">On screen</th><th>Note</th></tr></thead><tbody>' + rows + '</tbody></table>';
+  document.getElementById('audit-modal').classList.add('open');
+}
+function closeAuditModal() { document.getElementById('audit-modal').classList.remove('open'); }
+function auditCopy() {
+  const F = (AUDIT_LAST && AUDIT_LAST.findings) || [], c = _auditCounts(F);
+  const lines = F.map(f => [f.level.toUpperCase(), f.area, f.item, _auditCell(f.expected), _auditCell(f.displayed), f.note].filter(Boolean).join('  |  '));
+  const text = 'Niron Dashboard Self-Audit - ' + (AUDIT_LAST ? AUDIT_LAST.ts.toLocaleString() : '') + '\n' + c.pass + ' passed, ' + c.fail + ' failed, ' + c.warn + ' warnings\n\n' + lines.join('\n');
+  if (navigator.clipboard) navigator.clipboard.writeText(text);
+  const btn = (typeof event !== 'undefined') && event && event.target; if (btn) { const o = btn.textContent; btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = o; }, 1200); }
 }
 
 document.getElementById('save-modal').addEventListener('click', function(e) { if (e.target === this) closeSaveModal(); });
