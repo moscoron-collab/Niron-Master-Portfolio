@@ -475,6 +475,19 @@ much each has taken out, YTD and lifetime.
 
 ---
 
+## 🗓️ Month picker = data months + current month (Jun 5 2026, PR #50)
+
+The header/inline month dropdown offers every month present in History **plus the current
+calendar month** (`currentPeriod()` → e.g. `2026-06-01`), so the user can select the current
+month and work in it (enter statements / maintenance / distributions) **before** its AppFolio
+data has landed. `pickerMonths` (data ∪ current) drives the dropdown; the trend chart still
+uses `months` (data only) so there's no zero-dip. The default `SELECTED_MONTH` stays the
+**newest month with data**, so it auto-advances to the new month the moment that month's data
+arrives (no yearly maintenance). The self-audit treats the current month as a valid selection
+even with no data (no false "month not in data" fail).
+
+---
+
 ## 🧾 CPA Invoice Workflow + invoice upload (BUILT — Jun 5 2026, PR #48)
 
 Closes the loop between entering an invoice, how it was paid, and the CPA paying it.
