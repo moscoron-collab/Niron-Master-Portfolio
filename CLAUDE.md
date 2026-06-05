@@ -442,6 +442,37 @@ theme; they react to the month dropdown like everything else. Pure frontend.
   Verified = `$18,615.00 / 6` for 2026-through-May.
 - The self-audit recomputes all 3 numeric tiles (`Health tile` rows).
 
+> 🔔 **REMINDER (user asked to be reminded later, Jun 5 2026):** Occupancy currently EXCLUDES
+> the 3 out-of-state manual units (and Dorado, which has no per-unit data). User said leave it
+> for now but **remind them later** about whether to fold the manual units into the occupancy
+> denominator.
+> 🔔 **REMINDER:** the April 2026 Divando `Manual Entry` rows (3 rows, generic source) still
+> need a look — relabel to `Manual Entry: <property>` (and fix `enter_suncoast_manual.py`,
+> which writes a bare `"Manual Entry"` + puts the property in the LLC column). User deferred.
+
+---
+
+## 💸 Partner Distributions section (Jun 5 2026, PR #47) — Phase 2 item 1
+
+A **Partner Distributions (You vs Nir)** section sits just below Monthly Breakdown. Pure
+read of the Distributions tab; no new data needed. Answers the partners' #1 question: how
+much each has taken out, YTD and lifetime.
+- 4 tiles: **Lifetime You** (`kpi-life-you`), **Lifetime Nir** (`kpi-life-nir`),
+  **Lifetime Total** (`kpi-life-total`), and a dual **YTD You / YTD Nir** tile.
+- A **per-year table** (Year | You | Nir | Total) with an "All time" total row — handy at tax time.
+- Self-audit recomputes the 3 lifetime tiles.
+
+> 🧭 **Investor decision (Jun 5 2026):** which Phase-2 metrics are worth it given our data:
+> - ✅ Built: Partner distributions (above). Next: **CPA invoice workflow** (Paid By / Paid /
+>   Notes + CPA-only filtered CSV/print view) — needs 3 new Maintenance Log columns (I/J/K) +
+>   Apps Script redeploy; backward-compatible with existing 8-col rows.
+> - ✅ Worth doing (no schema change): split repairs into **recurring vs one-off turnover**
+>   (use the existing `Tenant Turnover` category) so a hit like the $8,000 Blackhawk doesn't
+>   distort "true operating net". (Planned.)
+> - ❌ Declined as dishonest-without-data: **cap rate, cash-on-cash, true NOI, expense ratio**
+>   need inputs we don't track (cash invested / equity, gross rent for Dorado + out-of-state,
+>   an opex breakdown). DSCR/equity/LTV already off the table. Don't fake them.
+
 ---
 
 ## 🔧 Maintenance Invoices — Add / Edit / Delete (BUILT)
