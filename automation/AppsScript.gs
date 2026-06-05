@@ -1099,6 +1099,9 @@ function doPost(e) {
     if (body.action === 'delete_maintenance') {
       return deleteMaintenanceEntry(body);
     }
+    if (body.action === 'set_maintenance_paid') {
+      return setMaintenancePaid(body);
+    }
     if (body.action === 'add_distribution') {
       return addDistributionEntry(body);
     }
@@ -1557,12 +1560,20 @@ function addMaintenanceEntry(data) {
   var lastRow = sh.getLastRow();
   var nextRow = Math.max(5, lastRow + 1);
   var dateObj = new Date(data.date + 'T12:00:00');
-  sh.getRange(nextRow, 1, 1, 8).setValues([[
+  var invoiceUrl = '';
+  if (data.file && data.file.data) {
+    try { invoiceUrl = saveInvoiceFile(data.file); }
+    catch (err) { return ContentService.createTextOutput(JSON.stringify({error:'File upload failed: ' + err.message})).setMimeType(ContentService.MimeType.JSON); }
+  }
+  // Columns A-L: Date, LLC, Property, Sub, Category, Description, Amount, Entered By,
+  //              Paid By, Paid, Notes, Invoice File URL
+  sh.getRange(nextRow, 1, 1, 12).setValues([[
     dateObj, data.llc, data.property || '', data.sub || '',
     data.category || '', data.description || '',
-    Number(data.amount) || 0, data.entered_by || 'Dashboard'
+    Number(data.amount) || 0, data.entered_by || 'Dashboard',
+    data.paid_by || '', data.paid ? true : false, data.notes || '', invoiceUrl
   ]]);
-  return ContentService.createTextOutput(JSON.stringify({ok:true, row:nextRow})).setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify({ok:true, row:nextRow, invoice_url:invoiceUrl})).setMimeType(ContentService.MimeType.JSON);
 }
 
 // Edit an existing maintenance invoice in place. `row` is the absolute sheet row
@@ -1574,12 +1585,19 @@ function updateMaintenanceEntry(data) {
   if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error:'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
   if (!data.date || !data.llc || !data.amount) return ContentService.createTextOutput(JSON.stringify({error:'Date, LLC, Amount required'})).setMimeType(ContentService.MimeType.JSON);
   var dateObj = new Date(data.date + 'T12:00:00');
-  sh.getRange(row, 1, 1, 8).setValues([[
+  // Keep the existing invoice link unless a new file is uploaded.
+  var invoiceUrl = sh.getRange(row, 12).getValue() || '';
+  if (data.file && data.file.data) {
+    try { invoiceUrl = saveInvoiceFile(data.file); }
+    catch (err) { return ContentService.createTextOutput(JSON.stringify({error:'File upload failed: ' + err.message})).setMimeType(ContentService.MimeType.JSON); }
+  }
+  sh.getRange(row, 1, 1, 12).setValues([[
     dateObj, data.llc, data.property || '', data.sub || '',
     data.category || '', data.description || '',
-    Number(data.amount) || 0, data.entered_by || 'Dashboard'
+    Number(data.amount) || 0, data.entered_by || 'Dashboard',
+    data.paid_by || '', data.paid ? true : false, data.notes || '', invoiceUrl
   ]]);
-  return ContentService.createTextOutput(JSON.stringify({ok:true, row:row})).setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify({ok:true, row:row, invoice_url:invoiceUrl})).setMimeType(ContentService.MimeType.JSON);
 }
 
 // Delete a maintenance invoice row entirely.
@@ -1590,6 +1608,29 @@ function deleteMaintenanceEntry(data) {
   if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error:'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
   sh.deleteRow(row);
   return ContentService.createTextOutput(JSON.stringify({ok:true, deleted:row})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Flip just the Paid column (J) for a row - used by the CPA view's one-click "Mark paid".
+function setMaintenancePaid(data) {
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Maintenance Log');
+  if (!sh) return ContentService.createTextOutput(JSON.stringify({error:'Maintenance Log not found'})).setMimeType(ContentService.MimeType.JSON);
+  var row = Number(data.row);
+  if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error:'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
+  sh.getRange(row, 10).setValue(data.paid ? true : false);
+  return ContentService.createTextOutput(JSON.stringify({ok:true, row:row, paid:!!data.paid})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Save an uploaded invoice file to a dedicated Drive folder; return its view URL.
+// file = { name, mimeType, data(base64) }. Set link-viewable so the URL opens from the
+// dashboard and the CPA export. (Adds a Drive scope - reauthorize on redeploy.)
+function saveInvoiceFile(file) {
+  var folders = DriveApp.getFoldersByName('Niron Maintenance Invoices');
+  var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder('Niron Maintenance Invoices');
+  var bytes = Utilities.base64Decode(file.data);
+  var blob = Utilities.newBlob(bytes, file.mimeType || 'application/octet-stream', file.name || 'invoice');
+  var f = folder.createFile(blob);
+  try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
+  return f.getUrl();
 }
 
 // Override: getDashboardJson with properties + new maintenance structure
@@ -1665,7 +1706,9 @@ function getDashboardJson() {
   if (maint && maint.getLastRow() >= 5) {
     // Track the absolute sheet row (data starts at row 5) so the dashboard can
     // edit/delete the exact row via update_maintenance / delete_maintenance.
-    maint.getRange(5, 1, maint.getLastRow() - 4, 8).getValues().forEach(function(r, i) {
+    // Columns A-L: Date, LLC, Property, Sub, Category, Description, Amount, Entered By,
+    //              Paid By (I/8), Paid (J/9), Notes (K/10), Invoice File URL (L/11).
+    maint.getRange(5, 1, maint.getLastRow() - 4, 12).getValues().forEach(function(r, i) {
       if (r[0] && r[1]) {
         var d = r[0] instanceof Date ? r[0] : new Date(r[0]);
         if (isNaN(d)) return;
@@ -1676,7 +1719,9 @@ function getDashboardJson() {
           period: yyyy + '-' + mm + '-01',
           llc: r[1], property: r[2] || "", sub: r[3] || "",
           category: r[4] || "", description: r[5] || "",
-          amount: Number(r[6])||0, entered_by: r[7] || ""
+          amount: Number(r[6])||0, entered_by: r[7] || "",
+          paid_by: r[8] || "", paid: r[9] === true || String(r[9]).toLowerCase() === 'true',
+          notes: r[10] || "", invoice_url: r[11] || ""
         });
       }
     });

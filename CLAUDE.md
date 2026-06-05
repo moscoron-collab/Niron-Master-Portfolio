@@ -475,6 +475,50 @@ much each has taken out, YTD and lifetime.
 
 ---
 
+## 🧾 CPA Invoice Workflow + invoice upload (BUILT — Jun 5 2026, PR #48)
+
+Closes the loop between entering an invoice, how it was paid, and the CPA paying it.
+
+### Maintenance Log now has 12 columns (was 8) — BACKWARD COMPATIBLE
+`A Date · B LLC · C Property · D Sub · E Category · F Description · G Amount · H Entered By`
+**+ new:** `I Paid By · J Paid · K Notes · L Invoice File URL`. Old 8-col rows still read
+fine (the new fields come back blank/false). `getDashboardJson` maint reader now reads 12
+cols and emits `paid_by, paid, notes, invoice_url`; `addMaintenanceEntry` /
+`updateMaintenanceEntry` write all 12.
+
+### Form (Add/Edit Maintenance modal)
+- **Paid By** dropdown: `LLC Debit Card` / `Sent to CPA`. **Defaults to blank "-- choose --"**
+  (user picked option A — forces a conscious pick so an invoice can't silently skip the CPA list).
+- **Paid** checkbox (defaults unpaid) — check it once the CPA actually pays.
+- **Notes** free-text.
+- **Invoice file** upload (image/PDF). Frontend reads it to base64 (`readFileAsPayload`) and
+  posts it; Apps Script `saveInvoiceFile()` writes it to a **`Niron Maintenance Invoices`**
+  Drive folder (auto-created), sets it **ANYONE_WITH_LINK / VIEW**, and stores the URL in col L.
+  Shows as a 📎 in the maintenance table + CPA view. (25 MB client cap.)
+
+### CPA view
+- **🧾 CPA Invoices** button in the header (next to Run Audit) opens a modal listing invoices
+  where **Paid By = Sent to CPA AND Paid = unchecked**: Date, LLC, Property, Vendor, Category,
+  Description, Amount, Notes, 📎 file, + a one-click **Mark paid** (per row) and a total.
+  **Export CSV** + **Print** (clean printable window) so the CPA reconciles without seeing the
+  rest of the dashboard.
+- **Mark paid** uses a dedicated `set_maintenance_paid` action (flips only col J) — no risk of
+  clobbering other fields from stale data.
+- Maintenance table got a **Pay / File** column: `💳 Debit` / `🧾 CPA · unpaid|paid` badge + 📎.
+
+### 🚀 Going live (REQUIRED) — needs redeploy AND a NEW permission
+`automation/AppsScript.gs` now uses **DriveApp** (to store invoice files), so the redeploy
+will prompt for a **new Google Drive authorization** — accept it. Steps: Sheet → Extensions →
+Apps Script → paste new `AppsScript.gs` → **Deploy → Manage deployments → Edit → New version →
+Deploy** → approve the Drive scope when asked. Until then, uploads + the new fields won't save.
+The `index.html` side goes live on merge.
+
+> ⚙️ Invoice file sharing defaults to **ANYONE_WITH_LINK / VIEW** (so the link opens for the CPA
+> from the CSV/print, matching the Noble policy-docs Drive pattern). To make invoices private,
+> change the one `setSharing` line in `saveInvoiceFile`.
+
+---
+
 ## 🔧 Maintenance Invoices — Add / Edit / Delete (BUILT)
 
 The **Maintenance Invoices** table on the dashboard (index.html, rendered ~line 1459) is
