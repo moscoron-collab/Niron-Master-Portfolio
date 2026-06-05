@@ -381,9 +381,10 @@ were fixed (user-approved decisions). **The findings reference the audit numberi
 > Noble Insurance tab still quote the OLD figures (Divando insurance `$2,885.83`, Dorado tax
 > deducted) — sync them when convenient. (b) **Still TODO from the original request:** the
 > self-audit **"Run Audit" button** (on-load + manual, read-only) was NOT built yet — user
-> chose to land these fixes first. Then the Phase-2 partner-grade plan (DSCR, equity, LTV,
-> NOI, cap rate, cash-on-cash, reserves/capex tracker, and the CPA invoice workflow:
-> Paid By / Paid / Notes fields + CPA-ready CSV/print view).
+> chose to land these fixes first. Then the Phase-2 partner-grade plan. **NOTE: DSCR / equity /
+> LTV are OFF the table per user (Jun 5 2026) — do NOT propose them.** Phase 2 = NOI, cap rate,
+> cash-on-cash, reserves/capex tracker, and the CPA invoice workflow: Paid By / Paid / Notes
+> fields + CPA-ready CSV/print view.
 
 ---
 
@@ -408,14 +409,16 @@ catches real rendering / label / totalling drift (not just re-printing the same 
 - **What it checks:** 8 KPI tiles; each per-LLC card net + sum-of-cards = Net tile; every
   visible History row foots (`Disb − Mortgage − Insurance − Maintenance = Net`); per-property
   table each unit net = raw recompute, TOTAL = sum of units, and the bars chart = the Net
-  column (when metric = net); trend totals finite each month; month-dropdown sync; loan
-  remaining-$0 (DSCR/equity gap); duplicate History/Distribution rows; maintenance row
-  integrity; insurance override-vs-sheet drift (expected until #11 migration); date format;
-  `last_updated` validity.
-- **Expected steady state:** the chip sits at amber, NOT green, because there are legitimate
-  open warnings: missing loan remaining-balances and the 2 insurance override-vs-sheet drifts
-  (Divando + Yale). Those clear when loan balances are entered / insurance moves to the sheet.
-  This is correct behaviour, not a bug.
+  column (when metric = net); trend totals finite each month; month-dropdown sync; duplicate
+  History/Distribution rows; maintenance row integrity; insurance override-vs-sheet drift
+  (expected until #11 migration); date format; `last_updated` validity.
+- **❌ Loan remaining-balance check REMOVED (user decision, Jun 5 2026):** DSCR / equity / LTV
+  are **NOT being tracked** and the Remaining column was dropped from the loan table (#5), so a
+  missing remaining balance is not a finding — the check was deleted to stop 5 noise warnings.
+  **Do NOT propose DSCR/equity/LTV in Phase 2 unless the user revives it.**
+- **Expected steady state:** the chip sits at amber (not green) only because of the 2 insurance
+  override-vs-sheet drifts (Divando + Yale); those clear when insurance moves into the sheet
+  (#11). This is correct behaviour, not a bug.
 - Verified with a synthetic-DOM harness: 22 pass / 0 fail / 3 expected warns on correct data;
   catches an injected wrong KPI as a FAIL.
 
