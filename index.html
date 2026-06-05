@@ -2055,7 +2055,8 @@ function auditRun(openModal) {
       if (isel) add(isel.value === month ? 'pass' : 'warn', 'Month filter', 'Inline dropdown in sync', month, isel.value);
 
       // ---- Data quality / safety ----
-      loans.forEach(l => { const bal = (l.balance_override || l.calculated_balance || 0); if ((l.monthly_payment || 0) > 0 && bal === 0 && !/paid\s*off/i.test(l.lender || '')) add('warn', 'Loan data', l.llc + ' - ' + l.lender, 'remaining > 0', '$0 / blank', 'Remaining balance missing - needed for DSCR / equity'); });
+      // (Loan remaining-balance check removed - the Remaining column was dropped from the
+      // loan table and DSCR / equity is not being tracked, so a missing balance is not a finding.)
       const seenH = {}; history.forEach(r => { const k = r.period_start + ' | ' + r.llc + ' | ' + (r.source || ''); seenH[k] = (seenH[k] || 0) + 1; });
       Object.keys(seenH).filter(k => seenH[k] > 1).forEach(k => add('warn', 'History data', k, '1 row', seenH[k] + ' rows', 'Possible duplicate statement'));
       const seenD = {}; distributions.forEach(d => { const k = d.period + ' | ' + d.llc + ' | you ' + (d.your_amount || 0) + ' / nir ' + (d.partner_amount || 0); seenD[k] = (seenD[k] || 0) + 1; });
