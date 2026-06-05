@@ -397,7 +397,7 @@
     <div style="font-size:11px;color:#4e6d8c;margin:-6px 0 10px">Read-only check - recomputes every total from the raw sheet data and compares it to what is on screen. It never writes to the sheet.</div>
     <div id="audit-summary" style="font-size:13px;padding:10px 0;border-bottom:1px solid #1e2d42;margin-bottom:10px"></div>
     <div id="audit-body" style="max-height:58vh;overflow:auto"></div>
-    <div class="modal-actions"><button class="secondary" onclick="auditCopy()">Copy report</button><button class="primary" onclick="auditRun(true)">Re-run audit</button></div>
+    <div class="modal-actions"><button class="secondary" onclick="auditCopy()">Copy report</button><button class="primary" onclick="auditRerun(this)">Re-run audit</button></div>
   </div>
 </div>
 
@@ -2232,6 +2232,24 @@ function renderAuditModal() {
   document.getElementById('audit-modal').classList.add('open');
 }
 function closeAuditModal() { document.getElementById('audit-modal').classList.remove('open'); }
+// "Re-run audit" pulls FRESH data from the sheet, re-renders, then re-audits and refreshes
+// the open report - with visible button feedback (the in-place re-run alone looked like a
+// no-op because the report is identical on unchanged data).
+async function auditRerun(btn) {
+  const orig = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Refreshing…'; }
+  try {
+    const res = await fetch(API_URL);
+    const d = await res.json();
+    if (d && !d.error) {
+      PORTFOLIO_DATA = d;
+      const lu = document.getElementById('last-updated'); if (lu) lu.textContent = new Date(d.last_updated).toLocaleString();
+      renderAll();
+    }
+  } catch (e) { /* keep current data on network error */ }
+  auditRun(true);
+  if (btn) { btn.disabled = false; btn.textContent = orig || 'Re-run audit'; }
+}
 function auditCopy() {
   const F = (AUDIT_LAST && AUDIT_LAST.findings) || [], c = _auditCounts(F);
   const lines = F.map(f => [f.level.toUpperCase(), f.area, f.item, _auditCell(f.expected), _auditCell(f.displayed), f.note].filter(Boolean).join('  |  '));
