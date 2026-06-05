@@ -1312,17 +1312,42 @@ const monthLabel = ym => { if (!ym) return ""; const parts = ym.split("-"); retu
 /* "2026-06-15" -> "Jun 15, 2026" (month as name). Falls back to raw string if unexpected. */
 const dateLabel = ymd => { if (!ymd) return ""; const p = String(ymd).split("-"); if (p.length !== 3) return ymd; const mi = parseInt(p[1],10)-1; if (mi < 0 || mi > 11) return ymd; return MONTH_NAMES[mi] + " " + parseInt(p[2],10) + ", " + p[0]; };
 function maintenanceFor(maintenance, llc, period) { if (!maintenance || !llc || !period) return 0; return maintenance.filter(m => m.llc && m.llc.trim() === llc.trim() && m.period === period).reduce((s, m) => s + (m.amount || 0), 0); }
-// Donald and Yale pay property tax via mortgage escrow — exclude tax_mo from net so it isn't deducted twice
-// Divando pays annual tax lump-sum (in April) — also excluded from monthly net
+/* ============================================================
+   MANUAL OVERRIDES - EDIT THESE WHEN A LOAN OR INSURANCE CHANGES
+   ------------------------------------------------------------
+   These few real-world numbers are NOT stored in the Google Sheet, so
+   they live here. This is the ONLY place in the logic to edit them.
+   (The same insurance figures also appear on the Noble Insurance tab
+   higher up in this file - keep the two in sync until they are moved
+   into the sheet.)
+   ============================================================ */
+
+// --- Property tax treatment -------------------------------------------------
+// Donald + Yale: tax is escrowed inside the mortgage -> already paid, never deduct.
+// Divando + Dorado: tax is paid as a lump sum in spring (Mar-Apr), NOT monthly ->
+//   shown as info on the card but excluded from the monthly net.
 function isTaxEscrowed(llc) { if (!llc) return false; const n = llc.toLowerCase(); return n.includes('donald') || n.includes('yale'); }
-function isTaxAnnual(llc) { if (!llc) return false; return llc.toLowerCase().includes('divando'); }
-function effectiveTax(row) { return (isTaxEscrowed(row.llc) || isTaxAnnual(row.llc)) ? 0 : (row.tax_mo || 0); }
-// Divando carries 6 building mortgages totalling $12,199.86/mo that are NOT in the
-// sheet's "mortgage" field (that field only holds the $2,334 SBA business-debt draft).
-// Add them back so the Divando card and all net/YTD totals reflect true monthly debt
-// = $12,199.86 property mortgages + $2,334 SBA = $14,533.86/mo.
+function isTaxLumpSum(llc) { if (!llc) return false; const n = llc.toLowerCase(); return n.includes('divando') || n.includes('dorado'); }
+function isTaxAnnual(llc) { return isTaxLumpSum(llc); } // back-compat alias
+function effectiveTax(row) { return (isTaxEscrowed(row.llc) || isTaxLumpSum(row.llc)) ? 0 : (row.tax_mo || 0); }
+
+// --- Divando property mortgages (6 building loans, not in the sheet) ---------
+// = $12,199.86/mo property loans + $2,334 SBA (the sheet's "mortgage" field) = $14,533.86/mo.
 const DIVANDO_PROPERTY_MORTGAGE = 12199.86;
 function extraMortgage(llc) { return (llc && llc.toLowerCase().includes('divando')) ? DIVANDO_PROPERTY_MORTGAGE : 0; }
+
+// --- Monthly insurance overrides (bank-verified) ----------------------------
+// The sheet's per-row insurance is stale / over-scoped for these LLCs, so we force
+// the correct whole-LLC monthly figure here:
+//   Yale    $1,037.55/mo - real Acuity bank draft (sheet still had the old $1,024.54).
+//   Divando $2,473.08/mo - Divando-OWNED houses only ($29,677/yr / 12); excludes the
+//           2 Dorado-owned units that ride on the State Farm policy.
+// Any LLC NOT listed here uses the insurance amount straight from the sheet.
+const INSURANCE_OVERRIDE = { divando: 2473.08, yale: 1037.55 };
+function effectiveIns(llc, sheetIns) {
+  if (llc) { const n = llc.toLowerCase(); for (const k in INSURANCE_OVERRIDE) { if (n.includes(k)) return INSURANCE_OVERRIDE[k]; } }
+  return sheetIns || 0;
+}
 // The 6 Divando building loans (= $12,199.86/mo total) are not in the Loans sheet tab
 // (which only holds the $2,334 SBA line), so add them to the Loan Balances display.
 // Amounts verified across Mar/Apr/May 2026 bank statements (acct 3 Divando LLC 3442).
@@ -1387,13 +1412,18 @@ function pdSetView(v) {
   else { PD_RANGE = parseInt(v.slice(2), 10); PD_MONTH = ''; }
   renderAll();
 }
-// Match a maintenance row to a property by address substring (Maintenance Log
-// stores the property name in its own column).
+// Match a maintenance row to a property. The invoice's Property column holds the
+// fuller address (e.g. "4776 Blackhawk Way, Denver CO 80239") while the per-unit
+// name is the short form ("4776 Blackhawk Way"), so we require the invoice address
+// to START WITH the unit name. This is one-directional on purpose: a generic
+// invoice like "15559 E Bates Ave" will NOT attach to both "...Lower" and "...Upper"
+// (or "5101 Crown Blvd" to both Unit A and Unit B), so repairs can't be double-counted.
+function normAddr(s) { return String(s || '').toLowerCase().replace(/,/g, ' ').replace(/\s+/g, ' ').trim(); }
 function maintenanceForProp(maintenance, prop, period) {
   if (!maintenance || !prop) return 0;
-  const key = prop.toLowerCase();
-  return maintenance.filter(m => m.period === period && m.property &&
-    (m.property.toLowerCase().includes(key) || key.includes(m.property.toLowerCase())))
+  const key = normAddr(prop);
+  if (!key) return 0;
+  return maintenance.filter(m => m.period === period && m.property && normAddr(m.property).startsWith(key))
     .reduce((s, m) => s + (m.amount || 0), 0);
 }
 // Build a flat list of per-property monthly records across all sources.
@@ -1428,7 +1458,7 @@ function buildPropertyRecords(data, maintenance) {
   });
   return recs;
 }
-function recalcNet(row, maintenance) { const m = maintenanceFor(maintenance, row.llc, row.period_start); return row.disbursement - row.mortgage - extraMortgage(row.llc) - effectiveTax(row) - row.ins_mo - m; }
+function recalcNet(row, maintenance) { const m = maintenanceFor(maintenance, row.llc, row.period_start); return row.disbursement - row.mortgage - extraMortgage(row.llc) - effectiveTax(row) - effectiveIns(row.llc, row.ins_mo) - m; }
 // Collapse rows to one per (LLC, month): sum the additive fields, then apply
 // maintenance + Divando property mortgage ONCE so multi-row months aren't double-counted.
 function aggregateLlcPeriod(rows, maintenance) {
@@ -1438,7 +1468,7 @@ function aggregateLlcPeriod(rows, maintenance) {
     if (!acc[key]) acc[key] = Object.assign({}, r, { disbursement: 0, mgmt_fee: 0, mortgage: 0, tax_mo: 0, ins_mo: 0 });
     ["disbursement","mgmt_fee","mortgage","tax_mo","ins_mo"].forEach(k => { acc[key][k] += (r[k] || 0); });
   });
-  return Object.values(acc).map(g => { const m = maintenanceFor(maintenance, g.llc, g.period_start); g.maintenance = m; g.net_cashflow = g.disbursement - g.mortgage - extraMortgage(g.llc) - effectiveTax(g) - g.ins_mo - m; return g; });
+  return Object.values(acc).map(g => { g.ins_mo = effectiveIns(g.llc, g.ins_mo); const m = maintenanceFor(maintenance, g.llc, g.period_start); g.maintenance = m; g.net_cashflow = g.disbursement - g.mortgage - extraMortgage(g.llc) - effectiveTax(g) - g.ins_mo - m; return g; });
 }
 
 async function load() { try { const res = await fetch(API_URL); const data = await res.json(); PORTFOLIO_DATA = data; initialRender(data); } catch (e) { document.getElementById("content").innerHTML = '<div class="error">Failed to load: ' + e.message + '</div>'; document.getElementById("status").textContent = "● Offline"; document.getElementById("status").style.color = "#ff4455"; } }
@@ -1459,7 +1489,7 @@ function renderAll() {
     if (!acc[r.llc]) { acc[r.llc] = Object.assign({}, r); }
     else { ["disbursement","mgmt_fee","mortgage","tax_mo","ins_mo"].forEach(k => { acc[r.llc][k] = (acc[r.llc][k] || 0) + (r[k] || 0); }); }
     return acc;
-  }, {})).map(g => { const m = maintenanceFor(maintenance, g.llc, g.period_start); g.maintenance = m; g.net_cashflow = g.disbursement - g.mortgage - extraMortgage(g.llc) - effectiveTax(g) - g.ins_mo - m; return g; }).sort((a, b) => a.llc.localeCompare(b.llc));
+  }, {})).map(g => { g.ins_mo = effectiveIns(g.llc, g.ins_mo); const m = maintenanceFor(maintenance, g.llc, g.period_start); g.maintenance = m; g.net_cashflow = g.disbursement - g.mortgage - extraMortgage(g.llc) - effectiveTax(g) - g.ins_mo - m; return g; }).sort((a, b) => a.llc.localeCompare(b.llc));
   // Totals come from groupedSelected (one row per LLC) so per-LLC monthly costs
   // (maintenance, Divando property mortgage) are not double-counted for LLCs with
   // multiple rows in the month.
@@ -1482,19 +1512,19 @@ function renderAll() {
   const headerSelect = document.getElementById('header-month-select'); if (headerSelect) headerSelect.innerHTML = monthOptions;
   const netCls = totalNet >= 0 ? 'green' : 'red';
   let html = '<div class="summary-grid">';
-  html += '<div class="summary-card dual gold"><div class="card-cell"><div class="label">Gross Total Income</div><div class="value">' + fmtShort(totalDisb) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">Gross YTD</div><div class="value">' + fmtShort(ytdDisb) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
+  html += '<div class="summary-card dual gold"><div class="card-cell"><div class="label">Cash Collected</div><div class="value">' + fmtShort(totalDisb) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">Cash YTD</div><div class="value">' + fmtShort(ytdDisb) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
   html += '<div class="summary-card dual ' + netCls + '"><div class="card-cell"><div class="label">Net Cashflow</div><div class="value">' + fmtShort(totalNet) + '</div><div class="sublabel">After all expenses</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value">' + fmtShort(ytdNet) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
   html += '<div class="summary-card dual blue"><div class="card-cell"><div class="label">Your Distribution</div><div class="value">' + fmtShort(distThisMonth) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value">' + fmtShort(distYtd) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Total Mortgage / Mo</div><div class="value">' + fmtShort(totalMortgage) + '</div><div class="sublabel">Across all LLCs</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Portfolio Value</div><div class="value">' + fmtShort(totalValue) + '</div><div class="sublabel">Estimated</div></div></div>';
   html += '</div>';
   html += '<div class="section"><h2><span class="dot"></span><span>Monthly Breakdown</span><select id="inline-month-select" class="header-month-select" onchange="onMonthChange(this.value)">' + monthOptions + '</select></h2><div class="llc-grid">';
-  groupedSelected.forEach(r => { const net = r.net_cashflow; const cls = net >= 0 ? 'green' : 'red'; let taxLabel = 'Tax / 12'; if (isTaxEscrowed(r.llc)) { taxLabel += ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(paid by escrow)</span>'; } else if (isTaxAnnual(r.llc)) { taxLabel += ' <span title="Paid lump-sum April 2026. Not deducted from monthly net." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(paid Apr 2026 ⓘ)</span>'; } const distRows = distributions.filter(d => d.llc === r.llc && d.period === r.period_start); const distYou = distRows.reduce((s,d) => s + (d.your_amount||0), 0); const distNir = distRows.reduce((s,d) => s + (d.partner_amount||0), 0); const distHtml = (distYou || distNir) ? '<div class="llc-row" style="border-top:1px solid #1e2d42;margin-top:6px;padding-top:6px"><span class="k" style="color:#00c97a">Distribution</span><span class="v" style="color:#00c97a;font-size:12px">You: ' + fmt(distYou) + ' &nbsp;|&nbsp; Nir: ' + fmt(distNir) + '</span></div>' : ''; html += '<div class="llc-card"><h3>' + r.llc + '</h3><div class="llc-row"><span class="k">Disbursement</span><span class="v">' + fmt(r.disbursement) + '</span></div><div class="llc-row"><span class="k">Mgmt Fees</span><span class="v">' + fmt(r.mgmt_fee) + '</span></div>' + (extraMortgage(r.llc) ? '<div class="llc-row"><span class="k">Property Mortgages <span title="6 building loans drafted to the property loan accounts (15655/15675/Idalia, 43rd/Bates, Dearborn/Virginia, Blackhawk/Crown, Holly/Oakland, Tucson/Boston)." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(6 loans ⓘ)</span></span><span class="v">' + fmt(extraMortgage(r.llc)) + '</span></div><div class="llc-row"><span class="k">SBA Loans <span title="6 SBA payments drafted on the 1st — general Divando business debt, not tied to any property." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(business debt ⓘ)</span></span><span class="v">' + fmt(r.mortgage) + '</span></div>' : '<div class="llc-row"><span class="k">Mortgage</span><span class="v">' + fmt(r.mortgage) + '</span></div>') + '<div class="llc-row"><span class="k">' + taxLabel + '</span><span class="v">' + fmt(r.tax_mo) + '</span></div><div class="llc-row"><span class="k">Insurance / 12</span><span class="v">' + fmt(r.ins_mo) + '</span></div><div class="llc-row"><span class="k">Maintenance</span><span class="v">' + fmt(r.maintenance) + '</span></div><div class="llc-row total"><span class="k">Net Cashflow</span><span class="v ' + cls + '">' + fmt(net) + '</span></div>' + distHtml + '</div>'; });
+  groupedSelected.forEach(r => { const net = r.net_cashflow; const cls = net >= 0 ? 'green' : 'red'; let taxLabel = 'Tax / 12'; if (isTaxEscrowed(r.llc)) { taxLabel += ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(paid by escrow)</span>'; } else if (isTaxLumpSum(r.llc)) { taxLabel += ' <span title="Property tax is paid as a lump sum in spring (Mar-Apr), not deducted from the monthly net." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(paid in spring ⓘ)</span>'; } const distRows = distributions.filter(d => d.llc === r.llc && d.period === r.period_start); const distYou = distRows.reduce((s,d) => s + (d.your_amount||0), 0); const distNir = distRows.reduce((s,d) => s + (d.partner_amount||0), 0); const distHtml = (distYou || distNir) ? '<div class="llc-row" style="border-top:1px solid #1e2d42;margin-top:6px;padding-top:6px"><span class="k" style="color:#00c97a">Distribution</span><span class="v" style="color:#00c97a;font-size:12px">You: ' + fmt(distYou) + ' &nbsp;|&nbsp; Nir: ' + fmt(distNir) + '</span></div>' : ''; html += '<div class="llc-card"><h3>' + r.llc + '</h3><div class="llc-row"><span class="k">Disbursement</span><span class="v">' + fmt(r.disbursement) + '</span></div><div class="llc-row"><span class="k">Mgmt Fees</span><span class="v">' + fmt(r.mgmt_fee) + '</span></div>' + (extraMortgage(r.llc) ? '<div class="llc-row"><span class="k">Property Mortgages <span title="6 building loans drafted to the property loan accounts (15655/15675/Idalia, 43rd/Bates, Dearborn/Virginia, Blackhawk/Crown, Holly/Oakland, Tucson/Boston)." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(6 loans ⓘ)</span></span><span class="v">' + fmt(extraMortgage(r.llc)) + '</span></div><div class="llc-row"><span class="k">SBA Loans <span title="6 SBA payments drafted on the 1st — general Divando business debt, not tied to any property." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(business debt ⓘ)</span></span><span class="v">' + fmt(r.mortgage) + '</span></div>' : '<div class="llc-row"><span class="k">Mortgage</span><span class="v">' + fmt(r.mortgage) + '</span></div>') + '<div class="llc-row"><span class="k">' + taxLabel + '</span><span class="v">' + fmt(r.tax_mo) + '</span></div><div class="llc-row"><span class="k">Insurance / 12</span><span class="v">' + fmt(r.ins_mo) + '</span></div><div class="llc-row"><span class="k">Maintenance</span><span class="v">' + fmt(r.maintenance) + '</span></div><div class="llc-row total"><span class="k">Net Cashflow</span><span class="v ' + cls + '">' + fmt(net) + '</span></div>' + distHtml + '</div>'; });
   if (!groupedSelected.length) html += '<div style="color:#4e6d8c">No data for this month.</div>';
   html += '</div></div>';
   if (months.length > 1) html += '<div class="section"><h2><span class="dot"></span>Cashflow Trend (Bars per LLC + Total Line)</h2><div class="chart-container"><canvas id="trendChart"></canvas></div></div>';
   const allLoans = loans.concat(DIVANDO_PROPERTY_LOANS).slice().sort((a, b) => a.llc.localeCompare(b.llc));
-  if (allLoans.length) { html += '<div class="section"><h2><span class="dot"></span>Loan Details per LLC</h2><table><thead><tr><th>LLC</th><th>Lender</th><th>Original</th><th>Remaining</th><th>Monthly</th><th>Maturity</th></tr></thead><tbody>'; allLoans.forEach(l => { const orig = l.original_balance === undefined ? '—' : fmt(l.original_balance); const remain = l.original_balance === undefined ? '—' : fmt(l.balance_override || l.calculated_balance); html += '<tr><td>' + l.llc + '</td><td style="font-size:12px">' + l.lender + '</td><td>' + orig + '</td><td style="color:#f0a500;font-weight:600">' + remain + '</td><td>' + fmt(l.monthly_payment) + '</td><td>' + (l.maturity_date || '—') + '</td></tr>'; }); html += '</tbody></table></div>'; }
+  if (allLoans.length) { html += '<div class="section"><h2><span class="dot"></span>Loan Details per LLC</h2><table><thead><tr><th>LLC</th><th>Lender</th><th>Monthly</th></tr></thead><tbody>'; allLoans.forEach(l => { html += '<tr><td>' + l.llc + '</td><td style="font-size:12px">' + l.lender + '</td><td>' + fmt(l.monthly_payment) + '</td></tr>'; }); html += '</tbody></table></div>'; }
   if (maintenance.length) {
     // Maintenance has its OWN independent month dropdown (defaults to All months)
     // so past invoices are always reachable regardless of the per-property picker.
@@ -1524,8 +1554,8 @@ function renderAll() {
     html += '</tbody></table></div>';
   }
   html += renderPropertyDetailSection(data, maintenance);
-  html += '<div class="section"><h2><span class="dot"></span>History (newest first)</h2><table><thead><tr><th>Month</th><th>LLC</th><th>Disbursement</th><th>Mortgage</th><th>Maintenance</th><th>Net</th></tr></thead><tbody>';
-  sortedHistory.slice(0, 100).forEach(h => { html += '<tr><td>' + h.period_start + '</td><td>' + h.llc + '</td><td>' + fmt(h.disbursement) + '</td><td>' + fmt(h.mortgage) + '</td><td>' + fmt(h.maintenance) + '</td><td class="' + (h.net_cashflow >= 0 ? 'green' : 'red') + '">' + fmt(h.net_cashflow) + '</td></tr>'; });
+  html += '<div class="section"><h2><span class="dot"></span>History (newest first)</h2><table><thead><tr><th>Month</th><th>LLC</th><th>Disbursement</th><th>Mortgage</th><th>Insurance</th><th>Maintenance</th><th>Net</th></tr></thead><tbody>';
+  sortedHistory.slice(0, 100).forEach(h => { html += '<tr><td>' + h.period_start + '</td><td>' + h.llc + '</td><td>' + fmt(h.disbursement) + '</td><td>' + fmt(h.mortgage + extraMortgage(h.llc)) + '</td><td>' + fmt(h.ins_mo) + '</td><td>' + fmt(h.maintenance) + '</td><td class="' + (h.net_cashflow >= 0 ? 'green' : 'red') + '">' + fmt(h.net_cashflow) + '</td></tr>'; });
   html += '</tbody></table></div>';
   el.innerHTML = html;
   if (months.length > 1) renderChart(enrichedHistory, months);
@@ -1620,10 +1650,9 @@ function renderPropertyDetailSection(data, maintenance) {
     // YTD = sum of net for months in the anchor year up to anchor month — uses ALL recs, not just window.
     const ytdNet = recs.filter(r => r.property === prop && r.period.slice(0,4) === year && r.period <= latestMonth)
       .reduce((s, r) => s + r.net, 0);
-    // Occupancy across the months in range.
-    const occMonths = rowsFor.length;
-    const occCount = rowsFor.filter(r => r.occupied).length;
-    const occPct = occMonths ? Math.round(occCount / occMonths * 100) : 0;
+    // Occupancy for the SELECTED month only (consistent with the rest of this row):
+    // 100% if occupied that month, 0% if vacant.
+    const occPct = latest ? (latest.occupied ? 100 : 0) : 0;
     const statusBadge = latest
       ? (latest.occupied
           ? '<span style="color:#00c97a;font-weight:600">● Occupied</span>'

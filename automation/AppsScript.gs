@@ -1597,11 +1597,18 @@ function getDashboardJson() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], settings: {} };
 
+  // Track the most-recent real data-change timestamp (History "Logged At" + Property
+  // Detail "Updated"), so the dashboard's "Last Updated" reflects when the data last
+  // actually changed - not when this page happened to load.
+  var lastChange = null;
+  function bumpChange(v) { if (v instanceof Date && !isNaN(v.getTime()) && (!lastChange || v > lastChange)) lastChange = v; }
+
   var hist = ss.getSheetByName('History');
   var histLast = hist.getLastRow();
   if (histLast >= 2) {
     var histRows = hist.getRange(2, 1, histLast - 1, 12).getValues();
     histRows.forEach(function(r) {
+      if (r[2]) bumpChange(r[11]);
       if (r[2]) data.history.push({
         date_range: r[0],
         period_start: r[1] instanceof Date ? r[1].toISOString().slice(0,10) : r[1],
@@ -1693,6 +1700,7 @@ function getDashboardJson() {
   var pd = ss.getSheetByName('Property Detail');
   if (pd && pd.getLastRow() >= 2) {
     pd.getRange(2, 1, pd.getLastRow() - 1, 13).getValues().forEach(function(r) {
+      if (r[3]) bumpChange(r[12]);
       if (r[3]) data.property_detail.push({
         date_range: r[0],
         period_start: r[1] instanceof Date ? r[1].toISOString().slice(0,10) : r[1],
@@ -1706,6 +1714,9 @@ function getDashboardJson() {
     });
   }
 
+  // Honest "Last Updated": the latest real write timestamp, falling back to now only
+  // if no timestamps exist yet.
+  data.last_updated = lastChange ? lastChange.toISOString() : new Date().toISOString();
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -1713,9 +1724,26 @@ function addDistributionEntry(data) {
   var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Distributions');
   if (!sh) return ContentService.createTextOutput(JSON.stringify({error:'Distributions tab not found'})).setMimeType(ContentService.MimeType.JSON);
   if (!data.date || !data.llc) return ContentService.createTextOutput(JSON.stringify({error:'Date and LLC required'})).setMimeType(ContentService.MimeType.JSON);
-  var lastRow = sh.getLastRow();
-  var nextRow = Math.max(5, lastRow + 1);
   var dateObj = new Date(data.date + 'T12:00:00');
+  var yourA = Number(data.your_amount) || 0;
+  var partA = Number(data.partner_amount) || 0;
+  // Duplicate guard: same LLC + same month + same amounts already recorded.
+  // Prevents a double-click or re-entry from inflating Your Distribution / YTD.
+  function distPeriod(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
+  var newPeriod = distPeriod(dateObj);
+  var lastRow = sh.getLastRow();
+  if (lastRow >= 5) {
+    var existing = sh.getRange(5, 1, lastRow - 4, 4).getValues();
+    for (var i = 0; i < existing.length; i++) {
+      var ed = existing[i][0] instanceof Date ? existing[i][0] : new Date(existing[i][0]);
+      if (isNaN(ed)) continue;
+      if (distPeriod(ed) === newPeriod && String(existing[i][1]) === String(data.llc) &&
+          (Number(existing[i][2]) || 0) === yourA && (Number(existing[i][3]) || 0) === partA) {
+        return ContentService.createTextOutput(JSON.stringify({error: 'Already recorded a ' + data.llc + ' distribution for ' + newPeriod + ' with the same amounts.'})).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+  }
+  var nextRow = Math.max(5, lastRow + 1);
   sh.getRange(nextRow, 1, 1, 5).setValues([[
     dateObj,
     data.llc,
