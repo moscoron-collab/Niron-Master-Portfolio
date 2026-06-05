@@ -1539,6 +1539,28 @@ function renderAll() {
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Total Mortgage / Mo</div><div class="value" id="kpi-mort">' + fmtShort(totalMortgage) + '</div><div class="sublabel">Across all LLCs</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Portfolio Value</div><div class="value" id="kpi-value">' + fmtShort(totalValue) + '</div><div class="sublabel">Estimated</div></div></div>';
   html += '</div>';
+  // ── Operational health tiles (occupancy / vacancy / repairs) ──
+  // Per-unit status comes from the Property Detail records (Divando AppFolio + Yale +
+  // Donald). The 3 manual out-of-state entries have no real vacancy signal, so they are
+  // excluded from occupancy. Repairs come straight from the Maintenance log.
+  const healthRecs = buildPropertyRecords(data, maintenance).filter(r => r.period === SELECTED_MONTH && r.source !== 'Manual');
+  const occTotal = healthRecs.length;
+  const vacant = healthRecs.filter(r => !r.occupied);
+  const occOccupied = occTotal - vacant.length;
+  const occPct = occTotal ? Math.round(occOccupied / occTotal * 100) : 0;
+  const occColor = occPct >= 100 ? '#00c97a' : (occPct >= 90 ? '#f0a500' : '#ff4455');
+  const vacColor = vacant.length ? '#f0a500' : '#00c97a';
+  const repThis = maintenance.filter(m => m.period === SELECTED_MONTH);
+  const repThisSum = repThis.reduce((s, m) => s + (m.amount || 0), 0);
+  const repYtd = maintenance.filter(m => m.period && m.period.slice(0, 4) === selectedYear && m.period <= SELECTED_MONTH);
+  const repYtdSum = repYtd.reduce((s, m) => s + (m.amount || 0), 0);
+  const inv = n => n + ' invoice' + (n === 1 ? '' : 's');
+  html += '<div class="summary-grid">';
+  html += '<div class="summary-card"><div class="card-cell"><div class="label">Occupancy</div><div class="value" id="kpi-occ" style="color:' + occColor + '">' + occPct + '%</div><div class="sublabel">' + occOccupied + '/' + occTotal + ' units · ' + (monthLabel(SELECTED_MONTH) || '') + '</div></div></div>';
+  html += '<div class="summary-card"><div class="card-cell"><div class="label">Vacant Units</div><div class="value" style="color:' + vacColor + '">' + vacant.length + '</div><div class="sublabel">' + (vacant.length ? vacant.map(r => r.property).join(', ') : 'All occupied') + '</div></div></div>';
+  html += '<div class="summary-card"><div class="card-cell"><div class="label">Repairs · This Month</div><div class="value" id="kpi-rep-month" style="color:#ff4455">' + fmt(repThisSum) + '</div><div class="sublabel">' + inv(repThis.length) + ' · ' + (monthLabel(SELECTED_MONTH) || '') + '</div></div></div>';
+  html += '<div class="summary-card"><div class="card-cell"><div class="label">Repairs · YTD</div><div class="value" id="kpi-rep-ytd">' + fmt(repYtdSum) + '</div><div class="sublabel">' + inv(repYtd.length) + ' · ' + selectedYear + '</div></div></div>';
+  html += '</div>';
   html += '<div class="section"><h2><span class="dot"></span><span>Monthly Breakdown</span><select id="inline-month-select" class="header-month-select" onchange="onMonthChange(this.value)">' + monthOptions + '</select></h2><div class="llc-grid">';
   groupedSelected.forEach(r => { const net = r.net_cashflow; const cls = net >= 0 ? 'green' : 'red'; let taxLabel = 'Tax / 12'; if (isTaxEscrowed(r.llc)) { taxLabel += ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(paid by escrow)</span>'; } else if (isTaxLumpSum(r.llc)) { taxLabel += ' <span title="Property tax is paid as a lump sum in spring (Mar-Apr), not deducted from the monthly net." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(paid in spring ⓘ)</span>'; } const distRows = distributions.filter(d => d.llc === r.llc && d.period === r.period_start); const distYou = distRows.reduce((s,d) => s + (d.your_amount||0), 0); const distNir = distRows.reduce((s,d) => s + (d.partner_amount||0), 0); const distHtml = (distYou || distNir) ? '<div class="llc-row" style="border-top:1px solid #1e2d42;margin-top:6px;padding-top:6px"><span class="k" style="color:#00c97a">Distribution</span><span class="v" style="color:#00c97a;font-size:12px">You: ' + fmt(distYou) + ' &nbsp;|&nbsp; Nir: ' + fmt(distNir) + '</span></div>' : ''; html += '<div class="llc-card"><h3>' + r.llc + '</h3><div class="llc-row"><span class="k">Disbursement</span><span class="v">' + fmt(r.disbursement) + '</span></div><div class="llc-row"><span class="k">Mgmt Fees</span><span class="v">' + fmt(r.mgmt_fee) + '</span></div>' + (extraMortgage(r.llc) ? '<div class="llc-row"><span class="k">Property Mortgages <span title="6 building loans drafted to the property loan accounts (15655/15675/Idalia, 43rd/Bates, Dearborn/Virginia, Blackhawk/Crown, Holly/Oakland, Tucson/Boston)." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(6 loans ⓘ)</span></span><span class="v">' + fmt(extraMortgage(r.llc)) + '</span></div><div class="llc-row"><span class="k">SBA Loans <span title="6 SBA payments drafted on the 1st — general Divando business debt, not tied to any property." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(business debt ⓘ)</span></span><span class="v">' + fmt(r.mortgage) + '</span></div>' : '<div class="llc-row"><span class="k">Mortgage</span><span class="v">' + fmt(r.mortgage) + '</span></div>') + '<div class="llc-row"><span class="k">' + taxLabel + '</span><span class="v">' + fmt(r.tax_mo) + '</span></div><div class="llc-row"><span class="k">Insurance / 12</span><span class="v">' + fmt(r.ins_mo) + '</span></div><div class="llc-row"><span class="k">Maintenance</span><span class="v">' + fmt(r.maintenance) + '</span></div><div class="llc-row total"><span class="k">Net Cashflow</span><span class="v ' + cls + '">' + fmt(net) + '</span></div>' + distHtml + '</div>'; });
   if (!groupedSelected.length) html += '<div style="color:#4e6d8c">No data for this month.</div>';
@@ -1986,6 +2008,17 @@ function auditRun(openModal) {
       kpi('kpi-dist-ytd', 'Distribution YTD', expDistYtd);
       kpi('kpi-mort', 'Total Mortgage / Mo', expMort);
       kpi('kpi-value', 'Portfolio Value', expValue);
+
+      // ---- Operational health tiles (occupancy / repairs) ----
+      const hr = buildPropertyRecords(data, maintenance).filter(r => r.period === month && r.source !== 'Manual');
+      const occT = hr.length, occV = hr.filter(r => !r.occupied).length;
+      const occP = occT ? Math.round((occT - occV) / occT * 100) : 0;
+      const repM = maintenance.filter(m => m.period === month).reduce((s, m) => s + (m.amount || 0), 0);
+      const repY = maintenance.filter(m => m.period && m.period.slice(0, 4) === year && m.period <= month).reduce((s, m) => s + (m.amount || 0), 0);
+      const htile = (id, label, exp) => { const d = _auditTxt(id); if (d == null) return; add(d === exp ? 'pass' : 'fail', 'Health tile', label, exp, d); };
+      htile('kpi-occ', 'Occupancy', occP + '%');
+      htile('kpi-rep-month', 'Repairs this month', fmt(repM));
+      htile('kpi-rep-ytd', 'Repairs YTD', fmt(repY));
 
       // ---- Per-LLC cards: rendered net vs recompute; sum == Net tile ----
       let cardSum = 0;
