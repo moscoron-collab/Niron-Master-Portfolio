@@ -318,6 +318,75 @@ Disbursement**. So `run_donald.py` is essentially `run_divando.py` with Donald's
 
 ---
 
+## 🩺 Dashboard self-audit + correctness fixes (Jun 5 2026, PR #42)
+
+A full accuracy audit was run against the live data (recomputing every total from the
+raw sheet). The math engine was internally consistent; the issues were labeling,
+stale inputs, cross-section mismatches, and "missing-data-shown-as-$0". All 11 findings
+were fixed (user-approved decisions). **The findings reference the audit numbering #1–#11.**
+
+> ⚙️ **`index.html` now has ONE `MANUAL OVERRIDES` block** (just below the formatters,
+> search `MANUAL OVERRIDES`). It is the ONLY place to edit these code-held numbers:
+> `DIVANDO_PROPERTY_MORTGAGE`, `DIVANDO_PROPERTY_LOANS`, `INSURANCE_OVERRIDE`, and the
+> tax-treatment functions. (Full migration of these into the Google Sheet was explicitly
+> DEFERRED — "level 1" only — to avoid risking the Sheets connection.)
+
+**What changed (all user-approved):**
+- **#1 Tile rename:** `Gross Total Income` → **`Cash Collected`** (+ `Gross YTD` → `Cash YTD`).
+  The number is unchanged — it is the **total owner disbursement** (cash that reached the
+  LLC bank accounts), NOT gross rent. Gross rent isn't recorded for Dorado / out-of-state,
+  so "Cash Collected" is the honest label. Do NOT relabel it "Income/Rent" again.
+- **#2 + #3 Insurance overrides** (`INSURANCE_OVERRIDE = { divando: 2473.08, yale: 1037.55 }`,
+  applied via `effectiveIns(llc, sheetIns)`):
+  - **Yale → `$1,037.55`/mo** (the real Acuity bank draft; the sheet/History still held the
+    stale `$1,024.54`). Lowers Yale net by `$13.01`/mo.
+  - **Divando → `$2,473.08`/mo** = Divando-OWNED houses only (`$29,677/yr ÷ 12`); EXCLUDES the
+    2 Dorado-owned units that ride the State Farm policy. Was `$2,885.83` (full policy) →
+    raises Divando net by `$412.75`/mo. After this, the Divando card net and the Divando
+    per-property TOTAL net differ ONLY by the `$2,334` SBA (by design, SBA isn't per-property).
+  - `effectiveIns` overrides BOTH the displayed Insurance line AND the net everywhere
+    (cards, History, KPIs, trend) by mutating `g.ins_mo` in `aggregateLlcPeriod` and in the
+    grouped-card map. Per-property records (`buildPropertyRecords`) are NOT overridden — they
+    already use correct per-unit insurance from the Property Detail tab.
+- **#8 Tax:** `isTaxLumpSum(llc)` now includes **Divando AND Dorado** (was Divando-only via
+  `isTaxAnnual`, kept as a back-compat alias). Tax is shown on the card as info with
+  `(paid in spring ⓘ)` but **excluded from monthly net** for both. **This RAISED Dorado net
+  by `$945`/mo** (Dorado used to deduct tax monthly). Donald/Yale unchanged (escrowed).
+- **#4 History table foots on screen:** added an **Insurance** column and the Mortgage column
+  now shows the **full** mortgage (`mortgage + extraMortgage`). Tax is always 0 in net now,
+  so `Disbursement − Mortgage − Insurance − Maintenance = Net` reconciles on every row.
+- **#5 Loan table** reduced to **LLC | Lender | Monthly** only (removed Original / Remaining /
+  Maturity — the blank balances were rendering as a misleading `$0.00` "paid off"). Real
+  remaining balances are still not entered; revisit when adding DSCR/equity (Phase 2).
+- **#6 Occupancy %** in the per-property table now reflects the **selected month** (100 / 0),
+  not a lifetime average (it was mixing time windows with the single-month columns).
+- **#10 Repairs matching:** `maintenanceForProp` is now **one-directional** (`normAddr(invoice)
+  .startsWith(normAddr(unit))` via the new `normAddr` helper). A generic invoice like
+  `15559 E Bates Ave` or `5101 Crown Blvd` (no Lower/Upper or Unit A/B) will NOT attach to
+  both units → no double-count. Trade-off: an invoice MUST include the unit suffix to match.
+- **#7 Distribution dedup (AppsScript `addDistributionEntry`):** rejects a duplicate with the
+  **same LLC + month + your_amount + partner_amount** (mirrors the statement dedup). Prevents
+  a double-click inflating Your Distribution / YTD.
+- **#9 "Last Updated" (AppsScript `getDashboardJson`):** now the **latest real write timestamp**
+  (`max` of History "Logged At" + Property Detail "Updated") via `bumpChange()`, instead of the
+  page-load time. Manual maintenance edits don't carry a timestamp, so they won't bump it.
+
+**Net effect (May 2026):** Cash Collected unchanged `$79.8K`; Net Cashflow `$25.1K → $26.4K`.
+
+> 🚀 **AppsScript NOT auto-deployed:** #7 and #9 only take effect after pasting the updated
+> `automation/AppsScript.gs` into the Sheet's Apps Script editor and redeploying (New version).
+> The `index.html` fixes go live on merge.
+
+> ⚠️ **Known follow-ups (do NOT forget):** (a) the chatbot's `dashboardKnowledge()` and the
+> Noble Insurance tab still quote the OLD figures (Divando insurance `$2,885.83`, Dorado tax
+> deducted) — sync them when convenient. (b) **Still TODO from the original request:** the
+> self-audit **"Run Audit" button** (on-load + manual, read-only) was NOT built yet — user
+> chose to land these fixes first. Then the Phase-2 partner-grade plan (DSCR, equity, LTV,
+> NOI, cap rate, cash-on-cash, reserves/capex tracker, and the CPA invoice workflow:
+> Paid By / Paid / Notes fields + CPA-ready CSV/print view).
+
+---
+
 ## 🔧 Maintenance Invoices — Add / Edit / Delete (BUILT)
 
 The **Maintenance Invoices** table on the dashboard (index.html, rendered ~line 1459) is
