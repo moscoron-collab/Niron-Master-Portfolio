@@ -1573,6 +1573,7 @@ function addMaintenanceEntry(data) {
     Number(data.amount) || 0, data.entered_by || 'Dashboard',
     data.paid_by || '', data.paid ? true : false, data.notes || '', invoiceUrl
   ]]);
+  logActivity(data.actor, 'Added invoice', (data.property || data.llc) + ' · ' + (data.category || '') + ' · $' + (Number(data.amount) || 0));
   return ContentService.createTextOutput(JSON.stringify({ok:true, row:nextRow, invoice_url:invoiceUrl})).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -1597,6 +1598,7 @@ function updateMaintenanceEntry(data) {
     Number(data.amount) || 0, data.entered_by || 'Dashboard',
     data.paid_by || '', data.paid ? true : false, data.notes || '', invoiceUrl
   ]]);
+  logActivity(data.actor, 'Edited invoice', (data.property || data.llc) + ' · ' + (data.category || '') + ' · $' + (Number(data.amount) || 0));
   return ContentService.createTextOutput(JSON.stringify({ok:true, row:row, invoice_url:invoiceUrl})).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -1606,7 +1608,9 @@ function deleteMaintenanceEntry(data) {
   if (!sh) return ContentService.createTextOutput(JSON.stringify({error:'Maintenance Log not found'})).setMimeType(ContentService.MimeType.JSON);
   var row = Number(data.row);
   if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error:'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
+  var dinfo = sh.getRange(row, 1, 1, 7).getValues()[0];
   sh.deleteRow(row);
+  logActivity(data.actor, 'Deleted invoice', (dinfo[2] || dinfo[1]) + ' · ' + (dinfo[4] || '') + ' · $' + (Number(dinfo[6]) || 0));
   return ContentService.createTextOutput(JSON.stringify({ok:true, deleted:row})).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -1617,6 +1621,8 @@ function setMaintenancePaid(data) {
   var row = Number(data.row);
   if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error:'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
   sh.getRange(row, 10).setValue(data.paid ? true : false);
+  var pinfo = sh.getRange(row, 1, 1, 7).getValues()[0];
+  logActivity(data.actor, data.paid ? 'Marked invoice paid' : 'Marked invoice unpaid', (pinfo[2] || pinfo[1]) + ' · $' + (Number(pinfo[6]) || 0));
   return ContentService.createTextOutput(JSON.stringify({ok:true, row:row, paid:!!data.paid})).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -1633,14 +1639,30 @@ function saveInvoiceFile(file) {
   return f.getUrl();
 }
 
+// Append a row to the Activity Log tab: Timestamp | Who | Action | Details.
+// Wrapped in try/catch so a logging failure can never block the actual write.
+function logActivity(actor, action, details) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sh = ss.getSheetByName('Activity Log');
+    if (!sh) {
+      sh = ss.insertSheet('Activity Log');
+      sh.getRange(1, 1, 1, 4).setValues([['Timestamp', 'Who', 'Action', 'Details']]).setFontWeight('bold');
+      sh.setFrozenRows(1);
+      sh.getRange('A:A').setNumberFormat('yyyy-mm-dd hh:mm:ss');
+    }
+    sh.appendRow([new Date(), actor || 'Unknown', action || '', details || '']);
+  } catch (e) {}
+}
+
 // Override: getDashboardJson with properties + new maintenance structure
 function getDashboardJson() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], settings: {} };
+  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], activity: [], settings: {} };
 
-  // Track the most-recent real data-change timestamp (History "Logged At" + Property
-  // Detail "Updated"), so the dashboard's "Last Updated" reflects when the data last
-  // actually changed - not when this page happened to load.
+  // Track the most-recent real data-change timestamp (Activity Log + History "Logged At" +
+  // Property Detail "Updated"), so the dashboard's "Last Updated" reflects when the data
+  // last actually changed - not when this page happened to load.
   var lastChange = null;
   function bumpChange(v) { if (v instanceof Date && !isNaN(v.getTime()) && (!lastChange || v > lastChange)) lastChange = v; }
 
@@ -1759,8 +1781,31 @@ function getDashboardJson() {
     });
   }
 
-  // Honest "Last Updated": the latest real write timestamp, falling back to now only
-  // if no timestamps exist yet.
+  // ----- Activity feed: manual changes (Activity Log tab) + automation pulls -----
+  var act = ss.getSheetByName('Activity Log');
+  if (act && act.getLastRow() >= 2) {
+    act.getRange(2, 1, act.getLastRow() - 1, 4).getValues().forEach(function(r) {
+      if (!r[0]) return;
+      var t = r[0] instanceof Date ? r[0] : new Date(r[0]);
+      if (isNaN(t)) return;
+      bumpChange(t);
+      data.activity.push({ ts: t.toISOString(), who: r[1] || 'Unknown', action: r[2] || '', details: r[3] || '' });
+    });
+  }
+  // Synthesize "System - Automation" entries from the existing write timestamps so the
+  // automatic AppFolio pulls appear in the feed too (grouped per batch timestamp).
+  var autoMap = {};
+  data.history.forEach(function(h) { if (!h.logged_at) return; var k = 'H|' + h.logged_at; (autoMap[k] = autoMap[k] || { ts: h.logged_at, action: 'AppFolio statement pull', n: 0 }).n++; });
+  data.property_detail.forEach(function(p) { if (!p.updated) return; var k = 'P|' + p.updated; (autoMap[k] = autoMap[k] || { ts: p.updated, action: 'Per-property pull', n: 0 }).n++; });
+  Object.keys(autoMap).forEach(function(k) {
+    var e = autoMap[k]; var t = new Date(e.ts); if (!isNaN(t)) bumpChange(t);
+    data.activity.push({ ts: isNaN(t) ? String(e.ts) : t.toISOString(), who: 'System - Automation', action: e.action, details: e.n + ' row' + (e.n === 1 ? '' : 's') });
+  });
+  data.activity.sort(function(a, b) { return a.ts < b.ts ? 1 : (a.ts > b.ts ? -1 : 0); });
+  if (data.activity.length > 200) data.activity = data.activity.slice(0, 200);
+
+  // Honest "Last Updated": the latest real write timestamp (incl. activity log), falling
+  // back to now only if no timestamps exist yet.
   data.last_updated = lastChange ? lastChange.toISOString() : new Date().toISOString();
   return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
 }
@@ -1797,6 +1842,7 @@ function addDistributionEntry(data) {
     data.notes || ''
   ]]);
   sh.getRange(nextRow, 3, 1, 2).setNumberFormat('$#,##0.00');
+  logActivity(data.actor, 'Added distribution', data.llc + ' · You $' + yourA + ' / Nir $' + partA);
   return ContentService.createTextOutput(JSON.stringify({ok: true, row: nextRow})).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -1848,5 +1894,6 @@ function addStatementEntry(data) {
     0, noi,        // maintenance, net cashflow
     source, loggedAt
   ]]);
+  logActivity(data.actor, 'Added statement', data.property + ' · ' + periodStart + ' · $' + noi);
   return ContentService.createTextOutput(JSON.stringify({ok: true, row: nextRow, message: 'Saved ' + data.property + ' (Divando LLC) ' + periodStart})).setMimeType(ContentService.MimeType.JSON);
 }

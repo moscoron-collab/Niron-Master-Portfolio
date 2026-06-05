@@ -412,6 +412,16 @@
   </div>
 </div>
 
+<!-- ═══════════════════ ACTIVITY LOG VIEW ═══════════════════ -->
+<div class="modal-overlay" id="activity-modal" onclick="if(event.target===this)closeActivityModal()">
+  <div class="modal-box" style="max-width:760px">
+    <h2><span>📋 Activity Log</span> <button class="modal-close" onclick="closeActivityModal()">×</button></h2>
+    <div style="font-size:11px;color:#4e6d8c;margin:-6px 0 10px">Every change - who did it and when. Manual edits are stamped with the person signed in; AppFolio pulls show as "System - Automation".</div>
+    <div id="activity-body" style="max-height:60vh;overflow:auto"></div>
+    <div class="modal-actions"><button class="primary" onclick="closeActivityModal()">Close</button></div>
+  </div>
+</div>
+
 <!-- ═══════════════════ CHAT PANEL ═══════════════════ -->
 <div class="chat-panel" id="chat-panel">
   <div class="chat-header">
@@ -473,7 +483,8 @@
     <div class="meta">
       <div><span class="label">Last Updated:</span> <span id="last-updated">—</span></div>
       <div><span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span><button class="logout-btn" onclick="logout()">Logout</button></div>
-      <div style="margin-top:6px"><button class="audit-btn" id="audit-btn" onclick="runAuditFresh()">🩺 Run Audit</button><button class="audit-btn" id="cpa-btn" onclick="openCpaModal()" title="Invoices sent to the CPA and not yet paid">🧾 CPA Invoices</button><span id="audit-chip" class="audit-chip"></span></div>
+      <div style="margin-top:6px"><button class="audit-btn" id="audit-btn" onclick="runAuditFresh()">🩺 Run Audit</button><button class="audit-btn" id="cpa-btn" onclick="openCpaModal()" title="Invoices sent to the CPA and not yet paid">🧾 CPA Invoices</button><button class="audit-btn" id="activity-btn" onclick="openActivityModal()" title="History of every change - who and when">📋 Activity</button><span id="audit-chip" class="audit-chip"></span></div>
+      <div style="margin-top:6px"><span class="label" style="font-size:11px">Signed in as:</span> <select id="actor-select" onchange="setActor(this.value)" title="Who is making changes (stamped on every edit)" style="background:#0a1520;border:1px solid #1e2d42;color:#ccd9ea;border-radius:6px;font-size:11px;padding:4px 8px;outline:none;cursor:pointer"><option value="">— who are you? —</option><option value="R.M">R.M — Ron</option><option value="O.M">O.M — Oshrat</option><option value="N.S">N.S — Nir</option></select></div>
     </div>
   </header>
 
@@ -1006,6 +1017,7 @@ function showDashboard() {
   const params = new URLSearchParams(location.search);
   const initial = params.get('tab') === 'noble' ? 'noble' : 'master';
   switchMainTab(initial, true);
+  restoreActor();
   load();
   initNoble();
 }
@@ -1115,6 +1127,7 @@ async function submitMaintenance() {
     notes: document.getElementById("maint-notes").value, entered_by: "Dashboard" };
   if (editRow) data.row = Number(editRow);
   if (!data.date || !data.property || !data.llc || !data.amount) { msgEl.className = "form-msg err"; msgEl.textContent = "Please fill in Date, Property, and Amount."; return; }
+  const actor = ensureActor(); if (!actor) return; data.actor = actor;
   const fileInput = document.getElementById("maint-file"); const file = fileInput && fileInput.files && fileInput.files[0];
   btn.disabled = true; msgEl.className = "form-msg";
   try {
@@ -1143,8 +1156,9 @@ async function deleteMaint(rowNum) {
   const m = (PORTFOLIO_DATA && PORTFOLIO_DATA.maintenance || []).find(x => x.row === rowNum);
   const label = m ? (m.date + " · " + (m.property || m.llc) + " · " + fmt(m.amount)) : ("row " + rowNum);
   if (!confirm("Delete this maintenance invoice?\n\n" + label + "\n\nThis cannot be undone.")) return;
+  const actor = ensureActor(); if (!actor) return;
   try {
-    const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "delete_maintenance", row: rowNum }) });
+    const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "delete_maintenance", row: rowNum, actor: actor }) });
     const result = await res.json();
     if (result.error) { alert("Error: " + result.error); return; }
     load();
@@ -1188,6 +1202,7 @@ async function submitDistribution() {
     msgEl.textContent = "Please fill in Date, LLC, and at least one amount.";
     return;
   }
+  const actor = ensureActor(); if (!actor) return; data.actor = actor;
   btn.disabled = true;
   msgEl.className = "form-msg";
   msgEl.textContent = "Saving...";
@@ -1266,6 +1281,7 @@ async function submitStatement() {
     msgEl.textContent = "Please fill in Month, Property, and NOI.";
     return;
   }
+  const actor = ensureActor(); if (!actor) return; data.actor = actor;
   btn.disabled = true;
   msgEl.className = "form-msg";
   msgEl.textContent = "Saving...";
@@ -2292,8 +2308,9 @@ function renderCpaModal() {
 }
 async function markInvoicePaid(row) {
   if (!confirm('Mark this invoice as paid by the CPA? It will drop off the unpaid list.')) return;
+  const actor = ensureActor(); if (!actor) return;
   try {
-    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'set_maintenance_paid', row: Number(row), paid: true }) });
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'set_maintenance_paid', row: Number(row), paid: true, actor: actor }) });
     const r = await res.json();
     if (r.error) { alert('Error: ' + r.error); return; }
     const m = (PORTFOLIO_DATA.maintenance || []).find(x => x.row === Number(row)); if (m) m.paid = true;
@@ -2317,6 +2334,36 @@ function printCpa() {
   const w = window.open('', '_blank');
   w.document.write('<html><head><title>CPA Unpaid Invoices</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{font-size:18px;margin:0 0 4px}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}th{background:#f0f0f0}tfoot td{font-weight:bold}</style></head><body><h1>Niron - CPA Unpaid Invoices</h1><div>Generated ' + new Date().toLocaleString() + ' · ' + rows.length + ' invoice(s)</div><table><thead><tr><th>Date</th><th>LLC</th><th>Property</th><th>Vendor</th><th>Category</th><th>Description</th><th>Amount</th><th>Notes</th></tr></thead><tbody>' + body + '</tbody><tfoot><tr><td colspan="6">TOTAL</td><td style="text-align:right">' + fmt(total) + '</td><td></td></tr></tfoot></table></body></html>');
   w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
+}
+
+/* ============================================================
+   ACTOR (who is signed in) + ACTIVITY LOG VIEW
+   ============================================================ */
+function getActor() { return localStorage.getItem('niron_actor') || ''; }
+function setActor(v) { if (v) localStorage.setItem('niron_actor', v); else localStorage.removeItem('niron_actor'); }
+function restoreActor() { const s = document.getElementById('actor-select'); if (s) s.value = getActor(); }
+// Require a signed-in person before any change, so it can be logged with attribution.
+function ensureActor() {
+  const a = getActor();
+  if (!a) { alert('Please pick who you are first - the "Signed in as" dropdown at the top right - so this change gets logged.'); const s = document.getElementById('actor-select'); if (s) s.focus(); return null; }
+  return a;
+}
+function openActivityModal() { renderActivity(); document.getElementById('activity-modal').classList.add('open'); }
+function closeActivityModal() { document.getElementById('activity-modal').classList.remove('open'); }
+function renderActivity() {
+  const rows = (PORTFOLIO_DATA && PORTFOLIO_DATA.activity) || [];
+  if (!rows.length) { document.getElementById('activity-body').innerHTML = '<div style="color:#4e6d8c;padding:14px">No activity recorded yet.</div>'; return; }
+  let h = '<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="color:#4e6d8c;text-align:left"><th style="padding:6px 8px">When</th><th>Who</th><th>What</th></tr></thead><tbody>';
+  rows.forEach(r => {
+    const when = r.ts ? new Date(r.ts).toLocaleString() : '';
+    const sys = /system/i.test(r.who || '');
+    h += '<tr style="border-bottom:1px solid #182030">' +
+      '<td style="padding:7px 8px;white-space:nowrap;color:#7e9cbf">' + when + '</td>' +
+      '<td style="white-space:nowrap;color:' + (sys ? '#4e6d8c' : '#00BFFF') + '">' + (r.who || '') + '</td>' +
+      '<td>' + (r.action || '') + (r.details ? ' <span style="color:#7e9cbf">- ' + r.details + '</span>' : '') + '</td></tr>';
+  });
+  h += '</tbody></table>';
+  document.getElementById('activity-body').innerHTML = h;
 }
 
 document.getElementById('save-modal').addEventListener('click', function(e) { if (e.target === this) closeSaveModal(); });

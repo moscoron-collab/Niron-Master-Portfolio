@@ -488,6 +488,37 @@ even with no data (no false "month not in data" fail).
 
 ---
 
+## 📋 Activity Log + "Signed in as" + Last-Updated fix (BUILT — Jun 5 2026, PR #53)
+
+Every change is now logged with **who + when + what**, and "Last Updated" reflects it.
+
+- **"Signed in as" picker** in the header (`actor-select`: R.M / O.M / N.S, stored in
+  `localStorage('niron_actor')`, restored on load). Self-reported (one shared password, so
+  it's honor-system, same as the Save modal). **Every write requires it** — `ensureActor()`
+  blocks the save with an alert if nobody is selected.
+- The frontend sends `actor` on **every** write (maintenance add/edit/delete, mark-paid,
+  distribution, statement). Each Apps Script handler calls **`logActivity(actor, action,
+  details)`**, which appends to a new **`Activity Log`** tab (`Timestamp · Who · Action ·
+  Details`, auto-created, wrapped in try/catch so logging can never block the real write).
+- **📋 Activity button** in the header opens a modal listing the feed (When · Who · What,
+  newest first). Built from `data.activity` = the Activity Log rows **+ synthesized
+  "System - Automation" entries** derived from History `logged_at` + Property Detail
+  `updated` (grouped per batch timestamp), so the automatic AppFolio pulls appear too.
+  Capped at 200 newest.
+- **"Last Updated" fix:** `getDashboardJson` now bumps the change-timestamp from the
+  Activity Log too (not just History/Property Detail), so adding a maintenance invoice today
+  correctly shows today. (Before, maintenance writes carried no timestamp, so the stamp
+  stayed on the last AppFolio/statement write — that was the 6/4-vs-6/5 bug.)
+- Self-audit unaffected; the audit's month/data checks still pass.
+
+### 🚀 Going live (REQUIRED) — redeploy (no new permission this time)
+Paste new `automation/AppsScript.gs` → Deploy → Manage deployments → Edit → New version →
+Deploy. The `Activity Log` tab is created automatically on the first logged change. The
+`index.html` side goes live on merge. **"Who" is only recorded going forward** — changes made
+before this won't have a person attached (they appear as automation/unknown).
+
+---
+
 ## 🧾 CPA Invoice Workflow + invoice upload (BUILT — Jun 5 2026, PR #48)
 
 Closes the loop between entering an invoice, how it was paid, and the CPA paying it.
