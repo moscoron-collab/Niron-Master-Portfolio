@@ -1309,6 +1309,8 @@ const fmt = n => "$" + (Number(n) || 0).toLocaleString("en-US", {minimumFraction
 const fmtShort = n => { n = Number(n) || 0; if (Math.abs(n) >= 1e6) return "$" + (n/1e6).toFixed(2) + "M"; if (Math.abs(n) >= 1e3) return "$" + (n/1e3).toFixed(1) + "K"; return "$" + n.toFixed(0); };
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const monthLabel = ym => { if (!ym) return ""; const parts = ym.split("-"); return MONTH_NAMES[parseInt(parts[1],10)-1] + " " + parts[0]; };
+/* "2026-06-15" -> "Jun 15, 2026" (month as name). Falls back to raw string if unexpected. */
+const dateLabel = ymd => { if (!ymd) return ""; const p = String(ymd).split("-"); if (p.length !== 3) return ymd; const mi = parseInt(p[1],10)-1; if (mi < 0 || mi > 11) return ymd; return MONTH_NAMES[mi] + " " + parseInt(p[2],10) + ", " + p[0]; };
 function maintenanceFor(maintenance, llc, period) { if (!maintenance || !llc || !period) return 0; return maintenance.filter(m => m.llc && m.llc.trim() === llc.trim() && m.period === period).reduce((s, m) => s + (m.amount || 0), 0); }
 // Donald and Yale pay property tax via mortgage escrow — exclude tax_mo from net so it isn't deducted twice
 // Divando pays annual tax lump-sum (in April) — also excluded from monthly net
@@ -1515,7 +1517,7 @@ function renderAll() {
           ? '<button class="maint-edit-btn" title="Edit" onclick="openMaintEdit(' + m.row + ')">✏️</button>' +
             '<button class="maint-del-btn" title="Delete" onclick="deleteMaint(' + m.row + ')">🗑</button>'
           : '';
-        html += '<tr><td>' + m.date + '</td><td>' + m.llc + '</td><td style="font-size:12px">' + (m.property || '—') + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td><td style="white-space:nowrap">' + actions + '</td></tr>';
+        html += '<tr><td style="white-space:nowrap">' + dateLabel(m.date) + '</td><td>' + m.llc + '</td><td style="font-size:12px">' + (m.property || '—') + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td><td style="white-space:nowrap">' + actions + '</td></tr>';
       });
       html += '<tr style="font-weight:700;border-top:2px solid #1e2d42;color:#ccd9ea"><td colspan="6">Total' + (maintMonth ? ' (' + monthLabel(maintMonth) + ')' : ' (all months)') + '</td><td class="red">' + fmt(maintTotal) + '</td><td></td></tr>';
     }
