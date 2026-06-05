@@ -342,6 +342,12 @@
     <select id="maint-category"><option value="">-- Select Category --</option><option>Plumbing</option><option>Electrical</option><option>HVAC / AC</option><option>Appliances</option><option>Roof / Exterior</option><option>Doors / Windows / Locks</option><option>Flooring / Walls / Paint</option><option>Pest / Mold</option><option>Yard / Irrigation</option><option>Safety / Smoke Detectors</option><option>Tenant Turnover</option></select>
     <label>Description (optional)</label><textarea id="maint-desc" placeholder="e.g. Fixed leaky bathroom faucet"></textarea>
     <label>Amount ($)</label><input type="number" id="maint-amount" step="0.01" placeholder="0.00">
+    <label>Paid By</label>
+    <select id="maint-paidby"><option value="">-- choose --</option><option value="LLC Debit Card">LLC Debit Card (I paid it)</option><option value="Sent to CPA">Sent to CPA (CPA pays it)</option></select>
+    <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:normal;font-size:13px;color:#ccd9ea;margin-top:12px;font-weight:400"><input type="checkbox" id="maint-paid" style="width:auto;margin:0"> Paid <span style="color:#4e6d8c;font-size:11px">(check once the CPA has actually paid it)</span></label>
+    <label>Notes (optional)</label><textarea id="maint-notes" placeholder="e.g. paid by Zelle, or split with tenant"></textarea>
+    <label>Invoice file (optional)</label><input type="file" id="maint-file" accept="image/*,application/pdf,.pdf">
+    <div id="maint-file-current" style="font-size:11px;color:#7e9cbf;margin-top:4px"></div>
     <div class="form-msg" id="maint-msg"></div>
     <div class="modal-actions"><button class="secondary" onclick="closeMaintModal()">Cancel</button><button class="primary" id="maint-submit" onclick="submitMaintenance()">Save Invoice</button></div>
     <div id="maint-edit-help" style="display:none;font-size:11px;color:#4e6d8c;margin-top:8px">Editing an existing invoice — saving overwrites that row.</div>
@@ -392,6 +398,17 @@
     <div id="audit-summary" style="font-size:13px;padding:10px 0;border-bottom:1px solid #1e2d42;margin-bottom:10px"></div>
     <div id="audit-body" style="max-height:58vh;overflow:auto"></div>
     <div class="modal-actions"><button class="secondary" onclick="auditCopy()">Copy report</button><button class="primary" onclick="auditRun(true)">Re-run audit</button></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ CPA INVOICES VIEW ═══════════════════ -->
+<div class="modal-overlay" id="cpa-modal" onclick="if(event.target===this)closeCpaModal()">
+  <div class="modal-box" style="max-width:920px">
+    <h2><span>🧾 CPA - Unpaid Invoices</span> <button class="modal-close" onclick="closeCpaModal()">×</button></h2>
+    <div style="font-size:11px;color:#4e6d8c;margin:-6px 0 10px">Invoices marked "Sent to CPA" that are not yet paid. Click "Mark paid" once the CPA pays one and it drops off this list.</div>
+    <div id="cpa-summary" style="font-size:13px;padding:8px 0;border-bottom:1px solid #1e2d42;margin-bottom:10px"></div>
+    <div id="cpa-body" style="max-height:56vh;overflow:auto"></div>
+    <div class="modal-actions"><button class="secondary" onclick="closeCpaModal()">Close</button><button class="secondary" onclick="printCpa()">🖨 Print</button><button class="primary" onclick="exportCpaCsv()">⬇ Export CSV</button></div>
   </div>
 </div>
 
@@ -456,7 +473,7 @@
     <div class="meta">
       <div><span class="label">Last Updated:</span> <span id="last-updated">—</span></div>
       <div><span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span><button class="logout-btn" onclick="logout()">Logout</button></div>
-      <div style="margin-top:6px"><button class="audit-btn" id="audit-btn" onclick="auditRun(true)">🩺 Run Audit</button><span id="audit-chip" class="audit-chip"></span></div>
+      <div style="margin-top:6px"><button class="audit-btn" id="audit-btn" onclick="auditRun(true)">🩺 Run Audit</button><button class="audit-btn" id="cpa-btn" onclick="openCpaModal()" title="Invoices sent to the CPA and not yet paid">🧾 CPA Invoices</button><span id="audit-chip" class="audit-chip"></span></div>
     </div>
   </header>
 
@@ -1044,7 +1061,7 @@ function switchMainTab(tab, skipUrl) {
 /* ============================================================
    MASTER PORTFOLIO — MAINTENANCE MODAL
    ============================================================ */
-function openMaintModal() { document.getElementById("maint-modal").classList.add("open"); document.getElementById("maint-row").value = ""; document.getElementById("maint-title").textContent = "🔧 Add Maintenance Invoice"; document.getElementById("maint-submit").textContent = "Save Invoice"; document.getElementById("maint-edit-help").style.display = "none"; const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, "0"); const dd = String(today.getDate()).padStart(2, "0"); document.getElementById("maint-date").value = yyyy + "-" + mm + "-" + dd; document.getElementById("maint-msg").className = "form-msg"; document.getElementById("maint-msg").textContent = ""; populatePropertyDropdown(); }
+function openMaintModal() { document.getElementById("maint-modal").classList.add("open"); document.getElementById("maint-row").value = ""; document.getElementById("maint-title").textContent = "🔧 Add Maintenance Invoice"; document.getElementById("maint-submit").textContent = "Save Invoice"; document.getElementById("maint-edit-help").style.display = "none"; const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, "0"); const dd = String(today.getDate()).padStart(2, "0"); document.getElementById("maint-date").value = yyyy + "-" + mm + "-" + dd; document.getElementById("maint-msg").className = "form-msg"; document.getElementById("maint-msg").textContent = ""; document.getElementById("maint-paidby").value = ""; document.getElementById("maint-paid").checked = false; document.getElementById("maint-notes").value = ""; document.getElementById("maint-file").value = ""; document.getElementById("maint-file-current").textContent = ""; populatePropertyDropdown(); }
 /* Open the SAME modal in edit mode, pre-filled from the clicked row. rowNum is the
    absolute sheet row carried on each maintenance record (m.row from getDashboardJson). */
 function openMaintEdit(rowNum) {
@@ -1065,6 +1082,13 @@ function openMaintEdit(rowNum) {
   setSelectValue("maint-category", m.category || "", m.category || "");
   document.getElementById("maint-desc").value = m.description || "";
   document.getElementById("maint-amount").value = m.amount || "";
+  document.getElementById("maint-paidby").value = m.paid_by || "";
+  document.getElementById("maint-paid").checked = !!m.paid;
+  document.getElementById("maint-notes").value = m.notes || "";
+  document.getElementById("maint-file").value = "";
+  document.getElementById("maint-file-current").innerHTML = m.invoice_url
+    ? '📎 Current file: <a href="' + m.invoice_url + '" target="_blank" style="color:#00BFFF">view</a> · choose a new file to replace it'
+    : "";
 }
 /* Select a value in a <select>, inserting a temporary option if the stored value
    isn't already one of the choices (handles legacy/freeform property & sub names). */
@@ -1078,9 +1102,42 @@ function setSelectValue(selId, value, label) {
 }
 function populatePropertyDropdown() { const sel = document.getElementById("maint-property"); if (!sel || !PORTFOLIO_DATA) return; const properties = PORTFOLIO_DATA.properties || []; const grouped = {}; properties.forEach(p => { if (!grouped[p.llc]) grouped[p.llc] = []; grouped[p.llc].push(p); }); let html = '<option value="">-- Select Property --</option>'; Object.keys(grouped).sort().forEach(llc => { html += '<optgroup label="' + llc + '">'; grouped[llc].forEach(p => { const label = p.notes ? p.address + ' (' + p.notes + ')' : p.address; html += '<option value="' + p.address + '" data-llc="' + p.llc + '">' + label + '</option>'; }); html += '</optgroup>'; }); sel.innerHTML = html; }
 function onPropertyChange(sel) { const opt = sel.options[sel.selectedIndex]; const llc = opt ? opt.getAttribute("data-llc") || "" : ""; document.getElementById("maint-llc").value = llc; }
-function closeMaintModal() { document.getElementById("maint-modal").classList.remove("open"); ["maint-row", "maint-property", "maint-llc", "maint-sub", "maint-category", "maint-desc", "maint-amount"].forEach(id => { document.getElementById(id).value = ""; }); }
+function closeMaintModal() { document.getElementById("maint-modal").classList.remove("open"); ["maint-row", "maint-property", "maint-llc", "maint-sub", "maint-category", "maint-desc", "maint-amount", "maint-paidby", "maint-notes", "maint-file"].forEach(id => { document.getElementById(id).value = ""; }); document.getElementById("maint-paid").checked = false; document.getElementById("maint-file-current").textContent = ""; }
 function onSubChange(sel) { if (sel.value === "__add_new__") { const newSub = prompt("Enter the new sub/vendor name:"); if (newSub && newSub.trim()) { const opt = document.createElement("option"); opt.value = newSub.trim(); opt.text = newSub.trim(); sel.insertBefore(opt, sel.lastElementChild); sel.value = newSub.trim(); } else { sel.value = ""; } } }
-async function submitMaintenance() { const msgEl = document.getElementById("maint-msg"); const btn = document.getElementById("maint-submit"); const editRow = document.getElementById("maint-row").value; const data = { action: editRow ? "update_maintenance" : "add_maintenance", date: document.getElementById("maint-date").value, property: document.getElementById("maint-property").value, llc: document.getElementById("maint-llc").value, sub: document.getElementById("maint-sub").value, category: document.getElementById("maint-category").value, description: document.getElementById("maint-desc").value, amount: parseFloat(document.getElementById("maint-amount").value) || 0, entered_by: "Dashboard" }; if (editRow) data.row = Number(editRow); if (!data.date || !data.property || !data.llc || !data.amount) { msgEl.className = "form-msg err"; msgEl.textContent = "Please fill in Date, Property, and Amount."; return; } btn.disabled = true; msgEl.className = "form-msg"; msgEl.textContent = editRow ? "Saving changes..." : "Saving..."; try { const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(data) }); const result = await res.json(); if (result.error) { msgEl.className = "form-msg err"; msgEl.textContent = "Error: " + result.error; } else { msgEl.className = "form-msg ok"; msgEl.textContent = "✅ Saved! Refreshing dashboard..."; setTimeout(() => { closeMaintModal(); load(); }, 1000); } } catch (e) { msgEl.className = "form-msg err"; msgEl.textContent = "Network error: " + e.message; } finally { btn.disabled = false; } }
+async function submitMaintenance() {
+  const msgEl = document.getElementById("maint-msg"); const btn = document.getElementById("maint-submit"); const editRow = document.getElementById("maint-row").value;
+  const data = { action: editRow ? "update_maintenance" : "add_maintenance",
+    date: document.getElementById("maint-date").value, property: document.getElementById("maint-property").value,
+    llc: document.getElementById("maint-llc").value, sub: document.getElementById("maint-sub").value,
+    category: document.getElementById("maint-category").value, description: document.getElementById("maint-desc").value,
+    amount: parseFloat(document.getElementById("maint-amount").value) || 0,
+    paid_by: document.getElementById("maint-paidby").value, paid: document.getElementById("maint-paid").checked,
+    notes: document.getElementById("maint-notes").value, entered_by: "Dashboard" };
+  if (editRow) data.row = Number(editRow);
+  if (!data.date || !data.property || !data.llc || !data.amount) { msgEl.className = "form-msg err"; msgEl.textContent = "Please fill in Date, Property, and Amount."; return; }
+  const fileInput = document.getElementById("maint-file"); const file = fileInput && fileInput.files && fileInput.files[0];
+  btn.disabled = true; msgEl.className = "form-msg";
+  try {
+    if (file) {
+      if (file.size > 25 * 1024 * 1024) { msgEl.className = "form-msg err"; msgEl.textContent = "File too large (max 25 MB)."; btn.disabled = false; return; }
+      msgEl.textContent = "Uploading invoice..."; data.file = await readFileAsPayload(file);
+    } else { msgEl.textContent = editRow ? "Saving changes..." : "Saving..."; }
+    const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(data) });
+    const result = await res.json();
+    if (result.error) { msgEl.className = "form-msg err"; msgEl.textContent = "Error: " + result.error; }
+    else { msgEl.className = "form-msg ok"; msgEl.textContent = "✅ Saved! Refreshing dashboard..."; setTimeout(() => { closeMaintModal(); load(); }, 1000); }
+  } catch (e) { msgEl.className = "form-msg err"; msgEl.textContent = "Network error: " + e.message; }
+  finally { btn.disabled = false; }
+}
+// Read a File into a {name, mimeType, data(base64)} payload for the Apps Script upload.
+function readFileAsPayload(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => { const s = String(r.result); const i = s.indexOf(","); resolve({ name: file.name, mimeType: file.type || "application/octet-stream", data: i >= 0 ? s.slice(i + 1) : s }); };
+    r.onerror = () => reject(new Error("could not read file"));
+    r.readAsDataURL(file);
+  });
+}
 /* Delete a maintenance invoice (with confirmation). rowNum is m.row. */
 async function deleteMaint(rowNum) {
   const m = (PORTFOLIO_DATA && PORTFOLIO_DATA.maintenance || []).find(x => x.row === rowNum);
@@ -1604,18 +1661,22 @@ function renderAll() {
       maintMonths.map(m => '<option value="' + m + '"' + (m === maintMonth ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
     html += '<div class="section"><h2><span class="dot"></span><span>Maintenance Invoices</span>' +
       '<select class="header-month-select" onchange="maintSetMonth(this.value)" title="Month">' + maintOpts + '</select></h2>';
-    html += '<table><thead><tr><th>Date</th><th>LLC</th><th>Property</th><th>Sub</th><th>Category</th><th>Description</th><th>Amount</th><th>Edit</th></tr></thead><tbody>';
+    html += '<table><thead><tr><th>Date</th><th>LLC</th><th>Property</th><th>Sub</th><th>Category</th><th>Description</th><th>Amount</th><th>Pay / File</th><th>Edit</th></tr></thead><tbody>';
     if (!maintFiltered.length) {
-      html += '<tr><td colspan="8" style="color:#7e9cbf;text-align:center;padding:14px">No maintenance invoices for ' + monthLabel(maintMonth) + '.</td></tr>';
+      html += '<tr><td colspan="9" style="color:#7e9cbf;text-align:center;padding:14px">No maintenance invoices for ' + monthLabel(maintMonth) + '.</td></tr>';
     } else {
       maintFiltered.forEach(m => {
         const actions = (m.row != null)
           ? '<button class="maint-edit-btn" title="Edit" onclick="openMaintEdit(' + m.row + ')">✏️</button>' +
             '<button class="maint-del-btn" title="Delete" onclick="deleteMaint(' + m.row + ')">🗑</button>'
           : '';
-        html += '<tr><td style="white-space:nowrap">' + dateLabel(m.date) + '</td><td>' + m.llc + '</td><td style="font-size:12px">' + (m.property || '—') + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td><td style="white-space:nowrap">' + actions + '</td></tr>';
+        const payBadge = m.paid_by === 'Sent to CPA'
+          ? '<span style="color:' + (m.paid ? '#00c97a' : '#f0a500') + ';font-size:11px">🧾 CPA · ' + (m.paid ? 'paid' : 'unpaid') + '</span>'
+          : (m.paid_by === 'LLC Debit Card' ? '<span style="color:#7e9cbf;font-size:11px">💳 Debit</span>' : '<span style="color:#4e6d8c">—</span>');
+        const fileLink = m.invoice_url ? ' <a href="' + m.invoice_url + '" target="_blank" title="View invoice file" style="text-decoration:none">📎</a>' : '';
+        html += '<tr><td style="white-space:nowrap">' + dateLabel(m.date) + '</td><td>' + m.llc + '</td><td style="font-size:12px">' + (m.property || '—') + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td><td style="white-space:nowrap">' + payBadge + fileLink + '</td><td style="white-space:nowrap">' + actions + '</td></tr>';
       });
-      html += '<tr style="font-weight:700;border-top:2px solid #1e2d42;color:#ccd9ea"><td colspan="6">Total' + (maintMonth ? ' (' + monthLabel(maintMonth) + ')' : ' (all months)') + '</td><td class="red">' + fmt(maintTotal) + '</td><td></td></tr>';
+      html += '<tr style="font-weight:700;border-top:2px solid #1e2d42;color:#ccd9ea"><td colspan="6">Total' + (maintMonth ? ' (' + monthLabel(maintMonth) + ')' : ' (all months)') + '</td><td class="red">' + fmt(maintTotal) + '</td><td></td><td></td></tr>';
     }
     html += '</tbody></table></div>';
   }
@@ -2168,6 +2229,64 @@ function auditCopy() {
   const text = 'Niron Dashboard Self-Audit - ' + (AUDIT_LAST ? AUDIT_LAST.ts.toLocaleString() : '') + '\n' + c.pass + ' passed, ' + c.fail + ' failed, ' + c.warn + ' warnings\n\n' + lines.join('\n');
   if (navigator.clipboard) navigator.clipboard.writeText(text);
   const btn = (typeof event !== 'undefined') && event && event.target; if (btn) { const o = btn.textContent; btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = o; }, 1200); }
+}
+
+/* ============================================================
+   CPA INVOICES VIEW - read-only list of "Sent to CPA" + unpaid invoices,
+   with one-click Mark paid, CSV export, and a clean printable sheet.
+   ============================================================ */
+function cpaInvoices() {
+  const m = (PORTFOLIO_DATA && PORTFOLIO_DATA.maintenance) || [];
+  return m.filter(x => x.paid_by === 'Sent to CPA' && !x.paid).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+}
+function openCpaModal() { renderCpaModal(); document.getElementById('cpa-modal').classList.add('open'); }
+function closeCpaModal() { document.getElementById('cpa-modal').classList.remove('open'); }
+function renderCpaModal() {
+  const rows = cpaInvoices();
+  const total = rows.reduce((s, m) => s + (m.amount || 0), 0);
+  document.getElementById('cpa-summary').innerHTML = '<b style="color:#f0a500">' + rows.length + '</b> unpaid invoice' + (rows.length === 1 ? '' : 's') + ' &nbsp;·&nbsp; total <b style="color:#ff4455">' + fmt(total) + '</b>';
+  if (!rows.length) { document.getElementById('cpa-body').innerHTML = '<div style="color:#4e6d8c;padding:14px">Nothing waiting on the CPA. 🎉</div>'; return; }
+  let h = '<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="color:#4e6d8c;text-align:left"><th style="padding:6px 8px">Date</th><th>LLC</th><th>Property</th><th>Vendor</th><th>Category</th><th>Description</th><th style="text-align:right">Amount</th><th>Notes</th><th>File</th><th></th></tr></thead><tbody>';
+  rows.forEach(m => {
+    h += '<tr style="border-bottom:1px solid #182030">' +
+      '<td style="padding:7px 8px;white-space:nowrap">' + dateLabel(m.date) + '</td>' +
+      '<td>' + (m.llc || '') + '</td><td style="font-size:12px">' + (m.property || '—') + '</td>' +
+      '<td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td>' +
+      '<td style="text-align:right;white-space:nowrap" class="red">' + fmt(m.amount) + '</td>' +
+      '<td style="font-size:11px;color:#7e9cbf">' + (m.notes || '') + '</td>' +
+      '<td>' + (m.invoice_url ? '<a href="' + m.invoice_url + '" target="_blank" style="text-decoration:none" title="View invoice">📎</a>' : '—') + '</td>' +
+      '<td><button class="audit-btn" style="margin:0;padding:4px 8px" onclick="markInvoicePaid(' + m.row + ')">Mark paid</button></td></tr>';
+  });
+  h += '<tr style="font-weight:700;border-top:2px solid #1e2d42"><td colspan="6" style="padding:8px">Total</td><td style="text-align:right" class="red">' + fmt(total) + '</td><td colspan="3"></td></tr></tbody></table>';
+  document.getElementById('cpa-body').innerHTML = h;
+}
+async function markInvoicePaid(row) {
+  if (!confirm('Mark this invoice as paid by the CPA? It will drop off the unpaid list.')) return;
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'set_maintenance_paid', row: Number(row), paid: true }) });
+    const r = await res.json();
+    if (r.error) { alert('Error: ' + r.error); return; }
+    const m = (PORTFOLIO_DATA.maintenance || []).find(x => x.row === Number(row)); if (m) m.paid = true;
+    renderCpaModal(); load();
+  } catch (e) { alert('Network error: ' + e.message); }
+}
+function exportCpaCsv() {
+  const rows = cpaInvoices();
+  const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const lines = [['Date', 'LLC', 'Property', 'Vendor', 'Category', 'Description', 'Amount', 'Notes', 'Invoice File'].map(esc).join(',')];
+  rows.forEach(m => lines.push([m.date, m.llc, m.property, m.sub, m.category, m.description, (m.amount || 0).toFixed(2), m.notes, m.invoice_url].map(esc).join(',')));
+  const total = rows.reduce((s, m) => s + (m.amount || 0), 0);
+  lines.push(['TOTAL', '', '', '', '', '', total.toFixed(2), '', ''].map(esc).join(','));
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'CPA_Unpaid_Invoices_' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+}
+function printCpa() {
+  const rows = cpaInvoices();
+  const total = rows.reduce((s, m) => s + (m.amount || 0), 0);
+  const body = rows.map(m => '<tr><td>' + dateLabel(m.date) + '</td><td>' + (m.llc || '') + '</td><td>' + (m.property || '') + '</td><td>' + (m.sub || '') + '</td><td>' + (m.category || '') + '</td><td>' + (m.description || '') + '</td><td style="text-align:right">' + fmt(m.amount) + '</td><td>' + (m.notes || '') + '</td></tr>').join('');
+  const w = window.open('', '_blank');
+  w.document.write('<html><head><title>CPA Unpaid Invoices</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{font-size:18px;margin:0 0 4px}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}th{background:#f0f0f0}tfoot td{font-weight:bold}</style></head><body><h1>Niron - CPA Unpaid Invoices</h1><div>Generated ' + new Date().toLocaleString() + ' · ' + rows.length + ' invoice(s)</div><table><thead><tr><th>Date</th><th>LLC</th><th>Property</th><th>Vendor</th><th>Category</th><th>Description</th><th>Amount</th><th>Notes</th></tr></thead><tbody>' + body + '</tbody><tfoot><tr><td colspan="6">TOTAL</td><td style="text-align:right">' + fmt(total) + '</td><td></td></tr></tfoot></table></body></html>');
+  w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
 }
 
 document.getElementById('save-modal').addEventListener('click', function(e) { if (e.target === this) closeSaveModal(); });
