@@ -426,6 +426,24 @@ catches real rendering / label / totalling drift (not just re-printing the same 
 
 ---
 
+## 🩺 Operational Health tiles (Jun 5 2026, PR #46)
+
+A second row of 4 tiles sits **just below the top KPI row** in `renderAll` (mirrors the
+health-check row the user built on the Moss combined db's Niron tab). Same `summary-card`
+theme; they react to the month dropdown like everything else. Pure frontend.
+- **Occupancy** (`kpi-occ`) — occupied/total units for the selected month, from
+  `buildPropertyRecords` filtered to `source !== 'Manual'` (the 3 out-of-state manual entries
+  have no real vacancy signal; **Dorado has no per-unit data so it is not in the denominator**).
+  Color: green 100, gold ≥90, red <90. Sublabel shows `X/Y units · Month`.
+- **Vacant Units** — count + the vacant unit name(s) (e.g. `2993 W Yale Ave`). Gold if >0.
+- **Repairs · This Month** (`kpi-rep-month`, red) — sum + count of Maintenance-log invoices for
+  the selected month. Verified = `$11,615.00 / 4` for May 2026.
+- **Repairs · YTD** (`kpi-rep-ytd`) — sum + count for Jan→selected-month of the year.
+  Verified = `$18,615.00 / 6` for 2026-through-May.
+- The self-audit recomputes all 3 numeric tiles (`Health tile` rows).
+
+---
+
 ## 🔧 Maintenance Invoices — Add / Edit / Delete (BUILT)
 
 The **Maintenance Invoices** table on the dashboard (index.html, rendered ~line 1459) is
