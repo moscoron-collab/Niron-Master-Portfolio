@@ -318,6 +318,46 @@ Disbursement**. So `run_donald.py` is essentially `run_divando.py` with Donald's
 
 ---
 
+## 🔧 Maintenance Invoices — Add / Edit / Delete (BUILT)
+
+The **Maintenance Invoices** table on the dashboard (index.html, rendered ~line 1459) is
+**fully editable in-place** — no need to open Google Sheets.
+
+- **Add** = the floating **🔧** button (`openMaintModal` → `submitMaintenance` →
+  Apps Script `add_maintenance`). Unchanged.
+- **Edit** = an **✏️ button on each row**. `openMaintEdit(rowNum)` reuses the SAME maintenance
+  modal in edit mode (title → "✏️ Edit Maintenance Invoice", button → "Save Changes"),
+  pre-fills it from `PORTFOLIO_DATA.maintenance`, and `submitMaintenance` sends
+  `action:"update_maintenance"` with the target row → `updateMaintenanceEntry` overwrites that
+  exact row's 8 columns.
+- **Delete** = a **🗑 button on each row**. `deleteMaint(rowNum)` confirms, then sends
+  `action:"delete_maintenance"` → `deleteMaintenanceEntry` does `sh.deleteRow(row)`.
+
+### How the row is targeted (the key wiring)
+The **live** `getDashboardJson` maintenance reader (last copy, ~line 1631) now tags every
+record with **`row: 5 + i`** (data starts at sheet row 5). The frontend passes that `row` back
+on edit/delete so Apps Script changes the exact sheet row. Both handlers validate
+`row >= 5 && row <= getLastRow()`. `setSelectValue()` (index.html) inserts a temporary
+`<option>` if a legacy/freeform property or sub isn't in the dropdown, so old rows still
+pre-fill correctly; llc is set directly from the record (not via `onPropertyChange`).
+
+### ⚠️ Edit the LAST copies (duplicate-function footgun)
+Apps Script runs the **last** definition of duplicated functions. The live ones are:
+`doPost` (~line 1087, now routes `update_maintenance` + `delete_maintenance`),
+`addMaintenanceEntry` (~line 1547, with the new `updateMaintenanceEntry` +
+`deleteMaintenanceEntry` right after it), and `getDashboardJson` (~line 1563, the
+maintenance reader that emits `row`). Don't add this to the earlier dead copies.
+
+### 🚀 Going live (REQUIRED — AppsScript.gs is NOT auto-deployed)
+Same as the chatbot: Sheet → **Extensions → Apps Script** → paste the new `AppsScript.gs`
+(or just `doPost`, `getDashboardJson`, `updateMaintenanceEntry`, `deleteMaintenanceEntry`)
+→ **Deploy → Manage deployments → Edit → New version → Deploy**. Until that redeploy, the
+✏️/🗑 buttons appear but Edit/Delete will fail (the old web app doesn't know those actions and
+the maintenance JSON won't carry `row`). `index.html` is served separately, so it updates on
+its own once merged.
+
+---
+
 ## 📄 Moss Owner Packet PDF structure
 
 Pages:

@@ -1093,6 +1093,12 @@ function doPost(e) {
     if (body.action === 'add_maintenance') {
       return addMaintenanceEntry(body);
     }
+    if (body.action === 'update_maintenance') {
+      return updateMaintenanceEntry(body);
+    }
+    if (body.action === 'delete_maintenance') {
+      return deleteMaintenanceEntry(body);
+    }
     if (body.action === 'add_distribution') {
       return addDistributionEntry(body);
     }
@@ -1559,6 +1565,33 @@ function addMaintenanceEntry(data) {
   return ContentService.createTextOutput(JSON.stringify({ok:true, row:nextRow})).setMimeType(ContentService.MimeType.JSON);
 }
 
+// Edit an existing maintenance invoice in place. `row` is the absolute sheet row
+// (sent by the dashboard, originally from getDashboardJson's maintenance.row).
+function updateMaintenanceEntry(data) {
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Maintenance Log');
+  if (!sh) return ContentService.createTextOutput(JSON.stringify({error:'Maintenance Log not found'})).setMimeType(ContentService.MimeType.JSON);
+  var row = Number(data.row);
+  if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error:'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
+  if (!data.date || !data.llc || !data.amount) return ContentService.createTextOutput(JSON.stringify({error:'Date, LLC, Amount required'})).setMimeType(ContentService.MimeType.JSON);
+  var dateObj = new Date(data.date + 'T12:00:00');
+  sh.getRange(row, 1, 1, 8).setValues([[
+    dateObj, data.llc, data.property || '', data.sub || '',
+    data.category || '', data.description || '',
+    Number(data.amount) || 0, data.entered_by || 'Dashboard'
+  ]]);
+  return ContentService.createTextOutput(JSON.stringify({ok:true, row:row})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Delete a maintenance invoice row entirely.
+function deleteMaintenanceEntry(data) {
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Maintenance Log');
+  if (!sh) return ContentService.createTextOutput(JSON.stringify({error:'Maintenance Log not found'})).setMimeType(ContentService.MimeType.JSON);
+  var row = Number(data.row);
+  if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error:'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
+  sh.deleteRow(row);
+  return ContentService.createTextOutput(JSON.stringify({ok:true, deleted:row})).setMimeType(ContentService.MimeType.JSON);
+}
+
 // Override: getDashboardJson with properties + new maintenance structure
 function getDashboardJson() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1623,12 +1656,15 @@ function getDashboardJson() {
 
   var maint = ss.getSheetByName('Maintenance Log');
   if (maint && maint.getLastRow() >= 5) {
-    maint.getRange(5, 1, maint.getLastRow() - 4, 8).getValues().forEach(function(r) {
+    // Track the absolute sheet row (data starts at row 5) so the dashboard can
+    // edit/delete the exact row via update_maintenance / delete_maintenance.
+    maint.getRange(5, 1, maint.getLastRow() - 4, 8).getValues().forEach(function(r, i) {
       if (r[0] && r[1]) {
         var d = r[0] instanceof Date ? r[0] : new Date(r[0]);
         if (isNaN(d)) return;
         var yyyy = d.getFullYear(); var mm = String(d.getMonth()+1).padStart(2,'0');
         data.maintenance.push({
+          row: 5 + i,
           date: d.toISOString().slice(0,10),
           period: yyyy + '-' + mm + '-01',
           llc: r[1], property: r[2] || "", sub: r[3] || "",
