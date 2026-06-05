@@ -387,6 +387,42 @@ were fixed (user-approved decisions). **The findings reference the audit numberi
 
 ---
 
+## 🩺 Self-Audit (Run Audit button) — BUILT (Jun 5 2026, PR #44)
+
+A read-only self-audit lives in `index.html`. It **recomputes every total straight from
+the raw `PORTFOLIO_DATA`** and compares it to what is actually painted on screen, so it
+catches real rendering / label / totalling drift (not just re-printing the same math).
+
+- **Runs on every render** (`auditRun(false)` is called at the end of `renderAll`, wrapped
+  in try/catch so it can never break the dashboard) → updates a header **chip**
+  (green `✓ Audit OK` / amber `⚠ N to review` / red `✗ N issues`).
+- **Manual:** the **🩺 Run Audit** button in the header (and clicking the chip) opens the
+  full pass/fail report modal (`auditRun(true)` → `renderAuditModal`), with a **Copy report**
+  button. Modal id `audit-modal`; reuses the existing `.modal-overlay`/`.modal-box` theme.
+- **NEVER writes to the sheet.** The "write-back" check is a read-only proxy: it verifies
+  maintenance `row` indices are valid (≥5) and unique, and flags duplicate History /
+  Distribution rows — it does NOT perform a live test write.
+- **KPI tiles now carry stable IDs** (`kpi-cash`, `kpi-cash-ytd`, `kpi-net`, `kpi-net-ytd`,
+  `kpi-dist`, `kpi-dist-ytd`, `kpi-mort`, `kpi-value`) so the audit reads them reliably.
+  KPIs are compared at display precision (via `fmtShort`); tables/cards to the penny.
+- **What it checks:** 8 KPI tiles; each per-LLC card net + sum-of-cards = Net tile; every
+  visible History row foots (`Disb − Mortgage − Insurance − Maintenance = Net`); per-property
+  table each unit net = raw recompute, TOTAL = sum of units, and the bars chart = the Net
+  column (when metric = net); trend totals finite each month; month-dropdown sync; loan
+  remaining-$0 (DSCR/equity gap); duplicate History/Distribution rows; maintenance row
+  integrity; insurance override-vs-sheet drift (expected until #11 migration); date format;
+  `last_updated` validity.
+- **Expected steady state:** the chip sits at amber, NOT green, because there are legitimate
+  open warnings: missing loan remaining-balances and the 2 insurance override-vs-sheet drifts
+  (Divando + Yale). Those clear when loan balances are entered / insurance moves to the sheet.
+  This is correct behaviour, not a bug.
+- Verified with a synthetic-DOM harness: 22 pass / 0 fail / 3 expected warns on correct data;
+  catches an injected wrong KPI as a FAIL.
+
+> Self-audit is pure frontend (`index.html`) — no Apps Script change, goes live on merge.
+
+---
+
 ## 🔧 Maintenance Invoices — Add / Edit / Delete (BUILT)
 
 The **Maintenance Invoices** table on the dashboard (index.html, rendered ~line 1459) is
