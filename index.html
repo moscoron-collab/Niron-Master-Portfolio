@@ -1387,6 +1387,9 @@ const fmt = n => "$" + (Number(n) || 0).toLocaleString("en-US", {minimumFraction
 const fmtShort = n => { n = Number(n) || 0; if (Math.abs(n) >= 1e6) return "$" + (n/1e6).toFixed(2) + "M"; if (Math.abs(n) >= 1e3) return "$" + (n/1e3).toFixed(1) + "K"; return "$" + n.toFixed(0); };
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const monthLabel = ym => { if (!ym) return ""; const parts = ym.split("-"); return MONTH_NAMES[parseInt(parts[1],10)-1] + " " + parts[0]; };
+// Current calendar month as a period_start ("2026-06-01"). Always offered in the month
+// picker so the user can work in the current month before its data has landed.
+const currentPeriod = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-01"; };
 /* "2026-06-15" -> "Jun 15, 2026" (month as name). Falls back to raw string if unexpected. */
 const dateLabel = ymd => { if (!ymd) return ""; const p = String(ymd).split("-"); if (p.length !== 3) return ymd; const mi = parseInt(p[1],10)-1; if (mi < 0 || mi > 11) return ymd; return MONTH_NAMES[mi] + " " + parseInt(p[2],10) + ", " + p[0]; };
 function maintenanceFor(maintenance, llc, period) { if (!maintenance || !llc || !period) return 0; return maintenance.filter(m => m.llc && m.llc.trim() === llc.trim() && m.period === period).reduce((s, m) => s + (m.amount || 0), 0); }
@@ -1586,7 +1589,10 @@ function renderAll() {
   // double-count maintenance / property mortgage for LLCs with multiple rows in a month.
   const enrichedHistory = aggregateLlcPeriod(history, maintenance);
   const sortedHistory = enrichedHistory.slice().sort((a, b) => { if (a.period_start !== b.period_start) return b.period_start > a.period_start ? 1 : -1; return a.llc.localeCompare(b.llc); });
-  const monthOptions = months.map(m => '<option value="' + m + '"' + (m === SELECTED_MONTH ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
+  // Dropdown offers every data month PLUS the current calendar month (so June is
+  // selectable before its data lands). The trend chart still uses `months` (data only).
+  const pickerMonths = [...new Set([currentPeriod(), ...months])].sort().reverse();
+  const monthOptions = pickerMonths.map(m => '<option value="' + m + '"' + (m === SELECTED_MONTH ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
   const headerSelect = document.getElementById('header-month-select'); if (headerSelect) headerSelect.innerHTML = monthOptions;
   const netCls = totalNet >= 0 ? 'green' : 'red';
   let html = '<div class="summary-grid">';
@@ -2173,8 +2179,10 @@ function auditRun(openModal) {
       add(trendOk ? 'pass' : 'fail', 'Trend chart', 'Total line = sum of per-LLC bars (all months finite)', 'consistent', trendOk ? 'consistent' : 'NaN found');
 
       // ---- Month filter consistency ----
+      // The current calendar month is a valid selection even before its data lands.
       const monthsSet = new Set(months);
-      add(monthsSet.has(month) ? 'pass' : 'fail', 'Month filter', 'Selected month exists in data', month, monthsSet.has(month) ? month : 'not found');
+      const monthOk = monthsSet.has(month) || month === currentPeriod();
+      add(monthOk ? 'pass' : 'fail', 'Month filter', 'Selected month is valid', month, monthOk ? (monthsSet.has(month) ? month : month + ' (current, no data yet)') : 'not found');
       const hsel = document.getElementById('header-month-select'), isel = document.getElementById('inline-month-select');
       if (hsel) add(hsel.value === month ? 'pass' : 'warn', 'Month filter', 'Header dropdown in sync', month, hsel.value);
       if (isel) add(isel.value === month ? 'pass' : 'warn', 'Month filter', 'Inline dropdown in sync', month, isel.value);
