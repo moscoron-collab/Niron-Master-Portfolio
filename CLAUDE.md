@@ -591,6 +591,14 @@ needs the PR #48 Drive-scope redeploy, and Activity-Log / Last-Updated still nee
 redeploy — those are separate backend deploys.) To add another actor-aware modal later, just
 give its picker `class="actor-pick"` and it auto-syncs.
 
+### 🗑 Delete (trash) button painted red on the Maintenance table (Jun 6 2026)
+User: "the trash can, paint it red as I can't see it." The 🗑 in each Maintenance row was a
+faint emoji at `opacity:0.7` on the near-black background. Fix in `index.html`: `.maint-del-btn`
+now has a **permanent red look** (`color:#ff4455; border-color:#ff4455; background:#ff445522;
+opacity:1`) instead of only turning red on hover, and the glyph carries a text-presentation
+selector (`🗑&#xFE0E;`) so it inherits the red `color` rather than rendering as a multicolor
+emoji. The ✏️ edit button is unchanged (still neutral until hover). Pure frontend, live on merge.
+
 ### 🗓️ History table month shown by name, not `YYYY-MM-DD` (Jun 6 2026)
 User: "the month must be by name not number (jan feb…)." The **History (newest first)** table
 was the ONLY place still printing the raw `period_start` (`2026-05-01`) even though its column
