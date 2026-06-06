@@ -47,6 +47,13 @@
   .card-cell .sublabel { font-size: 11px; color: #4e6d8c; }
   .summary-card.dual { gap: 14px; padding: 18px 14px; }
   .summary-card.dual .divider { width: 1px; background: #1e2d42; flex: none; }
+  /* KPI info tooltip (e.g. Net Cashflow formula) */
+  .kpi-info { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; margin-left: 5px; border: 1px solid #00BFFF; border-radius: 50%; color: #00BFFF; font-size: 9px; font-weight: 700; cursor: help; vertical-align: middle; position: relative; }
+  .kpi-info .kpi-tip { visibility: hidden; opacity: 0; transition: opacity 0.15s; position: absolute; top: 22px; left: 50%; transform: translateX(-50%); z-index: 50; width: 290px; max-width: 80vw; background: #0c1a2e; border: 1px solid #00BFFF; border-radius: 8px; padding: 12px 13px; text-align: left; text-transform: none; letter-spacing: normal; font-weight: 400; font-size: 12px; line-height: 1.5; color: #cfe3f5; box-shadow: 0 8px 24px rgba(0,0,0,0.55); }
+  .kpi-info:hover .kpi-tip { visibility: visible; opacity: 1; }
+  .kpi-info .kpi-tip b { color: #ffffff; }
+  .kpi-info .kpi-tip .formula { display: block; background: #07101d; border: 1px solid #1e2d42; border-radius: 6px; padding: 7px 8px; margin: 6px 0 8px; color: #6ee7a8; font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
+  .kpi-info .kpi-tip .tax-note { display: block; margin-top: 6px; padding-top: 7px; border-top: 1px solid #1e2d42; color: #9fb8d0; }
   .ytd-label { color: #00BFFF !important; }
   .gold .label { color: #00BFFF; }
   .green .label { color: #00BFFF; }
@@ -1617,7 +1624,12 @@ function renderAll() {
   const netCls = totalNet >= 0 ? 'green' : 'red';
   let html = '<div class="summary-grid">';
   html += '<div class="summary-card dual gold"><div class="card-cell"><div class="label">Cash Collected</div><div class="value" id="kpi-cash">' + fmtShort(totalDisb) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">Cash YTD</div><div class="value" id="kpi-cash-ytd">' + fmtShort(ytdDisb) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
-  html += '<div class="summary-card dual ' + netCls + '"><div class="card-cell"><div class="label">Net Cashflow</div><div class="value" id="kpi-net">' + fmtShort(totalNet) + '</div><div class="sublabel">After all expenses</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value" id="kpi-net-ytd">' + fmtShort(ytdNet) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
+  const netTip = '<span class="kpi-info">i<span class="kpi-tip"><b>How Net Cashflow is calculated</b>'
+    + '<span class="formula">Cash Collected − Mortgage − Insurance − Maintenance (repairs)</span>'
+    + 'Cash Collected is the owner disbursement that actually hit the LLC bank accounts. Mortgage is the full monthly loan cost (for Divando this includes the 6 property loans + SBA).'
+    + '<span class="tax-note"><b>Property tax</b> is not subtracted again here. <b>Yale & Donald</b> pay tax through the lender (it is escrowed inside the mortgage above). <b>Divando & Dorado</b> pay tax manually as a lump sum in the spring, so it is shown for info only and left out of the monthly net.</span>'
+    + '</span></span>';
+  html += '<div class="summary-card dual ' + netCls + '"><div class="card-cell"><div class="label">Net Cashflow' + netTip + '</div><div class="value" id="kpi-net">' + fmtShort(totalNet) + '</div><div class="sublabel">After all expenses</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value" id="kpi-net-ytd">' + fmtShort(ytdNet) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
   html += '<div class="summary-card dual blue"><div class="card-cell"><div class="label">Your Distribution</div><div class="value" id="kpi-dist">' + fmtShort(distThisMonth) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value" id="kpi-dist-ytd">' + fmtShort(distYtd) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Total Mortgage / Mo</div><div class="value" id="kpi-mort">' + fmtShort(totalMortgage) + '</div><div class="sublabel">Across all LLCs</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Portfolio Value</div><div class="value" id="kpi-value">' + fmtShort(totalValue) + '</div><div class="sublabel">Estimated</div></div></div>';

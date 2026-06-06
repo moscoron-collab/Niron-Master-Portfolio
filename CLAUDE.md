@@ -495,6 +495,24 @@ positional reads (`td[5]` = Net) didn't shift. Pure frontend, live on merge.
 
 ---
 
+## ℹ️ Net Cashflow card tooltip (Jun 6 2026)
+
+The **Net Cashflow** KPI card now has a small **ⓘ info icon** next to its label (`netTip` in
+`renderAll`, ~line 1627 of `index.html`) that opens a CSS hover tooltip (`.kpi-info` /
+`.kpi-tip` styles near the `.summary-card` block) explaining exactly what the number is:
+- **Formula shown:** `Cash Collected − Mortgage − Insurance − Maintenance (repairs)`.
+- Notes that Cash Collected = the owner disbursement that hit the bank, and Mortgage is the
+  full loan cost (Divando = 6 property loans + SBA).
+- **Tax note (the key clarification the user asked for):** property tax is NOT subtracted
+  again in this number — **Yale & Donald pay tax through the lender (escrowed in the
+  mortgage)**, while **Divando & Dorado pay tax manually as a spring lump sum** (shown for
+  info only, left out of monthly net). This matches `isTaxEscrowed` (Donald/Yale) +
+  `isTaxLumpSum` (Divando/Dorado), both of which make `effectiveTax` return 0.
+Pure frontend, live on merge. To add the same tooltip to another KPI, reuse the
+`<span class="kpi-info">i<span class="kpi-tip">…</span></span>` pattern inside that card's label.
+
+---
+
 ## 💸 Partner Distributions section (Jun 5 2026, PR #47) — Phase 2 item 1
 
 A **Partner Distributions (You vs Nir)** section sits just below Monthly Breakdown. Pure
