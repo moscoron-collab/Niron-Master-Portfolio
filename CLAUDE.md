@@ -133,6 +133,16 @@ A per-property monitor for Divando's 18 properties (15 AppFolio + 3 manual out-o
   unit) moved out end of May 2026** → its May packet shows a Property Reserve hold (no Owner
   Disbursement, Net Owner Funds −$364.61), so that month reads $0 disbursement (correct — same
   as other props' reserve/turnover months); it shows **Vacant** from June until re-rented.
+  - **🗓️ Decision (Jun 6 2026):** the user noticed Bates Upper still reads **Occupied** and
+    asked why, since the May statement clearly shows the move-out (rent collected but held in
+    reserve by Laureate, $0 owner disbursement, Net Owner Funds −$364.61). Confirmed: the
+    automation's Occupied/Vacant flag is **only** `occupied = "Rent Income" in text` — it does
+    NOT interpret the reserve-hold/no-disbursement signal. May still had a Rent Income line
+    (last month's rent), so it correctly reads Occupied (tenant was there through end of May).
+    **User chose to WAIT for the June statement** (first packet with no rent income → auto-flips
+    to Vacant) rather than code a reserve-hold rule or manually edit the sheet. **Do NOT add a
+    "reserve hold = vacant" rule** — a reserve hold also happens for repairs on occupied units,
+    so it would create false vacancies. The "no Rent Income line" test is the reliable signal.
 - **✅ Per-property backfill COMPLETE & verified (Jun 4 2026).** Three `backfill_divando.yml`
   re-runs filled every unit: run #1 = 234 rows (13 props, pre-Bates); run #2 (comma-space fix)
   added 30 (18 Bates Lower + 12 Bates Upper); run #3 (BAT alias) added the final 6 Bates Upper
