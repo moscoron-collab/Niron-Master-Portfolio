@@ -576,6 +576,21 @@ was needed. (Caveat: invoices added **directly in the Google Sheet** rather than
 dashboard 🔧 button never log to the Activity Log, so they also won't bump the stamp — that
 is expected, the bump is tied to dashboard writes.)
 
+### 👤 "Signed in as" picker added to the Maintenance card (Jun 6 2026)
+User hit the `ensureActor()` block ("Please pick who you are first…") when adding an invoice
+because the only actor picker was in the **header (top-right)** — easy to miss. Fix: added a
+**second "Signed in as" `<select>` at the TOP of the Add/Edit Maintenance modal, before the
+Date box** (user's exact request). Both pickers carry class **`.actor-pick`** and are kept in
+sync by **`syncActorSelects()`** (sets every `.actor-pick` to `getActor()`); `setActor()` and
+`restoreActor()` now call it, and `openMaintModal`/`openMaintEdit` call it on open so the modal
+shows whoever is already signed in. `closeMaintModal` does NOT reset `maint-actor` (the person
+persists). The `ensureActor()` alert now says "at the top of this form, or top-right" and
+focuses the open modal's picker if there is one. Pure frontend, live on merge — **no Apps
+Script redeploy needed for THIS change.** (Reminder: the invoice **file upload** itself still
+needs the PR #48 Drive-scope redeploy, and Activity-Log / Last-Updated still need the PR #53
+redeploy — those are separate backend deploys.) To add another actor-aware modal later, just
+give its picker `class="actor-pick"` and it auto-syncs.
+
 ### 🗓️ History table month shown by name, not `YYYY-MM-DD` (Jun 6 2026)
 User: "the month must be by name not number (jan feb…)." The **History (newest first)** table
 was the ONLY place still printing the raw `period_start` (`2026-05-01`) even though its column

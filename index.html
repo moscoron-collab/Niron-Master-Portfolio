@@ -331,6 +331,8 @@
   <div class="modal-box">
     <h2><span id="maint-title">🔧 Add Maintenance Invoice</span> <button class="modal-close" onclick="closeMaintModal()">×</button></h2>
     <input type="hidden" id="maint-row" value="">
+    <label>Signed in as <span style="font-weight:normal;text-transform:none;letter-spacing:normal;color:#4e6d8c;font-size:11px">(required — stamps who entered this)</span></label>
+    <select id="maint-actor" class="actor-pick" onchange="setActor(this.value)"><option value="">— who are you? —</option><option value="R.M">R.M — Ron</option><option value="O.M">O.M — Oshrat</option><option value="N.S">N.S — Nir</option></select>
     <label>Date</label><input type="date" id="maint-date">
     <label>Property</label>
     <select id="maint-property" onchange="onPropertyChange(this)"><option value="">-- Select Property --</option></select>
@@ -484,7 +486,7 @@
       <div><span class="label">Last Updated:</span> <span id="last-updated">—</span></div>
       <div><span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span><button class="logout-btn" onclick="logout()">Logout</button></div>
       <div style="margin-top:6px"><button class="audit-btn" id="audit-btn" onclick="runAuditFresh()">🩺 Run Audit</button><button class="audit-btn" id="cpa-btn" onclick="openCpaModal()" title="Invoices sent to the CPA and not yet paid">🧾 CPA Invoices</button><button class="audit-btn" id="activity-btn" onclick="openActivityModal()" title="History of every change - who and when">📋 Activity</button><span id="audit-chip" class="audit-chip"></span></div>
-      <div style="margin-top:6px"><span class="label" style="font-size:11px">Signed in as:</span> <select id="actor-select" onchange="setActor(this.value)" title="Who is making changes (stamped on every edit)" style="background:#0a1520;border:1px solid #1e2d42;color:#ccd9ea;border-radius:6px;font-size:11px;padding:4px 8px;outline:none;cursor:pointer"><option value="">— who are you? —</option><option value="R.M">R.M — Ron</option><option value="O.M">O.M — Oshrat</option><option value="N.S">N.S — Nir</option></select></div>
+      <div style="margin-top:6px"><span class="label" style="font-size:11px">Signed in as:</span> <select id="actor-select" class="actor-pick" onchange="setActor(this.value)" title="Who is making changes (stamped on every edit)" style="background:#0a1520;border:1px solid #1e2d42;color:#ccd9ea;border-radius:6px;font-size:11px;padding:4px 8px;outline:none;cursor:pointer"><option value="">— who are you? —</option><option value="R.M">R.M — Ron</option><option value="O.M">O.M — Oshrat</option><option value="N.S">N.S — Nir</option></select></div>
     </div>
   </header>
 
@@ -1073,13 +1075,14 @@ function switchMainTab(tab, skipUrl) {
 /* ============================================================
    MASTER PORTFOLIO — MAINTENANCE MODAL
    ============================================================ */
-function openMaintModal() { document.getElementById("maint-modal").classList.add("open"); document.getElementById("maint-row").value = ""; document.getElementById("maint-title").textContent = "🔧 Add Maintenance Invoice"; document.getElementById("maint-submit").textContent = "Save Invoice"; document.getElementById("maint-edit-help").style.display = "none"; const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, "0"); const dd = String(today.getDate()).padStart(2, "0"); document.getElementById("maint-date").value = yyyy + "-" + mm + "-" + dd; document.getElementById("maint-msg").className = "form-msg"; document.getElementById("maint-msg").textContent = ""; document.getElementById("maint-paidby").value = ""; document.getElementById("maint-paid").checked = false; document.getElementById("maint-notes").value = ""; document.getElementById("maint-file").value = ""; document.getElementById("maint-file-current").textContent = ""; populatePropertyDropdown(); }
+function openMaintModal() { document.getElementById("maint-modal").classList.add("open"); syncActorSelects(); document.getElementById("maint-row").value = ""; document.getElementById("maint-title").textContent = "🔧 Add Maintenance Invoice"; document.getElementById("maint-submit").textContent = "Save Invoice"; document.getElementById("maint-edit-help").style.display = "none"; const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, "0"); const dd = String(today.getDate()).padStart(2, "0"); document.getElementById("maint-date").value = yyyy + "-" + mm + "-" + dd; document.getElementById("maint-msg").className = "form-msg"; document.getElementById("maint-msg").textContent = ""; document.getElementById("maint-paidby").value = ""; document.getElementById("maint-paid").checked = false; document.getElementById("maint-notes").value = ""; document.getElementById("maint-file").value = ""; document.getElementById("maint-file-current").textContent = ""; populatePropertyDropdown(); }
 /* Open the SAME modal in edit mode, pre-filled from the clicked row. rowNum is the
    absolute sheet row carried on each maintenance record (m.row from getDashboardJson). */
 function openMaintEdit(rowNum) {
   const m = (PORTFOLIO_DATA && PORTFOLIO_DATA.maintenance || []).find(x => x.row === rowNum);
   if (!m) { alert("Could not find that invoice — try refreshing."); return; }
   document.getElementById("maint-modal").classList.add("open");
+  syncActorSelects();
   populatePropertyDropdown();
   document.getElementById("maint-row").value = m.row;
   document.getElementById("maint-title").textContent = "✏️ Edit Maintenance Invoice";
@@ -2356,12 +2359,20 @@ function printCpa() {
    ACTOR (who is signed in) + ACTIVITY LOG VIEW
    ============================================================ */
 function getActor() { return localStorage.getItem('niron_actor') || ''; }
-function setActor(v) { if (v) localStorage.setItem('niron_actor', v); else localStorage.removeItem('niron_actor'); }
-function restoreActor() { const s = document.getElementById('actor-select'); if (s) s.value = getActor(); }
+// Keep every "Signed in as" picker (header + maintenance card) showing the same person.
+function syncActorSelects() { const v = getActor(); document.querySelectorAll('.actor-pick').forEach(s => { s.value = v; }); }
+function setActor(v) { if (v) localStorage.setItem('niron_actor', v); else localStorage.removeItem('niron_actor'); syncActorSelects(); }
+function restoreActor() { syncActorSelects(); }
 // Require a signed-in person before any change, so it can be logged with attribution.
 function ensureActor() {
   const a = getActor();
-  if (!a) { alert('Please pick who you are first - the "Signed in as" dropdown at the top right - so this change gets logged.'); const s = document.getElementById('actor-select'); if (s) s.focus(); return null; }
+  if (!a) {
+    alert('Please pick who you are first - the "Signed in as" dropdown (at the top of this form, or top-right of the page) - so this change gets logged.');
+    // Prefer the picker on the open modal if there is one, else the header picker.
+    const s = document.querySelector('.modal-overlay.open .actor-pick') || document.getElementById('actor-select');
+    if (s) s.focus();
+    return null;
+  }
   return a;
 }
 function openActivityModal() { renderActivity(); document.getElementById('activity-modal').classList.add('open'); }
