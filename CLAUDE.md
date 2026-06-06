@@ -360,6 +360,8 @@ were fixed (user-approved decisions). **The findings reference the audit numberi
   remaining balances are still not entered; revisit when adding DSCR/equity (Phase 2).
 - **#6 Occupancy %** in the per-property table now reflects the **selected month** (100 / 0),
   not a lifetime average (it was mixing time windows with the single-month columns).
+  ⚠️ **SUPERSEDED (Jun 6 2026, see below)** — the single-month 100/0 column was deleted
+  and replaced with two real "% of months occupied" columns.
 - **#10 Repairs matching:** `maintenanceForProp` is now **one-directional** (`normAddr(invoice)
   .startsWith(normAddr(unit))` via the new `normAddr` helper). A generic invoice like
   `15559 E Bates Ave` or `5101 Crown Blvd` (no Lower/Upper or Unit A/B) will NOT attach to
@@ -449,6 +451,37 @@ theme; they react to the month dropdown like everything else. Pure frontend.
 > 🔔 **REMINDER:** the April 2026 Divando `Manual Entry` rows (3 rows, generic source) still
 > need a look — relabel to `Manual Entry: <property>` (and fix `enter_suncoast_manual.py`,
 > which writes a bare `"Manual Entry"` + puts the property in the LLC column). User deferred.
+
+---
+
+## 🏠 Per-property Occ % → "% of months occupied" (Jun 6 2026)
+
+User said the single-month **100/0** Occ % column (audit fix #6) was **irrelevant** — a
+unit either had rent that one month or didn't, so every row just read 100%. **Deleted it**
+and replaced it in the per-property table (`renderPropertySection` in `index.html`) with
+**TWO real occupancy-rate columns** (user picked two columns):
+- **`Occ % {year}`** = % of months occupied **this calendar year** (Jan → selected/anchor month).
+- **`Occ % since Jan ’25`** = % of months occupied **lifetime, since Jan 2025** (→ anchor month).
+
+**Calc:** `occupied months ÷ months WITH DATA`, per unit. **Months a unit has no data row
+(pre-monitoring / pre-backfill) are IGNORED, not counted as vacant** (user decision — so a
+unit that started late isn't unfairly dragged down). Both windows are capped at the selected
+anchor month, so picking an earlier month in the View dropdown shows occupancy "as of" then.
+`occupied` is the existing per-row flag (rent in = occupied) from `buildPropertyRecords`.
+Helpers `occClass`/`occCell` (green ≥95, red <80, neutral between; `—` when no data).
+
+**Totals row** shows portfolio-wide occupancy = **pooled occupied unit-months ÷ total
+unit-months** (data only) for each window (`poolOcc` helper), not an average of the per-unit %.
+
+**Self-audit unaffected:** the new columns were appended AFTER `YTD Net`, so the audit's
+positional reads (`td[5]` = Net) didn't shift. Pure frontend, live on merge.
+
+> Note: the **chart's** "Occupancy %" metric (the Metric dropdown) is a SEPARATE thing and
+> still shows single-month 100/0 for the bars view (the trend-line view over time is the
+> useful one). Left as-is — the user's complaint was about the TABLE column. Revisit only if
+> asked.
+> 🔔 Earlier reminder still open: occupancy currently EXCLUDES the 3 out-of-state manual units
+> and Dorado (no per-unit data). Unchanged here.
 
 ---
 
