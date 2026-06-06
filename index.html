@@ -1786,7 +1786,12 @@ function renderPropertyDetailSection(data, maintenance) {
   html += '<table style="margin-top:18px"><thead><tr><th>Property</th><th>Status</th>' +
     '<th>Income</th><th>Disbursement</th><th>Repairs</th>' +
     '<th>Net (' + (singleMonth ? monthLabel(latestMonth) : windowText.replace(/<[^>]+>/g,'')) + ')</th>' +
-    '<th>YTD Net (' + year + ')</th><th>Occ %</th></tr></thead><tbody>';
+    '<th>YTD Net (' + year + ')</th>' +
+    '<th>Occ % ' + year + '</th><th>Occ % since Jan ’25</th></tr></thead><tbody>';
+
+  // % of MONTHS occupied (months with data only). green ≥95, red <80, neutral between.
+  const occClass = p => p === null ? '' : (p >= 95 ? 'green' : (p >= 80 ? '' : 'red'));
+  const occCell  = p => '<td class="' + occClass(p) + '">' + (p === null ? '—' : p + '%') + '</td>';
 
   ordered.forEach(prop => {
     const rowsFor = inRange.filter(r => r.property === prop);
@@ -1803,9 +1808,14 @@ function renderPropertyDetailSection(data, maintenance) {
     // YTD = sum of net for months in the anchor year up to anchor month — uses ALL recs, not just window.
     const ytdNet = recs.filter(r => r.property === prop && r.period.slice(0,4) === year && r.period <= latestMonth)
       .reduce((s, r) => s + r.net, 0);
-    // Occupancy for the SELECTED month only (consistent with the rest of this row):
-    // 100% if occupied that month, 0% if vacant.
-    const occPct = latest ? (latest.occupied ? 100 : 0) : 0;
+    // Occupancy = % of MONTHS the unit was occupied (months WITH DATA only — gaps
+    // before a unit was monitored are ignored, not counted as vacant). Two windows,
+    // both up to the selected (anchor) month: this calendar year, and since Jan 2025.
+    const histFor  = recs.filter(r => r.property === prop && r.period <= latestMonth);
+    const yrRows   = histFor.filter(r => r.period.slice(0,4) === year);
+    const lifeRows = histFor.filter(r => r.period >= '2025-01-01');
+    const occYtd   = yrRows.length   ? Math.round(yrRows.filter(r => r.occupied).length   / yrRows.length   * 100) : null;
+    const occLife  = lifeRows.length ? Math.round(lifeRows.filter(r => r.occupied).length / lifeRows.length * 100) : null;
     const statusBadge = latest
       ? (latest.occupied
           ? '<span style="color:#00c97a;font-weight:600">● Occupied</span>'
@@ -1813,7 +1823,6 @@ function renderPropertyDetailSection(data, maintenance) {
       : '<span style="color:#4e6d8c">—</span>';
     const netCls = dispNet !== null ? (dispNet >= 0 ? 'green' : 'red') : '';
     const ytdCls = ytdNet >= 0 ? 'green' : 'red';
-    const occCls = occPct >= 100 ? 'green' : (occPct >= 50 ? '' : 'red');
     html += '<tr><td style="font-size:13px">' + prop + '</td>' +
       '<td>' + statusBadge + '</td>' +
       '<td>' + (dispCashIn !== null ? fmt(dispCashIn) : '—') + '</td>' +
@@ -1821,7 +1830,7 @@ function renderPropertyDetailSection(data, maintenance) {
       '<td class="' + (dispRepairs ? 'red' : '') + '">' + (dispRepairs !== null ? fmt(dispRepairs) : '—') + '</td>' +
       '<td class="' + netCls + '">' + (dispNet !== null ? fmt(dispNet) : '—') + '</td>' +
       '<td class="' + ytdCls + '">' + fmt(ytdNet) + '</td>' +
-      '<td class="' + occCls + '">' + occPct + '%</td></tr>';
+      occCell(occYtd) + occCell(occLife) + '</tr>';
   });
   // Totals row
   const totCashIn = ordered.reduce((s, prop) => { const r = inRange.find(x => x.property === prop && x.period === latestMonth); return s + (r ? r.cash_in : 0); }, 0);
@@ -1829,6 +1838,13 @@ function renderPropertyDetailSection(data, maintenance) {
   const totRepairs= ordered.reduce((s, prop) => { const r = inRange.find(x => x.property === prop && x.period === latestMonth); return s + (r ? r.repairs : 0); }, 0);
   const totNet    = ordered.reduce((s, prop) => { const r = inRange.find(x => x.property === prop && x.period === latestMonth); return s + (r ? r.net : 0); }, 0);
   const totYtd    = ordered.reduce((s, prop) => s + recs.filter(r => r.property === prop && r.period.slice(0,4) === year && r.period <= latestMonth).reduce((a, r) => a + r.net, 0), 0);
+  // Portfolio occupancy = pooled occupied unit-months ÷ total unit-months (data only).
+  const poolOcc = (filt) => {
+    const rows = recs.filter(r => ordered.includes(r.property) && r.period <= latestMonth && filt(r));
+    return rows.length ? Math.round(rows.filter(r => r.occupied).length / rows.length * 100) : null;
+  };
+  const totOccYtd  = poolOcc(r => r.period.slice(0,4) === year);
+  const totOccLife = poolOcc(r => r.period >= '2025-01-01');
   html += '<tr style="font-weight:700;border-top:2px solid #1e2d42;background:#0d1e30;color:#ccd9ea">' +
     '<td style="color:#fff;letter-spacing:0.04em">TOTAL — ' + monthLabel(latestMonth) + '</td><td></td>' +
     '<td>' + fmt(totCashIn) + '</td>' +
@@ -1836,7 +1852,7 @@ function renderPropertyDetailSection(data, maintenance) {
     '<td class="' + (totRepairs ? 'red' : '') + '">' + fmt(totRepairs) + '</td>' +
     '<td class="' + (totNet >= 0 ? 'green' : 'red') + '" style="font-size:15px">' + fmt(totNet) + '</td>' +
     '<td class="' + (totYtd >= 0 ? 'green' : 'red') + '">' + fmt(totYtd) + '</td>' +
-    '<td></td></tr>';
+    occCell(totOccYtd) + occCell(totOccLife) + '</tr>';
   html += '</tbody></table></div>';
   return html;
 }
