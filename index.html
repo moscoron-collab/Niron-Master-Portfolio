@@ -48,7 +48,7 @@
   .summary-card.dual { gap: 14px; padding: 18px 14px; }
   .summary-card.dual .divider { width: 1px; background: #1e2d42; flex: none; }
   /* KPI info tooltip (e.g. Net Cashflow formula) */
-  .kpi-info { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; margin-left: 5px; border: 1px solid #00BFFF; border-radius: 50%; color: #00BFFF; font-size: 9px; font-weight: 700; cursor: help; vertical-align: middle; position: relative; }
+  .kpi-info { display: inline-flex; align-items: center; justify-content: center; margin-left: 5px; font-size: 13px; line-height: 1; cursor: help; vertical-align: middle; position: relative; }
   .kpi-info .kpi-tip { visibility: hidden; opacity: 0; transition: opacity 0.15s; position: absolute; top: 22px; left: 50%; transform: translateX(-50%); z-index: 50; width: 290px; max-width: 80vw; background: #0c1a2e; border: 1px solid #00BFFF; border-radius: 8px; padding: 12px 13px; text-align: left; text-transform: none; letter-spacing: normal; font-weight: 400; font-size: 12px; line-height: 1.5; color: #cfe3f5; box-shadow: 0 8px 24px rgba(0,0,0,0.55); }
   .kpi-info:hover .kpi-tip { visibility: visible; opacity: 1; }
   .kpi-info .kpi-tip b { color: #ffffff; }
@@ -1624,7 +1624,7 @@ function renderAll() {
   const netCls = totalNet >= 0 ? 'green' : 'red';
   let html = '<div class="summary-grid">';
   html += '<div class="summary-card dual gold"><div class="card-cell"><div class="label">Cash Collected</div><div class="value" id="kpi-cash">' + fmtShort(totalDisb) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">Cash YTD</div><div class="value" id="kpi-cash-ytd">' + fmtShort(ytdDisb) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
-  const netTip = '<span class="kpi-info">i<span class="kpi-tip"><b>How Net Cashflow is calculated</b>'
+  const netTip = '<span class="kpi-info">💡<span class="kpi-tip"><b>How Net Cashflow is calculated</b>'
     + '<span class="formula">Cash Collected − Mortgage − Insurance − Maintenance (repairs)</span>'
     + 'Cash Collected is the owner disbursement that actually hit the LLC bank accounts. Mortgage is the full monthly loan cost (for Divando this includes the 6 property loans + SBA).'
     + '<span class="tax-note"><b>Property tax</b> is not subtracted again here. <b>Yale & Donald</b> pay tax through the lender (it is escrowed inside the mortgage above). <b>Divando & Dorado</b> pay tax manually as a lump sum in the spring, so it is shown for info only and left out of the monthly net.</span>'
