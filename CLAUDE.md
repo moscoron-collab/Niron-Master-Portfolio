@@ -560,6 +560,30 @@ Deploy. The `Activity Log` tab is created automatically on the first logged chan
 `index.html` side goes live on merge. **"Who" is only recorded going forward** — changes made
 before this won't have a person attached (they appear as automation/unknown).
 
+### 🐛 "Last Updated" still showed 6/4 after a 6/5 invoice (Jun 6 2026) — DEPLOY GAP, not a code bug
+User reported the header "Last Updated" still read **6/4/2026 7:47 PM** after adding a
+maintenance invoice on **Jun 5**. Diagnosed: the **`index.html` side of PR #53 is live**
+(the Activity / CPA / Run Audit buttons are visible), **but the Apps Script backend was
+NOT redeployed.** `last_updated` is computed **server-side** in the deployed web app
+(`getDashboardJson` → `bumpChange` off the Activity Log + History `Logged At` + Property
+Detail `Updated`). The repo's `AppsScript.gs` is already correct (adding an invoice calls
+`addMaintenanceEntry` → `logActivity` → an Activity Log row dated 6/5 → `bumpChange` →
+`last_updated` = 6/5). The OLD deployed code has no Activity-Log read, so a maintenance add
+carries no timestamp and the stamp stays on the last AppFolio/Property-Detail write (6/4).
+**Fix = the required PR #53 redeploy** (Sheet → Extensions → Apps Script → paste new
+`AppsScript.gs` → Deploy → Manage deployments → Edit → New version → Deploy). No code change
+was needed. (Caveat: invoices added **directly in the Google Sheet** rather than via the
+dashboard 🔧 button never log to the Activity Log, so they also won't bump the stamp — that
+is expected, the bump is tied to dashboard writes.)
+
+### 🗓️ History table month shown by name, not `YYYY-MM-DD` (Jun 6 2026)
+User: "the month must be by name not number (jan feb…)." The **History (newest first)** table
+was the ONLY place still printing the raw `period_start` (`2026-05-01`) even though its column
+header says "Month" — every other section already used the `monthLabel()` helper
+(`MONTH_NAMES` → "May 2026"). Fixed in `index.html` (the `sortedHistory` row render): now
+`monthLabel(h.period_start)` → **"May 2026"**. Pure frontend, live on merge. Self-audit
+unaffected (it recomputes from `PORTFOLIO_DATA`, not the table DOM; the 7 columns are unchanged).
+
 ---
 
 ## 🧾 CPA Invoice Workflow + invoice upload (BUILT — Jun 5 2026, PR #48)
