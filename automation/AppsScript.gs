@@ -884,8 +884,6 @@ function relabelManualEntryRows() {
 }
 
 function handleChatWithHistory(messages, activeTab, nobleContext) {
-
-function handleChatWithHistory(messages, activeTab, nobleContext) {
   if (!messages || !messages.length) {
     return ContentService.createTextOutput(JSON.stringify({error: 'No messages'}))
       .setMimeType(ContentService.MimeType.JSON);
