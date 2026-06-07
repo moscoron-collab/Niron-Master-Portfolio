@@ -54,6 +54,9 @@
   .kpi-info .kpi-tip b { color: #ffffff; }
   .kpi-info .kpi-tip .formula { display: block; background: #07101d; border: 1px solid #1e2d42; border-radius: 6px; padding: 7px 8px; margin: 6px 0 8px; color: #6ee7a8; font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
   .kpi-info .kpi-tip .tax-note { display: block; margin-top: 6px; padding-top: 7px; border-top: 1px solid #1e2d42; color: #9fb8d0; }
+  /* On-card ratio chip (e.g. "📊 31.4% kept") */
+  .kpi-ratio { display: inline-block; margin-top: 3px; padding: 1px 6px; border-radius: 6px; background: #07101d; border: 1px solid #1e2d42; color: #6ee7a8; font-size: 10px; font-weight: 600; letter-spacing: 0.3px; white-space: nowrap; }
+  .kpi-ratio.blue { color: #7fb3ff; }
   .ytd-label { color: #00BFFF !important; }
   .gold .label { color: #00BFFF; }
   .green .label { color: #00BFFF; }
@@ -1624,13 +1627,24 @@ function renderAll() {
   const netCls = totalNet >= 0 ? 'green' : 'red';
   let html = '<div class="summary-grid">';
   html += '<div class="summary-card dual gold"><div class="card-cell"><div class="label">Cash Collected</div><div class="value" id="kpi-cash">' + fmtShort(totalDisb) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">Cash YTD</div><div class="value" id="kpi-cash-ytd">' + fmtShort(ytdDisb) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
+  // ── Ratio helpers (recalc with the selected month) ──
+  // marginPct = Net ÷ Cash Collected (how much of collected cash survives expenses)
+  // payoutPct = Your Distribution ÷ Net Cashflow (your slice of net that hit the bank)
+  const ratioPct = (num, den) => (den > 0 && isFinite(num / den)) ? (num / den * 100).toFixed(1) + '%' : '—';
+  const marginPct = ratioPct(totalNet, totalDisb);
+  const payoutPct = ratioPct(distThisMonth, totalNet);
   const netTip = '<span class="kpi-info">💡<span class="kpi-tip"><b>How Net Cashflow is calculated</b>'
     + '<span class="formula">Cash Collected − Mortgage − Insurance − Maintenance (repairs)</span>'
     + 'Cash Collected is the owner disbursement that actually hit the LLC bank accounts. Mortgage is the full monthly loan cost (for Divando this includes the 6 property loans + SBA).'
     + '<span class="tax-note"><b>Property tax</b> is not subtracted again here. <b>Yale & Donald</b> pay tax through the lender (it is escrowed inside the mortgage above). <b>Divando & Dorado</b> pay tax manually as a lump sum in the spring, so it is shown for info only and left out of the monthly net.</span>'
+    + '<span class="tax-note"><b>Cash efficiency = ' + marginPct + '</b> &nbsp;(Net Cashflow ÷ Cash Collected) — the share of collected cash left after mortgage, insurance & repairs.</span>'
     + '</span></span>';
-  html += '<div class="summary-card dual ' + netCls + '"><div class="card-cell"><div class="label">Net Cashflow' + netTip + '</div><div class="value" id="kpi-net">' + fmtShort(totalNet) + '</div><div class="sublabel">After all expenses</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value" id="kpi-net-ytd">' + fmtShort(ytdNet) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
-  html += '<div class="summary-card dual blue"><div class="card-cell"><div class="label">Your Distribution</div><div class="value" id="kpi-dist">' + fmtShort(distThisMonth) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value" id="kpi-dist-ytd">' + fmtShort(distYtd) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
+  const distTip = '<span class="kpi-info">💡<span class="kpi-tip"><b>Return on net cashflow</b>'
+    + '<span class="formula">Your Distribution ÷ Net Cashflow = ' + payoutPct + '</span>'
+    + 'The share of this month\'s net cashflow that was actually paid out to <b>you</b> and hit your bank account. Net Cashflow is the whole portfolio (your + Nir\'s money), so an even split between the two of you lands near 50%.'
+    + '</span></span>';
+  html += '<div class="summary-card dual ' + netCls + '"><div class="card-cell"><div class="label">Net Cashflow' + netTip + '</div><div class="value" id="kpi-net">' + fmtShort(totalNet) + '</div><div class="sublabel">After all expenses<br><span class="kpi-ratio">📊 ' + marginPct + ' kept</span></div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value" id="kpi-net-ytd">' + fmtShort(ytdNet) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
+  html += '<div class="summary-card dual blue"><div class="card-cell"><div class="label">Your Distribution' + distTip + '</div><div class="value" id="kpi-dist">' + fmtShort(distThisMonth) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '<br><span class="kpi-ratio blue">💸 ' + payoutPct + ' of net</span></div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value" id="kpi-dist-ytd">' + fmtShort(distYtd) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Total Mortgage / Mo</div><div class="value" id="kpi-mort">' + fmtShort(totalMortgage) + '</div><div class="sublabel">Across all LLCs</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Portfolio Value</div><div class="value" id="kpi-value">' + fmtShort(totalValue) + '</div><div class="sublabel">Estimated</div></div></div>';
   html += '</div>';
