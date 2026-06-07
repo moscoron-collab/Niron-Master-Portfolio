@@ -611,6 +611,46 @@ accurate, lumpy tax.) STILL TO CONFIRM: what Bergman is; annual tax per LLC; whe
 repair checks should be logged. **Lesson: do NOT build distribution/cash tools on the AppFolio-
 only net again — it is not true cash.**
 
+### ✅ BUILT — Bank-CSV importer + "True Cash — Bank-Verified" section (Jun 7 2026)
+Frontend-only (no Apps Script, no redeploy, no sheet changes — user was fed up with the redeploy
+dance). In `index.html`:
+- **`📥 Import Bank` header button** → `bank-modal`: user picks the monthly transaction CSVs
+  (all 4 at once). `handleBankFiles` reads each **in the browser** (`File.text()`), `parseBankFile`
+  detects the LLC from the `Account Name` column, classifies every line via `bankCategorize`, and
+  aggregates per LLC per month. Stored in **`localStorage['niron_bank_actuals']`** (per browser;
+  nothing uploaded — keeps sensitive distribution/partner data off the shared sheet).
+- **True net = income − (mortgage+sba+insurance+tax+utilities+accountant+repairs+bankfee+other).**
+  Distributions tracked separately per partner; inter-account transfers excluded.
+- **`renderBankSection()`** renders a "💵 True Cash — Bank-Verified" section (between the
+  Operational Health tiles and Monthly Breakdown) with its OWN month dropdown (`BANK_MONTH`,
+  defaults newest imported), one card per LLC showing the full real-expense breakdown, **True Net
+  Cash**, the distributions actually taken (Ron/Nir/Simon), "Left after payout" (red = drew down/
+  overdrafted), and the even-split (÷2, Dorado ÷3). Totals strip at the bottom. If nothing is
+  imported, shows a prompt pointing at the Import button.
+- **Self-audit UNAFFECTED** — new section uses no `#kpi-*` IDs and doesn't touch the existing
+  AppFolio-based cards/net (that stays as the auto-updating estimate until you import bank data).
+
+#### 🔑 Categorization rules (validated to the penny vs the Mar–May 2026 CSVs)
+- **Income** = any `Credit` (Laureate `OWNERFUNDS`/`VENDOR`, Suncoast/MidSouth `WEB PMTS`, refunds).
+- **Distributions** (not expenses): `BILL PAID-RONEN…`=Ron, `BILL PAID-SIMON HAVIV`=Simon,
+  `TRANSFER … TO X9562`=Nir (**X9562 = Nir's personal account**).
+- **Exclude (zero-sum):** `TRANSFER` involving `DDA ACCT` or any own account
+  (`X9364/X2321/X3442/X2189/X5369/X0422`).
+- **Mortgage** = `TRANSFER TO LOAN` / `CBRE LOAN` / `LUMENT`. **SBA** = `SBA LOAN`.
+  **Insurance** = STATE FARM/ACUITY/WESTFIELD/NATIONAL INDEMNITY. **Tax** = CITY AND COUNTY/
+  TAXPYMT/CO TAX. **Utilities** = DNVRWTR/COMPOST/XCEL/CITY OF AURORA/GOOGLE. **Accountant** =
+  JEFF BERGMAN (user confirmed: accountant). **Repairs** = CHECK#/DBT CRD/DDA B/P/BILL PAID(other)/
+  AMEX. **Bank fees** = OVERDRAFT FEE. Else **other**.
+- Verified output (true net): Donald Mar/Apr/May $3,207.57 / $1,109.96 / $757.87; Yale $5,379.35 /
+  −$6,650.01 / $265.50; Divando $9,048.19 / −$601.26 / $7,780.78; Dorado $16,436.36 / $10,055.95 /
+  $4,838.54. **Distributions can be unequal month-to-month** (partners true up over time) — the
+  importer records actuals, never assumes 50/50.
+
+> 🔭 **Future (not built):** move bank actuals to a shared Google Sheet tab (so Nir/the Moss combined
+> db see them) — deferred to keep this redeploy-free and to keep partner distribution data private.
+> Then optionally REPLACE the AppFolio-based Monthly Breakdown net with bank-true net for imported
+> months, and (only if the user revives it) a distribution planner built on TRUE net.
+
 ---
 
 ## 💰 Distribution Planner + investor-audit fixes (Jun 7 2026) — SUPERSEDED, SEE ABOVE
