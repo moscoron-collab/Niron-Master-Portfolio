@@ -54,6 +54,8 @@
   .kpi-info .kpi-tip b { color: #ffffff; }
   .kpi-info .kpi-tip .formula { display: block; background: #07101d; border: 1px solid #1e2d42; border-radius: 6px; padding: 7px 8px; margin: 6px 0 8px; color: #6ee7a8; font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
   .kpi-info .kpi-tip .tax-note { display: block; margin-top: 6px; padding-top: 7px; border-top: 1px solid #1e2d42; color: #9fb8d0; }
+  .kpi-lang-btn { margin-left: 6px; font-size: 10px; padding: 1px 6px; border: 1px solid #2a3f5c; border-radius: 10px; background: #0d1825; color: #7e9cbf; cursor: pointer; vertical-align: middle; line-height: 1.5; font-weight: 600; }
+  .kpi-lang-btn:hover { border-color: #00BFFF; color: #cfe3f5; }
   /* On-card ratio chip (e.g. "📊 31.4% kept") */
   .kpi-ratio { display: inline-block; margin-top: 3px; padding: 1px 6px; border-radius: 6px; background: #07101d; border: 1px solid #1e2d42; color: #6ee7a8; font-size: 10px; font-weight: 600; letter-spacing: 0.3px; white-space: nowrap; }
   .kpi-ratio.blue { color: #7fb3ff; }
@@ -1525,6 +1527,9 @@ let PD_CHART = 'bars';   // chart style: bars (selected month) | lines (trend ov
 let PD_CACHE = null;     // last-built dataset, used by the chart renderer
 let MAINT_MONTH = '';    // maintenance table month filter ('' = All months)
 function maintSetMonth(v) { MAINT_MONTH = v; renderAll(); }
+// Hebrew/English toggle for the Net Cashflow + Your Distribution KPI cards (label + tooltip).
+let KPI_LANG = localStorage.getItem('niron_kpi_lang') || 'en';
+function toggleKpiLang() { KPI_LANG = (KPI_LANG === 'he' ? 'en' : 'he'); localStorage.setItem('niron_kpi_lang', KPI_LANG); renderAll(); }
 function pdSetMetric(v) { PD_METRIC = v; renderAll(); }
 function pdSetChart(v) { PD_CHART = v; renderAll(); }
 // One dropdown drives both: a range ("r:3".."r:0"=All) or a single month ("m:2026-05-01").
@@ -1643,18 +1648,28 @@ function renderAll() {
   const ratioPct = (num, den) => (den > 0 && isFinite(num / den)) ? (num / den * 100).toFixed(1) + '%' : '—';
   const marginPct = ratioPct(totalNet, totalDisb);
   const payoutPct = ratioPct(distThisMonth, totalNet);
-  const netTip = '<span class="kpi-info">💡<span class="kpi-tip"><b>How Net Cashflow is calculated</b>'
-    + '<span class="formula">Cash Collected − Mortgage − Insurance − Maintenance (repairs)</span>'
-    + 'Cash Collected is the owner disbursement that actually hit the LLC bank accounts. Mortgage is the full monthly loan cost (for Divando this includes the 6 property loans + SBA).'
-    + '<span class="tax-note"><b>Property tax</b> is not subtracted again here. <b>Yale & Donald</b> pay tax through the lender (it is escrowed inside the mortgage above). <b>Divando & Dorado</b> pay tax manually as a lump sum in the spring, so it is shown for info only and left out of the monthly net.</span>'
-    + '<span class="tax-note"><b>Cash efficiency = ' + marginPct + '</b> &nbsp;(Net Cashflow ÷ Cash Collected) — the share of collected cash left after mortgage, insurance & repairs.</span>'
+  // Hebrew/English helper + RTL direction for the two translatable KPI cards.
+  const L = (en, he) => KPI_LANG === 'he' ? he : en;
+  const tipDir = KPI_LANG === 'he' ? ' dir="rtl" style="text-align:right"' : '';
+  const langBtn = '<button class="kpi-lang-btn" onclick="toggleKpiLang()" title="Translate / תרגום">' + (KPI_LANG === 'he' ? 'EN' : 'עב') + '</button>';
+  const netTip = '<span class="kpi-info">💡<span class="kpi-tip"' + tipDir + '>'
+    + L('<b>How Net Cashflow is calculated</b>', '<b>איך מחושב תזרים המזומנים הנקי</b>')
+    + '<span class="formula">' + L('Cash Collected − Mortgage − Insurance − Maintenance (repairs)', 'מזומן שנגבה − משכנתא − ביטוח − תחזוקה (תיקונים)') + '</span>'
+    + L('Cash Collected is the owner disbursement that actually hit the LLC bank accounts. Mortgage is the full monthly loan cost (for Divando this includes the 6 property loans + SBA).',
+        'מזומן שנגבה הוא חלוקת הבעלים שנכנסה בפועל לחשבונות הבנק של ה-LLC. המשכנתא היא עלות ההלוואה החודשית המלאה (עבור Divando כולל 6 הלוואות נכסים + SBA).')
+    + '<span class="tax-note">' + L('<b>Property tax</b> is not subtracted again here. <b>Yale & Donald</b> pay tax through the lender (it is escrowed inside the mortgage above). <b>Divando & Dorado</b> pay tax manually as a lump sum in the spring, so it is shown for info only and left out of the monthly net.',
+        '<b>מס רכוש</b> אינו מנוכה שוב כאן. <b>Yale ו-Donald</b> משלמים מס דרך המלווה (הוא מופקד בנאמנות בתוך המשכנתא למעלה). <b>Divando ו-Dorado</b> משלמים מס באופן ידני כסכום חד-פעמי באביב, ולכן הוא מוצג למידע בלבד ואינו נכלל בנקי החודשי.') + '</span>'
+    + '<span class="tax-note">' + L('<b>Cash efficiency = ' + marginPct + '</b> &nbsp;(Net Cashflow ÷ Cash Collected) — the share of collected cash left after mortgage, insurance & repairs.',
+        '<b>יעילות מזומן = ' + marginPct + '</b> &nbsp;(תזרים נקי ÷ מזומן שנגבה) — חלק המזומן שנגבה שנותר לאחר משכנתא, ביטוח ותיקונים.') + '</span>'
     + '</span></span>';
-  const distTip = '<span class="kpi-info">💡<span class="kpi-tip"><b>Return on net cashflow</b>'
-    + '<span class="formula">Your Distribution ÷ Net Cashflow = ' + payoutPct + '</span>'
-    + 'The share of this month\'s net cashflow that was actually paid out to <b>you</b> and hit your bank account. Net Cashflow is the whole portfolio (your + Nir\'s money), so an even split between the two of you lands near 50%.'
+  const distTip = '<span class="kpi-info">💡<span class="kpi-tip"' + tipDir + '>'
+    + L('<b>Return on net cashflow</b>', '<b>תשואה על תזרים המזומנים הנקי</b>')
+    + '<span class="formula">' + L('Your Distribution ÷ Net Cashflow = ' + payoutPct, 'החלוקה שלך ÷ תזרים מזומנים נקי = ' + payoutPct) + '</span>'
+    + L('The share of this month\'s net cashflow that was actually paid out to <b>you</b> and hit your bank account. Net Cashflow is the whole portfolio (your + Nir\'s money), so an even split between the two of you lands near 50%.',
+        'החלק מתזרים המזומנים הנקי של החודש ששולם בפועל אליך ונכנס לחשבון הבנק שלך. תזרים המזומנים הנקי הוא של כל התיק (הכסף שלך + של ניר), כך שחלוקה שווה ביניכם מגיעה לכ-50%.')
     + '</span></span>';
-  html += '<div class="summary-card dual ' + netCls + '"><div class="card-cell"><div class="label">Net Cashflow' + netTip + '</div><div class="value" id="kpi-net">' + fmtShort(totalNet) + '</div><div class="sublabel">After all expenses<br><span class="kpi-ratio">📊 ' + marginPct + ' kept</span></div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value" id="kpi-net-ytd">' + fmtShort(ytdNet) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
-  html += '<div class="summary-card dual blue"><div class="card-cell"><div class="label">Your Distribution' + distTip + '</div><div class="value" id="kpi-dist">' + fmtShort(distThisMonth) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '<br><span class="kpi-ratio blue">💸 ' + payoutPct + ' of net</span></div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD</div><div class="value" id="kpi-dist-ytd">' + fmtShort(distYtd) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
+  html += '<div class="summary-card dual ' + netCls + '"><div class="card-cell"><div class="label">' + L('Net Cashflow', 'תזרים מזומנים נקי') + netTip + langBtn + '</div><div class="value" id="kpi-net">' + fmtShort(totalNet) + '</div><div class="sublabel">' + L('After all expenses', 'אחרי כל ההוצאות') + '<br><span class="kpi-ratio">📊 ' + marginPct + ' ' + L('kept', 'נשמר') + '</span></div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">' + L('YTD', 'מתחילת השנה') + '</div><div class="value" id="kpi-net-ytd">' + fmtShort(ytdNet) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
+  html += '<div class="summary-card dual blue"><div class="card-cell"><div class="label">' + L('Your Distribution', 'החלוקה שלך') + distTip + langBtn + '</div><div class="value" id="kpi-dist">' + fmtShort(distThisMonth) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || L('No data', 'אין נתונים')) + '<br><span class="kpi-ratio blue">💸 ' + payoutPct + ' ' + L('of net', 'מהנקי') + '</span></div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">' + L('YTD', 'מתחילת השנה') + '</div><div class="value" id="kpi-dist-ytd">' + fmtShort(distYtd) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Total Mortgage / Mo</div><div class="value" id="kpi-mort">' + fmtShort(totalMortgage) + '</div><div class="sublabel">Across all LLCs</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Portfolio Value</div><div class="value" id="kpi-value">' + fmtShort(totalValue) + '</div><div class="sublabel">Estimated</div></div></div>';
   html += '</div>';
