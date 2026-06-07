@@ -624,9 +624,18 @@ dance). In `index.html`:
 - **`renderBankSection()`** renders a "💵 True Cash — Bank-Verified" section (between the
   Operational Health tiles and Monthly Breakdown) with its OWN month dropdown (`BANK_MONTH`,
   defaults newest imported), one card per LLC showing the full real-expense breakdown, **True Net
-  Cash**, the distributions actually taken (Ron/Nir/Simon), "Left after payout" (red = drew down/
-  overdrafted), and the even-split (÷2, Dorado ÷3). Totals strip at the bottom. If nothing is
-  imported, shows a prompt pointing at the Import button.
+  Cash**, the month's total **Distributed** split per policy, "Left after payout" (red = drew down/
+  overdrafted), and true-net-per-partner. Totals strip at the bottom. If nothing is imported, shows
+  a prompt pointing at the Import button.
+
+#### ⚖️ Distribution split = ALWAYS 50/50 (Dorado 1/3) — user rule (Jun 7 2026)
+**Distributions are ALWAYS equal: Ron/Nir 50/50 on Divando/Yale/Donald, and Ron/Nir/Simon 1/3
+each on Dorado.** The bank statements sometimes show UNEQUAL monthly per-partner amounts (e.g.
+Divando Mar: Ron $11,750 vs Nir $8,000) because the partners **true up over time** — the user
+confirmed the policy is always equal and does NOT want raw unequal amounts shown. So the Bank
+section sums the month's TOTAL detected distributions and **divides equally** (÷2, Dorado ÷3) for
+display; it no longer prints the raw per-line `dist_ron/dist_nir/dist_simon`. `m.distributed`
+(total) still drives "Left after payout". Do NOT revert to showing unequal per-partner amounts.
 - **Self-audit UNAFFECTED** — new section uses no `#kpi-*` IDs and doesn't touch the existing
   AppFolio-based cards/net (that stays as the auto-updating estimate until you import bank data).
 
@@ -643,8 +652,8 @@ dance). In `index.html`:
   AMEX. **Bank fees** = OVERDRAFT FEE. Else **other**.
 - Verified output (true net): Donald Mar/Apr/May $3,207.57 / $1,109.96 / $757.87; Yale $5,379.35 /
   −$6,650.01 / $265.50; Divando $9,048.19 / −$601.26 / $7,780.78; Dorado $16,436.36 / $10,055.95 /
-  $4,838.54. **Distributions can be unequal month-to-month** (partners true up over time) — the
-  importer records actuals, never assumes 50/50.
+  $4,838.54. The importer detects per-partner lines to get the monthly TOTAL distributed, but the
+  DISPLAY always splits that total equally per policy (see "Distribution split" above).
 
 > 🔭 **Future (not built):** move bank actuals to a shared Google Sheet tab (so Nir/the Moss combined
 > db see them) — deferred to keep this redeploy-free and to keep partner distribution data private.
