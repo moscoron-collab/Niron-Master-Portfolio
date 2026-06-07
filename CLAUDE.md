@@ -526,6 +526,18 @@ returns `'—'` when the denominator ≤ 0). Both recalc with the month dropdown
   second line in the sublabel. Percentages use **one decimal** (`toFixed(1)`).
 - Self-audit unaffected (it reads `#kpi-*` values via `fmtShort`, not the sublabel chips).
 
+### 🌐 Hebrew translate toggle on Net Cashflow + Your Distribution cards (Jun 7 2026)
+A small **`עב`/`EN` button** (`.kpi-lang-btn`, calls `toggleKpiLang()`) sits in the label of the
+**Net Cashflow** and **Your Distribution** KPI cards. It flips a shared `KPI_LANG` state
+(`localStorage 'niron_kpi_lang'`, default `en`) and re-renders, translating BOTH cards' **label,
+sublabel chips, and 💡 tooltip** between English and Hebrew. Built via an inline `L(en, he)` helper
+in `renderAll`; the Hebrew tooltips get `dir="rtl"` + right-align. The dynamic numbers
+(`marginPct`, `payoutPct`, dollar values) are unchanged — only the words translate. **Self-audit
+unaffected** — it reads the `#kpi-net`/`#kpi-dist` VALUE elements by ID (the numbers), not the
+translated labels (the `'Net Cashflow'` strings in `auditRun` are internal report text, not DOM
+lookups). To translate another card, wrap its label/tooltip text in `L('English','עברית')` and add
+`langBtn` to its label. Pure frontend, live on merge — no Apps Script redeploy.
+
 ---
 
 ## 💸 Partner Distributions section (Jun 5 2026, PR #47) — Phase 2 item 1
