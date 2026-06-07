@@ -37,10 +37,12 @@ def read_range(svc, rng):
     return svc.values().get(spreadsheetId=SHEET_ID, range=rng).execute().get("values", [])
 
 
-def already_recorded(svc, llc, month_label):
+def already_recorded(svc, source, month_label):
+    """Match on period_start (col B) + the Source string (col K) so the 3 properties are
+    told apart even though they all share LLC = 'Divando LLC' (col C)."""
     for tab in ("History", "Pending Review"):
-        for row in read_range(svc, f"'{tab}'!A:C")[1:]:
-            if len(row) >= 3 and row[1] == month_label and row[2] == llc:
+        for row in read_range(svc, f"'{tab}'!A:K")[1:]:
+            if len(row) >= 11 and row[1] == month_label and row[10] == source:
                 return True
     return False
 
@@ -71,15 +73,22 @@ def main():
         if noi is None or noi == 0:
             print(f"Skipping {prop} (no value entered)")
             continue
-        if already_recorded(svc, prop, period_start):
+        source = f"Manual Entry: {prop}"
+        if already_recorded(svc, source, period_start):
             print(f"Already recorded {prop} for {period_start} — skipping")
             continue
+        # The 3 out-of-state properties roll up under Divando LLC, so the LLC column (C) is
+        # "Divando LLC" and the property name lives in the Source column (K) as
+        # "Manual Entry: <property>" — that is exactly how the dashboard's
+        # buildPropertyRecords() and Divando roll-up locate them. (Older runs wrongly put
+        # the property in col C with a bare "Manual Entry" source, which made these rows
+        # invisible to the per-property monitor.)
         row = [
-            date_range, period_start, prop,
+            date_range, period_start, "Divando LLC",
             noi, 0,         # disbursement (= NOI), mgmt_fee (already netted out)
             0, 0, 0,        # mortgage, tax_mo, ins_mo
             0, noi,         # maintenance, net_cashflow
-            "Manual Entry", now_str,
+            source, now_str,
         ]
         svc.values().append(
             spreadsheetId=SHEET_ID,
