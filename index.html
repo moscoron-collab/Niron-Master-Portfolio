@@ -1906,18 +1906,21 @@ function renderBankSection() {
     html += row('bankfee', 'Bank fees', m.bankfee, { hideZero: true });
     html += row('other', 'Other', m.other, { hideZero: true });
     html += '<div class="llc-row total"><span class="k">True Net Cash</span><span class="v ' + netCls + '">' + fmt(m.true_net) + '</span></div>';
-    // Distributions actually taken this month.
-    const dParts = [];
-    dParts.push('Ron ' + fmt(m.dist_ron));
-    dParts.push('Nir ' + fmt(m.dist_nir));
-    if (L.split === 3 || m.dist_simon) dParts.push('Simon ' + fmt(m.dist_simon));
+    // Distributions: policy is ALWAYS equal (Ron/Nir 50/50, Dorado 1/3 each). The bank can
+    // show unequal monthly amounts because the partners true up over time, so we split the
+    // month's TOTAL distribution equally per the agreement rather than show raw per-line amounts.
     if (m.distributed) {
-      html += '<div class="llc-row" style="border-top:1px solid #1e2d42;margin-top:6px;padding-top:6px"><span class="k" style="color:#00BFFF">Distributed</span><span class="v" style="color:#00BFFF;font-size:11px">' + dParts.join(' · ') + '</span></div>';
+      const each = m.distributed / L.split;
+      const parts = L.split === 3
+        ? ('Ron ' + fmt(each) + ' · Nir ' + fmt(each) + ' · Simon ' + fmt(each))
+        : ('You ' + fmt(each) + ' · Nir ' + fmt(each));
+      html += '<div class="llc-row" style="border-top:1px solid #1e2d42;margin-top:6px;padding-top:6px"><span class="k" style="color:#00BFFF">Distributed</span><span class="v" style="color:#00BFFF">' + fmt(m.distributed) + '</span></div>';
+      html += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">Split (÷' + L.split + ')</span><span class="v" style="color:#4e6d8c;font-size:11px">' + parts + '</span></div>';
       html += '<div class="llc-row"><span class="k">Left after payout</span><span class="v ' + (after >= 0 ? 'green' : 'red') + '">' + fmt(after) + '</span></div>';
     } else {
       html += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:12px">No distribution this month</span><span class="v"></span></div>';
     }
-    html += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">Even split (÷' + L.split + ')</span><span class="v" style="color:#4e6d8c;font-size:11px">' + fmt(m.true_net / L.split) + ' each</span></div>';
+    html += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">True net per partner (÷' + L.split + ')</span><span class="v" style="color:#4e6d8c;font-size:11px">' + fmt(m.true_net / L.split) + ' each</span></div>';
     html += '</div>';
   });
   html += '</div>';
