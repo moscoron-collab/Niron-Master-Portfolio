@@ -509,7 +509,22 @@ The **Net Cashflow** KPI card now has a small **ⓘ info icon** next to its labe
   info only, left out of monthly net). This matches `isTaxEscrowed` (Donald/Yale) +
   `isTaxLumpSum` (Divando/Dorado), both of which make `effectiveTax` return 0.
 Pure frontend, live on merge. To add the same tooltip to another KPI, reuse the
-`<span class="kpi-info">i<span class="kpi-tip">…</span></span>` pattern inside that card's label.
+`<span class="kpi-info">💡<span class="kpi-tip">…</span></span>` pattern inside that card's label.
+
+### 📊 Two efficiency ratios added to the KPI cards (Jun 7 2026)
+Two live ratios now appear in `renderAll` (computed via the `ratioPct(num, den)` helper, which
+returns `'—'` when the denominator ≤ 0). Both recalc with the month dropdown.
+- **Net Cashflow card** → on-card chip **`📊 {marginPct} kept`** + a line in its 💡 tooltip.
+  `marginPct = ratioPct(totalNet, totalDisb)` = **Net Cashflow ÷ Cash Collected** ("cash
+  efficiency" — share of collected cash left after mortgage, insurance & repairs).
+- **Your Distribution card** → on-card chip **`💸 {payoutPct} of net`** + a NEW 💡 tooltip
+  (`distTip`, "Return on net cashflow"). `payoutPct = ratioPct(distThisMonth, totalNet)` =
+  **Your Distribution ÷ Net Cashflow**. ⚠️ Numerator is YOUR share only while Net is the whole
+  portfolio (you + Nir), so an even split reads ~50% — the tooltip explains this. (User picked
+  "Your Distribution ÷ Net", NOT total-payout ÷ net.)
+- Chip style = `.kpi-ratio` (green) / `.kpi-ratio.blue` (blue for the dist card), shown as a
+  second line in the sublabel. Percentages use **one decimal** (`toFixed(1)`).
+- Self-audit unaffected (it reads `#kpi-*` values via `fmtShort`, not the sublabel chips).
 
 ---
 
