@@ -435,6 +435,17 @@
   </div>
 </div>
 
+<!-- ═══════════════════ BANK IMPORT ═══════════════════ -->
+<div class="modal-overlay" id="bank-modal" onclick="if(event.target===this)closeBankModal()">
+  <div class="modal-box" style="max-width:760px">
+    <h2><span>📥 Import Bank Statements</span> <button class="modal-close" onclick="closeBankModal()">×</button></h2>
+    <div style="font-size:12px;color:#7e9cbf;margin:-6px 0 12px;line-height:1.55">Pick the monthly <b>transaction CSV export</b> for each LLC operating account — you can select all four at once. The dashboard reads them <b>in your browser</b> (nothing is uploaded), figures out each LLC automatically, and computes the <b>true net cash</b> = income minus every real expense it sees (mortgage, SBA, insurance, property tax, city utilities, accountant, repairs). Distributions are tracked per partner (Ron / Nir / Simon). It stores the result in this browser, so it sticks across refreshes.</div>
+    <input type="file" id="bank-files" accept=".csv,text/csv" multiple onchange="handleBankFiles(this.files)" style="width:100%;padding:10px;border:1px dashed #2a3f5c;border-radius:8px;background:#0d1825;color:#ccd9ea;cursor:pointer"/>
+    <div id="bank-preview" style="max-height:48vh;overflow:auto;margin-top:12px;font-size:12px"></div>
+    <div class="modal-actions"><button class="secondary" onclick="clearBankData()" style="color:#ff6b7a;border-color:#ff6b7a">🗑 Clear all imported</button><button class="primary" onclick="closeBankModal()">Done</button></div>
+  </div>
+</div>
+
 <!-- ═══════════════════ CHAT PANEL ═══════════════════ -->
 <div class="chat-panel" id="chat-panel">
   <div class="chat-header">
@@ -496,7 +507,7 @@
     <div class="meta">
       <div><span class="label">Last Updated:</span> <span id="last-updated">—</span></div>
       <div><span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span><button class="logout-btn" onclick="logout()">Logout</button></div>
-      <div style="margin-top:6px"><button class="audit-btn" id="audit-btn" onclick="runAuditFresh()">🩺 Run Audit</button><button class="audit-btn" id="cpa-btn" onclick="openCpaModal()" title="Invoices sent to the CPA and not yet paid">🧾 CPA Invoices</button><button class="audit-btn" id="activity-btn" onclick="openActivityModal()" title="History of every change - who and when">📋 Activity</button><span id="audit-chip" class="audit-chip"></span></div>
+      <div style="margin-top:6px"><button class="audit-btn" id="audit-btn" onclick="runAuditFresh()">🩺 Run Audit</button><button class="audit-btn" id="cpa-btn" onclick="openCpaModal()" title="Invoices sent to the CPA and not yet paid">🧾 CPA Invoices</button><button class="audit-btn" id="activity-btn" onclick="openActivityModal()" title="History of every change - who and when">📋 Activity</button><button class="audit-btn" id="bank-btn" onclick="openBankModal()" title="Import bank statement CSVs to compute each LLC's TRUE net cash">📥 Import Bank</button><span id="audit-chip" class="audit-chip"></span></div>
       <div style="margin-top:6px"><span class="label" style="font-size:11px">Signed in as:</span> <select id="actor-select" class="actor-pick" onchange="setActor(this.value)" title="Who is making changes (stamped on every edit)" style="background:#0a1520;border:1px solid #1e2d42;color:#ccd9ea;border-radius:6px;font-size:11px;padding:4px 8px;outline:none;cursor:pointer"><option value="">— who are you? —</option><option value="R.M">R.M — Ron</option><option value="O.M">O.M — Oshrat</option><option value="N.S">N.S — Nir</option></select></div>
     </div>
   </header>
@@ -1669,6 +1680,7 @@ function renderAll() {
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Repairs · This Month</div><div class="value" id="kpi-rep-month" style="color:#ff4455">' + fmt(repThisSum) + '</div><div class="sublabel">' + inv(repThis.length) + ' · ' + (monthLabel(SELECTED_MONTH) || '') + '</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Repairs · YTD</div><div class="value" id="kpi-rep-ytd">' + fmt(repYtdSum) + '</div><div class="sublabel">' + inv(repYtd.length) + ' · ' + selectedYear + '</div></div></div>';
   html += '</div>';
+  html += renderBankSection();
   html += '<div class="section"><h2><span class="dot"></span><span>Monthly Breakdown</span><select id="inline-month-select" class="header-month-select" onchange="onMonthChange(this.value)">' + monthOptions + '</select></h2><div class="llc-grid">';
   groupedSelected.forEach(r => { const net = r.net_cashflow; const cls = net >= 0 ? 'green' : 'red'; let taxLabel = 'Tax / 12'; if (isTaxEscrowed(r.llc)) { taxLabel += ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(paid by escrow)</span>'; } else if (isTaxLumpSum(r.llc)) { taxLabel += ' <span title="Property tax is paid as a lump sum in spring (Mar-Apr), not deducted from the monthly net." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(paid in spring ⓘ)</span>'; } const distRows = distributions.filter(d => d.llc === r.llc && d.period === r.period_start); const distYou = distRows.reduce((s,d) => s + (d.your_amount||0), 0); const distNir = distRows.reduce((s,d) => s + (d.partner_amount||0), 0); const distHtml = (distYou || distNir) ? '<div class="llc-row" style="border-top:1px solid #1e2d42;margin-top:6px;padding-top:6px"><span class="k" style="color:#00c97a">Distribution</span><span class="v" style="color:#00c97a;font-size:12px">You: ' + fmt(distYou) + ' &nbsp;|&nbsp; Nir: ' + fmt(distNir) + '</span></div>' : ''; html += '<div class="llc-card"><h3>' + r.llc + '</h3><div class="llc-row"><span class="k">Disbursement</span><span class="v">' + fmt(r.disbursement) + '</span></div><div class="llc-row"><span class="k">Mgmt Fees</span><span class="v">' + fmt(r.mgmt_fee) + '</span></div>' + (extraMortgage(r.llc) ? '<div class="llc-row"><span class="k">Property Mortgages <span title="6 building loans drafted to the property loan accounts (15655/15675/Idalia, 43rd/Bates, Dearborn/Virginia, Blackhawk/Crown, Holly/Oakland, Tucson/Boston)." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(6 loans ⓘ)</span></span><span class="v">' + fmt(extraMortgage(r.llc)) + '</span></div><div class="llc-row"><span class="k">SBA Loans <span title="6 SBA payments drafted on the 1st — general Divando business debt, not tied to any property." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(business debt ⓘ)</span></span><span class="v">' + fmt(r.mortgage) + '</span></div>' : '<div class="llc-row"><span class="k">Mortgage</span><span class="v">' + fmt(r.mortgage) + '</span></div>') + '<div class="llc-row"><span class="k">' + taxLabel + '</span><span class="v">' + fmt(r.tax_mo) + '</span></div><div class="llc-row"><span class="k">Insurance / 12</span><span class="v">' + fmt(r.ins_mo) + '</span></div><div class="llc-row"><span class="k">Maintenance</span><span class="v">' + fmt(r.maintenance) + '</span></div><div class="llc-row total"><span class="k">Net Cashflow</span><span class="v ' + cls + '">' + fmt(net) + '</span></div>' + distHtml + '</div>'; });
   if (!groupedSelected.length) html += '<div style="color:#4e6d8c">No data for this month.</div>';
@@ -1742,6 +1754,182 @@ function renderAll() {
   // Self-audit runs after every render so the header chip stays live. Wrapped so a
   // parsing hiccup can never break the dashboard itself.
   try { auditRun(false); } catch (e) { console.warn('audit skipped:', e); }
+}
+
+/* ============================================================
+   BANK IMPORT — true cash net from the LLC operating-account CSVs
+   ------------------------------------------------------------
+   Reads the monthly transaction CSV per LLC entirely in the browser, classifies
+   each line, and computes TRUE net = income − (mortgage+SBA+insurance+tax+
+   utilities+accountant+repairs+fees). Distributions (Ron/Nir/Simon) are tracked
+   separately; inter-account transfers are excluded. Stored in localStorage.
+   Categorization mirrors the validated rules in automation (see CLAUDE.md).
+   ============================================================ */
+let BANK_ACTUALS = {};
+try { BANK_ACTUALS = JSON.parse(localStorage.getItem('niron_bank_actuals') || '{}'); } catch (e) { BANK_ACTUALS = {}; }
+let BANK_MONTH = '';
+const BANK_LLCS = [
+  { key: 'Divando', label: 'Divando LLC', match: /divando/i, split: 2 },
+  { key: 'Yale', label: 'Yale Townhomes, LLC', match: /yale/i, split: 2 },
+  { key: 'Donald', label: '5070 Donald, LLC', match: /donald/i, split: 2 },
+  { key: 'Dorado', label: 'Dorado LLC', match: /dorado/i, split: 3 }   // 3 equal partners (Ron/Nir/Simon)
+];
+const BANK_OWN_ACCTS = ['X9364', 'X2321', 'X3442', 'X2189', 'X5369', 'X0422'];
+const BANK_EXP_CATS = ['mortgage', 'sba', 'insurance', 'tax', 'utilities', 'accountant', 'repairs', 'bankfee', 'other'];
+
+function parseCsvLine(line) {
+  const out = []; let cur = '', q = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (q) { if (c === '"') { if (line[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else { if (c === '"') q = true; else if (c === ',') { out.push(cur); cur = ''; } else cur += c; }
+  }
+  out.push(cur); return out;
+}
+function bankCategorize(desc, cd) {
+  const d = (desc || '').toUpperCase();
+  if (d.includes('BILL PAID-RONEN')) return 'dist_ron';
+  if (d.includes('BILL PAID-SIMON HAVIV')) return 'dist_simon';
+  if (d.includes('TO X9562')) return 'dist_nir';                  // X9562 = Nir's personal account
+  if (d.includes('TRANSFER') && (d.includes('DDA ACCT') || BANK_OWN_ACCTS.some(a => d.includes(a)))) return 'xfer';
+  if (cd === 'Credit') return 'income';
+  if (d.includes('TRANSFER TO LOAN') || d.includes('CBRE LOAN') || d.includes('LUMENT')) return 'mortgage';
+  if (d.includes('SBA LOAN')) return 'sba';
+  if (['STATE FARM', 'ACUITY', 'WESTFIELD', 'NATIONAL INDEMNITY'].some(k => d.includes(k))) return 'insurance';
+  if (d.includes('CITY AND COUNTY') || d.includes('TAXPYMT') || d.includes('CO TAX') || d.includes('TAXPMT')) return 'tax';
+  if (['DNVRWTR', 'COMPOST', 'XCEL', 'CITY OF AURORA', 'GOOGLE', 'DENVER WATER'].some(k => d.includes(k))) return 'utilities';
+  if (d.includes('JEFF BERGMAN')) return 'accountant';
+  if (d.indexOf('CHECK') === 0 || d.includes('DBT CRD') || d.includes('DDA B/P') || d.includes('BILL PAID') || d.includes('AMEX')) return 'repairs';
+  if (d.includes('OVERDRAFT FEE')) return 'bankfee';
+  return 'other';
+}
+function blankBankMonth() {
+  const m = { dist_ron: 0, dist_nir: 0, dist_simon: 0 };
+  ['income'].concat(BANK_EXP_CATS).forEach(k => m[k] = 0);
+  return m;
+}
+function parseBankFile(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return null;
+  const header = parseCsvLine(lines[0]).map(h => h.replace(/^"|"$/g, '').trim());
+  const idx = {}; header.forEach((h, i) => idx[h] = i);
+  if (idx['Amount'] == null || idx['Processed Date'] == null) return null;
+  const rows = lines.slice(1).map(parseCsvLine);
+  let llc = null;
+  for (const r of rows) { const an = r[idx['Account Name']] || ''; const m = BANK_LLCS.find(L => L.match.test(an)); if (m) { llc = m; break; } }
+  if (!llc) return null;
+  const months = {};
+  rows.forEach(r => {
+    const date = (r[idx['Processed Date']] || '').trim(); if (date.length < 7) return;
+    const period = date.slice(0, 7) + '-01';
+    const amt = parseFloat((r[idx['Amount']] || '0').replace(/[",$]/g, '')) || 0;
+    const cd = (r[idx['Credit or Debit']] || '').trim();
+    const cat = bankCategorize(r[idx['Description']] || '', cd);
+    if (cat === 'xfer') return;
+    if (!months[period]) months[period] = blankBankMonth();
+    months[period][cat] += amt;
+  });
+  Object.keys(months).forEach(p => { const m = months[p]; m.expenses = BANK_EXP_CATS.reduce((s, k) => s + m[k], 0); m.true_net = m.income - m.expenses; m.distributed = m.dist_ron + m.dist_nir + m.dist_simon; });
+  return { key: llc.key, label: llc.label, months: months };
+}
+async function handleBankFiles(fileList) {
+  const files = Array.from(fileList || []); if (!files.length) return;
+  const done = [];
+  for (const f of files) {
+    let res = null;
+    try { res = parseBankFile(await f.text()); } catch (e) { res = null; }
+    if (res) {
+      if (!BANK_ACTUALS[res.key]) BANK_ACTUALS[res.key] = { label: res.label, months: {} };
+      BANK_ACTUALS[res.key].label = res.label;
+      Object.keys(res.months).forEach(p => { BANK_ACTUALS[res.key].months[p] = res.months[p]; });
+      done.push('✅ ' + res.key + ' (' + Object.keys(res.months).length + ' month' + (Object.keys(res.months).length === 1 ? '' : 's') + ')');
+    } else { done.push('⚠️ ' + f.name + ' — could not read / detect LLC'); }
+  }
+  localStorage.setItem('niron_bank_actuals', JSON.stringify(BANK_ACTUALS));
+  const pv = document.getElementById('bank-preview');
+  if (pv) pv.innerHTML = '<div style="color:#00c97a;margin-bottom:8px">' + done.join('<br>') + '</div>' + bankStoredSummary();
+  renderAll();
+}
+function bankStoredSummary() {
+  const keys = Object.keys(BANK_ACTUALS).filter(k => BANK_ACTUALS[k] && Object.keys(BANK_ACTUALS[k].months || {}).length);
+  if (!keys.length) return '<div style="color:#4e6d8c">Nothing imported yet.</div>';
+  let s = '<div style="color:#7e9cbf;border-top:1px solid #1e2d42;padding-top:8px">Stored in this browser:</div><ul style="margin:6px 0 0 16px;color:#ccd9ea">';
+  keys.forEach(k => { const ms = Object.keys(BANK_ACTUALS[k].months).sort(); s += '<li>' + k + ': ' + ms.map(monthLabel).join(', ') + '</li>'; });
+  return s + '</ul>';
+}
+function openBankModal() { const pv = document.getElementById('bank-preview'); if (pv) pv.innerHTML = bankStoredSummary(); document.getElementById('bank-modal').classList.add('open'); }
+function closeBankModal() { document.getElementById('bank-modal').classList.remove('open'); }
+function clearBankData() {
+  if (!confirm('Remove ALL imported bank data from this browser? (Your CSV files are not affected — you can re-import any time.)')) return;
+  BANK_ACTUALS = {}; localStorage.removeItem('niron_bank_actuals');
+  const pv = document.getElementById('bank-preview'); if (pv) pv.innerHTML = bankStoredSummary();
+  renderAll();
+}
+function bankAllMonths() { const s = new Set(); Object.values(BANK_ACTUALS).forEach(L => Object.keys(L.months || {}).forEach(m => s.add(m))); return Array.from(s).sort().reverse(); }
+function bankSetMonth(v) { BANK_MONTH = v; renderAll(); }
+
+function renderBankSection() {
+  const months = bankAllMonths();
+  if (!months.length) {
+    return '<div class="section"><h2><span class="dot"></span><span>💵 True Cash — Bank-Verified</span></h2>' +
+      '<div style="color:#7e9cbf;font-size:13px;line-height:1.6">No bank statements imported yet. Click <b>📥 Import Bank</b> (top of the page) and pick your monthly transaction CSVs to see each LLC\'s <b>true</b> net cash — what actually lands in and leaves the account, including property tax, utilities, accountant and repair checks that the AppFolio figure above does not capture.</div></div>';
+  }
+  if (!BANK_MONTH || months.indexOf(BANK_MONTH) < 0) BANK_MONTH = months[0];
+  const monthSel = '<select class="header-month-select" onchange="bankSetMonth(this.value)">' +
+    months.map(m => '<option value="' + m + '"' + (m === BANK_MONTH ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('') + '</select>';
+
+  let html = '<div class="section"><h2><span class="dot"></span><span>💵 True Cash — Bank-Verified</span>' + monthSel + '</h2>';
+  html += '<div style="color:#7e9cbf;font-size:12px;margin-bottom:14px">Computed straight from your uploaded bank statements for <b>' + monthLabel(BANK_MONTH) + '</b> — income minus every real expense in the account. This is the honest cash figure (vs. the AppFolio-based estimate in Monthly Breakdown).</div>';
+
+  const row = (k, label, val, opts) => {
+    opts = opts || {};
+    if (!val && opts.hideZero) return '';
+    return '<div class="llc-row"><span class="k">' + label + '</span><span class="v"' + (opts.color ? ' style="color:' + opts.color + '"' : '') + '>' + fmt(val) + '</span></div>';
+  };
+  let totNet = 0, totIncome = 0, totAfter = 0;
+  html += '<div class="llc-grid">';
+  BANK_LLCS.forEach(L => {
+    const store = BANK_ACTUALS[L.key]; if (!store || !store.months[BANK_MONTH]) return;
+    const m = store.months[BANK_MONTH];
+    totNet += m.true_net; totIncome += m.income;
+    const after = m.true_net - m.distributed; totAfter += after;
+    const netCls = m.true_net >= 0 ? 'green' : 'red';
+    html += '<div class="llc-card"><h3>' + L.label + '</h3>';
+    html += row('income', 'Income (collected)', m.income);
+    html += row('mortgage', 'Mortgage', m.mortgage, { hideZero: true });
+    html += row('sba', 'SBA loan', m.sba, { hideZero: true });
+    html += row('insurance', 'Insurance', m.insurance, { hideZero: true });
+    html += row('tax', 'Property tax', m.tax, { hideZero: true });
+    html += row('utilities', 'Utilities', m.utilities, { hideZero: true });
+    html += row('accountant', 'Accountant', m.accountant, { hideZero: true });
+    html += row('repairs', 'Repairs / checks', m.repairs, { hideZero: true });
+    html += row('bankfee', 'Bank fees', m.bankfee, { hideZero: true });
+    html += row('other', 'Other', m.other, { hideZero: true });
+    html += '<div class="llc-row total"><span class="k">True Net Cash</span><span class="v ' + netCls + '">' + fmt(m.true_net) + '</span></div>';
+    // Distributions actually taken this month.
+    const dParts = [];
+    dParts.push('Ron ' + fmt(m.dist_ron));
+    dParts.push('Nir ' + fmt(m.dist_nir));
+    if (L.split === 3 || m.dist_simon) dParts.push('Simon ' + fmt(m.dist_simon));
+    if (m.distributed) {
+      html += '<div class="llc-row" style="border-top:1px solid #1e2d42;margin-top:6px;padding-top:6px"><span class="k" style="color:#00BFFF">Distributed</span><span class="v" style="color:#00BFFF;font-size:11px">' + dParts.join(' · ') + '</span></div>';
+      html += '<div class="llc-row"><span class="k">Left after payout</span><span class="v ' + (after >= 0 ? 'green' : 'red') + '">' + fmt(after) + '</span></div>';
+    } else {
+      html += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:12px">No distribution this month</span><span class="v"></span></div>';
+    }
+    html += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">Even split (÷' + L.split + ')</span><span class="v" style="color:#4e6d8c;font-size:11px">' + fmt(m.true_net / L.split) + ' each</span></div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '<div style="margin-top:12px;padding:12px 16px;background:#0d1e30;border-radius:8px;display:flex;flex-wrap:wrap;gap:8px 28px;font-size:13px">' +
+    '<span style="color:#7e9cbf">' + monthLabel(BANK_MONTH) + ' totals:</span>' +
+    '<span>Income <b style="color:#ccd9ea">' + fmt(totIncome) + '</b></span>' +
+    '<span>True Net <b class="' + (totNet >= 0 ? 'green' : 'red') + '">' + fmt(totNet) + '</b></span>' +
+    '<span>Left after payouts <b class="' + (totAfter >= 0 ? 'green' : 'red') + '">' + fmt(totAfter) + '</b></span>' +
+    '</div>';
+  html += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">A <span class="red">red</span> "Left after payout" means more was distributed than the account earned that month — it had to draw down cash or overdraft. Dorado splits 3 ways (Ron / Nir / Simon); the others 50/50.</div>';
+  html += '</div>';
+  return html;
 }
 
 /* ============================================================
