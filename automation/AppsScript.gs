@@ -847,6 +847,44 @@ function dashboardKnowledge() {
     + 'HOW THE DASHBOARD WORKS: The top cards show gross income, net cashflow and YTD, plus one card per LLC (each LLC card sums all of that LLC\'s History rows for the month, including the manual Suncoast/Mid South rows that roll up under Divando). The Per-Property Monitor lets you pick an LLC and a month and shows each unit\'s Income (Cash In), Disbursement, Repairs, Net, YTD Net and Occupancy (Divando, Yale and Donald are covered per-unit). Other tabs: History (LLC monthly cashflow), Loans, Distributions (Ron vs partner payouts), Maintenance Log (invoices, auto-deducted that month), and Noble Insurance (authoritative per-property insurance).\n';
 }
 
+/**
+ * ONE-TIME FIXUP — relabel the old Suncoast / Mid South manual rows.
+ * Run this ONCE from the Apps Script editor (pick "relabelManualEntryRows" in the
+ * function dropdown, click Run). It is SAFE to run more than once — it only touches rows
+ * that are still in the broken format and skips everything else.
+ *
+ * Old broken format (written by an earlier version of enter_suncoast_manual.py):
+ *   col C (LLC)    = the property name (e.g. "8222 Hare Ave")
+ *   col K (Source) = a bare "Manual Entry"
+ * Correct format (what the dashboard's per-property monitor + Divando roll-up expect):
+ *   col C (LLC)    = "Divando LLC"
+ *   col K (Source) = "Manual Entry: 8222 Hare Ave"
+ */
+function relabelManualEntryRows() {
+  var PROPS = ['8222 Hare Ave', '3899 Joest Rd', '6580 Stockport Dr'];
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('History');
+  if (!sh) { Logger.log('No History tab found.'); return; }
+  var last = sh.getLastRow();
+  if (last < 2) { Logger.log('History is empty.'); return; }
+  // Columns: A..L. C = 3 (LLC), K = 11 (Source).
+  var rng = sh.getRange(2, 1, last - 1, 12);
+  var vals = rng.getValues();
+  var fixed = 0;
+  for (var i = 0; i < vals.length; i++) {
+    var llcCell = String(vals[i][2] || '').trim();   // col C
+    if (PROPS.indexOf(llcCell) === -1) continue;       // only touch the broken rows
+    var prop = llcCell;
+    vals[i][2] = 'Divando LLC';                         // col C
+    vals[i][10] = 'Manual Entry: ' + prop;             // col K
+    fixed++;
+    Logger.log('Row ' + (i + 2) + ': "' + prop + '" -> Divando LLC + "Manual Entry: ' + prop + '"');
+  }
+  if (fixed > 0) { rng.setValues(vals); }
+  Logger.log('Done. Relabeled ' + fixed + ' row(s).');
+}
+
+function handleChatWithHistory(messages, activeTab, nobleContext) {
+
 function handleChatWithHistory(messages, activeTab, nobleContext) {
   if (!messages || !messages.length) {
     return ContentService.createTextOutput(JSON.stringify({error: 'No messages'}))
