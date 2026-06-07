@@ -551,7 +551,69 @@ much each has taken out, YTD and lifetime.
 
 ---
 
-## 💰 Distribution Planner + investor-audit fixes (Jun 7 2026)
+## ❌ Distribution Planner DROPPED + 🚨 Net Cashflow is UNDERSTATED (Jun 7 2026, PR #65)
+
+**The Distribution Planner was REMOVED (PR #65).** The user reviewed 3 months (Mar–May 2026)
+of actual bank statements for all 4 LLC operating accounts and the planner was badly wrong —
+it told them "take ≈$4.6K each" in months where the accounts actually went **negative after
+distributions** (overdraft fees on Yale 4/8, 4/15, 5/13; "COVER OVERDRAFT" transfers; Divando
+wired Yale $2,850 in May just to stop it bouncing). **Do NOT rebuild a distribution planner
+until Net Cashflow reflects true bank cash (below).**
+
+### 🚨 ROOT CAUSE — the dashboard's `net_cashflow` OMITS large real cash costs
+`net = disbursement − mortgage − insurance − maintenance(log)` (tax excluded). But the bank
+statements show the owner ALSO pays, every month, from the operating account, things the
+formula never subtracts:
+- **Property TAX is real and recurring — NOT a "spring lump sum."** Bank shows it paid across
+  Mar/Apr/May: Divando-area Denver/Arapahoe tax (Apr ~$7,680: City&County $2,721.32 + $2,399.30
+  + Arapahoe $2,559.37; May City&County **$6,370.20**), Shelby Co TN tax on the Memphis manual
+  props (Mar $614.47 + $3,064.74), Dorado City&County (May **$4,281.14**). The dashboard
+  excludes Divando+Dorado tax entirely (`isTaxLumpSum`) → **the single biggest overstatement.**
+- **Owner-paid city utilities** (not in formula): Xcel, Denver Water (DNVRWTR), City of Denver
+  Compost, City of Aurora BillPay, Google. ≈ $600–800/mo Divando, ≈ $476/mo Dorado.
+- **"BILL PAID-JEFF BERGMAN"** — recurring vendor (bookkeeper/contractor, NOT a partner),
+  ≈$1,386–$7,482/mo across Divando/Dorado/Donald. Not in the formula. ⚠️ Need to confirm with
+  user whether this is repairs (→ Maintenance Log) or bookkeeping/opex (→ new bucket).
+- **Owner-paid repair checks** that may not be in the Maintenance Log: Donald checks 7251–7255
+  (~$2,950/mo recurring + more), Yale checks 1207/1209/207, Divando checks 256/257/258.
+
+**Net effect: the dashboard overstates portfolio net by ≈$25K+/month across the 4 LLCs.**
+User approved (Jun 7 2026): **"make net = true cash"** — rework net so each LLC's monthly
+number matches what actually nets out in the bank.
+
+### 💸 DISTRIBUTION STRUCTURE — reverse-engineered from the bank (CONFIRMED)
+The statements made the partner structure unambiguous (equal-split amounts on the same date):
+- **Ron's distribution** = `BILL PAID-RONEN MOSCOVICH CONF #…`
+- **Nir's distribution** = `TRANSFER … TO X9562` (account **X9562 = Nir's** personal account).
+  (Proof: Donald 5/26 = Ronen $3,300 + transfer X9562 $3,300; Divando 5/26 = Ronen $4,000 +
+  X9562 $4,000 — always paired & equal for the 2-partner LLCs.)
+- **Simon Haviv** = `BILL PAID-SIMON HAVIV` — a **3rd EQUAL partner on DORADO ONLY.**
+  (Proof: Dorado 3/20 = Ronen $5,200 + Simon $5,200 + X9562 $5,200 = 3-way equal split.)
+- **Jeff Bergman is NOT a partner** — he's a vendor/expense.
+
+### 🏠 DORADO LLC — corrected ownership & properties (user, Jun 7 2026)
+**Dorado = 3 EQUAL partners: Ronen + Nir + Simon Haviv** (Simon is Dorado-only). So Dorado
+distributions split **in THIRDS**, not halves (the other 3 LLCs are Ron/Nir 50/50).
+**Dorado properties are ALL mortgage-free:** **4641 Enid Way**, **2397 Jamaica St**, and a
+**fourplex on 41st** ("41st 4plex"). (Enid + Jamaica also ride Divando's State Farm policy per
+the insurance note; Dorado credits Divando $138/mo, ends Dec 2026.) Dorado still pays real cash
+costs the dashboard ignores: property tax (~$4,281 in May), utilities (~$476/mo), Bergman, and
+its own National Indemnity insurance ($453.31/mo, 5/7).
+
+### ✅ Plan (approved direction; confirm specifics before building)
+Make `net_cashflow` = true bank cash. Cleanest accurate path = a **monthly bank-CSV importer**:
+the 4 `*_Transactions_*.csv` exports already classify cleanly — Income = `OWNERFUNDS` credits +
+Suncoast/MidSouth `WEB PMTS`; Distributions (exclude from net, track per partner) = `BILL PAID-RONEN`
+/ `BILL PAID-SIMON HAVIV` / `TRANSFER … TO X9562`; inter-account `TRANSFER FROM/TO X####` =
+exclude; everything else = expense. True net = income − expense; matches bank to the penny.
+Dorado net ÷3, others ÷2. (Alternative = hardcode tax/12 + utility/opex estimates — less
+accurate, lumpy tax.) STILL TO CONFIRM: what Bergman is; annual tax per LLC; whether owner-paid
+repair checks should be logged. **Lesson: do NOT build distribution/cash tools on the AppFolio-
+only net again — it is not true cash.**
+
+---
+
+## 💰 Distribution Planner + investor-audit fixes (Jun 7 2026) — SUPERSEDED, SEE ABOVE
 
 After a full investor-grade audit of BOTH tabs (the user reviewed screenshots of the
 Master Portfolio + Noble Insurance tabs), these were built/fixed. The headline is the

@@ -1514,13 +1514,6 @@ let PD_CHART = 'bars';   // chart style: bars (selected month) | lines (trend ov
 let PD_CACHE = null;     // last-built dataset, used by the chart renderer
 let MAINT_MONTH = '';    // maintenance table month filter ('' = All months)
 function maintSetMonth(v) { MAINT_MONTH = v; renderAll(); }
-// Distribution Planner: the emergency reserve is a ONE-TIME cushion (≈1 month of each
-// LLC's fixed costs). 'funded' = cushion is already sitting in the account, so distribute
-// 100% of net; 'building' = still setting it aside, so this month tops it up first.
-// Stored once in localStorage so the choice sticks. Defaults to 'funded' (the portfolio
-// has been distributing for years, so the cushion is long since in place).
-let RESERVE_STATUS = localStorage.getItem('niron_reserve_status') || 'funded';
-function setReserveStatus(v) { RESERVE_STATUS = v; localStorage.setItem('niron_reserve_status', v); renderAll(); }
 function pdSetMetric(v) { PD_METRIC = v; renderAll(); }
 function pdSetChart(v) { PD_CHART = v; renderAll(); }
 // One dropdown drives both: a range ("r:3".."r:0"=All) or a single month ("m:2026-05-01").
@@ -1676,7 +1669,6 @@ function renderAll() {
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Repairs · This Month</div><div class="value" id="kpi-rep-month" style="color:#ff4455">' + fmt(repThisSum) + '</div><div class="sublabel">' + inv(repThis.length) + ' · ' + (monthLabel(SELECTED_MONTH) || '') + '</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Repairs · YTD</div><div class="value" id="kpi-rep-ytd">' + fmt(repYtdSum) + '</div><div class="sublabel">' + inv(repYtd.length) + ' · ' + selectedYear + '</div></div></div>';
   html += '</div>';
-  html += renderDistributionPlanner({ groupedSelected: groupedSelected, totalNet: totalNet, ytdNet: ytdNet, distYtd: distYtd, distributions: distributions, enrichedHistory: enrichedHistory, selectedYear: selectedYear, ytdSubLabel: ytdSubLabel });
   html += '<div class="section"><h2><span class="dot"></span><span>Monthly Breakdown</span><select id="inline-month-select" class="header-month-select" onchange="onMonthChange(this.value)">' + monthOptions + '</select></h2><div class="llc-grid">';
   groupedSelected.forEach(r => { const net = r.net_cashflow; const cls = net >= 0 ? 'green' : 'red'; let taxLabel = 'Tax / 12'; if (isTaxEscrowed(r.llc)) { taxLabel += ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(paid by escrow)</span>'; } else if (isTaxLumpSum(r.llc)) { taxLabel += ' <span title="Property tax is paid as a lump sum in spring (Mar-Apr), not deducted from the monthly net." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(paid in spring ⓘ)</span>'; } const distRows = distributions.filter(d => d.llc === r.llc && d.period === r.period_start); const distYou = distRows.reduce((s,d) => s + (d.your_amount||0), 0); const distNir = distRows.reduce((s,d) => s + (d.partner_amount||0), 0); const distHtml = (distYou || distNir) ? '<div class="llc-row" style="border-top:1px solid #1e2d42;margin-top:6px;padding-top:6px"><span class="k" style="color:#00c97a">Distribution</span><span class="v" style="color:#00c97a;font-size:12px">You: ' + fmt(distYou) + ' &nbsp;|&nbsp; Nir: ' + fmt(distNir) + '</span></div>' : ''; html += '<div class="llc-card"><h3>' + r.llc + '</h3><div class="llc-row"><span class="k">Disbursement</span><span class="v">' + fmt(r.disbursement) + '</span></div><div class="llc-row"><span class="k">Mgmt Fees</span><span class="v">' + fmt(r.mgmt_fee) + '</span></div>' + (extraMortgage(r.llc) ? '<div class="llc-row"><span class="k">Property Mortgages <span title="6 building loans drafted to the property loan accounts (15655/15675/Idalia, 43rd/Bates, Dearborn/Virginia, Blackhawk/Crown, Holly/Oakland, Tucson/Boston)." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(6 loans ⓘ)</span></span><span class="v">' + fmt(extraMortgage(r.llc)) + '</span></div><div class="llc-row"><span class="k">SBA Loans <span title="6 SBA payments drafted on the 1st — general Divando business debt, not tied to any property." style="color:#4e6d8c;font-size:11px;font-weight:400;cursor:help;border-bottom:1px dotted #4e6d8c">(business debt ⓘ)</span></span><span class="v">' + fmt(r.mortgage) + '</span></div>' : '<div class="llc-row"><span class="k">Mortgage</span><span class="v">' + fmt(r.mortgage) + '</span></div>') + '<div class="llc-row"><span class="k">' + taxLabel + '</span><span class="v">' + fmt(r.tax_mo) + '</span></div><div class="llc-row"><span class="k">Insurance / 12</span><span class="v">' + fmt(r.ins_mo) + '</span></div><div class="llc-row"><span class="k">Maintenance</span><span class="v">' + fmt(r.maintenance) + '</span></div><div class="llc-row total"><span class="k">Net Cashflow</span><span class="v ' + cls + '">' + fmt(net) + '</span></div>' + distHtml + '</div>'; });
   if (!groupedSelected.length) html += '<div style="color:#4e6d8c">No data for this month.</div>';
@@ -1750,101 +1742,6 @@ function renderAll() {
   // Self-audit runs after every render so the header chip stays live. Wrapped so a
   // parsing hiccup can never break the dashboard itself.
   try { auditRun(false); } catch (e) { console.warn('audit skipped:', e); }
-}
-
-/* ============================================================
-   DISTRIBUTION PLANNER — "what can we each take this month?"
-   ------------------------------------------------------------
-   Answers the owners' #1 question using only data already on screen:
-   reported Net Cashflow per LLC, the known fixed monthly costs (mortgage +
-   insurance) used as a one-time emergency reserve, and a 50/50 split.
-   No bank-balance field exists, so the reserve is modeled as a ONE-TIME
-   cushion controlled by the funded/building toggle (see RESERVE_STATUS).
-   Pure read — never writes to the sheet.
-   ============================================================ */
-function renderDistributionPlanner(ctx) {
-  const { groupedSelected, totalNet, ytdNet, distYtd, distributions, enrichedHistory, selectedYear, ytdSubLabel } = ctx;
-  if (!groupedSelected || !groupedSelected.length) return '';
-  const funded = RESERVE_STATUS === 'funded';
-
-  // Per-LLC: reserve target = one month of predictable fixed costs (full mortgage incl.
-  // Divando's property loans + SBA, plus insurance). Distributable clamps negatives to 0
-  // so a loss-making LLC never drags down what the others can safely pay out.
-  const rows = groupedSelected.map(r => {
-    const reserve = (r.mortgage || 0) + extraMortgage(r.llc) + (r.ins_mo || 0);
-    const net = r.net_cashflow || 0;
-    const distributable = funded ? Math.max(0, net) : Math.max(0, net - reserve);
-    return { llc: r.llc, net: net, reserve: reserve, distributable: distributable };
-  });
-  const totalReserve = rows.reduce((s, r) => s + r.reserve, 0);
-  const distributableTotal = rows.reduce((s, r) => s + r.distributable, 0);
-  const eachTake = distributableTotal / 2;
-
-  // "Retained in the LLCs" YTD = net earned this year minus everything distributed
-  // (you + Nir) — the cash that has actually accumulated in the accounts.
-  const ytdNirLocal = distributions.filter(d => d.period && d.period.slice(0, 4) === selectedYear && d.period <= SELECTED_MONTH).reduce((s, d) => s + (d.partner_amount || 0), 0);
-  const retainedYtd = ytdNet - (distYtd + ytdNirLocal);
-
-  // Forward run-rate from the trailing 3 data months (estimate only).
-  const monthlyNet = {};
-  enrichedHistory.forEach(h => { monthlyNet[h.period_start] = (monthlyNet[h.period_start] || 0) + (h.net_cashflow || 0); });
-  const last3 = Object.keys(monthlyNet).sort().reverse().slice(0, 3);
-  const avgNet = last3.length ? last3.reduce((s, m) => s + monthlyNet[m], 0) / last3.length : 0;
-  const selMonthNum = SELECTED_MONTH ? parseInt(SELECTED_MONTH.slice(5, 7), 10) : (new Date().getMonth() + 1);
-  const monthsLeft = Math.max(0, 12 - selMonthNum);
-  const projEach = (avgNet * monthsLeft) / 2;
-
-  const statusSel = '<select class="header-month-select" onchange="setReserveStatus(this.value)" title="Emergency reserve status">' +
-    '<option value="funded"' + (funded ? ' selected' : '') + '>Reserve funded ✓</option>' +
-    '<option value="building"' + (!funded ? ' selected' : '') + '>Still building reserve</option></select>';
-
-  let html = '<div class="section"><h2><span class="dot"></span><span>💰 Distribution Planner — What can we take?</span>' + statusSel + '</h2>';
-
-  // Hero line — the answer, impossible to miss.
-  html += '<div style="background:linear-gradient(135deg,#0d2a1e,#0d1825);border:1px solid #00c97a55;border-radius:12px;padding:20px 22px;margin-bottom:18px;display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 20px">' +
-    '<div><div style="font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:#00BFFF;font-weight:600">You & Nir can each take ≈</div>' +
-    '<div style="font-size:40px;font-weight:700;color:#00c97a;line-height:1.05">' + fmtShort(eachTake) + '</div>' +
-    '<div style="font-size:12px;color:#7e9cbf">this month (' + (monthLabel(SELECTED_MONTH) || '') + ') · reported net</div></div>' +
-    '<div style="margin-left:auto;text-align:right"><div style="font-size:12px;color:#4e6d8c">Total distributable</div>' +
-    '<div style="font-size:22px;font-weight:700;color:#ccd9ea">' + fmt(distributableTotal) + '</div>' +
-    '<div style="font-size:11px;color:#4e6d8c">You ' + fmt(eachTake) + ' &nbsp;|&nbsp; Nir ' + fmt(eachTake) + '</div></div></div>';
-
-  // Supporting tiles.
-  html += '<div class="summary-grid" style="margin-bottom:16px">';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Net Cashflow</div><div class="value">' + fmtShort(totalNet) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || '') + ' · reported</div></div></div>';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Emergency Reserve <span class="kpi-info">💡<span class="kpi-tip"><b>One-time cushion</b><span class="formula">≈ 1 month of mortgage + insurance, per LLC</span>This is a cushion you fund <b>once</b> and then keep in the accounts for emergencies. While it shows <b>“funded”</b>, you distribute 100% of net each month — it is <b>not</b> re-deducted. Switch to <b>“still building”</b> only if you want this month to top the cushion up first.</span></span></div><div class="value" style="font-size:20px">' + fmtShort(totalReserve) + '</div><div class="sublabel">' + (funded ? '<span style="color:#00c97a">● funded — kept aside</span>' : '<span style="color:#f0a500">● building this month</span>') + '</div></div></div>';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Distributable This Month</div><div class="value" style="color:#00c97a">' + fmtShort(distributableTotal) + '</div><div class="sublabel">after reserve · ' + (monthLabel(SELECTED_MONTH) || '') + '</div></div></div>';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Retained in LLCs <span class="kpi-info">💡<span class="kpi-tip"><b>Cash sitting in the accounts</b><span class="formula">Net earned YTD − distributions (You + Nir) YTD</span>How much of this year\'s net cashflow is still in the LLC bank accounts and has not yet been paid out to either partner.</span></span></div><div class="value">' + fmtShort(retainedYtd) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
-  html += '</div>';
-
-  // Per-LLC breakdown.
-  html += '<table><thead><tr><th>LLC</th><th>Net Cashflow</th><th>1-Mo Reserve</th><th>Distributable</th><th>Each (÷2)</th></tr></thead><tbody>';
-  rows.slice().sort((a, b) => a.llc.localeCompare(b.llc)).forEach(r => {
-    html += '<tr><td>' + r.llc + '</td>' +
-      '<td class="' + (r.net >= 0 ? 'green' : 'red') + '">' + fmt(r.net) + '</td>' +
-      '<td style="color:#7e9cbf">' + fmt(r.reserve) + '</td>' +
-      '<td class="green">' + fmt(r.distributable) + '</td>' +
-      '<td>' + fmt(r.distributable / 2) + '</td></tr>';
-  });
-  html += '<tr style="font-weight:700;border-top:2px solid #1e2d42"><td>TOTAL</td>' +
-    '<td class="' + (totalNet >= 0 ? 'green' : 'red') + '">' + fmt(totalNet) + '</td>' +
-    '<td style="color:#7e9cbf">' + fmt(totalReserve) + '</td>' +
-    '<td class="green">' + fmt(distributableTotal) + '</td>' +
-    '<td class="green">' + fmt(eachTake) + '</td></tr>';
-  html += '</tbody></table>';
-
-  // Plain-English caption + forward estimate.
-  html += '<div style="color:#7e9cbf;font-size:12px;margin-top:12px;line-height:1.6">' +
-    (funded
-      ? 'Your emergency reserve of <b style="color:#ccd9ea">' + fmt(totalReserve) + '</b> is treated as already set aside, so the full reported net is available to distribute. '
-      : 'Reserve is in <b style="color:#f0a500">building</b> mode — this month first tops up the <b style="color:#ccd9ea">' + fmt(totalReserve) + '</b> cushion, so distributable is reduced. Flip the dropdown to <b>“Reserve funded”</b> once the cushion is in the account and you\'ll distribute 100% of net. ') +
-    (monthsLeft > 0 && avgNet > 0
-      ? 'At the recent pace (~<b style="color:#ccd9ea">' + fmtShort(avgNet) + '</b>/mo net), roughly <b style="color:#00c97a">' + fmtShort(projEach) + '</b> more <b>each</b> could be available across the remaining ' + monthsLeft + ' month' + (monthsLeft === 1 ? '' : 's') + ' of ' + selectedYear + ' (estimate).'
-      : '') +
-    '</div>';
-
-  html += '</div>';
-  return html;
 }
 
 /* ============================================================
