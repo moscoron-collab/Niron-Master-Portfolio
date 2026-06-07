@@ -551,6 +551,83 @@ much each has taken out, YTD and lifetime.
 
 ---
 
+## 💰 Distribution Planner + investor-audit fixes (Jun 7 2026)
+
+After a full investor-grade audit of BOTH tabs (the user reviewed screenshots of the
+Master Portfolio + Noble Insurance tabs), these were built/fixed. The headline is the
+**Distribution Planner** — it answers the owners' #1 question: *"after expenses and an
+emergency cushion, how much can Ron and Nir EACH take this month?"* Pure frontend, lives
+on merge.
+
+### 💰 Distribution Planner (NEW section, `renderDistributionPlanner` in `index.html`)
+Sits **just below the Operational Health tiles, above Monthly Breakdown**. Reads only data
+already on screen (per-LLC `net_cashflow`, fixed costs, distributions) — no new sheet data.
+- **Hero line:** big green "**You & Nir can each take ≈ $X**" for the selected month, with
+  the total distributable + the You/Nir split beside it.
+- **Reserve model (IMPORTANT — this resolved the user's fear):** the emergency reserve is a
+  **ONE-TIME cushion ≈ 1 month of each LLC's fixed costs** (full mortgage incl. Divando's 6
+  property loans + SBA, plus insurance — **repairs excluded**, too lumpy). It is **NOT
+  re-deducted every month.** A **`RESERVE_STATUS`** toggle (localStorage `niron_reserve_status`,
+  default **`funded`**) drives it: `funded` ⇒ distribute **100% of net**; `building` ⇒ this
+  month tops the cushion up first (distributable = net − reserve). User was worried "1 month
+  of expenses leaves nothing to distribute" — answer baked into the UI copy: the cushion is
+  funded ONCE, then you take the full net. Default `funded` because the portfolio has been
+  distributing for years ($230K lifetime), so the cushion is long since in place.
+- **Net basis = REPORTED net as-is** (user choice — turnover-normalized net was offered and
+  declined). So a heavy-repair month (e.g. the $8K Blackhawk) does lower distributable; that's
+  intended/conservative.
+- **Per-LLC distributable clamps negatives to 0** (`Math.max(0, net)`), so a loss-making LLC
+  never drags down what the others can safely pay out.
+- **4 supporting tiles:** Net Cashflow · Emergency Reserve (one-time, with funded/building
+  state + 💡 tooltip) · Distributable This Month · **Retained in LLCs** (= YTD net − all
+  distributions You+Nir YTD = cash sitting in the accounts, with 💡 tooltip).
+- **Per-LLC table:** LLC | Net | 1-Mo Reserve | Distributable | Each (÷2) + TOTAL row.
+- **Forward run-rate** caption: trailing-3-data-month avg net × months left in the year ÷ 2 =
+  "~$Y more each could be available by year-end (estimate)."
+- Uses no `#kpi-*` IDs → **self-audit unaffected** (its positional/ID reads don't see this
+  section). To change the reserve definition later, edit `renderDistributionPlanner`'s
+  `reserve = mortgage + extraMortgage + ins_mo` line.
+
+### 🩹 Phase-1 correctness fixes shipped alongside
+- **Per-property TOTAL caption (`renderPropertyDetailSection`):** the per-property TOTAL Net
+  is property-level and **excludes each LLC's general SBA loan** (Divando $2,334 · Yale $225 ·
+  Donald $444/mo). Added a one-line note under the table so the TOTAL ($14,933.75 for Divando
+  May 2026) no longer looks like it contradicts the Divando card net ($12,599.77) — the gap is
+  exactly the SBA, by design.
+- **`enter_suncoast_manual.py` FIXED (real bug):** the GitHub-Actions manual-entry path wrote
+  rows with the **property name in the LLC column** and a bare **`"Manual Entry"`** source, so
+  those months were **invisible to the per-property monitor AND didn't roll up under Divando**.
+  Now writes **LLC = `Divando LLC`** + **Source = `Manual Entry: <property>`** (matching what
+  the dashboard `📋 Add Statement` modal / `addStatementEntry` already do), and `already_recorded`
+  dedups on period_start + Source. (The dashboard modal path was always correct; only this
+  Actions script was wrong.)
+- **Chatbot `dashboardKnowledge()` (`AppsScript.gs`) precision fix:** now states Divando net
+  uses the **Divando-owned insurance $2,473.08/mo** (full policy $2,885.83/mo includes 2
+  Dorado units), and that **Dorado tax is also a spring lump sum** (not deducted). Keeps the
+  chatbot from quoting the old $2,885.83 / Dorado-tax-deducted figures to Nir.
+- **Removed dead code:** unused `recalcNet()` in `index.html`.
+
+### ⏳ Outstanding USER actions (I can't do these from here)
+- **Relabel the 3 April 2026 Divando "Manual Entry" rows** in the Google Sheet History tab:
+  set col C = `Divando LLC` and col K (Source) = `Manual Entry: 8222 Hare Ave` /
+  `Manual Entry: 3899 Joest Rd` / `Manual Entry: 6580 Stockport Dr`. Until then they stay out
+  of the per-property monitor and may show as the audit's duplicate/"to review" warning.
+- **Redeploy `AppsScript.gs`** for the chatbot knowledge fix to go live (Sheet → Extensions →
+  Apps Script → paste → Deploy → Manage deployments → Edit → New version → Deploy). The
+  `index.html` changes (planner, caption, cleanup) go live on merge with no redeploy.
+
+### 🔭 Audit backlog (presented to user, NOT yet built — pick later)
+Insurance tab: live renewal **countdowns** (dates are static text now) + insurance as % of
+cash collected + surface the Dorado→Divando $138/mo "end Dec 2026" & "call IMA by Oct 2026"
+as dated reminders. Master tab: mobile table overflow wrappers + de-clutter the per-property
+control row; trim the redundant YTD-distribution tile (top KPI vs Partner Distributions);
+drop the bars-chart "Occupancy %" metric (100/0 only); a tuned "needs attention" watch list
+(must SKIP known-good cases — Holly/Bates fund-holds, Blackhawk turnover, per user). Turnover-
+normalized net is also still available as a future toggle if the user reverses the "reported
+net as-is" choice.
+
+---
+
 ## 🗓️ Month picker = data months + current month (Jun 5 2026, PR #50)
 
 The header/inline month dropdown offers every month present in History **plus the current
