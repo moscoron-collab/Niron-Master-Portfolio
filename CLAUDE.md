@@ -887,6 +887,29 @@ Excel rows — the user sets Amount Paid 0 + clears Paid Date to flip them to Ou
 > Dorado 1460 W 41st **$3,035.64**, Dorado 4641 Enid **$1,120.81**; and **Crown** must read **Outstanding**
 > (set Amount Paid 0 + clear Paid Date) — it was showing fully paid.
 
+### 🏠 "Property Tax Owed" KPI tile + chatbot knowledge + intro reword (Jun 8 2026)
+- **New Master Portfolio KPI tile `kpi-tax-due`** ("Property Tax Owed") added to the top
+  summary-grid in `renderAll`, **between Your Distribution and the Mortgage/Value card**.
+  Value = total outstanding property tax = `Σ taxOutstanding(r)` over `data.property_tax`
+  (escrow rows return 0, so Donald/Yale never count). **Blinks red** (`.tax-blink` on label +
+  value, color `#ff4455`) when owed > 0; green `all paid` when 0. The tile is **click-through**
+  to the Property Tax tab (`onclick="switchMainTab('tax')"`).
+- **"Shrink the 2 right cards" (user request):** the two former single cards **Total Mortgage /
+  Mo** (`kpi-mort`) + **Portfolio Value** (`kpi-value`) were merged into **ONE `summary-card
+  dual`** (two half-cells + divider) so they each take half width, making room for the new tax
+  tile. **IDs `kpi-mort`/`kpi-value` were preserved** → self-audit unaffected.
+- **Chatbot now knows the Property Tax tab.** Added a **`=== PROPERTY TAX ===`** section to the
+  **live (last, ~line 1301) `buildPortfolioContext()`** in `AppsScript.gs` (reads the `Property
+  Tax` tab: per-parcel bill/paid/owed/status + TOTAL outstanding + per-LLC outstanding; escrow
+  excluded from owed). Also: system prompt now says **FIVE sections** with a new **#5 PROPERTY
+  TAX**, and `dashboardKnowledge()` got a **PROPERTY TAX TAB** paragraph. ⚠️ Chatbot changes need
+  the usual **AppsScript redeploy** to go live (New version). User hasn't tested the chatbot on
+  this tab yet.
+- **Intro sentence reworded** (user dropped the yellow/green legend): now just "You pay these
+  online, one bill per parcel per year. ✏️ a row to record what you paid (date · amount ·
+  confirmation #) and the balance updates. Donald & Yale are escrow (lender pays)."
+- `index.html` parts (tile, merged card, sentence) go live on merge; the chatbot part needs the redeploy.
+
 ---
 
 ## 🗓️ Month picker = data months + current month (Jun 5 2026, PR #50)
