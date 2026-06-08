@@ -338,9 +338,9 @@
   #tax-content tr.tax-out td:first-child { box-shadow: inset 3px 0 0 #ff4455; }
   #tax-content .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   #tax-content .ctr { text-align: center; }
-  /* Blink for anything still Outstanding (~once every 5s) */
-  @keyframes taxBlink { 0%, 82%, 100% { opacity: 1; } 88%, 96% { opacity: 0.18; } }
-  .tax-blink { animation: taxBlink 5s ease-in-out infinite; }
+  /* Smooth attention pulse for anything still Outstanding — a gentle breathe, not a flicker */
+  @keyframes taxBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+  .tax-blink { animation: taxBlink 1.8s ease-in-out infinite; }
 </style>
 </head>
 <body>
