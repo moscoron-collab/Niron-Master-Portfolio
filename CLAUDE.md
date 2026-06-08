@@ -858,10 +858,12 @@ Since auto-fill is impossible, the manual flow had to be smooth. Two fixes in `i
   and a different AIN**, so the user must know which number to enter. The label is display-only; the click
   still copies just the number. 15655 E 13th's value `031319692` is the **PIN** (the AIN `197505203015`
   is a different number).
-- **Table grid + blink (Jun 8 2026):** the Property Tax table has scoped CSS (`#tax-content table`) —
-  solid vertical column lines + dotted horizontal row lines. Every **Outstanding** marker (the red status
-  badge + the Outstanding KPI tile when >0) carries `.tax-blink` (`@keyframes taxBlink`, ~one flash every
-  5s) to draw attention to what's still owed.
+- **Table styling + blink (Jun 8 2026):** the Property Tax table has scoped CSS (`#tax-content`):
+  sticky header, right-aligned tabular-num money columns (`.num`) + centered Status (`.ctr`), subtle
+  vertical + dotted-horizontal lines, row hover, an LLC section band (`tr.tax-llc`), a **red subtotal
+  band** (`tr.tax-sub`, user request — label+owed in red), and a faint red tint + red left-accent on
+  **Outstanding rows** (`tr.tax-out`). Every **Outstanding** marker (the red status badge + the
+  Outstanding KPI tile when >0) carries `.tax-blink` (`@keyframes taxBlink`, ~one flash every 5s).
 
 ### 🐛 Edits "not saving" (revert to old value) = browser-cached GET, FIXED (Jun 8 2026)
 User reported Property Tax edits (e.g. set Amount Due 0) reverting to the old value "hence not
