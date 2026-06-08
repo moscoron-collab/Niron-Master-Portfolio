@@ -325,6 +325,14 @@
   #audit-body table td { padding: 7px 8px; border-bottom: 1px solid #182030; color: #ccd9ea; vertical-align: top; }
   .tax-parcel { display: inline-block; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: #cfe3ff; background: #0d1e30; border: 1px solid #21456b; border-radius: 6px; padding: 3px 8px; cursor: pointer; white-space: nowrap; user-select: all; transition: background 0.15s, border-color 0.15s; }
   .tax-parcel:hover { background: #12324d; border-color: #00BFFF; color: #ffffff; }
+  /* Property Tax table grid: solid vertical lines + dotted horizontal lines */
+  #tax-content table { border-collapse: collapse; }
+  #tax-content table th, #tax-content table td { border-right: 1px solid #21456b; border-bottom: 1px dotted #2c4a6b; }
+  #tax-content table th:last-child, #tax-content table td:last-child { border-right: none; }
+  #tax-content table thead th { border-bottom: 1px solid #21456b; }
+  /* Blink for anything still Outstanding (~once every 5s) */
+  @keyframes taxBlink { 0%, 82%, 100% { opacity: 1; } 88%, 96% { opacity: 0.18; } }
+  .tax-blink { animation: taxBlink 5s ease-in-out infinite; }
 </style>
 </head>
 <body>
@@ -2689,7 +2697,7 @@ const TAX_COUNTY_ALT = {
 // What each county calls its lookup number — shown as a label on the parcel chip so you
 // enter the right field (Arapahoe in particular has a PIN *and* a different AIN).
 const TAX_COUNTY_KIND = {
-  denver: 'Schedule', arapahoe: 'PIN', adams: 'Acct', duval: 'Parcel', memphis: 'Parcel',
+  denver: 'Parcel ID', arapahoe: 'PIN', adams: 'Acct', duval: 'Parcel', memphis: 'Parcel',
 };
 // Clean, copy-ready parcel/account # + county per property (authoritative — the sheet's
 // Comments had them buried/truncated). Key = property name normalized to letters+digits.
@@ -2781,7 +2789,7 @@ function renderTaxSection() {
   html += '<div class="summary-grid" style="margin-bottom:16px">';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Total Tax (year)</div><div class="value">' + fmt(dueTotal) + '</div><div class="sublabel">full bills · Divando + Dorado</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Paid</div><div class="value" style="color:#00c97a">' + fmt(paidTotal) + '</div><div class="sublabel">recorded as paid online</div></div></div>';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Outstanding</div><div class="value" style="color:' + (outTotal > 0 ? '#f0a500' : '#00c97a') + '">' + fmt(outTotal) + '</div><div class="sublabel">' + (outTotal > 0 ? 'still to pay' : 'nothing owed') + '</div></div></div>';
+  html += '<div class="summary-card"><div class="card-cell"><div class="label' + (outTotal > 0 ? ' tax-blink' : '') + '">Outstanding</div><div class="value' + (outTotal > 0 ? ' tax-blink' : '') + '" style="color:' + (outTotal > 0 ? '#f0a500' : '#00c97a') + '">' + fmt(outTotal) + '</div><div class="sublabel">' + (outTotal > 0 ? 'still to pay' : 'nothing owed') + '</div></div></div>';
   html += '</div>';
 
   // Group by LLC
@@ -2818,7 +2826,7 @@ function renderTaxSection() {
         '<td>' + (r.amount_due ? fmt(r.amount_due) : '<span style="color:#4e6d8c">—</span>') + '</td>' +
         '<td class="' + (r.amount_paid > 0 ? 'green' : '') + '">' + (r.amount_paid ? fmt(r.amount_paid) : '<span style="color:#4e6d8c">—</span>') + '</td>' +
         '<td class="' + (bal > 0.005 ? 'red' : 'green') + '">' + (isEscrowTax(r) ? '<span style="color:#4e6d8c">—</span>' : fmt(bal)) + '</td>' +
-        '<td><span style="background:' + st.bg + ';color:' + st.color + ';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap">' + st.label + '</span></td>' +
+        '<td><span class="' + (st.label === 'Outstanding' ? 'tax-blink' : '') + '" style="background:' + st.bg + ';color:' + st.color + ';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap">' + st.label + '</span></td>' +
         '<td style="font-size:12px;white-space:nowrap">' + (r.paid_date ? dateLabel(r.paid_date) : '<span style="color:#4e6d8c">—</span>') + '</td>' +
         '<td style="font-size:11px;color:#7e9cbf;white-space:nowrap">' + lastYrCell(r) + '</td>' +
         '<td style="white-space:nowrap">' + link + '</td>' +
