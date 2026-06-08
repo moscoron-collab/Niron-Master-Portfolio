@@ -323,6 +323,8 @@
   .audit-chip.fail { background: #ff445518; color: #ff4455; border: 1px solid #ff445555; }
   #audit-body table th { padding: 6px 8px; font-weight: 500; border-bottom: 1px solid #1e2d42; position: sticky; top: 0; background: #0d1825; }
   #audit-body table td { padding: 7px 8px; border-bottom: 1px solid #182030; color: #ccd9ea; vertical-align: top; }
+  .tax-parcel { display: inline-block; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: #cfe3ff; background: #0d1e30; border: 1px solid #21456b; border-radius: 6px; padding: 3px 8px; cursor: pointer; white-space: nowrap; user-select: all; transition: background 0.15s, border-color 0.15s; }
+  .tax-parcel:hover { background: #12324d; border-color: #00BFFF; color: #ffffff; }
 </style>
 </head>
 <body>
@@ -2671,6 +2673,71 @@ function priorChip(r) {
   return parts.length ? parts.join(' &middot; ') : '<span style="color:#4e6d8c">—</span>';
 }
 
+// County tax lookup/pay pages (where you paste the parcel #). Denver retired its
+// per-parcel deep link (now 404), Adams' account link forces a login, Arapahoe moved
+// domains — so we send each one to the county's working SEARCH page instead.
+const TAX_COUNTY_SEARCH = {
+  denver:   'https://www.denvergov.org/property',
+  arapahoe: 'https://www.arapahoeco.gov/your_county/county_departments/treasurer/tax_search.php',
+  adams:    'https://adcotax.com/treasurer/web/loginPOST.jsp?guest=true',
+  duval:    'https://duval.county-taxes.com/public/search/property_tax',
+  memphis:  'https://www.payit901.com',
+};
+// Clean, copy-ready parcel/account # + county per property (authoritative — the sheet's
+// Comments had them buried/truncated). Key = property name normalized to letters+digits.
+// For Adams, the value is the R-account # (what the guest search accepts).
+const TAX_PARCEL_INFO = {
+  '14790E43RD':    { parcel: '00193-10-013-000', county: 'denver' },
+  '5538NDEARBORN': { parcel: '00181-02-016-000', county: 'denver' },
+  '4776NBLACKHAWK':{ parcel: '01241-13-015-000', county: 'denver' },
+  '5101NCROWN':    { parcel: '00185-06-020-000', county: 'denver' },
+  '3630NHOLLY':    { parcel: '01292-08-022-000', county: 'denver' },
+  '15655E13TH':    { parcel: '031319692',        county: 'arapahoe' },
+  '15559EBATES':   { parcel: '031500222',        county: 'arapahoe' },
+  '11795EVIRGINIA':{ parcel: '031164265',        county: 'arapahoe' },
+  '2332OAKLAND':   { parcel: 'R0095746',         county: 'adams' },
+  '3225TUCSON':    { parcel: 'R0093130',         county: 'adams' },
+  '1724BOSTON':    { parcel: 'R0094745',         county: 'adams' },
+  '21164TH':       { parcel: '029712-0000',      county: 'duval' },
+  '8222HARE':      { parcel: '144116-0000',      county: 'duval' },
+  '3899JOEST':     { parcel: '071037 00010',     county: 'memphis' },
+  '6580STOCKPORT': { parcel: '071037 00000100',  county: 'memphis' },
+  '1460W41ST':     { parcel: '02214-26-001-000', county: 'denver' },
+  '4641NENID':     { parcel: '00191-04-005-000', county: 'denver' },
+  '2397JAMAICA':   { parcel: 'R0096240',         county: 'adams' },
+  '5070EDONALD':   { parcel: '06301-31-014-000', county: 'denver' },
+  '2995WYALE':     { parcel: '05321-02-022-000', county: 'denver' },
+};
+function taxNorm(s) { return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+function taxInfoFor(prop) {
+  const n = taxNorm(prop);
+  for (const k in TAX_PARCEL_INFO) { if (n.startsWith(k)) return TAX_PARCEL_INFO[k]; }
+  return null;
+}
+// The working link: keep the stored one unless it's a known-dead pattern (Denver deep
+// link / Adams login / old Arapahoe domain), in which case use the county search page.
+function taxPayLink(r, info) {
+  const stored = r.tax_link || '';
+  const dead = /denvergov\.org\/property\/realproperty\/taxes\//i.test(stored)
+            || /adcotax\.com\/treasurer\/treasurerweb\/account\.jsp/i.test(stored)
+            || /arapahoegov\.com\/1106/i.test(stored);
+  if (stored && !dead) return stored;
+  if (info && TAX_COUNTY_SEARCH[info.county]) return TAX_COUNTY_SEARCH[info.county];
+  return stored;
+}
+// Click-to-copy the parcel number; brief "copied" feedback.
+function copyParcel(ev, val) {
+  ev.stopPropagation();
+  const el = ev.currentTarget;
+  const done = () => { const o = el.innerHTML; el.innerHTML = '✓ copied'; setTimeout(() => { el.innerHTML = o; }, 1100); };
+  try {
+    navigator.clipboard.writeText(val).then(done, () => {
+      const ta = document.createElement('textarea'); ta.value = val; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) {} ta.remove(); done();
+    });
+  } catch (e) {}
+}
+
 function renderTaxSection() {
   const el = document.getElementById('tax-content');
   if (!el) return;
@@ -2722,11 +2789,17 @@ function renderTaxSection() {
       const st = taxStatus(r);
       const bal = taxOutstanding(r);
       sDue += r.amount_due || 0; sPaid += r.amount_paid || 0; sBal += bal;
-      const link = r.tax_link ? '<a href="' + r.tax_link + '" target="_blank" style="color:#00BFFF">💳 Pay</a>' : '<span style="color:#4e6d8c">—</span>';
+      const info = taxInfoFor(r.property);
+      const payUrl = taxPayLink(r, info);
+      const link = payUrl ? '<a href="' + payUrl + '" target="_blank" style="color:#00BFFF" title="Opens the county tax search — paste the parcel #">💳 Pay</a>' : '<span style="color:#4e6d8c">—</span>';
+      const parcelVal = (r.parcel && String(r.parcel).trim()) || (info && info.parcel) || '';
+      const parcelCell = parcelVal
+        ? '<span class="tax-parcel" title="Click to copy parcel #" onclick="copyParcel(event, ' + JSON.stringify(parcelVal).replace(/"/g, '&quot;') + ')">' + parcelVal + ' <span style="opacity:.6">📋</span></span>'
+        : '<span style="color:#4e6d8c">—</span>';
       html += '<tr>' +
         '<td style="font-size:12.5px">' + (r.property || '') + '</td>' +
         '<td style="font-size:12px">' + (r.county || '—') + (r.state && r.state !== 'CO' ? ' <span style="color:#4e6d8c">(' + r.state + ')</span>' : '') + '</td>' +
-        '<td style="font-size:11px;color:#7e9cbf">' + (r.parcel || (r.notes ? String(r.notes).slice(0, 28) : '—')) + '</td>' +
+        '<td>' + parcelCell + '</td>' +
         '<td>' + (r.amount_due ? fmt(r.amount_due) : '<span style="color:#4e6d8c">—</span>') + '</td>' +
         '<td class="' + (r.amount_paid > 0 ? 'green' : '') + '">' + (r.amount_paid ? fmt(r.amount_paid) : '<span style="color:#4e6d8c">—</span>') + '</td>' +
         '<td class="' + (bal > 0.005 ? 'red' : 'green') + '">' + (isEscrowTax(r) ? '<span style="color:#4e6d8c">—</span>' : fmt(bal)) + '</td>' +
