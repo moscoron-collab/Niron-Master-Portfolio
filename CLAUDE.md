@@ -850,6 +850,17 @@ Since auto-fill is impossible, the manual flow had to be smooth. Two fixes in `i
   R0094745 (Boston), R0096240 (Jamaica). Duval 144116-0000 (Hare), 029712-0000 (sold 4th). Memphis
   071037 00010 (Joest), 071037 00000100 (Stockport). To add a county, extend `TAX_COUNTY_SEARCH` +
   `TAX_PARCEL_INFO`. Self-audit unaffected (no `#kpi-*` IDs).
+- **Parcel chip now shows a county "kind" label** (`TAX_COUNTY_KIND`): Denver `Schedule`, Arapahoe
+  `PIN`, Adams `Acct`, Duval/Memphis `Parcel` — because Arapahoe has a **PIN and a different AIN**, so
+  the user must know which number to enter. The label is display-only; the click still copies just the
+  number. 15655 E 13th's value `031319692` is the **PIN** (the AIN `197505203015` is a different number).
+
+> ⚠️ **Cannot write the live sheet from the agent box** — the Apps Script `/exec` endpoint is "Host not
+> in allowlist" (sandbox blocks `script.google.com`), and the county sites block scraping. So dollar-
+> amount / paid-status corrections must be done by the user via the ✏️ Edit modal (or directly in the
+> sheet). User-reported current amounts owed (Jun 8 2026, to be entered via ✏️): 15655 E 13th **$2,509.18**,
+> Dorado 1460 W 41st **$3,035.64**, Dorado 4641 Enid **$1,120.81**; and **Crown** must read **Outstanding**
+> (set Amount Paid 0 + clear Paid Date) — it was showing fully paid.
 
 ---
 

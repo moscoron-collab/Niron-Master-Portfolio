@@ -2687,6 +2687,11 @@ const TAX_COUNTY_SEARCH = {
 const TAX_COUNTY_ALT = {
   denver: { url: 'https://www.denvergov.org/Government/Make-a-Payment', label: 'Make a Payment' },
 };
+// What each county calls its lookup number — shown as a label on the parcel chip so you
+// enter the right field (Arapahoe in particular has a PIN *and* a different AIN).
+const TAX_COUNTY_KIND = {
+  denver: 'Schedule', arapahoe: 'PIN', adams: 'Acct', duval: 'Parcel', memphis: 'Parcel',
+};
 // Clean, copy-ready parcel/account # + county per property (authoritative — the sheet's
 // Comments had them buried/truncated). Key = property name normalized to letters+digits.
 // For Adams, the value is the R-account # (what the guest search accepts).
@@ -2800,8 +2805,9 @@ function renderTaxSection() {
       const alt = info && payUrl === TAX_COUNTY_SEARCH[info.county] ? TAX_COUNTY_ALT[info.county] : null;
       if (alt) link += '<br><a href="' + alt.url + '" target="_blank" style="color:#4e6d8c;font-size:11px">↳ ' + alt.label + '</a>';
       const parcelVal = (r.parcel && String(r.parcel).trim()) || (info && info.parcel) || '';
+      const parcelKind = info && TAX_COUNTY_KIND[info.county] ? '<span style="color:#5a82ad;font-size:10px;margin-right:4px">' + TAX_COUNTY_KIND[info.county] + '</span>' : '';
       const parcelCell = parcelVal
-        ? '<span class="tax-parcel" title="Click to copy parcel #" onclick="copyParcel(event, ' + JSON.stringify(parcelVal).replace(/"/g, '&quot;') + ')">' + parcelVal + ' <span style="opacity:.6">📋</span></span>'
+        ? '<span class="tax-parcel" title="Click to copy the number" onclick="copyParcel(event, ' + JSON.stringify(parcelVal).replace(/"/g, '&quot;') + ')">' + parcelKind + parcelVal + ' <span style="opacity:.6">📋</span></span>'
         : '<span style="color:#4e6d8c">—</span>';
       html += '<tr>' +
         '<td style="font-size:12.5px">' + (r.property || '') + '</td>' +
