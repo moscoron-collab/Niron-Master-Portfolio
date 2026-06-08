@@ -1,0 +1,48 @@
+name: Property Tax — auto-fill Amount Due from counties
+
+# Manual for now. The FIRST run should be left as a calibration run (write = false):
+# it loads each county page in a real browser and uploads the page text +
+# screenshots as an artifact, so the per-county extractors in run_tax.py can be
+# locked to the real markup. Once trusted, run again with write = true (or add a
+# schedule) to auto-fill the Amount Due column.
+
+on:
+  workflow_dispatch:
+    inputs:
+      write:
+        description: "Write scraped amounts into Amount Due? (false = calibration only)"
+        type: boolean
+        default: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install playwright google-auth google-auth-httplib2 google-api-python-client
+          playwright install chromium
+
+      - name: Run property-tax scraper
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          TAX_WRITE: ${{ inputs.write && '1' || '' }}
+        run: python automation/run_tax.py
+
+      - name: Upload page dumps + screenshots (for calibration)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tax-page-dumps
+          path: tax_dumps/
+          if-no-files-found: ignore

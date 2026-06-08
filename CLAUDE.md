@@ -807,6 +807,32 @@ the first dashboard load after redeploy. No new permission scope (no DriveApp).
 > Excel rows had stray 5/26 paid dates but were yellow + matched the "due" line — treated as
 > unpaid). When 2027 rolls in, the prior-year columns + Tax Year need bumping (no auto-roll yet).
 
+### 🤖 Auto-fill Amount Due from the county websites (`run_tax.py`, Jun 8 2026)
+User asked to automate reading the live balance from each county site into Amount Due. Built
+`automation/run_tax.py` + `.github/workflows/tax_update.yml` (manual `workflow_dispatch`).
+- **The county portals (Denver, Adams, Duval…) 403 a naive fetch and render figures with JS** —
+  confirmed by WebFetch 403s on both denvergov.org and adcotax.com, and no public JSON API. So a
+  REAL browser (Playwright, same as the AppFolio jobs) is required, and the page markup can't be
+  seen from the dev box. Hence the script is **two-phase**:
+  1. **CALIBRATE (default, no writes):** loads each parcel's **Tax Link** (col L) in headless
+     Chromium, prints candidate dollar amounts, and dumps page text + a screenshot to `tax_dumps/`
+     (uploaded as the `tax-page-dumps` workflow artifact). The FIRST run MUST be calibration — we
+     read the real pages from the artifact, then lock the per-county extractors (`extract_denver` /
+     `extract_adams` / `extract_duval`, currently generic "…Due $N" regex placeholders).
+  2. **WRITE (`TAX_WRITE=1`, or workflow input `write=true`):** writes the scraped amount into
+     **Amount Due (col G)** + a timestamp into **col S ("Auto-Updated")**. Only writes when an
+     amount is confidently found; **never zeroes a cell on a failed lookup** (manual value stays).
+- **Only direct-deep-link counties** are handled (Tax Link points straight at the parcel):
+  **Denver** (denvergov.org), **Adams** (adcotax.com), **Duval FL** (county-taxes.com). **Arapahoe**
+  (arapahoegov.com search form: 13th/Bates/Virginia) and **Memphis** (payit901.com: Joest/Stockport)
+  store only a generic search page, so they need form automation — **phase 2**. Escrow rows
+  (Donald/Yale) are skipped.
+- Reuses the Sheets service-account auth (`GOOGLE_SHEET_ID` + `GOOGLE_CREDENTIALS_JSON`); **no
+  AppFolio login / cookies** (public lookups). Writing col S does NOT need an AppsScript change
+  (the reader only reads A–R). **Do NOT enable the write mode or a schedule until the extractors
+  are calibrated against a real run** — otherwise a wrong figure (assessed value, prior year) could
+  overwrite Amount Due.
+
 ---
 
 ## 🗓️ Month picker = data months + current month (Jun 5 2026, PR #50)
