@@ -2679,7 +2679,7 @@ function priorChip(r) {
 const TAX_COUNTY_SEARCH = {
   denver:   'https://www.denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Department-of-Finance/Our-Divisions/Treasury/Property-Taxes/Pay-Property-Taxes',
   arapahoe: 'https://www.arapahoeco.gov/your_county/county_departments/treasurer/tax_search.php',
-  adams:    'https://adcotax.com/treasurer/treasurerweb/',
+  adams:    'https://www.adcotax.com/treasurer/treasurerweb/',
   duval:    'https://duval.county-taxes.com/public/search/property_tax',
   memphis:  'https://www.payit901.com',
 };
@@ -2729,7 +2729,7 @@ function taxPayLink(r, info) {
   // Adams: the account-specific deep link works for a logged-in human (it only
   // bounced the scraper to a login). Build it from each property's R-account #.
   if (info && info.county === 'adams' && info.parcel)
-    return 'https://adcotax.com/treasurer/treasurerweb/account.jsp?account=' + encodeURIComponent(info.parcel);
+    return 'https://www.adcotax.com/treasurer/treasurerweb/account.jsp?account=' + encodeURIComponent(info.parcel);
   const stored = r.tax_link || '';
   const dead = /denvergov\.org\/property\/realproperty\/taxes\//i.test(stored)
             || /arapahoegov\.com\/1106/i.test(stored);
