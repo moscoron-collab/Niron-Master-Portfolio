@@ -807,31 +807,24 @@ the first dashboard load after redeploy. No new permission scope (no DriveApp).
 > Excel rows had stray 5/26 paid dates but were yellow + matched the "due" line — treated as
 > unpaid). When 2027 rolls in, the prior-year columns + Tax Year need bumping (no auto-roll yet).
 
-### 🤖 Auto-fill Amount Due from the county websites (`run_tax.py`, Jun 8 2026)
-User asked to automate reading the live balance from each county site into Amount Due. Built
-`automation/run_tax.py` + `.github/workflows/tax_update.yml` (manual `workflow_dispatch`).
-- **The county portals (Denver, Adams, Duval…) 403 a naive fetch and render figures with JS** —
-  confirmed by WebFetch 403s on both denvergov.org and adcotax.com, and no public JSON API. So a
-  REAL browser (Playwright, same as the AppFolio jobs) is required, and the page markup can't be
-  seen from the dev box. Hence the script is **two-phase**:
-  1. **CALIBRATE (default, no writes):** loads each parcel's **Tax Link** (col L) in headless
-     Chromium, prints candidate dollar amounts, and dumps page text + a screenshot to `tax_dumps/`
-     (uploaded as the `tax-page-dumps` workflow artifact). The FIRST run MUST be calibration — we
-     read the real pages from the artifact, then lock the per-county extractors (`extract_denver` /
-     `extract_adams` / `extract_duval`, currently generic "…Due $N" regex placeholders).
-  2. **WRITE (`TAX_WRITE=1`, or workflow input `write=true`):** writes the scraped amount into
-     **Amount Due (col G)** + a timestamp into **col S ("Auto-Updated")**. Only writes when an
-     amount is confidently found; **never zeroes a cell on a failed lookup** (manual value stays).
-- **Only direct-deep-link counties** are handled (Tax Link points straight at the parcel):
-  **Denver** (denvergov.org), **Adams** (adcotax.com), **Duval FL** (county-taxes.com). **Arapahoe**
-  (arapahoegov.com search form: 13th/Bates/Virginia) and **Memphis** (payit901.com: Joest/Stockport)
-  store only a generic search page, so they need form automation — **phase 2**. Escrow rows
-  (Donald/Yale) are skipped.
-- Reuses the Sheets service-account auth (`GOOGLE_SHEET_ID` + `GOOGLE_CREDENTIALS_JSON`); **no
-  AppFolio login / cookies** (public lookups). Writing col S does NOT need an AppsScript change
-  (the reader only reads A–R). **Do NOT enable the write mode or a schedule until the extractors
-  are calibrated against a real run** — otherwise a wrong figure (assessed value, prior year) could
-  overwrite Amount Due.
+### 🤖 Auto-fill Amount Due from county sites — ATTEMPTED & ABANDONED (Jun 8 2026)
+User asked to automate reading each county's live balance into Amount Due. Built a Playwright
+scraper (`automation/run_tax.py` + `tax_update.yml`, calibration-first) and ran 3 real calibration
+passes on GitHub Actions. **Verdict: NOT FEASIBLE — every county portal blocks automated access**,
+so the files were **REMOVED** (user decision). Do NOT rebuild this without a new approach.
+- **Denver** (denvergov.org): **Radware bot-detection wall** — serves the headless browser a blank
+  ~1,070-char shell with no figures (captured an `rb_…?type=js3` bot-manager script). 7 parcels.
+- **Duval FL** (county-taxes.com): **Cloudflare Turnstile CAPTCHA** (captured a
+  `challenges.cloudflare.com/.../turnstile/` challenge) — needs a human checkbox.
+- **Adams** (adcotax.com): the `account.jsp` deep link **redirects to `login.jsp`** — balance is
+  behind a sign-in.
+- **Arapahoe** (search form) + **Memphis** (payit901) were already phase-2 search forms; same class
+  of protection expected.
+- Naive fetches also 403 (confirmed via WebFetch on denvergov + adcotax). Getting past these would
+  need CAPTCHA-solving services / residential proxies / credential automation — fragile, ToS-violating,
+  and inappropriate for this tooling. **Property tax stays MANUAL** (the ✏️ edit on each Property Tax
+  row is the intended fast path: paste amount + paid date + confirmation #, balance/banner update live).
+  Reusable lesson: county treasurer sites are anti-bot — don't promise live-balance scraping.
 
 ---
 
