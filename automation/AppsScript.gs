@@ -844,6 +844,7 @@ function dashboardKnowledge() {
     + '5070 DONALD, LLC -- 8 units = 4 duplexes (5060-5082 E Donald Ave, Denver): mortgage CBRE $13,708.00/mo (/8 = $1,713.50/unit); insurance Westfield $1,210.84/mo (/8 = $151.36/unit); SBA loan $444/mo (LLC-level); tax escrowed.\n\n'
     + 'DORADO LLC -- only LLC-level totals are tracked (no per-unit breakdown yet). Owns 2397 Jamaica St and 4641 Enid Way, both insured on Divando\'s State Farm policy (Dorado credits $138/mo back to Divando; ends Dec 2026).\n\n'
     + 'MANUAL ENTRIES (Suncoast / Mid South): the owner enters the amount that actually hit the bank (the deposited amount), which can differ from the statement NOI. No mortgage/insurance, so net = amount entered.\n\n'
+    + 'PROPERTY TAX TAB: A dedicated 🧾 Property Tax tab tracks the property tax Ron pays manually online once a year per parcel for Divando and Dorado (Donald and Yale are escrowed by the lender, shown only for reference). Each row holds the annual bill, amount paid, balance owed, paid date and confirmation #; partial payments are allowed. "Outstanding" excludes escrow (the lender pays Donald/Yale). The Master Portfolio top cards include a blinking-red "Property Tax Owed" tile = the total still owed. Read the PROPERTY TAX section above for the live billed/paid/owed numbers.\n\n'
     + 'HOW THE DASHBOARD WORKS: The top cards show gross income, net cashflow and YTD, plus one card per LLC (each LLC card sums all of that LLC\'s History rows for the month, including the manual Suncoast/Mid South rows that roll up under Divando). The Per-Property Monitor lets you pick an LLC and a month and shows each unit\'s Income (Cash In), Disbursement, Repairs, Net, YTD Net and Occupancy (Divando, Yale and Donald are covered per-unit). Other tabs: History (LLC monthly cashflow), Loans, Distributions (Ron vs partner payouts), Maintenance Log (invoices, auto-deducted that month), and Noble Insurance (authoritative per-property insurance).\n';
 }
 
@@ -898,12 +899,13 @@ function handleChatWithHistory(messages, activeTab, nobleContext) {
   var systemPrompt = 'You are a sharp, friendly real estate portfolio analyst for Ronen Moscovich (Ron), a Denver-based investor. You know his Niron portfolio inside and out.\n'
     + 'Answer using the data and reference knowledge below. Never say data is missing if it appears anywhere below.\n'
     + 'For totals / YTD / annual figures, READ the pre-computed summary tables -- do NOT re-add individual rows. For a specific month or unit, read the detail rows.\n'
-    + '\nThe information below has FOUR sections:\n'
+    + '\nThe information below has FIVE sections:\n'
     + '  1. PORTFOLIO -- LLC-level monthly cashflow (History), annual totals, loans, distributions, maintenance.\n'
     + '  2. PROPERTY DETAIL -- per-UNIT monthly data for the individual addresses inside Divando LLC, Yale Townhomes LLC, and 5070 Donald LLC '
     + '(e.g. "5101 Crown Blvd Unit A", "2991 W Yale Ave", "5060 E Donald Ave"). Use this for ANY question about a specific address or unit.\n'
     + '  3. DASHBOARD REFERENCE KNOWLEDGE -- authoritative fixed costs (mortgages, SBA loans, taxes), the net-cashflow formula, manual-entry rules, and how the dashboard itself works.\n'
     + '  4. INSURANCE -- policies, renewal dates, premiums (Noble Insurance tab).\n'
+    + '  5. PROPERTY TAX -- annual property-tax bills per parcel: what is billed, paid, and still owed (Divando & Dorado pay manually; Donald & Yale are escrowed by the lender). Use this for any property-tax question.\n'
     + '\nRULES:\n'
     + '- "Income" for a single property or unit = its Cash In (the dashboard\'s Income column). If asked for net, use Disbursement - Mortgage - Insurance/12 (tax is escrowed/annual, not in monthly net).\n'
     + '- A building/property can have several units (e.g. "Crown" = "5101 Crown Blvd Unit A" + "Unit B"; "Yale" = 5 units; "Donald" = 8 units). When asked about a whole property by name, SUM its units for each month before comparing months.\n'
@@ -1475,6 +1477,32 @@ function buildPortfolioContext() {
           + (p.status || '') + '\n';
       });
     }
+  }
+
+  // ── Property Tax (annual bills, manual: Divando + Dorado; Donald/Yale escrowed) ──────
+  // One annual tax bill per parcel (partials allowed). Outstanding = bill - paid, but
+  // escrow rows (Donald/Yale, lender pays) are never counted as owed.
+  var ptax = ss.getSheetByName('Property Tax');
+  if (ptax && ptax.getLastRow() >= 5) {
+    var ptOutByLlc = {}, ptOutTotal = 0, ptDueTotal = 0, ptPaidTotal = 0, ptLines = [];
+    ptax.getRange(5, 1, ptax.getLastRow() - 4, 18).getValues().forEach(function(r) {
+      if (!r[2]) return;                                   // need a property name
+      var llc = String(r[0] || ''), prop = String(r[2] || ''), county = String(r[3] || '');
+      var due = Number(r[6]) || 0, paid = Number(r[7]) || 0, paidBy = String(r[9] || '');
+      var escrow = /escrow/i.test(paidBy);
+      var owed = escrow ? 0 : Math.max(0, due - paid);
+      var status = escrow ? 'Escrow (lender pays)' : (owed > 0.005 ? 'OUTSTANDING' : 'Paid');
+      if (!escrow) { ptOutByLlc[llc] = (ptOutByLlc[llc] || 0) + owed; ptOutTotal += owed; ptDueTotal += due; ptPaidTotal += paid; }
+      ptLines.push(llc + ' | ' + prop + ' | ' + county + ' | bill ' + dollar(due) + ' | paid ' + dollar(paid)
+        + ' | owed ' + (escrow ? 'escrow' : dollar(owed)) + ' | ' + status
+        + (r[8] ? ' | paid ' + dateStr(r[8]) : '') + (r[14] ? ' | prior yr ' + dollar(Number(r[14]) || 0) : ''));
+    });
+    ctx += '\n=== PROPERTY TAX (annual bills, paid manually online — Divando + Dorado; Donald & Yale escrowed by the lender) ===\n';
+    ctx += 'Ron pays property tax once a year per parcel (partials allowed). Donald & Yale tax is escrowed inside the mortgage (lender pays) and is NOT money Ron owes. "Outstanding" = bill - paid, excluding escrow.\n';
+    ctx += 'TOTAL outstanding (still owed): ' + dollar(ptOutTotal) + ' | total billed this year: ' + dollar(ptDueTotal) + ' | total paid: ' + dollar(ptPaidTotal) + '\n';
+    Object.keys(ptOutByLlc).forEach(function(k) { if (ptOutByLlc[k] > 0.005) ctx += '  Outstanding ' + k + ': ' + dollar(ptOutByLlc[k]) + '\n'; });
+    ctx += '\n--- PER-PARCEL ---\nLLC | Property | County | Bill | Paid | Owed | Status | Paid date | Prior year\n';
+    ptLines.forEach(function(l) { ctx += l + '\n'; });
   }
 
   return ctx;

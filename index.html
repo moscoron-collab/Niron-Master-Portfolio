@@ -1738,8 +1738,14 @@ function renderAll() {
     + '</span></span>';
   html += '<div class="summary-card dual ' + netCls + '"><div class="card-cell"><div class="label">' + L('Net Cashflow', 'תזרים מזומנים נקי') + netTip + langBtn + '</div><div class="value" id="kpi-net">' + fmtShort(totalNet) + '</div><div class="sublabel">' + L('After all expenses', 'אחרי כל ההוצאות') + '<br><span class="kpi-ratio">📊 ' + marginPct + ' ' + L('kept', 'נשמר') + '</span></div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">' + L('YTD', 'מתחילת השנה') + '</div><div class="value" id="kpi-net-ytd">' + fmtShort(ytdNet) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
   html += '<div class="summary-card dual blue"><div class="card-cell"><div class="label">' + L('Your Distribution', 'החלוקה שלך') + distTip + langBtn + '</div><div class="value" id="kpi-dist">' + fmtShort(distThisMonth) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || L('No data', 'אין נתונים')) + '<br><span class="kpi-ratio blue">💸 ' + payoutPct + ' ' + L('of net', 'מהנקי') + '</span></div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">' + L('YTD', 'מתחילת השנה') + '</div><div class="value" id="kpi-dist-ytd">' + fmtShort(distYtd) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Total Mortgage / Mo</div><div class="value" id="kpi-mort">' + fmtShort(totalMortgage) + '</div><div class="sublabel">Across all LLCs</div></div></div>';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Portfolio Value</div><div class="value" id="kpi-value">' + fmtShort(totalValue) + '</div><div class="sublabel">Estimated</div></div></div>';
+  // ── Property tax owed tile (blinking red when > 0) — sits between Your Distribution
+  //    and the combined Mortgage/Value card. Outstanding excludes escrow (taxOutstanding
+  //    returns 0 for Donald/Yale). Click jumps to the Property Tax tab.
+  let taxOut = 0;
+  (data.property_tax || []).forEach(r => { taxOut += taxOutstanding(r); });
+  const taxOwedOn = taxOut > 0.005;
+  html += '<div class="summary-card" onclick="switchMainTab(\'tax\')" style="cursor:pointer" title="Open the Property Tax tab"><div class="card-cell"><div class="label' + (taxOwedOn ? ' tax-blink' : '') + '">Property Tax Owed</div><div class="value' + (taxOwedOn ? ' tax-blink' : '') + '" id="kpi-tax-due" style="color:' + (taxOwedOn ? '#ff4455' : '#00c97a') + '">' + fmtShort(taxOut) + '</div><div class="sublabel">' + (taxOwedOn ? 'still to pay' : 'all paid') + '</div></div></div>';
+  html += '<div class="summary-card dual"><div class="card-cell"><div class="label">Total Mortgage / Mo</div><div class="value" id="kpi-mort">' + fmtShort(totalMortgage) + '</div><div class="sublabel">Across all LLCs</div></div><div class="divider"></div><div class="card-cell"><div class="label">Portfolio Value</div><div class="value" id="kpi-value">' + fmtShort(totalValue) + '</div><div class="sublabel">Estimated</div></div></div>';
   html += '</div>';
   // ── Operational health tiles (occupancy / vacancy / repairs) ──
   // Per-unit status comes from the Property Detail records (Divando AppFolio + Yale +
@@ -2778,7 +2784,7 @@ function renderTaxSection() {
     '<button onclick="toggleTax2025()" style="background:#13243a;color:#9fc1e0;border:1px solid #29456a;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit" title="Show or hide the prior-year (2025) tax column">' + (show25 ? '🙈 Hide 2025' : '👁 Show 2025') + '</button>' +
     '<button onclick="openTaxModal()" style="background:#0080cc;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">➕ Add Property</button>' +
     '</span></h2>';
-  html += '<div style="color:#7e9cbf;font-size:12.5px;margin:-6px 0 14px">You pay these online, one bill per parcel per year. ✏️ a row to record what you paid (date · amount · confirmation #) and the balance updates. <b style="color:#f0a500">Yellow = still owed</b>, <b style="color:#00c97a">green = paid</b>. Donald &amp; Yale are <b style="color:#00BFFF">escrow</b> (lender pays).</div>';
+  html += '<div style="color:#7e9cbf;font-size:12.5px;margin:-6px 0 14px">You pay these online, one bill per parcel per year. ✏️ a row to record what you paid (date · amount · confirmation #) and the balance updates. Donald &amp; Yale are <b style="color:#00BFFF">escrow</b> (lender pays).</div>';
   if (!rows.length) { html += '<div style="color:#4e6d8c;padding:14px">No property tax rows yet — they auto-seed on the next load after the Apps Script redeploy, or click ➕ Add Property.</div></div>'; el.innerHTML = html; return; }
 
   // Outstanding totals (manual only, escrow excluded), by LLC.
