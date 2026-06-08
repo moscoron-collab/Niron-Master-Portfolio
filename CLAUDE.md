@@ -857,6 +857,16 @@ Since auto-fill is impossible, the manual flow had to be smooth. Two fixes in `i
   the user must know which number to enter. The label is display-only; the click still copies just the
   number. 15655 E 13th's value `031319692` is the **PIN** (the AIN `197505203015` is a different number).
 
+### 🐛 Edits "not saving" (revert to old value) = browser-cached GET, FIXED (Jun 8 2026)
+User reported Property Tax edits (e.g. set Amount Due 0) reverting to the old value "hence not
+saving." Root cause was NOT the save — the POST writes fine; the dashboard re-read a **browser-cached**
+copy of the Apps Script `/exec` GET, so the just-saved value didn't show. Fix in `index.html`:
+**`dashGet()`** = `fetch(API_URL + '?cb=' + Date.now(), {cache:'no-store'})`, now used by `load()`,
+`reloadTax()`, and the audit refresh (all the GET reads). Apps Script ignores the extra `cb` param.
+If an edit STILL reverts after this + a hard refresh, THEN it's a stale Apps Script deployment →
+redeploy (New version). (Holly/Tucson showing "Paid" is separate: they were seeded paid from the green
+Excel rows — the user sets Amount Paid 0 + clears Paid Date to flip them to Outstanding.)
+
 > ⚠️ **Cannot write the live sheet from the agent box** — the Apps Script `/exec` endpoint is "Host not
 > in allowlist" (sandbox blocks `script.google.com`), and the county sites block scraping. So dollar-
 > amount / paid-status corrections must be done by the user via the ✏️ Edit modal (or directly in the
