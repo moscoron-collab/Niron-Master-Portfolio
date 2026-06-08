@@ -792,8 +792,12 @@ sheet's "2026 3/25 due Dorado 4031.76" line). Sold 2116 4th Ave kept as a `[SOLD
 `renderTaxSection()` (called from `initialRender` + on `switchMainTab('tax')`) renders into
 `#tax-content`: an outstanding banner (yellow $ owed, split per LLC), a 3-tile KPI strip (Tax Due ·
 Paid · Outstanding), then a table grouped by LLC (Divando → Dorado → Donald/Yale escrow) with
-Property · County · Parcel · **Tax Bill** (full annual bill) · Paid · **Owed** (bill − paid) · Status badge · Paid Date · **Last Yr** (single prior-year amount, `lastYrCell`) ·
-💳 Pay link · ✏️ edit / 🗑 delete. Edit/Add uses the **`tax-modal`** (`openTaxModal`/`submitTax`/
+Property · County · Parcel · **Tax 2026** (full annual bill) · Paid · **Owed** (bill − paid) · Status badge · Paid Date · **Tax 2025** (prior-year amount, `lastYrCell`) ·
+💳 Pay link · ✏️ edit / 🗑 delete. The **Tax 2025** column is **hidden by default** behind a
+**👁 Show 2025 / 🙈 Hide 2025** header toggle (`toggleTax2025()`, localStorage `niron_tax_2025`,
+default off): when hidden the column is fully omitted (no header/cell, colspans + table min-width
+shrink 11→10 cols / 1040→960px); Show widens the table to fit it. Choice is remembered per browser.
+Edit/Add uses the **`tax-modal`** (`openTaxModal`/`submitTax`/
 `deleteTax`); setting a Paid Date auto-fills Amount Paid to Amount Due (`taxAutofillPaid`).
 Deep-link `?tab=tax`. Self-audit unaffected (no `#kpi-*` IDs).
 
