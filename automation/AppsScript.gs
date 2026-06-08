@@ -1144,6 +1144,15 @@ function doPost(e) {
     if (body.action === 'add_statement') {
       return addStatementEntry(body);
     }
+    if (body.action === 'add_property_tax') {
+      return addPropertyTaxEntry(body);
+    }
+    if (body.action === 'update_property_tax') {
+      return updatePropertyTaxEntry(body);
+    }
+    if (body.action === 'delete_property_tax') {
+      return deletePropertyTaxEntry(body);
+    }
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({error: 'Parse error: ' + err.message}))
       .setMimeType(ContentService.MimeType.JSON);
@@ -1694,7 +1703,7 @@ function logActivity(actor, action, details) {
 // Override: getDashboardJson with properties + new maintenance structure
 function getDashboardJson() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], activity: [], settings: {} };
+  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], activity: [], settings: {} };
 
   // Track the most-recent real data-change timestamp (Activity Log + History "Logged At" +
   // Property Detail "Updated"), so the dashboard's "Last Updated" reflects when the data
@@ -1817,6 +1826,32 @@ function getDashboardJson() {
     });
   }
 
+  // Property Tax tab — one row per property/parcel of Divando + Dorado (+ Donald/Yale
+  // escrow as reference). Manually maintained from the dashboard's 🧾 Property Tax tab.
+  // Auto-created + seeded from the user's spreadsheet the first time this runs if missing.
+  // One annual payment per property (partials allowed), plus prior-year history.
+  // Data starts at row 5. Columns (A-R):
+  // LLC, State, Property, County, Parcel/PIN, Tax Year, Amount Due, Amount Paid,
+  // Paid Date, Paid By, Confirmation #, Tax Link, Routing #, Account #,
+  // Prior Yr1, Prior Yr2, Prior Yr3, Comments.
+  var ptax = ensurePropertyTaxTab(ss);
+  if (ptax && ptax.getLastRow() >= 5) {
+    function isoDate(v) { return v instanceof Date ? v.toISOString().slice(0,10) : (v || ''); }
+    function raw(v) { return v instanceof Date ? v.toISOString().slice(0,10) : (v === null || v === undefined ? '' : v); }
+    ptax.getRange(5, 1, ptax.getLastRow() - 4, 18).getValues().forEach(function(r, i) {
+      if (!r[2]) return; // need a property name
+      data.property_tax.push({
+        row: 5 + i,
+        llc: r[0] || '', state: r[1] || '', property: r[2] || '', county: r[3] || '',
+        parcel: r[4] || '', tax_year: r[5] || '',
+        amount_due: Number(r[6]) || 0, amount_paid: Number(r[7]) || 0,
+        paid_date: isoDate(r[8]), paid_by: r[9] || '', conf: raw(r[10]),
+        tax_link: r[11] || '', routing: raw(r[12]), account: raw(r[13]),
+        prior1: raw(r[14]), prior2: raw(r[15]), prior3: raw(r[16]), notes: r[17] || ''
+      });
+    });
+  }
+
   // ----- Activity feed: manual changes (Activity Log tab) + automation pulls -----
   var act = ss.getSheetByName('Activity Log');
   if (act && act.getLastRow() >= 2) {
@@ -1932,4 +1967,117 @@ function addStatementEntry(data) {
   ]]);
   logActivity(data.actor, 'Added statement', data.property + ' · ' + periodStart + ' · $' + noi);
   return ContentService.createTextOutput(JSON.stringify({ok: true, row: nextRow, message: 'Saved ' + data.property + ' (Divando LLC) ' + periodStart})).setMimeType(ContentService.MimeType.JSON);
+}
+
+/* ===================== PROPERTY TAX TRACKER ======================
+   One row per property/parcel for Divando + Dorado (+ Donald/Yale escrow as
+   reference). Tracks one annual tax payment per property (partials allowed):
+   the amount due, what you actually paid online, the paid date, paid-by method,
+   confirmation/transaction #, parcel/PIN, county tax link, routing/account, and
+   the prior years for trend. So the dashboard always shows what's due, what's
+   paid, and the outstanding balance.
+   Data starts at row 5 (title row 1, headers row 4). Columns A-R:
+   A LLC | B State | C Property | D County | E Parcel/PIN | F Tax Year |
+   G Amount Due | H Amount Paid | I Paid Date | J Paid By | K Confirmation # |
+   L Tax Link | M Routing # | N Account # | O Prior Yr1 | P Prior Yr2 |
+   Q Prior Yr3 | R Comments
+   ================================================================ */
+
+// Return the Property Tax sheet, creating + seeding it from the user's spreadsheet
+// (real amounts, parcels, links, paid status) on first use so it opens populated.
+function ensurePropertyTaxTab(ss) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('Property Tax');
+  if (sh) return sh;
+  sh = ss.insertSheet('Property Tax');
+  sh.getRange(1, 1).setValue('PROPERTY TAX TRACKER — Divando + Dorado (manual online) · Donald + Yale (escrow, reference)').setFontWeight('bold');
+  var headers = ['LLC','State','Property','County','Parcel / PIN','Tax Year','Amount Due','Amount Paid',
+    'Paid Date','Paid By','Confirmation / Transaction #','Tax Link','Routing #','Account #',
+    'Prior Yr 1','Prior Yr 2','Prior Yr 3','Comments'];
+  sh.getRange(4, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+  sh.setFrozenRows(4);
+
+  // Seed = the user's Niron_Property_Taxes spreadsheet, current year 2026. Yellow
+  // (unpaid) rows carry Amount Paid 0 + no paid date; Donald/Yale are escrow.
+  var seed = [
+    ['Divando LLC', 'CO', '14790 E 43RD AVE', 'Denver', '', 2026, 2390.3, 2390.3, '2026-04-28', 'Ronen -Direct Draw', '', 'https://www.denvergov.org/property/realproperty/taxes/0019310013000', '102105997', '410013442', 2131.06, 2084.86, 1860.9, 'Parcel ID 00193-10-013-000 Transaction ID #: 9715684'],
+    ['Divando LLC', 'CO', '5538 N DEARBORN ST', 'Denver', '', 2026, 2488.64, 2488.64, '2026-05-26', 'Ronen-Direct Draw', '10383756', 'https://www.denvergov.org/property/realproperty/taxes/0018102016000', '102105997', '410013442', 2126.22, 2080.14, 1833.06, 'Parcel ID: 00181-02-016-000 Transaction ID #: 9716259'],
+    ['Divando LLC', 'CO', '4776 N BLACKHAWK WAY', 'Denver', '', 2026, 2721.32, 2721.32, '2026-04-28', 'Ronen -Direct Draw', '10383919', 'https://www.denvergov.org/property/realproperty/taxes/0124113015000', '102105997', '410013442', 2395.02, 2343.14, 2164.68, 'Parcel ID:01241-13-015-000 Transaction ID #: 9716259'],
+    ['Divando LLC', 'CO', '5101 N.Crown Blvd', 'Denver', '', 2026, 1328.82, 0, '', 'Ronen-Direct Draw', '', 'https://www.denvergov.org/property/realproperty/taxes/0124113015000', '102105997', '410013442', 2093.44, 2048.12, 2206.62, 'Parcel: 00185-06-020-000 Transaction ID #: 10385693'],
+    ['Divando LLC', 'CO', '3630 N HOLLY ST', 'Denver', '', 2026, 2740.12, 2740.12, '2026-05-26', 'Ronen -Direct Draw', '10383943', 'https://www.denvergov.org/property/realproperty/taxes/0129208022000', '102105997', '410013442', 2625.4, 2568.52, 2006.42, 'Parcel ID: 01292-08-022-000 Transaction ID #: 9716259'],
+    ['Divando LLC', 'CO', '15655 E 13TH AVE', 'Arapahoe', '', 2026, 2459, 0, '', 'Ronen- E-check', '', 'https://arapahoegov.com/1106/Tax-Search', '102105997', '410013442', 3047.84, 1539.01, 3277.43, 'PIN:031319692 parcel id 197505203015'],
+    ['Divando LLC', 'CO', '15559 E BATES AVE', 'Arapahoe', '', 2026, 3004.69, 3004.69, '2026-02-19', 'Ronen- E-check', '', 'https://arapahoegov.com/1106/Tax-Search', '102105997', '410013442', 2929.17, 2987.17, 2421.54, 'PIN:031500222 CONF#200283135938'],
+    ['Divando LLC', 'CO', '11795 E VIRGINIA DR', 'Arapahoe', '', 2026, 1190.85, 1190.85, '2026-02-19', 'Ronen- E-check', '', 'https://arapahoegov.com/1106/Tax-Search', '102105997', '410013442', 2372.76, 2419.74, 1738.73, 'PIN:031164265   200283132650'],
+    ['Divando LLC', 'CO', '2332 OAKLAND ST', 'Adams', '', 2026, 2989.82, 2989.82, '2026-02-19', 'Ronen- E-check', '', 'https://adcotax.com/treasurer/treasurerweb/account.jsp?account=R0095746', '102105997', '410013442', 2687.59, 5530.19, 2318.04, '182335109008'],
+    ['Divando LLC', 'CO', '3225 TUCSON ST', 'Adams', '', 2026, 2864.42, 2864.42, '2026-02-19', 'Ronen- E-check', '', 'https://www.adcotax.com/treasurer/treasurerweb/account.jsp?account=R0093130', '102105997', '410013442', 2572.09, 5551.31, 2487.34, '182325302012'],
+    ['Divando LLC', 'CO', '1724 BOSTON ST', 'Adams', '', 2026, 2591.34, 2591.34, '2026-02-19', 'Ronen-E check', '', 'https://www.adcotax.com/treasurer/treasurerweb/account.jsp?account=R0094745', '102105997', '410013442', 2676.4, 4839.46, 2087.36, '182334312008 conf #N8QQQG7SA'],
+    ['Divando LLC', 'FL', '2116 4TH AVENUE', 'Duval', '', 2026, 0, 0, '2024-05-24', 'Ronen- E-check', '', 'https://duval.county-taxes.com/public/real_estate/parcels/029712-0000/bills?parcel=6a5910d2-fb57-11eb-b057-9174fc13d603&qid=de2ddbc69a63648a722aafb08a36d335', '102105997', '410013442', 'sold and paid', 1627.02, 1380.32, 'INT-25-00421331 [SOLD]'],
+    ['Divando LLC', 'FL', '8222 HARE AVENUE', 'Duval', '', 2026, 2016.14, 2016.14, '2025-11-29', 'Ronen- E-check', '', 'https://duval.county-taxes.com/public/real_estate/parcels/144116-0000/bills?parcel=86d33dfe-fb58-11eb-b33a-44c5343f3ddd&qid=dd10fde5ed8a5ba9b6f644ca87fce078', '292970825', '410013442', 2016.14, 1807.67, 1447.9, 'INT-25-00421332 Confirmation number T2204075074'],
+    ['Divando LLC', 'TN', '3899 JOEST DR', 'Memphis', '', 2026, 612.97, 612.97, '2026-03-23', 'Ronen- E-check', '', 'https://payit901.com', '102105997', '410013442', 1401.78, 606.79, 612.97, 'parcel 071037 00010'],
+    ['Divando LLC', 'TN', '6580 STOCKPORT DR', 'Memphis', '', 2026, 1128.31, 1128.31, '2026-04-21', 'Ronen- E-check', '', 'https://payit901.com', '102105997', '410013442', 2548.7, 828.87, 1174.76, 'D0255Y0G000080 / PARCEL 07103700000100'],
+    ['5070 Donald, LLC', 'CO', '5070 E Donald Ave', 'Denver', '', 2026, 12046.44, 0, '', 'Escrow', '', 'https://www.denvergov.org/property/realproperty/taxes/0630131014000', '102105997', '410029364', '12,392.35 (2/2)', 24247.7, 19164.74, 'parcel: 06301-31-014-000 [ESCROW]'],
+    ['Yale Townhomes, LLC', 'CO', '2995 W Yale Ave', 'Denver', '', 2026, 6171.44, 0, '', 'Escrow', '', 'https://www.denvergov.org/property/realproperty/taxes/0532102022000', '102105997', '510002321', '6,258.54 (2/2)', '', 8797.88, 'Parcel ID: 05321-02-022-000 [ESCROW]'],
+    ['Dorado LLC', 'CO', '1460 W 41ST AVE', 'Denver', '', 2026, 2944.56, 0, '', 'Ronen- Direct draw', '10383859', 'https://www.denvergov.org/property/realproperty/taxes/0221426001000', '102105997', '2200004482189', 8559.38, 8373.98, 5195.36, '02214-26-001-000. Transaction ID #: 9646451 Fully paid 8/23/25 Your transaction number is 133744521.'],
+    ['Dorado LLC', 'CO', '4641 N ENID WAY', 'Denver', '', 2026, 1087.2, 0, '', 'ronen direct draw', '132607339', 'https://www.denvergov.org/property/realproperty/taxes/0019104005000', '102105997', '2200004482189', 1954.26, 1954.26, 1756.72, '00191-04-005-000 Transaction ID #: 9646451'],
+    ['Dorado LLC', 'CO', '2397 JAMAICA ST', 'Adams', '', 2026, 3027, 3027, '2026-02-19', 'Ronen-E-check', 'DYFQQG7SA', 'https://www.adcotax.com/treasurer/treasurerweb/account.jsp?account=R0096240', '102105997', '2200004482189', 3333.12, 11500, '5676.54 *', 'Lien Due 2,899.24 + 144.96 for a total with Taxes 2,612.34 of 5,676.54']
+  ];
+  var rows = seed.map(function(s) {
+    var r = s.slice();
+    r[8] = r[8] ? new Date(r[8] + 'T12:00:00') : '';  // Paid Date -> real Date
+    // Force routing/account/confirmation to text so big numbers don't lose digits.
+    r[10] = "'" + (r[10] || '');
+    r[12] = "'" + (r[12] || '');
+    r[13] = "'" + (r[13] || '');
+    return r;
+  });
+  sh.getRange(5, 1, rows.length, 18).setValues(rows);
+  sh.getRange(5, 7, rows.length, 2).setNumberFormat('$#,##0.00');   // Amount Due + Paid
+  sh.getRange(5, 9, rows.length, 1).setNumberFormat('yyyy-mm-dd');  // Paid Date
+  return sh;
+}
+
+// Build the 18-col row array from a posted payload.
+function _propertyTaxRow(d) {
+  function asDate(v) { return v ? new Date(v + 'T12:00:00') : ''; }
+  function num(v) { return (v === '' || v === null || v === undefined) ? '' : (isNaN(Number(v)) ? v : Number(v)); }
+  return [
+    d.llc || '', d.state || '', d.property || '', d.county || '', d.parcel || '',
+    d.tax_year || '', Number(d.amount_due) || 0, Number(d.amount_paid) || 0,
+    asDate(d.paid_date), d.paid_by || '', d.conf || '', d.tax_link || '',
+    d.routing || '', d.account || '',
+    num(d.prior1), num(d.prior2), num(d.prior3), d.notes || ''
+  ];
+}
+
+function addPropertyTaxEntry(data) {
+  var sh = ensurePropertyTaxTab(SpreadsheetApp.getActiveSpreadsheet());
+  if (!data.property) return ContentService.createTextOutput(JSON.stringify({error:'Property is required'})).setMimeType(ContentService.MimeType.JSON);
+  var nextRow = Math.max(5, sh.getLastRow() + 1);
+  sh.getRange(nextRow, 1, 1, 18).setValues([_propertyTaxRow(data)]);
+  sh.getRange(nextRow, 7, 1, 2).setNumberFormat('$#,##0.00');
+  sh.getRange(nextRow, 9).setNumberFormat('yyyy-mm-dd');
+  logActivity(data.actor, 'Added property tax', (data.property || '') + ' · ' + (data.llc || ''));
+  return ContentService.createTextOutput(JSON.stringify({ok:true, row:nextRow})).setMimeType(ContentService.MimeType.JSON);
+}
+
+function updatePropertyTaxEntry(data) {
+  var sh = ensurePropertyTaxTab(SpreadsheetApp.getActiveSpreadsheet());
+  var row = Number(data.row);
+  if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error:'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
+  if (!data.property) return ContentService.createTextOutput(JSON.stringify({error:'Property is required'})).setMimeType(ContentService.MimeType.JSON);
+  sh.getRange(row, 1, 1, 18).setValues([_propertyTaxRow(data)]);
+  sh.getRange(row, 7, 1, 2).setNumberFormat('$#,##0.00');
+  sh.getRange(row, 9).setNumberFormat('yyyy-mm-dd');
+  logActivity(data.actor, 'Edited property tax', (data.property || '') + ' · ' + (data.llc || ''));
+  return ContentService.createTextOutput(JSON.stringify({ok:true, row:row})).setMimeType(ContentService.MimeType.JSON);
+}
+
+function deletePropertyTaxEntry(data) {
+  var sh = ensurePropertyTaxTab(SpreadsheetApp.getActiveSpreadsheet());
+  var row = Number(data.row);
+  if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error:'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
+  var info = sh.getRange(row, 1, 1, 3).getValues()[0];
+  sh.deleteRow(row);
+  logActivity(data.actor, 'Deleted property tax', (info[2] || '') + ' · ' + (info[0] || ''));
+  return ContentService.createTextOutput(JSON.stringify({ok:true, deleted:row})).setMimeType(ContentService.MimeType.JSON);
 }
