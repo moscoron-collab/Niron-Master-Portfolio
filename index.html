@@ -490,6 +490,93 @@
   </div>
 </div>
 
+<!-- ═══════════════════ MONTHLY GUIDE ═══════════════════ -->
+<div class="modal-overlay" id="guide-modal" onclick="if(event.target===this)closeGuideModal()">
+  <div class="modal-box" style="max-width:820px">
+    <h2><span>📖 Monthly Guide — what to do when a new month comes</span> <button class="modal-close" onclick="closeGuideModal()">×</button></h2>
+    <div style="max-height:72vh;overflow:auto;font-size:13.5px;line-height:1.65;color:#cfe0f2">
+
+      <div style="background:#0d1e30;border:1px solid #1e3550;border-radius:10px;padding:12px 16px;margin-bottom:16px">
+        <div style="font-weight:700;color:#00BFFF;margin-bottom:6px">⚙️ What happens automatically vs. what you do</div>
+        The <b>4 Niron LLCs</b> (Divando, Dorado, Yale, Donald) are pulled from AppFolio <b>automatically</b>
+        every day from the <b>15th to the 25th</b> — you don't push any button for those. Everything else on this
+        page (the 3 out-of-state properties, repairs, distributions, property tax, and the bank-true cash) is
+        <b>entered by hand</b>. This guide is that hand-entry checklist, in the order to do it.
+      </div>
+
+      <div style="background:rgba(240,165,0,0.1);border:1px solid #f0a500;border-radius:10px;padding:10px 14px;margin-bottom:18px;color:#ffd479">
+        🟡 <b>Do this first, every time:</b> set <b>“Signed in as”</b> (top-right) to who you are — every entry is
+        stamped with your name, and the page blocks saving until it's set. Then pick the <b>new month</b> in the
+        month dropdown (top-left). It jumps to the newest month with data on its own once AppFolio lands.
+      </div>
+
+      <ol style="padding-left:22px;margin:0">
+        <li style="margin-bottom:16px">
+          <b>Confirm the AppFolio pull landed</b> &nbsp;<span style="color:#7e9cbf">(around the 16th–26th)</span><br>
+          In the month dropdown (top-left), select the new month. If the LLC cards (Divando, Dorado, Yale,
+          Donald) show numbers for that month, the automatic pull worked — nothing to do for the 4 LLCs.
+          <div style="color:#7e9cbf;font-size:12px;margin-top:4px">If a month is still blank by the ~26th, the
+          AppFolio login likely needs attention — tell whoever maintains the automation; the rest of the steps
+          below can still be done.</div>
+        </li>
+
+        <li style="margin-bottom:16px">
+          <b>Enter the 3 out-of-state statements</b> — click the <b>📋</b> button (bottom-right)<br>
+          These 3 are <b>not</b> on AppFolio and must be typed in each month:
+          <b>8222 Hare Ave</b> (Jacksonville, Suncoast), <b>3899 Joest Rd</b> &amp; <b>6580 Stockport Dr</b>
+          (Memphis, Mid South). Enter the amount that <b>actually hit the bank</b> (the deposited amount), not the
+          statement's stated NOI — they can differ. The form shows <b>“X of 3 entered”</b> and marks each
+          ✅ done / ⬜ not yet. They roll up under Divando automatically.
+        </li>
+
+        <li style="margin-bottom:16px">
+          <b>Enter repair / maintenance invoices</b> — click the <b>🔧</b> button (bottom-right)<br>
+          For each invoice: date, property (the LLC auto-fills), category, amount, description. Set
+          <b>“Paid By”</b> (LLC Debit Card or Sent to CPA), tick <b>Paid</b> if it's already paid, and attach the
+          invoice file if you have it. Anything marked <b>“Sent to CPA / unpaid”</b> shows up in the
+          <b>🧾 CPA Invoices</b> list for the accountant.
+        </li>
+
+        <li style="margin-bottom:16px">
+          <b>Record partner distributions</b> — click the <b>💰</b> button (bottom-right)<br>
+          When money is taken out, enter the month and the amount for <b>Ron</b> and for <b>Nir</b> (Dorado also
+          includes Simon). This feeds the <b>Your Distribution</b> card and the <b>Partner Distributions</b>
+          section. Policy is an equal split, so the two amounts usually match.
+        </li>
+
+        <li style="margin-bottom:16px">
+          <b>Property tax — only when you actually pay a bill</b> — the <b>🧾 Property Tax</b> tab<br>
+          When you pay a parcel's tax online (Divando &amp; Dorado), open the Property Tax tab, click <b>✏️</b> on
+          that row, and record the <b>paid date · amount · confirmation #</b>. The balance and the red
+          <b>“Property Tax Owed”</b> tile update automatically. Donald &amp; Yale are escrow (the lender pays) —
+          nothing to do for them.
+        </li>
+
+        <li style="margin-bottom:16px">
+          <b>Import bank statements for true cash</b> — click <b>📥 Import Bank</b> (top)<br>
+          Download each LLC operating account's <b>monthly transaction CSV</b> and select all four at once. This
+          builds the <b>“True Cash — Bank-Verified”</b> section — the real net after tax, utilities, accountant
+          and repair checks that the AppFolio number alone doesn't capture. Nothing is uploaded; it stays in this
+          browser.
+        </li>
+
+        <li style="margin-bottom:6px">
+          <b>Verify</b> — glance at the <b>🩺 Run Audit</b> chip<br>
+          Green or amber is fine (amber is the known insurance note, not an error). Then eyeball the LLC cards and
+          <b>Net Cashflow</b> for the new month to make sure nothing looks off. Done. ✅
+        </li>
+      </ol>
+
+      <div style="color:#7e9cbf;font-size:12px;margin-top:14px;border-top:1px solid #1e3550;padding-top:10px">
+        💬 Stuck on a number or a property? Use the <b>💬 Ask Claude</b> button (bottom-right) — it knows the whole
+        Niron portfolio. &nbsp;|&nbsp; Order matters most for step&nbsp;1 (AppFolio is the base); steps&nbsp;2–6 can
+        be done in any order.
+      </div>
+    </div>
+    <div class="modal-actions"><button class="primary" onclick="closeGuideModal()">Got it</button></div>
+  </div>
+</div>
+
 <!-- ═══════════════════ BANK IMPORT ═══════════════════ -->
 <div class="modal-overlay" id="bank-modal" onclick="if(event.target===this)closeBankModal()">
   <div class="modal-box" style="max-width:760px">
@@ -562,7 +649,7 @@
     <div class="meta">
       <div><span class="label">Last Updated:</span> <span id="last-updated">—</span></div>
       <div><span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span><button class="logout-btn" onclick="logout()">Logout</button></div>
-      <div style="margin-top:6px"><button class="audit-btn" id="audit-btn" onclick="runAuditFresh()">🩺 Run Audit</button><button class="audit-btn" id="cpa-btn" onclick="openCpaModal()" title="Invoices sent to the CPA and not yet paid">🧾 CPA Invoices</button><button class="audit-btn" id="activity-btn" onclick="openActivityModal()" title="History of every change - who and when">📋 Activity</button><button class="audit-btn" id="bank-btn" onclick="openBankModal()" title="Import bank statement CSVs to compute each LLC's TRUE net cash">📥 Import Bank</button><span id="audit-chip" class="audit-chip"></span></div>
+      <div style="margin-top:6px"><button class="audit-btn" id="audit-btn" onclick="runAuditFresh()">🩺 Run Audit</button><button class="audit-btn" id="cpa-btn" onclick="openCpaModal()" title="Invoices sent to the CPA and not yet paid">🧾 CPA Invoices</button><button class="audit-btn" id="activity-btn" onclick="openActivityModal()" title="History of every change - who and when">📋 Activity</button><button class="audit-btn" id="bank-btn" onclick="openBankModal()" title="Import bank statement CSVs to compute each LLC's TRUE net cash">📥 Import Bank</button><button class="audit-btn" id="guide-btn" onclick="openGuideModal()" title="Step-by-step: what to do when a new month comes">📖 Monthly Guide</button><span id="audit-chip" class="audit-chip"></span></div>
       <div style="margin-top:6px"><span class="label" style="font-size:11px">Signed in as:</span> <select id="actor-select" class="actor-pick" onchange="setActor(this.value)" title="Who is making changes (stamped on every edit)" style="background:#0a1520;border:1px solid #1e2d42;color:#ccd9ea;border-radius:6px;font-size:11px;padding:4px 8px;outline:none;cursor:pointer"><option value="">— who are you? —</option><option value="R.M">R.M — Ron</option><option value="O.M">O.M — Oshrat</option><option value="N.S">N.S — Nir</option></select></div>
     </div>
   </header>
@@ -2958,6 +3045,8 @@ function ensureActor() {
 }
 function openActivityModal() { renderActivity(); document.getElementById('activity-modal').classList.add('open'); }
 function closeActivityModal() { document.getElementById('activity-modal').classList.remove('open'); }
+function openGuideModal() { document.getElementById('guide-modal').classList.add('open'); }
+function closeGuideModal() { document.getElementById('guide-modal').classList.remove('open'); }
 function renderActivity() {
   const rows = (PORTFOLIO_DATA && PORTFOLIO_DATA.activity) || [];
   if (!rows.length) { document.getElementById('activity-body').innerHTML = '<div style="color:#4e6d8c;padding:14px">No activity recorded yet.</div>'; return; }

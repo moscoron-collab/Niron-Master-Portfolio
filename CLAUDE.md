@@ -912,6 +912,25 @@ Excel rows — the user sets Amount Paid 0 + clears Paid Date to flip them to Ou
 
 ---
 
+## 📖 Monthly Guide button (Jun 8 2026)
+
+A **`📖 Monthly Guide`** button in the header button row (next to 📥 Import Bank, `id="guide-btn"`)
+opens a static checklist modal (`guide-modal`, `openGuideModal`/`closeGuideModal`, toggles the
+`.open` class like the other modals — no render function, content is hardcoded HTML). User-picked
+shape: **in-dashboard button · Niron only · everything end-to-end · partner-shareable** (written so
+Nir/Oshrat could follow it). Pure frontend, live on merge.
+
+The guide's ordered steps (keep in sync if the workflow changes): **(0)** set "Signed in as" + pick
+the new month first; **(1)** confirm the AppFolio auto-pull landed (runs daily 15th–25th, the 4 LLCs
+are automatic — nothing to push); **(2)** 📋 enter the 3 out-of-state statements (Hare/Joest/Stockport,
+deposited amount not NOI, roll up under Divando); **(3)** 🔧 maintenance invoices (Paid By + CPA flag);
+**(4)** 💰 partner distributions (Ron/Nir, Dorado +Simon, equal split); **(5)** 🧾 Property Tax tab — ✏️
+record paid date/amount/conf# only when a bill is actually paid (Donald/Yale escrow = nothing);
+**(6)** 📥 Import Bank CSVs for the True Cash section; **(7)** 🩺 Run Audit chip + eyeball the cards.
+Note in the modal: order matters most for step 1; 2–6 are any order.
+
+---
+
 ## 🗓️ Month picker = data months + current month (Jun 5 2026, PR #50)
 
 The header/inline month dropdown offers every month present in History **plus the current
