@@ -912,6 +912,21 @@ Excel rows — the user sets Amount Paid 0 + clears Paid Date to flip them to Ou
 
 ---
 
+## 🎨 Main tabs — refined sliding pills (Jun 8 2026)
+
+The 3 main tabs (Master Portfolio · Noble Insurance · Property Tax) were restyled from
+heavy full-width gradient buttons to a **refined segmented control with a sliding highlight**
+(user pick; the old look felt sloppy/unbalanced). `.main-tab` is now auto-width (`flex:0 0 auto`,
+not stretched), transparent, with brighter inactive text (`#8aa6c4`) and white when active — the
+background is provided by a single **`.tab-thumb`** pill (`#tab-thumb`, absolutely positioned in
+the `position:relative` `.main-tabs`) that **slides** between tabs via a CSS transform transition.
+`positionTabThumb()` sets the thumb's `translateX`/width/top/height from the active button's
+`offsetLeft`/`offsetWidth`/`offsetTop`/`offsetHeight`; it's called at the end of `switchMainTab`,
+on `window resize`, and on `document.fonts.ready` (so it stays aligned after the web font loads).
+Emojis were kept as-is (user chose "leave icons alone"). Pure frontend, live on merge.
+
+---
+
 ## 📖 Monthly Guide button (Jun 8 2026)
 
 A **`📖 Monthly Guide`** button in the header button row (next to 📥 Import Bank, `id="guide-btn"`)

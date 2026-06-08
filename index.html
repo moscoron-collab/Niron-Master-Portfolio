@@ -27,14 +27,16 @@
   /* ============================================================
      MAIN TAB BAR (Master / Noble switcher)
      ============================================================ */
-  .main-tabs { display: flex; gap: 6px; background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42; border-radius: 12px; padding: 6px; margin-bottom: 20px; overflow-x: auto; }
-  .main-tab { flex: 1; min-width: 160px; padding: 12px 18px; background: transparent; color: #4e6d8c; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: all 0.18s; white-space: nowrap; font-family: inherit; }
-  .main-tab:hover { color: #ccd9ea; background: rgba(0, 191, 255, 0.06); }
-  .main-tab.active { background: linear-gradient(135deg, #0080cc, #00BFFF); color: #ffffff; box-shadow: 0 4px 14px rgba(0, 191, 255, 0.25); }
+  .main-tabs { position: relative; display: flex; gap: 4px; background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42; border-radius: 12px; padding: 6px; margin-bottom: 20px; overflow-x: auto; }
+  /* Sliding highlight behind the active tab */
+  .tab-thumb { position: absolute; left: 0; top: 6px; height: 0; width: 0; border-radius: 8px; background: linear-gradient(135deg, #0b6fb0, #1ba7e8); box-shadow: 0 3px 12px rgba(0, 191, 255, 0.2); transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), width 0.28s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; z-index: 0; }
+  .main-tab { position: relative; z-index: 1; flex: 0 0 auto; padding: 11px 24px; background: transparent; color: #8aa6c4; border: none; border-radius: 8px; font-size: 13.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; cursor: pointer; transition: color 0.2s; white-space: nowrap; font-family: inherit; }
+  .main-tab:hover { color: #d4e2f2; }
+  .main-tab.active { color: #ffffff; }
   .main-pane { display: none; }
   .main-pane.active { display: block; }
   @media (max-width: 480px) {
-    .main-tab { min-width: auto; padding: 10px 12px; font-size: 12px; letter-spacing: 0.5px; }
+    .main-tab { min-width: auto; padding: 10px 14px; font-size: 12px; letter-spacing: 0.5px; }
   }
 
   /* Master Portfolio card styles (existing) */
@@ -656,6 +658,7 @@
 
   <!-- MAIN TAB SWITCHER -->
   <div class="main-tabs" role="tablist">
+    <span class="tab-thumb" id="tab-thumb"></span>
     <button class="main-tab active" id="main-tab-master" onclick="switchMainTab('master')">📊 Master Portfolio</button>
     <button class="main-tab" id="main-tab-noble" onclick="switchMainTab('noble')">🛡️ Noble Insurance</button>
     <button class="main-tab" id="main-tab-tax" onclick="switchMainTab('tax')">🧾 Property Tax</button>
@@ -1202,12 +1205,26 @@ function logout() { localStorage.removeItem("niron_auth"); location.reload(); }
 /* ============================================================
    MAIN TAB SWITCHING (Master / Noble)
    ============================================================ */
+// Slide the highlight pill to sit exactly behind the active main tab.
+function positionTabThumb() {
+  const thumb = document.getElementById('tab-thumb');
+  const active = document.querySelector('.main-tab.active');
+  if (!thumb || !active || !active.offsetWidth) return;
+  thumb.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+  thumb.style.width = active.offsetWidth + 'px';
+  thumb.style.top = active.offsetTop + 'px';
+  thumb.style.height = active.offsetHeight + 'px';
+}
+window.addEventListener('resize', positionTabThumb);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(positionTabThumb);
+
 function switchMainTab(tab, skipUrl) {
   ACTIVE_MAIN_TAB = tab;
   document.querySelectorAll('.main-pane').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   document.getElementById('main-tab-' + tab).classList.add('active');
+  positionTabThumb();
 
   // Show/hide tab-specific UI
   const maintFab = document.getElementById('maint-fab');
