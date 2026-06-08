@@ -328,9 +328,9 @@
   /* ---- Property Tax table ---- */
   #tax-content table { border-collapse: collapse; width: 100%; }
   #tax-content thead th { position: sticky; top: 0; z-index: 2; background: #0b1828; color: #8fb3d9; font-weight: 600; padding: 10px 12px; border-bottom: 2px solid #21456b; white-space: nowrap; }
-  #tax-content tbody td { padding: 9px 12px; border-bottom: 1px dotted #1c3450; border-right: 1px solid #142840; }
-  #tax-content tbody td:last-child { border-right: none; }
-  #tax-content tbody tr:hover td { background: rgba(0,191,255,0.05); }
+  #tax-content tbody td { padding: 9px 12px; border-bottom: 1px solid #13243a; }
+  #tax-content tbody tr.tax-alt td { background: rgba(120,160,210,0.045); }
+  #tax-content tbody tr:hover td { background: rgba(0,191,255,0.06); }
   #tax-content tr.tax-llc td { background: linear-gradient(90deg, #11243a, #0c1a2b); border-top: 2px solid #21456b; border-bottom: 1px solid #21456b; padding: 8px 12px; }
   #tax-content tr.tax-sub td { background: rgba(255,68,85,0.08); border-top: 1px solid #3a2533; border-bottom: 2px solid #21456b; font-weight: 700; }
   #tax-content tr.tax-out td { background: rgba(255,68,85,0.055); }
@@ -2698,10 +2698,6 @@ const TAX_COUNTY_SEARCH = {
   duval:    'https://duval.county-taxes.com/public/search/property_tax',
   memphis:  'https://www.payit901.com',
 };
-// Optional secondary "Pay" link per county, shown as a small second line.
-const TAX_COUNTY_ALT = {
-  denver: { url: 'https://www.denvergov.org/Government/Make-a-Payment', label: 'Make a Payment' },
-};
 // What each county calls its lookup number — shown as a label on the parcel chip so you
 // enter the right field (Arapahoe in particular has a PIN *and* a different AIN).
 const TAX_COUNTY_KIND = {
@@ -2809,7 +2805,7 @@ function renderTaxSection() {
   html += '<div style="overflow-x:auto"><table style="min-width:1040px"><thead><tr>' +
     '<th>Property</th><th>County</th><th>Parcel / PIN</th><th class="num">Tax Bill</th><th class="num">Paid</th><th class="num">Owed</th><th class="ctr">Status</th><th>Paid Date</th><th class="num">Last Yr</th><th>Link</th><th></th></tr></thead><tbody>';
   llcs.forEach(llc => {
-    let sDue = 0, sPaid = 0, sBal = 0;
+    let sDue = 0, sPaid = 0, sBal = 0, altI = 0;
     const escrow = /escrow/i.test((byLlc[llc][0] || {}).paid_by || '') && byLlc[llc].every(isEscrowTax);
     html += '<tr class="tax-llc"><td colspan="11" style="font-weight:700;color:#00BFFF;letter-spacing:.5px">' + llc + (escrow ? ' <span style="color:#4e6d8c;font-weight:400;font-size:11px">— escrow (lender pays)</span>' : '') + '</td></tr>';
     byLlc[llc].forEach(r => {
@@ -2818,17 +2814,15 @@ function renderTaxSection() {
       sDue += r.amount_due || 0; sPaid += r.amount_paid || 0; sBal += bal;
       const info = taxInfoFor(r.property);
       const payUrl = taxPayLink(r, info);
-      let link = payUrl ? '<a href="' + payUrl + '" target="_blank" style="color:#00BFFF" title="Opens the county tax page — paste the parcel #">💳 Pay</a>' : '<span style="color:#4e6d8c">—</span>';
-      // Optional secondary county link (e.g. Denver "Make a Payment"), shown beneath.
-      const alt = info && payUrl === TAX_COUNTY_SEARCH[info.county] ? TAX_COUNTY_ALT[info.county] : null;
-      if (alt) link += '<br><a href="' + alt.url + '" target="_blank" style="color:#4e6d8c;font-size:11px">↳ ' + alt.label + '</a>';
+      const link = payUrl ? '<a href="' + payUrl + '" target="_blank" style="color:#00BFFF" title="Opens the county tax page — paste the parcel #">💳 Pay</a>' : '<span style="color:#4e6d8c">—</span>';
       const parcelVal = (r.parcel && String(r.parcel).trim()) || (info && info.parcel) || '';
       const parcelKind = info && TAX_COUNTY_KIND[info.county] ? '<span style="color:#5a82ad;font-size:10px;margin-right:4px">' + TAX_COUNTY_KIND[info.county] + '</span>' : '';
       const parcelCell = parcelVal
         ? '<span class="tax-parcel" title="Click to copy the number" onclick="copyParcel(event, ' + JSON.stringify(parcelVal).replace(/"/g, '&quot;') + ')">' + parcelKind + parcelVal + ' <span style="opacity:.6">📋</span></span>'
         : '<span style="color:#4e6d8c">—</span>';
       const isOut = st.label === 'Outstanding';
-      html += '<tr' + (isOut ? ' class="tax-out"' : '') + '>' +
+      const rowCls = isOut ? 'tax-out' : ((altI++ % 2) ? 'tax-alt' : '');
+      html += '<tr' + (rowCls ? ' class="' + rowCls + '"' : '') + '>' +
         '<td style="font-size:12.5px;font-weight:500">' + (r.property || '') + '</td>' +
         '<td style="font-size:12px">' + (r.county || '—') + (r.state && r.state !== 'CO' ? ' <span style="color:#4e6d8c">(' + r.state + ')</span>' : '') + '</td>' +
         '<td>' + parcelCell + '</td>' +
