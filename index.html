@@ -2783,7 +2783,7 @@ function renderTaxSection() {
 
   // KPI strip
   html += '<div class="summary-grid" style="margin-bottom:16px">';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Tax Due (year)</div><div class="value">' + fmt(dueTotal) + '</div><div class="sublabel">manual parcels · Divando + Dorado</div></div></div>';
+  html += '<div class="summary-card"><div class="card-cell"><div class="label">Total Tax (year)</div><div class="value">' + fmt(dueTotal) + '</div><div class="sublabel">full bills · Divando + Dorado</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Paid</div><div class="value" style="color:#00c97a">' + fmt(paidTotal) + '</div><div class="sublabel">recorded as paid online</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Outstanding</div><div class="value" style="color:' + (outTotal > 0 ? '#f0a500' : '#00c97a') + '">' + fmt(outTotal) + '</div><div class="sublabel">' + (outTotal > 0 ? 'still to pay' : 'nothing owed') + '</div></div></div>';
   html += '</div>';
@@ -2795,7 +2795,7 @@ function renderTaxSection() {
   const llcs = Object.keys(byLlc).sort((a, b) => { const ia = order.indexOf(a), ib = order.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
 
   html += '<div style="overflow-x:auto"><table style="min-width:1040px"><thead><tr>' +
-    '<th>Property</th><th>County</th><th>Parcel / PIN</th><th>Due</th><th>Paid</th><th>Balance</th><th>Status</th><th>Paid Date</th><th>Prior yrs</th><th>Link</th><th></th></tr></thead><tbody>';
+    '<th>Property</th><th>County</th><th>Parcel / PIN</th><th>Tax Bill</th><th>Paid</th><th>Owed</th><th>Status</th><th>Paid Date</th><th>Prior yrs</th><th>Link</th><th></th></tr></thead><tbody>';
   llcs.forEach(llc => {
     let sDue = 0, sPaid = 0, sBal = 0;
     const escrow = /escrow/i.test((byLlc[llc][0] || {}).paid_by || '') && byLlc[llc].every(isEscrowTax);

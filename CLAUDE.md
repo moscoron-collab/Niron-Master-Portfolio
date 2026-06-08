@@ -791,7 +791,7 @@ sheet's "2026 3/25 due Dorado 4031.76" line). Sold 2116 4th Ave kept as a `[SOLD
 `renderTaxSection()` (called from `initialRender` + on `switchMainTab('tax')`) renders into
 `#tax-content`: an outstanding banner (yellow $ owed, split per LLC), a 3-tile KPI strip (Tax Due ·
 Paid · Outstanding), then a table grouped by LLC (Divando → Dorado → Donald/Yale escrow) with
-Property · County · Parcel · Due · Paid · Balance · Status badge · Paid Date · Prior yrs chip ·
+Property · County · Parcel · **Tax Bill** (full annual bill) · Paid · **Owed** (bill − paid) · Status badge · Paid Date · Prior yrs chip ·
 💳 Pay link · ✏️ edit / 🗑 delete. Edit/Add uses the **`tax-modal`** (`openTaxModal`/`submitTax`/
 `deleteTax`); setting a Paid Date auto-fills Amount Paid to Amount Due (`taxAutofillPaid`).
 Deep-link `?tab=tax`. Self-audit unaffected (no `#kpi-*` IDs).
