@@ -826,6 +826,29 @@ so the files were **REMOVED** (user decision). Do NOT rebuild this without a new
   row is the intended fast path: paste amount + paid date + confirmation #, balance/banner update live).
   Reusable lesson: county treasurer sites are anti-bot — don't promise live-balance scraping.
 
+### 🔢 Parcel # as copy-chip + corrected county "Pay" links (Jun 8 2026)
+Since auto-fill is impossible, the manual flow had to be smooth. Two fixes in `index.html`
+(frontend-only, live on merge):
+- **The stored "Pay" deep links were dead** — Denver retired `…/property/realproperty/taxes/<parcel>`
+  (now a 404 "Uh oh" page), Adams' `account.jsp` forces a login, Arapahoe moved domains. `taxPayLink()`
+  now keeps the stored link UNLESS it matches a known-dead pattern, in which case it sends the user to
+  the county's working **search page** (`TAX_COUNTY_SEARCH`): Denver `denvergov.org/property`, Arapahoe
+  `arapahoeco.gov/.../treasurer/tax_search.php`, Adams `adcotax.com/.../loginPOST.jsp?guest=true` (guest
+  search, skips login). Duval/Memphis deep links still work for a human, so they're kept.
+- **The parcel # was buried/truncated in Comments.** `TAX_PARCEL_INFO` holds the clean parcel/account #
+  per property (keyed by the normalized property name; Adams uses the R-account #, which its guest search
+  accepts). The Parcel/PIN column now renders a **click-to-copy `.tax-parcel` chip** (`copyParcel()` →
+  clipboard, "✓ copied" feedback). Display precedence: sheet col E if the user filled it, else the map,
+  else blank. So adding a new property still shows whatever parcel is typed into the sheet.
+- Parcels (authoritative): Denver schedule #s 00193-10-013-000 (43rd), 00181-02-016-000 (Dearborn),
+  01241-13-015-000 (Blackhawk), 00185-06-020-000 (Crown — the Excel's Pay link wrongly pointed at
+  Blackhawk's parcel), 01292-08-022-000 (Holly), 02214-26-001-000 (Dorado 41st), 00191-04-005-000
+  (Enid), plus escrow 06301-31-014-000 (Donald), 05321-02-022-000 (Yale). Arapahoe PINs 031319692
+  (13th), 031500222 (Bates), 031164265 (Virginia). Adams accounts R0095746 (Oakland), R0093130 (Tucson),
+  R0094745 (Boston), R0096240 (Jamaica). Duval 144116-0000 (Hare), 029712-0000 (sold 4th). Memphis
+  071037 00010 (Joest), 071037 00000100 (Stockport). To add a county, extend `TAX_COUNTY_SEARCH` +
+  `TAX_PARCEL_INFO`. Self-audit unaffected (no `#kpi-*` IDs).
+
 ---
 
 ## 🗓️ Month picker = data months + current month (Jun 5 2026, PR #50)
