@@ -834,8 +834,8 @@ Since auto-fill is impossible, the manual flow had to be smooth. Two fixes in `i
   (now a 404 "Uh oh" page), Adams' `account.jsp` forces a login, Arapahoe moved domains. `taxPayLink()`
   now keeps the stored link UNLESS it matches a known-dead pattern, in which case it sends the user to
   the county's working **search page** (`TAX_COUNTY_SEARCH`): Denver = the official **Pay-Property-Taxes**
-  page (`…/Treasury/Property-Taxes/Pay-Property-Taxes`, user-confirmed) with a secondary
-  `TAX_COUNTY_ALT.denver` "↳ Make a Payment" line (`…/Government/Make-a-Payment`), Arapahoe
+  page (`…/Treasury/Property-Taxes/Pay-Property-Taxes`, user-confirmed; a secondary "Make a Payment"
+  link was added then REMOVED per user — single Pay link only), Arapahoe
   `arapahoeco.gov/.../treasurer/tax_search.php`, Adams = a **per-account deep link**
   `adcotax.com/treasurer/treasurerweb/account.jsp?account=<R-acct>` built from each property's R-account
   (user-confirmed it works for a logged-in human — it only bounced the scraper to login;
@@ -860,7 +860,8 @@ Since auto-fill is impossible, the manual flow had to be smooth. Two fixes in `i
   is a different number).
 - **Table styling + blink (Jun 8 2026):** the Property Tax table has scoped CSS (`#tax-content`):
   sticky header, right-aligned tabular-num money columns (`.num`) + centered Status (`.ctr`), subtle
-  vertical + dotted-horizontal lines, row hover, an LLC section band (`tr.tax-llc`), a **red subtotal
+  zebra row shading (`tr.tax-alt`, on data rows only — replaced the grid lines per user), row hover,
+  an LLC section band (`tr.tax-llc`), a **red subtotal
   band** (`tr.tax-sub`, user request — label+owed in red), and a faint red tint + red left-accent on
   **Outstanding rows** (`tr.tax-out`). Every **Outstanding** marker (the red status badge + the
   Outstanding KPI tile when >0) carries `.tax-blink` (`@keyframes taxBlink`, ~one flash every 5s).
