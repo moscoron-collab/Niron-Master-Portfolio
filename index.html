@@ -2726,9 +2726,12 @@ function taxInfoFor(prop) {
 // The working link: keep the stored one unless it's a known-dead pattern (Denver deep
 // link / Adams login / old Arapahoe domain), in which case use the county search page.
 function taxPayLink(r, info) {
+  // Adams: the account-specific deep link works for a logged-in human (it only
+  // bounced the scraper to a login). Build it from each property's R-account #.
+  if (info && info.county === 'adams' && info.parcel)
+    return 'https://adcotax.com/treasurer/treasurerweb/account.jsp?account=' + encodeURIComponent(info.parcel);
   const stored = r.tax_link || '';
   const dead = /denvergov\.org\/property\/realproperty\/taxes\//i.test(stored)
-            || /adcotax\.com\/treasurer\/treasurerweb\/account\.jsp/i.test(stored)
             || /arapahoegov\.com\/1106/i.test(stored);
   if (stored && !dead) return stored;
   if (info && TAX_COUNTY_SEARCH[info.county]) return TAX_COUNTY_SEARCH[info.county];

@@ -835,8 +835,10 @@ Since auto-fill is impossible, the manual flow had to be smooth. Two fixes in `i
   the county's working **search page** (`TAX_COUNTY_SEARCH`): Denver = the official **Pay-Property-Taxes**
   page (`…/Treasury/Property-Taxes/Pay-Property-Taxes`, user-confirmed) with a secondary
   `TAX_COUNTY_ALT.denver` "↳ Make a Payment" line (`…/Government/Make-a-Payment`), Arapahoe
-  `arapahoeco.gov/.../treasurer/tax_search.php`, Adams `adcotax.com/treasurer/treasurerweb/` (EagleWeb
-  search; user-corrected from the guest-login URL). Duval/Memphis deep links still work for a human, so they're kept.
+  `arapahoeco.gov/.../treasurer/tax_search.php`, Adams = a **per-account deep link**
+  `adcotax.com/treasurer/treasurerweb/account.jsp?account=<R-acct>` built from each property's R-account
+  (user-confirmed it works for a logged-in human — it only bounced the scraper to login;
+  `treasurerweb/` is the fallback). Duval/Memphis deep links still work for a human, so they're kept.
 - **The parcel # was buried/truncated in Comments.** `TAX_PARCEL_INFO` holds the clean parcel/account #
   per property (keyed by the normalized property name; Adams uses the R-account #, which its guest search
   accepts). The Parcel/PIN column now renders a **click-to-copy `.tax-parcel` chip** (`copyParcel()` →
