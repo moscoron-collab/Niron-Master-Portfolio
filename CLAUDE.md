@@ -853,10 +853,15 @@ Since auto-fill is impossible, the manual flow had to be smooth. Two fixes in `i
   R0094745 (Boston), R0096240 (Jamaica). Duval 144116-0000 (Hare), 029712-0000 (sold 4th). Memphis
   071037 00010 (Joest), 071037 00000100 (Stockport). To add a county, extend `TAX_COUNTY_SEARCH` +
   `TAX_PARCEL_INFO`. Self-audit unaffected (no `#kpi-*` IDs).
-- **Parcel chip now shows a county "kind" label** (`TAX_COUNTY_KIND`): Denver `Schedule`, Arapahoe
-  `PIN`, Adams `Acct`, Duval/Memphis `Parcel` — because Arapahoe has a **PIN and a different AIN**, so
-  the user must know which number to enter. The label is display-only; the click still copies just the
-  number. 15655 E 13th's value `031319692` is the **PIN** (the AIN `197505203015` is a different number).
+- **Parcel chip now shows a county "kind" label** (`TAX_COUNTY_KIND`): Denver `Parcel ID` (user renamed
+  from "Schedule"), Arapahoe `PIN`, Adams `Acct`, Duval/Memphis `Parcel` — because Arapahoe has a **PIN
+  and a different AIN**, so the user must know which number to enter. The label is display-only; the click
+  still copies just the number. 15655 E 13th's value `031319692` is the **PIN** (the AIN `197505203015`
+  is a different number).
+- **Table grid + blink (Jun 8 2026):** the Property Tax table has scoped CSS (`#tax-content table`) —
+  solid vertical column lines + dotted horizontal row lines. Every **Outstanding** marker (the red status
+  badge + the Outstanding KPI tile when >0) carries `.tax-blink` (`@keyframes taxBlink`, ~one flash every
+  5s) to draw attention to what's still owed.
 
 ### 🐛 Edits "not saving" (revert to old value) = browser-cached GET, FIXED (Jun 8 2026)
 User reported Property Tax edits (e.g. set Amount Due 0) reverting to the old value "hence not
