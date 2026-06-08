@@ -192,11 +192,13 @@ def main():
                 continue
 
             try:
-                page.goto(link, wait_until="networkidle", timeout=45000)
-                page.wait_for_timeout(1500)
+                # county-taxes.com (Duval) never reaches networkidle, so use
+                # domcontentloaded + a settle delay rather than waiting for idle.
+                page.goto(link, wait_until="domcontentloaded", timeout=60000)
+                page.wait_for_timeout(4500)
                 text = page.inner_text("body")
             except Exception as e:
-                print(f"✗ {prop} [{county}]: page load failed — {e}")
+                print(f"✗ {prop} [{county}]: page load failed — {str(e).splitlines()[0]}")
                 skipped += 1
                 continue
 
@@ -214,6 +216,19 @@ def main():
             sheet_amt = to_float(str(cell(C_AMOUNT_DUE)).replace("$", "")) or 0.0
             cand_str = ", ".join(f"{lbl}=${amt:,.2f}" for lbl, amt in cands[:6]) or "none found"
             print(f"· {prop} [{county}] sheet=${sheet_amt:,.2f}  →  scraped={('$%.2f' % amount) if amount else 'NONE'}  | candidates: {cand_str}")
+
+            # Calibration aid: show every line that contains a dollar figure, with the
+            # line above it for context, so the real label wording is visible in the log.
+            if not TAX_WRITE:
+                lines = [ln.strip() for ln in text.splitlines()]
+                shown = 0
+                for j, ln in enumerate(lines):
+                    if re.search(MONEY, ln) and shown < 18:
+                        prev = lines[j - 1] if j > 0 and lines[j - 1] else ""
+                        print(f"      $ | {prev[:45]} » {ln[:70]}")
+                        shown += 1
+                if shown == 0:
+                    print(f"      (no $ figures in page text — length {len(text)} chars; likely canvas/iframe, see screenshot)")
 
             if TAX_WRITE and amount and amount > 0:
                 write_cell(sheets, COL_AMOUNT_DUE, sheet_row, round(amount, 2))
