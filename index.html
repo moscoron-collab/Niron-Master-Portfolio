@@ -2680,7 +2680,13 @@ function taxStatus(r) {
 // Outstanding $ you still owe on this row (escrow excluded — the lender pays it).
 function taxOutstanding(r) { if (isEscrowTax(r)) return 0; return Math.max(0, (r.amount_due || 0) - (r.amount_paid || 0)); }
 function taxNum(v) { const n = Number(String(v).replace(/[^0-9.\-]/g, '')); return isNaN(n) ? null : n; }
-// Just last year's tax amount (prior1) for the single "Last Yr" column.
+// Toggle the prior-year (2025) tax column. Hidden by default; choice remembered.
+function toggleTax2025() {
+  const cur = localStorage.getItem('niron_tax_2025') === '1';
+  localStorage.setItem('niron_tax_2025', cur ? '0' : '1');
+  renderTaxSection();
+}
+// Just last year's tax amount (prior1) for the "Tax 2025" column.
 function lastYrCell(r) {
   const v = r.prior1;
   if (v === '' || v === null || v === undefined) return '<span style="color:#4e6d8c">—</span>';
@@ -2765,9 +2771,13 @@ function renderTaxSection() {
   const el = document.getElementById('tax-content');
   if (!el) return;
   const rows = (PORTFOLIO_DATA && PORTFOLIO_DATA.property_tax) || [];
+  const show25 = localStorage.getItem('niron_tax_2025') === '1';   // 2025 column hidden by default
   let html = '<div class="section">';
   html += '<h2 style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><span><span class="dot"></span>Property Tax — Divando &amp; Dorado</span>' +
-    '<button onclick="openTaxModal()" style="background:#0080cc;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">➕ Add Property</button></h2>';
+    '<span style="display:flex;gap:8px">' +
+    '<button onclick="toggleTax2025()" style="background:#13243a;color:#9fc1e0;border:1px solid #29456a;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit" title="Show or hide the prior-year (2025) tax column">' + (show25 ? '🙈 Hide 2025' : '👁 Show 2025') + '</button>' +
+    '<button onclick="openTaxModal()" style="background:#0080cc;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">➕ Add Property</button>' +
+    '</span></h2>';
   html += '<div style="color:#7e9cbf;font-size:12.5px;margin:-6px 0 14px">You pay these online, one bill per parcel per year. ✏️ a row to record what you paid (date · amount · confirmation #) and the balance updates. <b style="color:#f0a500">Yellow = still owed</b>, <b style="color:#00c97a">green = paid</b>. Donald &amp; Yale are <b style="color:#00BFFF">escrow</b> (lender pays).</div>';
   if (!rows.length) { html += '<div style="color:#4e6d8c;padding:14px">No property tax rows yet — they auto-seed on the next load after the Apps Script redeploy, or click ➕ Add Property.</div></div>'; el.innerHTML = html; return; }
 
@@ -2802,12 +2812,15 @@ function renderTaxSection() {
   rows.forEach(r => { (byLlc[r.llc] = byLlc[r.llc] || []).push(r); });
   const llcs = Object.keys(byLlc).sort((a, b) => { const ia = order.indexOf(a), ib = order.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
 
-  html += '<div style="overflow-x:auto"><table style="min-width:1040px"><thead><tr>' +
-    '<th>Property</th><th>County</th><th>Parcel / PIN</th><th class="num">Tax Bill</th><th class="num">Paid</th><th class="num">Owed</th><th class="ctr">Status</th><th>Paid Date</th><th class="num">Last Yr</th><th>Link</th><th></th></tr></thead><tbody>';
+  const totalCols = show25 ? 11 : 10;            // table column count (drops by 1 when 2025 hidden)
+  const tailCols = show25 ? 5 : 4;               // trailing cols in the subtotal row
+  const th25 = show25 ? '<th class="num">Tax 2025</th>' : '';
+  html += '<div style="overflow-x:auto"><table style="min-width:' + (show25 ? 1040 : 960) + 'px"><thead><tr>' +
+    '<th>Property</th><th>County</th><th>Parcel / PIN</th><th class="num">Tax 2026</th><th class="num">Paid</th><th class="num">Owed</th><th class="ctr">Status</th><th>Paid Date</th>' + th25 + '<th>Link</th><th></th></tr></thead><tbody>';
   llcs.forEach(llc => {
     let sDue = 0, sPaid = 0, sBal = 0, altI = 0;
     const escrow = /escrow/i.test((byLlc[llc][0] || {}).paid_by || '') && byLlc[llc].every(isEscrowTax);
-    html += '<tr class="tax-llc"><td colspan="11" style="font-weight:700;color:#00BFFF;letter-spacing:.5px">' + llc + (escrow ? ' <span style="color:#4e6d8c;font-weight:400;font-size:11px">— escrow (lender pays)</span>' : '') + '</td></tr>';
+    html += '<tr class="tax-llc"><td colspan="' + totalCols + '" style="font-weight:700;color:#00BFFF;letter-spacing:.5px">' + llc + (escrow ? ' <span style="color:#4e6d8c;font-weight:400;font-size:11px">— escrow (lender pays)</span>' : '') + '</td></tr>';
     byLlc[llc].forEach(r => {
       const st = taxStatus(r);
       const bal = taxOutstanding(r);
@@ -2831,13 +2844,13 @@ function renderTaxSection() {
         '<td class="num ' + (bal > 0.005 ? 'red' : 'green') + '">' + (isEscrowTax(r) ? '<span style="color:#4e6d8c">—</span>' : fmt(bal)) + '</td>' +
         '<td class="ctr"><span class="' + (isOut ? 'tax-blink' : '') + '" style="background:' + st.bg + ';color:' + st.color + ';padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap">' + st.label + '</span></td>' +
         '<td style="font-size:12px;white-space:nowrap">' + (r.paid_date ? dateLabel(r.paid_date) : '<span style="color:#4e6d8c">—</span>') + '</td>' +
-        '<td class="num" style="font-size:11px;color:#7e9cbf">' + lastYrCell(r) + '</td>' +
+        (show25 ? '<td class="num" style="font-size:11px;color:#7e9cbf">' + lastYrCell(r) + '</td>' : '') +
         '<td style="white-space:nowrap">' + link + '</td>' +
         '<td style="white-space:nowrap"><button onclick="openTaxModal(' + r.row + ')" style="background:none;border:none;color:#7e9cbf;cursor:pointer;font-size:15px" title="Edit">✏️</button>' +
         '<button onclick="deleteTax(' + r.row + ')" style="background:#ff445522;border:1px solid #ff4455;color:#ff4455;border-radius:5px;cursor:pointer;font-size:13px;padding:2px 6px;margin-left:4px" title="Delete">🗑&#xFE0E;</button></td>' +
         '</tr>';
     });
-    html += '<tr class="tax-sub"><td colspan="3" style="color:#ff6b7a">' + llc.replace(/ LLC$/, '') + ' subtotal</td><td class="num" style="color:#e8c4cb">' + fmt(sDue) + '</td><td class="num" style="color:#e8c4cb">' + fmt(sPaid) + '</td><td class="num" style="color:#ff6b7a">' + (escrow ? '—' : fmt(sBal)) + '</td><td colspan="5"></td></tr>';
+    html += '<tr class="tax-sub"><td colspan="3" style="color:#ff6b7a">' + llc.replace(/ LLC$/, '') + ' subtotal</td><td class="num" style="color:#e8c4cb">' + fmt(sDue) + '</td><td class="num" style="color:#e8c4cb">' + fmt(sPaid) + '</td><td class="num" style="color:#ff6b7a">' + (escrow ? '—' : fmt(sBal)) + '</td><td colspan="' + tailCols + '"></td></tr>';
   });
   html += '</tbody></table></div></div>';
   el.innerHTML = html;
