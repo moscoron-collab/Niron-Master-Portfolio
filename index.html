@@ -1073,6 +1073,9 @@
    ============================================================ */
 const PASSWORD_HASH = "76818309665bee769203a5117621375d41ef7f7aa9cee390dc8ec586e2dd664c";
 const API_URL = "https://script.google.com/macros/s/AKfycbzXtgU_bEQx-3B15FoV4SrolI1int0s6PUo9WKnHJ2Wz8zV5jq62MWNFQLjI51OqsWH/exec";
+// Cache-busted GET so a just-saved edit is read back fresh (Apps Script /exec GETs
+// can otherwise be served from the browser cache, making a save look like it reverted).
+function dashGet() { return fetch(API_URL + "?cb=" + Date.now(), { cache: "no-store" }); }
 let PORTFOLIO_DATA = null;
 let SELECTED_MONTH = null;
 let ACTIVE_MAIN_TAB = 'master';
@@ -1646,7 +1649,7 @@ function aggregateLlcPeriod(rows, maintenance) {
   return Object.values(acc).map(g => { g.ins_mo = effectiveIns(g.llc, g.ins_mo); const m = maintenanceFor(maintenance, g.llc, g.period_start); g.maintenance = m; g.net_cashflow = g.disbursement - g.mortgage - extraMortgage(g.llc) - effectiveTax(g) - g.ins_mo - m; return g; });
 }
 
-async function load() { try { const res = await fetch(API_URL); const data = await res.json(); PORTFOLIO_DATA = data; initialRender(data); } catch (e) { document.getElementById("content").innerHTML = '<div class="error">Failed to load: ' + e.message + '</div>'; document.getElementById("status").textContent = "● Offline"; document.getElementById("status").style.color = "#ff4455"; } }
+async function load() { try { const res = await dashGet(); const data = await res.json(); PORTFOLIO_DATA = data; initialRender(data); } catch (e) { document.getElementById("content").innerHTML = '<div class="error">Failed to load: ' + e.message + '</div>'; document.getElementById("status").textContent = "● Offline"; document.getElementById("status").style.color = "#ff4455"; } }
 function initialRender(data) { document.getElementById("last-updated").textContent = new Date(data.last_updated).toLocaleString(); const history = data.history || []; const months = [...new Set(history.map(h => h.period_start))].sort().reverse(); SELECTED_MONTH = months[0] || ""; renderAll(); renderTaxSection(); }
 function renderAll() {
   const data = PORTFOLIO_DATA; if (!data) return;
@@ -2563,7 +2566,7 @@ async function runAuditFresh() {
   modal.classList.add('open');
   const started = Date.now();
   try {
-    const res = await fetch(API_URL);
+    const res = await dashGet();
     const d = await res.json();
     if (d && !d.error) {
       PORTFOLIO_DATA = d;
@@ -2906,7 +2909,7 @@ async function deleteTax(row) {
   } catch (e) { alert('⚠️ ' + e.message); }
 }
 async function reloadTax() {
-  try { const res = await fetch(API_URL); const d = await res.json(); PORTFOLIO_DATA = d; renderTaxSection(); }
+  try { const res = await dashGet(); const d = await res.json(); PORTFOLIO_DATA = d; renderTaxSection(); }
   catch (e) {}
 }
 
