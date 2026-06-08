@@ -2677,11 +2677,15 @@ function priorChip(r) {
 // per-parcel deep link (now 404), Adams' account link forces a login, Arapahoe moved
 // domains — so we send each one to the county's working SEARCH page instead.
 const TAX_COUNTY_SEARCH = {
-  denver:   'https://www.denvergov.org/property',
+  denver:   'https://www.denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Department-of-Finance/Our-Divisions/Treasury/Property-Taxes/Pay-Property-Taxes',
   arapahoe: 'https://www.arapahoeco.gov/your_county/county_departments/treasurer/tax_search.php',
   adams:    'https://adcotax.com/treasurer/web/loginPOST.jsp?guest=true',
   duval:    'https://duval.county-taxes.com/public/search/property_tax',
   memphis:  'https://www.payit901.com',
+};
+// Optional secondary "Pay" link per county, shown as a small second line.
+const TAX_COUNTY_ALT = {
+  denver: { url: 'https://www.denvergov.org/Government/Make-a-Payment', label: 'Make a Payment' },
 };
 // Clean, copy-ready parcel/account # + county per property (authoritative — the sheet's
 // Comments had them buried/truncated). Key = property name normalized to letters+digits.
@@ -2791,7 +2795,10 @@ function renderTaxSection() {
       sDue += r.amount_due || 0; sPaid += r.amount_paid || 0; sBal += bal;
       const info = taxInfoFor(r.property);
       const payUrl = taxPayLink(r, info);
-      const link = payUrl ? '<a href="' + payUrl + '" target="_blank" style="color:#00BFFF" title="Opens the county tax search — paste the parcel #">💳 Pay</a>' : '<span style="color:#4e6d8c">—</span>';
+      let link = payUrl ? '<a href="' + payUrl + '" target="_blank" style="color:#00BFFF" title="Opens the county tax page — paste the parcel #">💳 Pay</a>' : '<span style="color:#4e6d8c">—</span>';
+      // Optional secondary county link (e.g. Denver "Make a Payment"), shown beneath.
+      const alt = info && payUrl === TAX_COUNTY_SEARCH[info.county] ? TAX_COUNTY_ALT[info.county] : null;
+      if (alt) link += '<br><a href="' + alt.url + '" target="_blank" style="color:#4e6d8c;font-size:11px">↳ ' + alt.label + '</a>';
       const parcelVal = (r.parcel && String(r.parcel).trim()) || (info && info.parcel) || '';
       const parcelCell = parcelVal
         ? '<span class="tax-parcel" title="Click to copy parcel #" onclick="copyParcel(event, ' + JSON.stringify(parcelVal).replace(/"/g, '&quot;') + ')">' + parcelVal + ' <span style="opacity:.6">📋</span></span>'
