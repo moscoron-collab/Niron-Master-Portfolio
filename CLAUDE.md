@@ -781,8 +781,9 @@ Prior Yr3 · Comments`. Routing/Account/Confirmation are written **as text** (ap
 ### Paid/Outstanding logic (the yellow rule)
 In the Excel, **green = paid, yellow = still owed** (will be paid after the next disbursement).
 Seed sets yellow rows to **Amount Paid 0 + blank paid date**; green rows Paid = Due. Status is
-**derived** (`taxStatus` in `index.html`): Escrow (paid_by contains "escrow") · Paid (paid ≥ due) ·
-Partial (0 < paid < due) · Outstanding (paid 0). **Outstanding $ excludes escrow** (lender pays).
+**derived** (`taxStatus` in `index.html`): **binary** — Escrow (paid_by contains "escrow") else
+Outstanding when Owed > 0 else Paid. **Never a dash** (user request, Jun 8 — a blank/$0 Tax Bill
+row now reads Paid, not "—"). **Outstanding $ excludes escrow** (lender pays).
 Validated against the Excel: Divando outstanding = Crown `$1,328.82` + 15655 13th `$2,459.00` =
 **`$3,787.82`**; Dorado = 41st `$2,944.56` + Enid `$1,087.20` = **`$4,031.76`** (matches the
 sheet's "2026 3/25 due Dorado 4031.76" line). Sold 2116 4th Ave kept as a `[SOLD]` $0 row.
@@ -791,7 +792,7 @@ sheet's "2026 3/25 due Dorado 4031.76" line). Sold 2116 4th Ave kept as a `[SOLD
 `renderTaxSection()` (called from `initialRender` + on `switchMainTab('tax')`) renders into
 `#tax-content`: an outstanding banner (yellow $ owed, split per LLC), a 3-tile KPI strip (Tax Due ·
 Paid · Outstanding), then a table grouped by LLC (Divando → Dorado → Donald/Yale escrow) with
-Property · County · Parcel · **Tax Bill** (full annual bill) · Paid · **Owed** (bill − paid) · Status badge · Paid Date · Prior yrs chip ·
+Property · County · Parcel · **Tax Bill** (full annual bill) · Paid · **Owed** (bill − paid) · Status badge · Paid Date · **Last Yr** (single prior-year amount, `lastYrCell`) ·
 💳 Pay link · ✏️ edit / 🗑 delete. Edit/Add uses the **`tax-modal`** (`openTaxModal`/`submitTax`/
 `deleteTax`); setting a Paid Date auto-fills Amount Paid to Amount Due (`taxAutofillPaid`).
 Deep-link `?tab=tax`. Self-audit unaffected (no `#kpi-*` IDs).

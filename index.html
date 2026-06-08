@@ -2653,27 +2653,23 @@ function printCpa() {
    ============================================================ */
 function taxToday() { return new Date().toISOString().slice(0,10); }
 function isEscrowTax(r) { return /escrow/i.test(r.paid_by || ''); }
-// Status from amounts + method: Escrow (lender), Paid, Partial, or Outstanding.
+// Status: binary Paid / Outstanding (based purely on what's still Owed), plus a
+// distinct Escrow badge for lender-paid rows. Never a dash.
 function taxStatus(r) {
-  const due = r.amount_due || 0, paid = r.amount_paid || 0;
   if (isEscrowTax(r)) return { label: 'Escrow', color: '#00BFFF', bg: 'rgba(0,191,255,0.12)' };
-  if (due <= 0) return { label: '—', color: '#4e6d8c', bg: 'transparent' };
-  if (paid >= due) return { label: 'Paid', color: '#00c97a', bg: 'rgba(0,201,122,0.12)' };
-  if (paid > 0) return { label: 'Partial', color: '#f0a500', bg: 'rgba(240,165,0,0.12)' };
-  return { label: 'Outstanding', color: '#ff4455', bg: 'rgba(255,68,85,0.12)' };
+  return taxOutstanding(r) > 0.005
+    ? { label: 'Outstanding', color: '#ff4455', bg: 'rgba(255,68,85,0.12)' }
+    : { label: 'Paid', color: '#00c97a', bg: 'rgba(0,201,122,0.12)' };
 }
 // Outstanding $ you still owe on this row (escrow excluded — the lender pays it).
 function taxOutstanding(r) { if (isEscrowTax(r)) return 0; return Math.max(0, (r.amount_due || 0) - (r.amount_paid || 0)); }
 function taxNum(v) { const n = Number(String(v).replace(/[^0-9.\-]/g, '')); return isNaN(n) ? null : n; }
-function priorChip(r) {
-  const yr = parseInt(r.tax_year, 10) || (new Date().getFullYear());
-  const parts = [];
-  [[r.prior1, yr-1], [r.prior2, yr-2], [r.prior3, yr-3]].forEach(([v, y]) => {
-    if (v === '' || v === null || v === undefined) return;
-    const n = taxNum(v);
-    parts.push("’" + String(y).slice(2) + ' ' + (n !== null ? fmt(n) : String(v)));
-  });
-  return parts.length ? parts.join(' &middot; ') : '<span style="color:#4e6d8c">—</span>';
+// Just last year's tax amount (prior1) for the single "Last Yr" column.
+function lastYrCell(r) {
+  const v = r.prior1;
+  if (v === '' || v === null || v === undefined) return '<span style="color:#4e6d8c">—</span>';
+  const n = taxNum(v);
+  return n !== null ? fmt(n) : String(v);
 }
 
 // County tax lookup/pay pages (where you paste the parcel #). Denver retired its
@@ -2795,7 +2791,7 @@ function renderTaxSection() {
   const llcs = Object.keys(byLlc).sort((a, b) => { const ia = order.indexOf(a), ib = order.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
 
   html += '<div style="overflow-x:auto"><table style="min-width:1040px"><thead><tr>' +
-    '<th>Property</th><th>County</th><th>Parcel / PIN</th><th>Tax Bill</th><th>Paid</th><th>Owed</th><th>Status</th><th>Paid Date</th><th>Prior yrs</th><th>Link</th><th></th></tr></thead><tbody>';
+    '<th>Property</th><th>County</th><th>Parcel / PIN</th><th>Tax Bill</th><th>Paid</th><th>Owed</th><th>Status</th><th>Paid Date</th><th>Last Yr</th><th>Link</th><th></th></tr></thead><tbody>';
   llcs.forEach(llc => {
     let sDue = 0, sPaid = 0, sBal = 0;
     const escrow = /escrow/i.test((byLlc[llc][0] || {}).paid_by || '') && byLlc[llc].every(isEscrowTax);
@@ -2824,7 +2820,7 @@ function renderTaxSection() {
         '<td class="' + (bal > 0.005 ? 'red' : 'green') + '">' + (isEscrowTax(r) ? '<span style="color:#4e6d8c">—</span>' : fmt(bal)) + '</td>' +
         '<td><span style="background:' + st.bg + ';color:' + st.color + ';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap">' + st.label + '</span></td>' +
         '<td style="font-size:12px;white-space:nowrap">' + (r.paid_date ? dateLabel(r.paid_date) : '<span style="color:#4e6d8c">—</span>') + '</td>' +
-        '<td style="font-size:11px;color:#7e9cbf;white-space:nowrap">' + priorChip(r) + '</td>' +
+        '<td style="font-size:11px;color:#7e9cbf;white-space:nowrap">' + lastYrCell(r) + '</td>' +
         '<td style="white-space:nowrap">' + link + '</td>' +
         '<td style="white-space:nowrap"><button onclick="openTaxModal(' + r.row + ')" style="background:none;border:none;color:#7e9cbf;cursor:pointer;font-size:15px" title="Edit">✏️</button>' +
         '<button onclick="deleteTax(' + r.row + ')" style="background:#ff445522;border:1px solid #ff4455;color:#ff4455;border-radius:5px;cursor:pointer;font-size:13px;padding:2px 6px;margin-left:4px" title="Delete">🗑&#xFE0E;</button></td>' +
