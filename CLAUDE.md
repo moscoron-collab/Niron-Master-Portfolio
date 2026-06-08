@@ -751,6 +751,64 @@ net as-is" choice.
 
 ---
 
+## 🧾 Property Tax tracker — 3rd main tab (Jun 8 2026)
+
+A **`🧾 Property Tax`** main tab (3rd, next to Master Portfolio + Noble Insurance) tracks the
+property tax the user **pays manually online** for Divando + Dorado, with Donald + Yale shown
+as **escrow reference**. Built from the user's `Niron_Property_Taxes` Excel (uploaded Jun 8).
+
+### Model = ONE annual payment per parcel (NOT two halves)
+The user's spreadsheet tracks **one annual tax bill per property per year** (single paid date +
+confirmation #), not Colorado's two halves. **I initially built a two-halves schema and scrapped
+it** after seeing the Excel. Design (user-confirmed): single annual payment, **partials allowed**
+(Amount Due + Amount Paid → Balance); **current-year focus with prior years shown small**;
+**include Donald/Yale as escrow**; **include routing/account** (user OK with partner seeing them).
+
+### Data — `Property Tax` Google Sheet tab (auto-created + seeded)
+`AppsScript.gs → ensurePropertyTaxTab()` creates + seeds the tab on first read if missing (like
+`logActivity` lazily creating Activity Log). Title row 1, headers row 4, **data from row 5**.
+Columns A–R: `LLC · State · Property · County · Parcel/PIN · Tax Year · Amount Due · Amount Paid ·
+Paid Date · Paid By · Confirmation# · Tax Link · Routing# · Account# · Prior Yr1 · Prior Yr2 ·
+Prior Yr3 · Comments`. Routing/Account/Confirmation are written **as text** (apostrophe prefix in
+`setValues`) so big account numbers don't lose digits. The seed = all 20 rows from the Excel with
+**real** amounts, parcels, county links, paid dates, and prior-year history (2025/2024/2023).
+- **`getDashboardJson`** (live copy) reads it → `data.property_tax` (each row tagged with absolute
+  `row` for edit/delete).
+- **`doPost`** routes `add_property_tax` / `update_property_tax` / `delete_property_tax` →
+  `addPropertyTaxEntry` / `updatePropertyTaxEntry` / `deletePropertyTaxEntry` (write 18 cols,
+  `logActivity`). All in the **live (last)** doPost + after `addStatementEntry`.
+
+### Paid/Outstanding logic (the yellow rule)
+In the Excel, **green = paid, yellow = still owed** (will be paid after the next disbursement).
+Seed sets yellow rows to **Amount Paid 0 + blank paid date**; green rows Paid = Due. Status is
+**derived** (`taxStatus` in `index.html`): Escrow (paid_by contains "escrow") · Paid (paid ≥ due) ·
+Partial (0 < paid < due) · Outstanding (paid 0). **Outstanding $ excludes escrow** (lender pays).
+Validated against the Excel: Divando outstanding = Crown `$1,328.82` + 15655 13th `$2,459.00` =
+**`$3,787.82`**; Dorado = 41st `$2,944.56` + Enid `$1,087.20` = **`$4,031.76`** (matches the
+sheet's "2026 3/25 due Dorado 4031.76" line). Sold 2116 4th Ave kept as a `[SOLD]` $0 row.
+
+### Dashboard (`index.html`, pure frontend)
+`renderTaxSection()` (called from `initialRender` + on `switchMainTab('tax')`) renders into
+`#tax-content`: an outstanding banner (yellow $ owed, split per LLC), a 3-tile KPI strip (Tax Due ·
+Paid · Outstanding), then a table grouped by LLC (Divando → Dorado → Donald/Yale escrow) with
+Property · County · Parcel · Due · Paid · Balance · Status badge · Paid Date · Prior yrs chip ·
+💳 Pay link · ✏️ edit / 🗑 delete. Edit/Add uses the **`tax-modal`** (`openTaxModal`/`submitTax`/
+`deleteTax`); setting a Paid Date auto-fills Amount Paid to Amount Due (`taxAutofillPaid`).
+Deep-link `?tab=tax`. Self-audit unaffected (no `#kpi-*` IDs).
+
+### 🚀 Going live (REQUIRED) — redeploy AppsScript.gs
+The `index.html` side goes live on merge, but the **tab data + reads/writes need the Apps Script
+redeploy** (Sheet → Extensions → Apps Script → paste new `automation/AppsScript.gs` → Deploy →
+Manage deployments → Edit → New version → Deploy). The `Property Tax` tab auto-creates + seeds on
+the first dashboard load after redeploy. No new permission scope (no DriveApp).
+
+> 🔭 TODO / open: parcel column left blank for most (full parcel/transaction text is in Comments);
+> the user can split it out later. Confirm the yellow Dorado 41st/Enid are truly still owed (their
+> Excel rows had stray 5/26 paid dates but were yellow + matched the "due" line — treated as
+> unpaid). When 2027 rolls in, the prior-year columns + Tax Year need bumping (no auto-roll yet).
+
+---
+
 ## 🗓️ Month picker = data months + current month (Jun 5 2026, PR #50)
 
 The header/inline month dropdown offers every month present in History **plus the current
