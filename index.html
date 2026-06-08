@@ -325,11 +325,19 @@
   #audit-body table td { padding: 7px 8px; border-bottom: 1px solid #182030; color: #ccd9ea; vertical-align: top; }
   .tax-parcel { display: inline-block; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: #cfe3ff; background: #0d1e30; border: 1px solid #21456b; border-radius: 6px; padding: 3px 8px; cursor: pointer; white-space: nowrap; user-select: all; transition: background 0.15s, border-color 0.15s; }
   .tax-parcel:hover { background: #12324d; border-color: #00BFFF; color: #ffffff; }
-  /* Property Tax table grid: solid vertical lines + dotted horizontal lines */
-  #tax-content table { border-collapse: collapse; }
-  #tax-content table th, #tax-content table td { border-right: 1px solid #21456b; border-bottom: 1px dotted #2c4a6b; }
-  #tax-content table th:last-child, #tax-content table td:last-child { border-right: none; }
-  #tax-content table thead th { border-bottom: 1px solid #21456b; }
+  /* ---- Property Tax table ---- */
+  #tax-content table { border-collapse: collapse; width: 100%; }
+  #tax-content thead th { position: sticky; top: 0; z-index: 2; background: #0b1828; color: #8fb3d9; font-weight: 600; padding: 10px 12px; border-bottom: 2px solid #21456b; white-space: nowrap; }
+  #tax-content tbody td { padding: 9px 12px; border-bottom: 1px dotted #1c3450; border-right: 1px solid #142840; }
+  #tax-content tbody td:last-child { border-right: none; }
+  #tax-content tbody tr:hover td { background: rgba(0,191,255,0.05); }
+  #tax-content tr.tax-llc td { background: linear-gradient(90deg, #11243a, #0c1a2b); border-top: 2px solid #21456b; border-bottom: 1px solid #21456b; padding: 8px 12px; }
+  #tax-content tr.tax-sub td { background: rgba(255,68,85,0.08); border-top: 1px solid #3a2533; border-bottom: 2px solid #21456b; font-weight: 700; }
+  #tax-content tr.tax-out td { background: rgba(255,68,85,0.055); }
+  #tax-content tr.tax-out:hover td { background: rgba(255,68,85,0.09); }
+  #tax-content tr.tax-out td:first-child { box-shadow: inset 3px 0 0 #ff4455; }
+  #tax-content .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #tax-content .ctr { text-align: center; }
   /* Blink for anything still Outstanding (~once every 5s) */
   @keyframes taxBlink { 0%, 82%, 100% { opacity: 1; } 88%, 96% { opacity: 0.18; } }
   .tax-blink { animation: taxBlink 5s ease-in-out infinite; }
@@ -2799,11 +2807,11 @@ function renderTaxSection() {
   const llcs = Object.keys(byLlc).sort((a, b) => { const ia = order.indexOf(a), ib = order.indexOf(b); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); });
 
   html += '<div style="overflow-x:auto"><table style="min-width:1040px"><thead><tr>' +
-    '<th>Property</th><th>County</th><th>Parcel / PIN</th><th>Tax Bill</th><th>Paid</th><th>Owed</th><th>Status</th><th>Paid Date</th><th>Last Yr</th><th>Link</th><th></th></tr></thead><tbody>';
+    '<th>Property</th><th>County</th><th>Parcel / PIN</th><th class="num">Tax Bill</th><th class="num">Paid</th><th class="num">Owed</th><th class="ctr">Status</th><th>Paid Date</th><th class="num">Last Yr</th><th>Link</th><th></th></tr></thead><tbody>';
   llcs.forEach(llc => {
     let sDue = 0, sPaid = 0, sBal = 0;
     const escrow = /escrow/i.test((byLlc[llc][0] || {}).paid_by || '') && byLlc[llc].every(isEscrowTax);
-    html += '<tr style="background:#0d1e30"><td colspan="11" style="font-weight:700;color:#00BFFF">' + llc + (escrow ? ' <span style="color:#4e6d8c;font-weight:400;font-size:11px">— escrow (lender pays)</span>' : '') + '</td></tr>';
+    html += '<tr class="tax-llc"><td colspan="11" style="font-weight:700;color:#00BFFF;letter-spacing:.5px">' + llc + (escrow ? ' <span style="color:#4e6d8c;font-weight:400;font-size:11px">— escrow (lender pays)</span>' : '') + '</td></tr>';
     byLlc[llc].forEach(r => {
       const st = taxStatus(r);
       const bal = taxOutstanding(r);
@@ -2819,22 +2827,23 @@ function renderTaxSection() {
       const parcelCell = parcelVal
         ? '<span class="tax-parcel" title="Click to copy the number" onclick="copyParcel(event, ' + JSON.stringify(parcelVal).replace(/"/g, '&quot;') + ')">' + parcelKind + parcelVal + ' <span style="opacity:.6">📋</span></span>'
         : '<span style="color:#4e6d8c">—</span>';
-      html += '<tr>' +
-        '<td style="font-size:12.5px">' + (r.property || '') + '</td>' +
+      const isOut = st.label === 'Outstanding';
+      html += '<tr' + (isOut ? ' class="tax-out"' : '') + '>' +
+        '<td style="font-size:12.5px;font-weight:500">' + (r.property || '') + '</td>' +
         '<td style="font-size:12px">' + (r.county || '—') + (r.state && r.state !== 'CO' ? ' <span style="color:#4e6d8c">(' + r.state + ')</span>' : '') + '</td>' +
         '<td>' + parcelCell + '</td>' +
-        '<td>' + (r.amount_due ? fmt(r.amount_due) : '<span style="color:#4e6d8c">—</span>') + '</td>' +
-        '<td class="' + (r.amount_paid > 0 ? 'green' : '') + '">' + (r.amount_paid ? fmt(r.amount_paid) : '<span style="color:#4e6d8c">—</span>') + '</td>' +
-        '<td class="' + (bal > 0.005 ? 'red' : 'green') + '">' + (isEscrowTax(r) ? '<span style="color:#4e6d8c">—</span>' : fmt(bal)) + '</td>' +
-        '<td><span class="' + (st.label === 'Outstanding' ? 'tax-blink' : '') + '" style="background:' + st.bg + ';color:' + st.color + ';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap">' + st.label + '</span></td>' +
+        '<td class="num">' + (r.amount_due ? fmt(r.amount_due) : '<span style="color:#4e6d8c">—</span>') + '</td>' +
+        '<td class="num ' + (r.amount_paid > 0 ? 'green' : '') + '">' + (r.amount_paid ? fmt(r.amount_paid) : '<span style="color:#4e6d8c">—</span>') + '</td>' +
+        '<td class="num ' + (bal > 0.005 ? 'red' : 'green') + '">' + (isEscrowTax(r) ? '<span style="color:#4e6d8c">—</span>' : fmt(bal)) + '</td>' +
+        '<td class="ctr"><span class="' + (isOut ? 'tax-blink' : '') + '" style="background:' + st.bg + ';color:' + st.color + ';padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap">' + st.label + '</span></td>' +
         '<td style="font-size:12px;white-space:nowrap">' + (r.paid_date ? dateLabel(r.paid_date) : '<span style="color:#4e6d8c">—</span>') + '</td>' +
-        '<td style="font-size:11px;color:#7e9cbf;white-space:nowrap">' + lastYrCell(r) + '</td>' +
+        '<td class="num" style="font-size:11px;color:#7e9cbf">' + lastYrCell(r) + '</td>' +
         '<td style="white-space:nowrap">' + link + '</td>' +
         '<td style="white-space:nowrap"><button onclick="openTaxModal(' + r.row + ')" style="background:none;border:none;color:#7e9cbf;cursor:pointer;font-size:15px" title="Edit">✏️</button>' +
         '<button onclick="deleteTax(' + r.row + ')" style="background:#ff445522;border:1px solid #ff4455;color:#ff4455;border-radius:5px;cursor:pointer;font-size:13px;padding:2px 6px;margin-left:4px" title="Delete">🗑&#xFE0E;</button></td>' +
         '</tr>';
     });
-    html += '<tr style="font-weight:600;color:#ccd9ea;border-top:1px solid #1e2d42"><td colspan="3">' + llc.replace(/ LLC$/, '') + ' subtotal</td><td>' + fmt(sDue) + '</td><td class="green">' + fmt(sPaid) + '</td><td class="' + (sBal > 0.005 ? 'red' : 'green') + '">' + (escrow ? '—' : fmt(sBal)) + '</td><td colspan="5"></td></tr>';
+    html += '<tr class="tax-sub"><td colspan="3" style="color:#ff6b7a">' + llc.replace(/ LLC$/, '') + ' subtotal</td><td class="num" style="color:#e8c4cb">' + fmt(sDue) + '</td><td class="num" style="color:#e8c4cb">' + fmt(sPaid) + '</td><td class="num" style="color:#ff6b7a">' + (escrow ? '—' : fmt(sBal)) + '</td><td colspan="5"></td></tr>';
   });
   html += '</tbody></table></div></div>';
   el.innerHTML = html;
