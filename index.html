@@ -2726,7 +2726,7 @@ function renderTaxSection() {
       html += '<tr>' +
         '<td style="font-size:12.5px">' + (r.property || '') + '</td>' +
         '<td style="font-size:12px">' + (r.county || '—') + (r.state && r.state !== 'CO' ? ' <span style="color:#4e6d8c">(' + r.state + ')</span>' : '') + '</td>' +
-        '<td style="font-size:11px;color:#7e9cbf">' + (r.parcel || (r.notes ? r.notes.slice(0, 28) : '—')) + '</td>' +
+        '<td style="font-size:11px;color:#7e9cbf">' + (r.parcel || (r.notes ? String(r.notes).slice(0, 28) : '—')) + '</td>' +
         '<td>' + (r.amount_due ? fmt(r.amount_due) : '<span style="color:#4e6d8c">—</span>') + '</td>' +
         '<td class="' + (r.amount_paid > 0 ? 'green' : '') + '">' + (r.amount_paid ? fmt(r.amount_paid) : '<span style="color:#4e6d8c">—</span>') + '</td>' +
         '<td class="' + (bal > 0.005 ? 'red' : 'green') + '">' + (isEscrowTax(r) ? '<span style="color:#4e6d8c">—</span>' : fmt(bal)) + '</td>' +
