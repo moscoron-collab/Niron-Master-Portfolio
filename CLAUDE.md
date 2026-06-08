@@ -832,7 +832,9 @@ Since auto-fill is impossible, the manual flow had to be smooth. Two fixes in `i
 - **The stored "Pay" deep links were dead** — Denver retired `…/property/realproperty/taxes/<parcel>`
   (now a 404 "Uh oh" page), Adams' `account.jsp` forces a login, Arapahoe moved domains. `taxPayLink()`
   now keeps the stored link UNLESS it matches a known-dead pattern, in which case it sends the user to
-  the county's working **search page** (`TAX_COUNTY_SEARCH`): Denver `denvergov.org/property`, Arapahoe
+  the county's working **search page** (`TAX_COUNTY_SEARCH`): Denver = the official **Pay-Property-Taxes**
+  page (`…/Treasury/Property-Taxes/Pay-Property-Taxes`, user-confirmed) with a secondary
+  `TAX_COUNTY_ALT.denver` "↳ Make a Payment" line (`…/Government/Make-a-Payment`), Arapahoe
   `arapahoeco.gov/.../treasurer/tax_search.php`, Adams `adcotax.com/.../loginPOST.jsp?guest=true` (guest
   search, skips login). Duval/Memphis deep links still work for a human, so they're kept.
 - **The parcel # was buried/truncated in Comments.** `TAX_PARCEL_INFO` holds the clean parcel/account #
