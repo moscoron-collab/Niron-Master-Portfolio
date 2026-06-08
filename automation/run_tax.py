@@ -162,10 +162,32 @@ def main():
 
     updated = 0
     skipped = 0
+    # Network capture (calibration): record JSON/XHR responses whose body carries a
+    # money figure + a tax-ish keyword, so we can find each SPA's internal data API
+    # and read the balance from JSON instead of the (stripped) page HTML.
+    captured = []
+
+    def on_response(resp):
+        if TAX_WRITE:
+            return
+        try:
+            rt = resp.request.resource_type
+            if rt not in ("xhr", "fetch", "document"):
+                return
+            ct = (resp.headers or {}).get("content-type", "")
+            if "json" not in ct and "javascript" not in ct and "text" not in ct:
+                return
+            body = resp.text()
+            if re.search(r"(?i)(balance|amount|due|tax|total)", body) and re.search(MONEY, body):
+                captured.append((resp.url, ct, body))
+        except Exception:
+            pass
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         ctx = browser.new_context(user_agent=REALISTIC_UA, viewport={"width": 1366, "height": 900})
         page = ctx.new_page()
+        page.on("response", on_response)
 
         for i, row in enumerate(rows):
             def cell(idx):
@@ -191,11 +213,16 @@ def main():
                 skipped += 1
                 continue
 
+            captured.clear()
             try:
                 # county-taxes.com (Duval) never reaches networkidle, so use
                 # domcontentloaded + a settle delay rather than waiting for idle.
                 page.goto(link, wait_until="domcontentloaded", timeout=60000)
-                page.wait_for_timeout(4500)
+                page.wait_for_timeout(7000)
+                try:
+                    page.wait_for_load_state("networkidle", timeout=8000)
+                except Exception:
+                    pass
                 text = page.inner_text("body")
             except Exception as e:
                 print(f"✗ {prop} [{county}]: page load failed — {str(e).splitlines()[0]}")
@@ -229,6 +256,27 @@ def main():
                         shown += 1
                 if shown == 0:
                     print(f"      (no $ figures in page text — length {len(text)} chars; likely canvas/iframe, see screenshot)")
+                # Report the JSON/XHR endpoints whose body carried money figures —
+                # these are the candidate data APIs to read the balance from.
+                if captured:
+                    seen = set()
+                    for url, ct, body in captured:
+                        if url in seen:
+                            continue
+                        seen.add(url)
+                        amts = re.findall(MONEY, body)[:6]
+                        keys = re.findall(r'"([a-zA-Z_]*(?:due|balance|tax|amount|total)[a-zA-Z_]*)"\s*:', body, re.I)[:8]
+                        print(f"      API | {url[:95]}")
+                        print(f"          amounts: {amts}  keys: {list(dict.fromkeys(keys))}")
+                        if len(seen) >= 3:
+                            break
+                    # Save the richest JSON body for offline inspection.
+                    try:
+                        best = max(captured, key=lambda c: len(c[2]))
+                        with open(os.path.join(DUMP_DIR, f"{i:02d}_{county}_{safe}.api.txt"), "w") as fh:
+                            fh.write(f"URL: {best[0]}\nCT: {best[1]}\n\n{best[2][:20000]}")
+                    except Exception:
+                        pass
 
             if TAX_WRITE and amount and amount > 0:
                 write_cell(sheets, COL_AMOUNT_DUE, sheet_row, round(amount, 2))
