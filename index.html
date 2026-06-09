@@ -340,9 +340,8 @@
   #tax-content tr.tax-out td:first-child { box-shadow: inset 3px 0 0 #ff4455; }
   #tax-content .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   #tax-content .ctr { text-align: center; }
-  /* Smooth attention pulse for anything still Outstanding — a gentle breathe, not a flicker */
-  @keyframes taxBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
-  .tax-blink { animation: taxBlink 1.8s ease-in-out infinite; }
+  /* Outstanding marker: solid, static emphasis — no animation (motion looked cheap) */
+  .tax-blink { font-weight: 700; }
 </style>
 </head>
 <body>
@@ -2784,7 +2783,7 @@ function isEscrowTax(r) { return /escrow/i.test(r.paid_by || ''); }
 function taxStatus(r) {
   if (isEscrowTax(r)) return { label: 'Escrow', color: '#00BFFF', bg: 'rgba(0,191,255,0.12)' };
   return taxOutstanding(r) > 0.005
-    ? { label: 'Outstanding', color: '#ff4455', bg: 'rgba(255,68,85,0.12)' }
+    ? { label: 'Outstanding', color: '#ffffff', bg: '#d92f43' }
     : { label: 'Paid', color: '#00c97a', bg: 'rgba(0,201,122,0.12)' };
 }
 // Outstanding $ you still owe on this row (escrow excluded — the lender pays it).

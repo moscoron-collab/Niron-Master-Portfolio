@@ -867,8 +867,13 @@ Since auto-fill is impossible, the manual flow had to be smooth. Two fixes in `i
   zebra row shading (`tr.tax-alt`, on data rows only — replaced the grid lines per user), row hover,
   an LLC section band (`tr.tax-llc`), a **red subtotal
   band** (`tr.tax-sub`, user request — label+owed in red), and a faint red tint + red left-accent on
-  **Outstanding rows** (`tr.tax-out`). Every **Outstanding** marker (the red status badge + the
-  Outstanding KPI tile when >0) carries `.tax-blink` (`@keyframes taxBlink`, ~one flash every 5s).
+  **Outstanding rows** (`tr.tax-out`). The Outstanding **status badge is a SOLID red pill**
+  (`taxStatus` → `color:#fff, bg:#d92f43`, white text), and every Outstanding marker (badge +
+  Outstanding/Property-Tax-Owed KPI tiles when >0) carries `.tax-blink`.
+  ⚠️ **`.tax-blink` is NO LONGER animated** (Jun 9 2026): the user found the opacity flicker/pulse
+  "very bad looking" — twice. It is now a **static** `font-weight:700` emphasis only (red color comes
+  from the inline styles / solid badge). **Do NOT re-add any opacity/blink/pulse animation to it** —
+  the user explicitly chose "solid red, no motion."
 
 ### 🐛 Edits "not saving" (revert to old value) = browser-cached GET, FIXED (Jun 8 2026)
 User reported Property Tax edits (e.g. set Amount Due 0) reverting to the old value "hence not
@@ -891,8 +896,8 @@ Excel rows — the user sets Amount Paid 0 + clears Paid Date to flip them to Ou
 - **New Master Portfolio KPI tile `kpi-tax-due`** ("Property Tax Owed") added to the top
   summary-grid in `renderAll`, **between Your Distribution and the Mortgage/Value card**.
   Value = total outstanding property tax = `Σ taxOutstanding(r)` over `data.property_tax`
-  (escrow rows return 0, so Donald/Yale never count). **Blinks red** (`.tax-blink` on label +
-  value, color `#ff4455`) when owed > 0; green `all paid` when 0. The tile is **click-through**
+  (escrow rows return 0, so Donald/Yale never count). **Static red** (`.tax-blink` = bold only, no
+  animation; value color `#ff4455`) when owed > 0; green `all paid` when 0. The tile is **click-through**
   to the Property Tax tab (`onclick="switchMainTab('tax')"`).
 - **"Shrink the 2 right cards" (user request):** the two former single cards **Total Mortgage /
   Mo** (`kpi-mort`) + **Portfolio Value** (`kpi-value`) were merged into **ONE `summary-card
