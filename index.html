@@ -2029,12 +2029,17 @@ function renderAll() {
   const occOccupied = healthRecs.filter(r => r.occupied).length;
   const occPct = occTotal ? Math.round(occOccupied / occTotal * 100) : 0;
   const occColor = occPct >= 100 ? '#00c97a' : (occPct >= 90 ? '#f0a500' : '#ff4455');
-  // Vacant list = statement/flag-vacant records this month, PLUS active manual flags whose
-  // unit has no record yet this month (e.g. a future month before its statement lands).
-  const vFlags = (data.vacancy || []).filter(f => vacancyActiveForMonth(f, SELECTED_MONTH));
-  const vacant = healthRecs.filter(r => !r.occupied)
-    .concat(vFlags.filter(f => !healthRecs.some(r => unitMatch(f.property, r.property)))
-      .map(f => ({ property: f.property, manual_vacant: true })));
+  // Vacant list = this month's statement/override-vacant units PLUS EVERY active manual flag
+  // (any flag not yet marked re-rented), deduped by unit. The flags are deliberately NOT tied
+  // to the selected month — once you flag a unit it stays counted until you mark it re-rented,
+  // so "3 flagged" reads as 3 no matter which month is on screen. (Occupancy % above stays
+  // month-based, so the self-audit is unaffected.)
+  const vacant = healthRecs.filter(r => !r.occupied);
+  const vSeen = {}; vacant.forEach(r => vSeen[String(r.property).trim().toLowerCase()] = true);
+  (data.vacancy || []).filter(f => !f.rerented_on).forEach(f => {
+    const k = String(f.property).trim().toLowerCase();
+    if (!vSeen[k]) { vSeen[k] = true; vacant.push({ property: f.property, manual_vacant: true }); }
+  });
   const vacColor = vacant.length ? '#f0a500' : '#00c97a';
   const repThis = maintenance.filter(m => m.period === SELECTED_MONTH);
   const repThisSum = repThis.reduce((s, m) => s + (m.amount || 0), 0);

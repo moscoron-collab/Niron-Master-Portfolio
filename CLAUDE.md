@@ -515,19 +515,24 @@ routes `add_vacancy` / `update_vacancy` / `delete_vacancy` → `addVacancyEntry`
 - `buildPropertyRecords` now forces `occupied=false, manual_vacant=true, status='Vacant'` on any
   per-unit record whose unit has an active flag for that month (applies to per-property units +
   the 3 manual props). So occupancy %, the per-property table, and the chart all respect a flag.
-- **Vacant Units tile** = statement/flag-vacant records for the selected month **PLUS** active
-  flags whose unit has no record yet that month (so a flag for a future month — e.g. June before
-  its data lands — still shows). **Occupancy %** is computed independently from `healthRecs`
-  (`occOccupied = healthRecs.filter(occupied)`), so the self-audit's `kpi-occ` recompute stays in
-  sync (the audit doesn't check the Vacant count, only occupancy %). Self-audit unaffected.
+- **Vacant Units tile** = the selected month's statement/override-vacant units **PLUS EVERY
+  active manual flag** (any flag not yet marked re-rented), deduped by unit. **The flag count is
+  deliberately NOT tied to the selected month** (changed Jun 12 2026 — the user added 3 flags and
+  the tile still read 1 because they were future-dated vs the May view): once you flag a unit it
+  stays counted until you mark it re-rented, so "3 flagged" reads as 3 on any month. **Occupancy %**
+  stays month-based, computed independently from `healthRecs` (`occOccupied = healthRecs.filter(
+  occupied)`), so the self-audit's `kpi-occ` recompute is unaffected (the audit checks occupancy %,
+  not the Vacant count). `buildPropertyRecords` still applies flags **month-aware** (via
+  `vacancyActiveForMonth`) so per-month occupancy %, the per-property table, and the chart are
+  correct for each month — only the headline tile count is "all active flags."
 - The **Vacant Units tile is now clickable** (`onclick="openVacancyModal()"`, label `Vacant Units
   🏠`, sublabel "· click to flag") → `vac-modal`: pick unit (dropdown built from
   `property_detail` + manual props via `vacancyUnits()`), Vacant-From date, optional note; lists
   current flags with **Re-rented** (sets `rerented_on=today`) + 🗑 delete. Requires `ensureActor()`.
-- ⚠️ **Month-aware:** a flag only shows on the tile for the months it covers. The default
-  `SELECTED_MONTH` is the newest month WITH data, so a "vacant from next month" flag won't change
-  the count until you pick that month (the modal's "Current flags" list always shows it). This is
-  correct — vacancy is time-bound.
+- ⚠️ **Tile count = all active flags (NOT month-tied).** A flag shows on the headline Vacant
+  Units tile as soon as it's added and stays until re-rented, regardless of the month dropdown.
+  (The per-property table / occupancy % ARE still month-aware via `vacancyActiveForMonth` — only
+  the tile count is the simple "currently flagged" total, per user request Jun 12 2026.)
 - **Backward-safe:** if the Apps Script isn't redeployed yet, `data.vacancy` is undefined →
   `(data.vacancy||[])` = no flags → zero behavior change. So `index.html` is safe to ship first.
 
