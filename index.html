@@ -2029,6 +2029,12 @@ function renderAll() {
   const occOccupied = healthRecs.filter(r => r.occupied).length;
   const occPct = occTotal ? Math.round(occOccupied / occTotal * 100) : 0;
   const occColor = occPct >= 100 ? '#00c97a' : (occPct >= 90 ? '#f0a500' : '#ff4455');
+  // Occupancy is really an ANNUAL metric, so alongside the single-month figure we show the
+  // year-to-date pooled rate = occupied unit-months ÷ unit-months WITH DATA (Jan→selected
+  // month), the same way the per-property table totals occupancy.
+  const yrRecs = buildPropertyRecords(data, maintenance).filter(r => r.source !== 'Manual' && r.period && r.period.slice(0, 4) === selectedYear && r.period <= SELECTED_MONTH);
+  const occYear = yrRecs.length ? Math.round(yrRecs.filter(r => r.occupied).length / yrRecs.length * 100) : null;
+  const occYearColor = occYear == null ? '#4e6d8c' : (occYear >= 95 ? '#00c97a' : (occYear >= 85 ? '#f0a500' : '#ff4455'));
   // Vacant list = this month's statement/override-vacant units PLUS EVERY active manual flag
   // (any flag not yet marked re-rented), deduped by unit. The flags are deliberately NOT tied
   // to the selected month — once you flag a unit it stays counted until you mark it re-rented,
@@ -2047,7 +2053,7 @@ function renderAll() {
   const repYtdSum = repYtd.reduce((s, m) => s + (m.amount || 0), 0);
   const inv = n => n + ' invoice' + (n === 1 ? '' : 's');
   html += '<div class="summary-grid">';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Occupancy</div><div class="value" id="kpi-occ" style="color:' + occColor + '">' + occPct + '%</div><div class="sublabel">' + occOccupied + '/' + occTotal + ' units · ' + (monthLabel(SELECTED_MONTH) || '') + '</div></div></div>';
+  html += '<div class="summary-card dual"><div class="card-cell"><div class="label">Occupancy · ' + selectedYear + '</div><div class="value" id="kpi-occ-year" style="color:' + occYearColor + '">' + (occYear == null ? '—' : occYear + '%') + '</div><div class="sublabel">Year to date</div></div><div class="divider"></div><div class="card-cell"><div class="label">Occupancy · Month</div><div class="value" id="kpi-occ" style="color:' + occColor + '">' + occPct + '%</div><div class="sublabel">' + occOccupied + '/' + occTotal + ' units · ' + (monthLabel(SELECTED_MONTH) || '') + '</div></div></div>';
   html += '<div class="summary-card" style="cursor:pointer" onclick="openVacancyModal()" title="Flag or clear a vacancy / notice"><div class="card-cell"><div class="label">Vacant Units 🏠</div><div class="value" style="color:' + vacColor + '">' + vacant.length + '</div><div class="sublabel">' + (vacant.length ? vacant.map(r => r.property).join(', ') : 'All occupied') + ' · click to flag</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Repairs · This Month</div><div class="value" id="kpi-rep-month" style="color:#ff4455">' + fmt(repThisSum) + '</div><div class="sublabel">' + inv(repThis.length) + ' · ' + (monthLabel(SELECTED_MONTH) || '') + '</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Repairs · YTD</div><div class="value" id="kpi-rep-ytd">' + fmt(repYtdSum) + '</div><div class="sublabel">' + inv(repYtd.length) + ' · ' + selectedYear + '</div></div></div>';
@@ -2736,8 +2742,11 @@ function auditRun(openModal) {
       const occP = occT ? Math.round((occT - occV) / occT * 100) : 0;
       const repM = maintenance.filter(m => m.period === month).reduce((s, m) => s + (m.amount || 0), 0);
       const repY = maintenance.filter(m => m.period && m.period.slice(0, 4) === year && m.period <= month).reduce((s, m) => s + (m.amount || 0), 0);
+      const yrHr = buildPropertyRecords(data, maintenance).filter(r => r.source !== 'Manual' && r.period && r.period.slice(0, 4) === year && r.period <= month);
+      const occYr = yrHr.length ? Math.round(yrHr.filter(r => r.occupied).length / yrHr.length * 100) : null;
       const htile = (id, label, exp) => { const d = _auditTxt(id); if (d == null) return; add(d === exp ? 'pass' : 'fail', 'Health tile', label, exp, d); };
       htile('kpi-occ', 'Occupancy', occP + '%');
+      htile('kpi-occ-year', 'Occupancy (year)', occYr == null ? '—' : occYr + '%');
       htile('kpi-rep-month', 'Repairs this month', fmt(repM));
       htile('kpi-rep-ytd', 'Repairs YTD', fmt(repY));
 
