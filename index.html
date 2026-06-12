@@ -1678,10 +1678,13 @@ function extraMortgage(llc) { return (llc && llc.toLowerCase().includes('divando
 // The sheet's per-row insurance is stale / over-scoped for these LLCs, so we force
 // the correct whole-LLC monthly figure here:
 //   Yale    $1,037.55/mo - real Acuity bank draft (sheet still had the old $1,024.54).
-//   Divando $2,473.08/mo - Divando-OWNED houses only ($29,677/yr / 12); excludes the
-//           2 Dorado-owned units that ride on the State Farm policy.
+//   Divando $2,909.98/mo - bank-verified from the Divando operating acct (3442): the real
+//           STATE FARM auto-draft = $2,909.98/mo (the standing premium - Mar & Apr 2026;
+//           May 2026 dipped once to $2,633.15). This is the GROSS amount drawn. Dorado
+//           separately credits $138/mo back ("TRANSFER FROM DDA ACCT ...2189") for its 2
+//           units on the policy - NOT netted here (user wants the real drawn figure).
 // Any LLC NOT listed here uses the insurance amount straight from the sheet.
-const INSURANCE_OVERRIDE = { divando: 2473.08, yale: 1037.55 };
+const INSURANCE_OVERRIDE = { divando: 2909.98, yale: 1037.55 };
 function effectiveIns(llc, sheetIns) {
   if (llc) { const n = llc.toLowerCase(); for (const k in INSURANCE_OVERRIDE) { if (n.includes(k)) return INSURANCE_OVERRIDE[k]; } }
   return sheetIns || 0;
@@ -2689,7 +2692,10 @@ function auditRun(openModal) {
       Object.keys(seenD).filter(k => seenD[k] > 1).forEach(k => add('warn', 'Distribution data', k, '1 row', seenD[k] + ' rows', 'Duplicate distribution'));
       const rseen = {}; let rbad = 0; maintenance.forEach(m => { if (m.row == null || m.row < 5) rbad++; else rseen[m.row] = (rseen[m.row] || 0) + 1; }); const rdup = Object.keys(rseen).filter(k => rseen[k] > 1).length;
       add((rbad || rdup) ? 'warn' : 'pass', 'Write-back', 'Maintenance row indices valid & unique (read-only check)', 'all unique', rbad ? (rbad + ' invalid') : (rdup ? (rdup + ' duplicate') : 'OK'), 'The audit never writes to the sheet');
-      ['divando', 'yale'].forEach(key => { const row = history.find(h => h.period_start === month && h.llc.toLowerCase().includes(key)); if (row) { const sheetIns = row.ins_mo || 0, eff = effectiveIns(row.llc, sheetIns); if (!_money(sheetIns, eff)) add('warn', 'Hardcoded vs sheet', row.llc + ' insurance', eff, sheetIns, 'Override in use; sheet still holds the old value (expected until the #11 sheet migration)'); } });
+      // Insurance: Divando + Yale use a bank-verified monthly figure (from the operating-acct
+      // statements), not the sheet's stale field. That override IS the source of truth now, so
+      // it's a PASS — we no longer flag it as drift against the old sheet value.
+      ['divando', 'yale'].forEach(key => { const row = history.find(h => h.period_start === month && h.llc.toLowerCase().includes(key)); if (row) { const eff = effectiveIns(row.llc, row.ins_mo || 0); add('pass', 'Insurance (bank-verified)', row.llc + ' insurance = bank draft', eff, eff, 'Uses the bank-verified amount, not the sheet'); } });
       let pfBad = 0; history.forEach(r => { if (!/^\d{4}-\d{2}-\d{2}$/.test(String(r.period_start || ''))) pfBad++; });
       add(pfBad ? 'warn' : 'pass', 'Date format', 'History period_start = YYYY-MM-DD', 'all valid', pfBad ? (pfBad + ' malformed') : 'all valid');
       const lu = new Date(data.last_updated); add(isFinite(lu.getTime()) ? 'pass' : 'warn', 'Timestamp', 'Last Updated is a valid date', 'valid', isFinite(lu.getTime()) ? 'valid' : 'invalid');
