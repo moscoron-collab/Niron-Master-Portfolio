@@ -469,10 +469,15 @@ catches real rendering / label / totalling drift (not just re-printing the same 
 A second row of 4 tiles sits **just below the top KPI row** in `renderAll` (mirrors the
 health-check row the user built on the Moss combined db's Niron tab). Same `summary-card`
 theme; they react to the month dropdown like everything else. Pure frontend.
-- **Occupancy** (`kpi-occ`) — occupied/total units for the selected month, from
-  `buildPropertyRecords` filtered to `source !== 'Manual'` (the 3 out-of-state manual entries
-  have no real vacancy signal; **Dorado has no per-unit data so it is not in the denominator**).
-  Color: green 100, gold ≥90, red <90. Sublabel shows `X/Y units · Month`.
+- **Occupancy — now a DUAL tile (Year | Month), Jun 12 2026.** User: "occ rate is measured by the
+  year not month." Left half **`Occupancy · {year}`** (`kpi-occ-year`) = year-to-date **pooled**
+  occupancy = occupied unit-months ÷ unit-months WITH DATA (Jan→selected month), the same
+  `poolOcc` math the per-property TOTAL uses; color green ≥95, gold ≥85, red <85, `—` if no data.
+  Right half **`Occupancy · Month`** (`kpi-occ`, **id preserved** so the audit's monthly recompute
+  still passes) = occupied/total units for the selected month, from `buildPropertyRecords` filtered
+  to `source !== 'Manual'` (the 3 out-of-state manual entries have no vacancy signal; **Dorado has
+  no per-unit data so it is not in the denominator**); green 100, gold ≥90, red <90, sublabel
+  `X/Y units · Month`. The self-audit recomputes BOTH halves (`htile('kpi-occ-year', …)` added).
 - **Vacant Units** — count + the vacant unit name(s) (e.g. `2993 W Yale Ave`). Gold if >0.
 - **Repairs · This Month** (`kpi-rep-month`, red) — sum + count of Maintenance-log invoices for
   the selected month. Verified = `$11,615.00 / 4` for May 2026.
