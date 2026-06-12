@@ -358,6 +358,26 @@ were fixed (user-approved decisions). **The findings reference the audit numberi
     (cards, History, KPIs, trend) by mutating `g.ins_mo` in `aggregateLlcPeriod` and in the
     grouped-card map. Per-property records (`buildPropertyRecords`) are NOT overridden — they
     already use correct per-unit insurance from the Property Detail tab.
+  - **🏦 Divando insurance corrected to `$2,909.98`/mo (BANK-VERIFIED, Jun 12 2026).** The
+    `$2,473.08` above was a calculated guess. The user uploaded the Divando operating-acct
+    (`3 Divando LLC 3442`) Mar–May 2026 transactions; the real **STATE FARM** auto-draft =
+    **`$2,909.98`/mo** (Mar 3, Mar 31, Apr 29 — the standing premium). **May 29 dipped once to
+    `$2,633.15`** but that's a one-off, not the new normal (user confirmed "most months were
+    2909.98"). `INSURANCE_OVERRIDE.divando` is now `2909.98` — the **gross** amount drawn.
+    Dorado separately credits Divando **`$138.00`/mo** ("TRANSFER FROM DDA ACCT …2189") for its
+    2 units on the policy; this is **NOT netted** into the insurance line (user wanted the real
+    drawn figure, not net). If ever wanted, net-of-credit = `$2,909.98 − $138 = $2,771.98`/mo.
+    The Noble Insurance tab still shows the **full policy** `$34,630/yr = $2,885.83/mo` as the
+    13-property policy reference (whole-policy quote incl. the 2 Dorado units — left as-is; a
+    different concept from what's drawn for Divando each month).
+  - **Audit "Hardcoded vs sheet" warning RETIRED for insurance (same PR).** Now that Divando +
+    Yale insurance are bank-verified, `auditRun`'s insurance check reports a **PASS**
+    ("Insurance (bank-verified)") instead of a `warn` — the override IS the source of truth, so
+    it's no longer drift to review. This is what clears the amber chip (not silencing — the
+    number is now correct + verified). ⚠️ The Google **Sheet** still holds the old per-row
+    `ins_mo`, but it no longer drives the dashboard (the override wins everywhere) and no longer
+    trips the audit. AppsScript `dashboardKnowledge()`/`buildPortfolioContext` still quote the
+    old `$2,473.08`/`$2,885.83` — sync on the next redeploy.
 - **#8 Tax:** `isTaxLumpSum(llc)` now includes **Divando AND Dorado** (was Divando-only via
   `isTaxAnnual`, kept as a back-compat alias). Tax is shown on the card as info with
   `(paid in spring ⓘ)` but **excluded from monthly net** for both. **This RAISED Dorado net
