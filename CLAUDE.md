@@ -490,6 +490,54 @@ theme; they react to the month dropdown like everything else. Pure frontend.
 
 ---
 
+## 🏠 Vacancy / Notice flags — manual real-time vacancy (Jun 12 2026)
+
+**Why:** the statement-derived vacancy (`occupied = "Rent Income" in text`) is always **one
+statement-cycle behind** — a unit only reads Vacant once a full statement period collected zero
+rent (e.g. Bates top moved out end-May but May still had rent income → didn't flip until June).
+The real-time signal is the **tenant's notice**, which only Laureate knows. So we added a manual
+flag you set the moment you hear "notice given," and the **Vacant Units** tile reflects it
+**immediately, ahead of the statement**. (This is feature **#1** of the "1+2" plan: #2 = a standing
+notice habit from Laureate. The reserve-hold early-warning was discussed and **deferred** — it's
+ambiguous, a hold also happens for repairs on occupied units; do NOT auto-flag vacant from it.)
+
+**Data — new `Vacancy` Google Sheet tab** (auto-created/seeded-empty by `ensureVacancyTab()` in
+`AppsScript.gs`, like the Property Tax tab). Title row 1, headers row 4, data from row 5. Cols
+A–G: `Property · LLC · Vacant From · Re-rented On · Note · Entered By · Updated At`. Live
+`getDashboardJson` reads it → `data.vacancy` (each row tagged with absolute `row`). `doPost`
+routes `add_vacancy` / `update_vacancy` / `delete_vacancy` → `addVacancyEntry` /
+`updateVacancyEntry` (used for "mark re-rented", rewrites 7 cols) / `deleteVacancyEntry`, each
+`logActivity`-logged. Edit the **LAST** copies (duplicate-function footgun).
+
+**Frontend (`index.html`, pure frontend):**
+- Helpers `monthStartOf` / `vacancyActiveForMonth(flag, monthPS)` / `unitMatch` / `manualVacant`.
+  A flag covers month M if `vacant_from`'s month ≤ M and (`rerented_on` empty or its month > M).
+- `buildPropertyRecords` now forces `occupied=false, manual_vacant=true, status='Vacant'` on any
+  per-unit record whose unit has an active flag for that month (applies to per-property units +
+  the 3 manual props). So occupancy %, the per-property table, and the chart all respect a flag.
+- **Vacant Units tile** = statement/flag-vacant records for the selected month **PLUS** active
+  flags whose unit has no record yet that month (so a flag for a future month — e.g. June before
+  its data lands — still shows). **Occupancy %** is computed independently from `healthRecs`
+  (`occOccupied = healthRecs.filter(occupied)`), so the self-audit's `kpi-occ` recompute stays in
+  sync (the audit doesn't check the Vacant count, only occupancy %). Self-audit unaffected.
+- The **Vacant Units tile is now clickable** (`onclick="openVacancyModal()"`, label `Vacant Units
+  🏠`, sublabel "· click to flag") → `vac-modal`: pick unit (dropdown built from
+  `property_detail` + manual props via `vacancyUnits()`), Vacant-From date, optional note; lists
+  current flags with **Re-rented** (sets `rerented_on=today`) + 🗑 delete. Requires `ensureActor()`.
+- ⚠️ **Month-aware:** a flag only shows on the tile for the months it covers. The default
+  `SELECTED_MONTH` is the newest month WITH data, so a "vacant from next month" flag won't change
+  the count until you pick that month (the modal's "Current flags" list always shows it). This is
+  correct — vacancy is time-bound.
+- **Backward-safe:** if the Apps Script isn't redeployed yet, `data.vacancy` is undefined →
+  `(data.vacancy||[])` = no flags → zero behavior change. So `index.html` is safe to ship first.
+
+> 🚀 **Going live (REQUIRED):** redeploy `AppsScript.gs` (Sheet → Extensions → Apps Script →
+> paste → Deploy → Manage deployments → Edit → New version → Deploy). The `Vacancy` tab
+> auto-creates on the first load after redeploy. No new permission scope. `index.html` goes live
+> on merge; flags just won't save/read until the redeploy.
+
+---
+
 ## 🏠 Per-property Occ % → "% of months occupied" (Jun 6 2026)
 
 User said the single-month **100/0** Occ % column (audit fix #6) was **irrelevant** — a
