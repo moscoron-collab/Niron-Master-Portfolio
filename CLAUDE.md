@@ -367,9 +367,15 @@ were fixed (user-approved decisions). **The findings reference the audit numberi
     Dorado separately credits Divando **`$138.00`/mo** ("TRANSFER FROM DDA ACCT …2189") for its
     2 units on the policy; this is **NOT netted** into the insurance line (user wanted the real
     drawn figure, not net). If ever wanted, net-of-credit = `$2,909.98 − $138 = $2,771.98`/mo.
-    The Noble Insurance tab still shows the **full policy** `$34,630/yr = $2,885.83/mo` as the
-    13-property policy reference (whole-policy quote incl. the 2 Dorado units — left as-is; a
-    different concept from what's drawn for Divando each month).
+  - **Noble Insurance tab synced to `$2,909.98` (Jun 12 2026).** The user noticed the Noble →
+    Divando card still showed the quote figure `$2,885.83/mo` (= `$34,630/yr ÷12`). Updated 4
+    spots to the real draft `$2,909.98/mo`: the Divando card **Monthly Payment** field, the
+    **Total Monthly · All Active** summary (`$5,587.55 → $5,611.70`, Divando line `$2,909.98`),
+    the 13-property **TOTAL footer** (`$34,630/yr · auto-draft $2,909.98/mo`), and the
+    **renewal-history** row. **Annual premium stays `$34,630/yr`** (the real policy quote); the
+    monthly draft is `$24.15` higher than quote÷12 because the SFPP monthly plan adds an
+    installment fee. Also fixed the draft date "2nd of month" → **"end of month"** (bank shows
+    Mar 31/Apr 29/May 29). The per-property itemized policy table rows were left as-is.
   - **Audit "Hardcoded vs sheet" warning RETIRED for insurance (same PR).** Now that Divando +
     Yale insurance are bank-verified, `auditRun`'s insurance check reports a **PASS**
     ("Insurance (bank-verified)") instead of a `warn` — the override IS the source of truth, so
