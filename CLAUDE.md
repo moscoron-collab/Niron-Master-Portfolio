@@ -550,6 +550,31 @@ much each has taken out, YTD and lifetime.
 - A **per-year table** (Year | You | Nir | Total) with an "All time" total row — handy at tax time.
 - Self-audit recomputes the 3 lifetime tiles.
 
+### 💰 Add Distribution modal — 50/50 default + Equal/Custom split (Jun 12 2026)
+Reworked so Nir (or anyone) can enter the monthly distribution without confusion once the db is
+shared. Pure **frontend** (`index.html`), **no Apps Script redeploy** — still saves the same
+`your_amount` (Ron) + `partner_amount` (Nir) fields via the existing `add_distribution` action.
+- New **`Split` dropdown** (`dist-split`, `distSetSplit()`): **`Equal — 50/50`** (default) shows
+  ONE box **"Amount each ($)"** (`dist-each`) → on submit, fills BOTH Ron's and Nir's amount with
+  that number. **`Custom — enter each`** reveals the two separate boxes for unequal/true-up months
+  (and seeds them from the "amount each" value when you switch).
+- The two amount boxes were **relabeled from "Your/Partner" to "Ron's Amount" / "Nir's Amount"**
+  (fixed names — they do NOT flip based on who is signed in; the data model is always Ron =
+  `your_amount`, Nir = `partner_amount`). This removed the POV trap where Nir, signed in as
+  himself, would otherwise have to put his own figure in a box labeled "Partner".
+- `submitDistribution` is now **mode-aware** (reads `dist-each` in equal mode, the two boxes in
+  custom); `openDistModal`/`closeDistModal` reset the split to `equal`.
+- ⚠️ **Dorado + Simon still NOT handled here** — the form only records Ron + Nir, so Dorado's
+  3-way split (Ron/Nir/Simon) can't log Simon's third. The "amount each" number is still correct
+  per partner, but Simon isn't stored (he was never in the Distributions tab). **TODO if user
+  wants it:** add a Simon amount field shown only for Dorado (needs a `simon_amount` schema col +
+  Apps Script redeploy + Partner Distributions section update). User was asked; deferred for now.
+- **Sharing the db with Nir:** one shared password (`PASSWORD_HASH` in `index.html`) gates the
+  whole dashboard — no per-user logins. Nir uses the same URL + password, sets **"Signed in as:
+  N.S — Nir"** (top-right, remembered per browser, honor-system → Activity Log). He does NOT need
+  ctrl-shift-r to enter data (page always fetches fresh + re-pulls after save). A hard refresh is
+  only ever needed once to pick up a NEW version of the page itself.
+
 > 🧭 **Investor decision (Jun 5 2026):** which Phase-2 metrics are worth it given our data:
 > - ✅ Built: Partner distributions (above). Next: **CPA invoice workflow** (Paid By / Paid /
 >   Notes + CPA-only filtered CSV/print view) — needs 3 new Maintenance Log columns (I/J/K) +

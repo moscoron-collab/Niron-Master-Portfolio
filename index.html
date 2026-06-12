@@ -430,8 +430,19 @@
     <label>Date Sent</label><input type="date" id="dist-date">
     <label>LLC</label>
     <select id="dist-llc"><option value="">-- Select LLC --</option></select>
-    <label>Your Amount ($)</label><input type="number" id="dist-your-amount" step="0.01" placeholder="0.00">
-    <label>Partner Amount ($)</label><input type="number" id="dist-partner-amount" step="0.01" placeholder="0.00">
+    <label>Split</label>
+    <select id="dist-split" onchange="distSetSplit()">
+      <option value="equal">Equal — 50/50 (same to each)</option>
+      <option value="custom">Custom — enter each (unequal)</option>
+    </select>
+    <div id="dist-each-wrap">
+      <label>Amount each ($)</label><input type="number" id="dist-each" step="0.01" placeholder="0.00">
+      <div style="color:#4e6d8c;font-size:11px;margin:-4px 0 8px">Ron and Nir each receive this amount (the usual case).</div>
+    </div>
+    <div id="dist-custom-wrap" style="display:none">
+      <label>Ron's Amount ($)</label><input type="number" id="dist-your-amount" step="0.01" placeholder="0.00">
+      <label>Nir's Amount ($)</label><input type="number" id="dist-partner-amount" step="0.01" placeholder="0.00">
+    </div>
     <label>Notes (optional)</label><textarea id="dist-notes" placeholder="e.g. Q1 distribution"></textarea>
     <div class="form-msg" id="dist-msg"></div>
     <div class="modal-actions"><button class="secondary" onclick="closeDistModal()">Cancel</button><button class="primary" id="dist-submit" onclick="submitDistribution()">Save Distribution</button></div>
@@ -1379,20 +1390,52 @@ function openDistModal() {
   const raw = (PORTFOLIO_DATA && PORTFOLIO_DATA.llcs && PORTFOLIO_DATA.llcs.length) ? PORTFOLIO_DATA.llcs : ["Yale Townhomes, LLC", "5070 Donald, LLC", "Divando LLC", "Dorado LLC"];
   const names = raw.map(l => (typeof l === "string") ? l : l.name).filter(Boolean);
   sel.innerHTML = '<option value="">-- Select LLC --</option>' + names.map(n => '<option value="' + n + '">' + n + '</option>').join('');
+  document.getElementById("dist-split").value = "equal";
+  distSetSplit();
+}
+// Split toggle: "equal" shows one "Amount each" box (50/50 default); "custom" shows
+// separate Ron / Nir boxes for the rare unequal/true-up month. Switching to custom
+// seeds both boxes from the "amount each" value so nothing is lost.
+function distSetSplit() {
+  const mode = document.getElementById("dist-split").value;
+  const eachWrap = document.getElementById("dist-each-wrap");
+  const customWrap = document.getElementById("dist-custom-wrap");
+  if (mode === "custom") {
+    const each = parseFloat(document.getElementById("dist-each").value) || 0;
+    if (each) {
+      document.getElementById("dist-your-amount").value = each;
+      document.getElementById("dist-partner-amount").value = each;
+    }
+    eachWrap.style.display = "none";
+    customWrap.style.display = "";
+  } else {
+    eachWrap.style.display = "";
+    customWrap.style.display = "none";
+  }
 }
 function closeDistModal() {
   document.getElementById("dist-modal").classList.remove("open");
-  ["dist-llc", "dist-your-amount", "dist-partner-amount", "dist-notes"].forEach(id => { document.getElementById(id).value = ""; });
+  ["dist-llc", "dist-each", "dist-your-amount", "dist-partner-amount", "dist-notes"].forEach(id => { document.getElementById(id).value = ""; });
+  document.getElementById("dist-split").value = "equal";
+  distSetSplit();
 }
 async function submitDistribution() {
   const msgEl = document.getElementById("dist-msg");
   const btn = document.getElementById("dist-submit");
+  // Equal mode: one "amount each" fills both partners. Custom mode: read each box.
+  let yourAmt, partnerAmt;
+  if (document.getElementById("dist-split").value === "equal") {
+    yourAmt = partnerAmt = parseFloat(document.getElementById("dist-each").value) || 0;
+  } else {
+    yourAmt = parseFloat(document.getElementById("dist-your-amount").value) || 0;
+    partnerAmt = parseFloat(document.getElementById("dist-partner-amount").value) || 0;
+  }
   const data = {
     action: "add_distribution",
     date: document.getElementById("dist-date").value,
     llc: document.getElementById("dist-llc").value,
-    your_amount: parseFloat(document.getElementById("dist-your-amount").value) || 0,
-    partner_amount: parseFloat(document.getElementById("dist-partner-amount").value) || 0,
+    your_amount: yourAmt,
+    partner_amount: partnerAmt,
     notes: document.getElementById("dist-notes").value
   };
   if (!data.date || !data.llc || (!data.your_amount && !data.partner_amount)) {
