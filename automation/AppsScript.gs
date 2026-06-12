@@ -1155,6 +1155,15 @@ function doPost(e) {
     if (body.action === 'delete_property_tax') {
       return deletePropertyTaxEntry(body);
     }
+    if (body.action === 'add_vacancy') {
+      return addVacancyEntry(body);
+    }
+    if (body.action === 'update_vacancy') {
+      return updateVacancyEntry(body);
+    }
+    if (body.action === 'delete_vacancy') {
+      return deleteVacancyEntry(body);
+    }
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({error: 'Parse error: ' + err.message}))
       .setMimeType(ContentService.MimeType.JSON);
@@ -1731,7 +1740,7 @@ function logActivity(actor, action, details) {
 // Override: getDashboardJson with properties + new maintenance structure
 function getDashboardJson() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], activity: [], settings: {} };
+  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], vacancy: [], activity: [], settings: {} };
 
   // Track the most-recent real data-change timestamp (Activity Log + History "Logged At" +
   // Property Detail "Updated"), so the dashboard's "Last Updated" reflects when the data
@@ -1876,6 +1885,21 @@ function getDashboardJson() {
         paid_date: isoDate(r[8]), paid_by: r[9] || '', conf: raw(r[10]),
         tax_link: r[11] || '', routing: raw(r[12]), account: raw(r[13]),
         prior1: raw(r[14]), prior2: raw(r[15]), prior3: raw(r[16]), notes: r[17] || ''
+      });
+    });
+  }
+
+  // ----- Vacancy / Notice flags (manual, real-time) -----
+  // Columns A-G: Property, LLC, Vacant From, Re-rented On, Note, Entered By, Updated At.
+  var vac = ensureVacancyTab(ss);
+  if (vac && vac.getLastRow() >= 5) {
+    function vIso(v) { return v instanceof Date ? v.toISOString().slice(0,10) : (v || ''); }
+    vac.getRange(5, 1, vac.getLastRow() - 4, 7).getValues().forEach(function(r, i) {
+      if (!r[0]) return; // need a property name
+      data.vacancy.push({
+        row: 5 + i, property: r[0] || '', llc: r[1] || '',
+        vacant_from: vIso(r[2]), rerented_on: vIso(r[3]), note: r[4] || '',
+        entered_by: r[5] || '', updated: r[6] instanceof Date ? r[6].toISOString() : (r[6] || '')
       });
     });
   }
@@ -2107,5 +2131,60 @@ function deletePropertyTaxEntry(data) {
   var info = sh.getRange(row, 1, 1, 3).getValues()[0];
   sh.deleteRow(row);
   logActivity(data.actor, 'Deleted property tax', (info[2] || '') + ' · ' + (info[0] || ''));
+  return ContentService.createTextOutput(JSON.stringify({ok:true, deleted:row})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ===== Vacancy / Notice flags (manual real-time vacancy, ahead of the statement) =====
+// Title row 1, headers row 4, data from row 5 (same shape as Property Tax). A flag marks
+// a unit vacant from a date; clearing = set Re-rented On. NEVER touches History/Property Detail.
+function ensureVacancyTab(ss) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('Vacancy');
+  if (sh) return sh;
+  sh = ss.insertSheet('Vacancy');
+  sh.getRange(1, 1).setValue('VACANCY / NOTICE FLAGS — manual, real-time (set the moment a tenant gives notice; the statement confirms later)').setFontWeight('bold');
+  var headers = ['Property', 'LLC', 'Vacant From', 'Re-rented On', 'Note', 'Entered By', 'Updated At'];
+  sh.getRange(4, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+  sh.setFrozenRows(4);
+  return sh;
+}
+
+function _vacancyRow(d) {
+  function asDate(v) { return v ? new Date(v + 'T12:00:00') : ''; }
+  return [
+    d.property || '', d.llc || '', asDate(d.vacant_from), asDate(d.rerented_on),
+    d.note || '', d.actor || d.entered_by || 'Dashboard', new Date()
+  ];
+}
+
+function addVacancyEntry(data) {
+  var sh = ensureVacancyTab(SpreadsheetApp.getActiveSpreadsheet());
+  if (!data.property) return ContentService.createTextOutput(JSON.stringify({error:'Property is required'})).setMimeType(ContentService.MimeType.JSON);
+  if (!data.vacant_from) return ContentService.createTextOutput(JSON.stringify({error:'Vacant-from date is required'})).setMimeType(ContentService.MimeType.JSON);
+  var nextRow = Math.max(5, sh.getLastRow() + 1);
+  sh.getRange(nextRow, 1, 1, 7).setValues([_vacancyRow(data)]);
+  sh.getRange(nextRow, 3, 1, 2).setNumberFormat('yyyy-mm-dd');
+  logActivity(data.actor, 'Flagged vacancy', (data.property || '') + ' vacant from ' + (data.vacant_from || ''));
+  return ContentService.createTextOutput(JSON.stringify({ok:true, row:nextRow})).setMimeType(ContentService.MimeType.JSON);
+}
+
+function updateVacancyEntry(data) {
+  var sh = ensureVacancyTab(SpreadsheetApp.getActiveSpreadsheet());
+  var row = Number(data.row);
+  if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error:'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
+  if (!data.property) return ContentService.createTextOutput(JSON.stringify({error:'Property is required'})).setMimeType(ContentService.MimeType.JSON);
+  sh.getRange(row, 1, 1, 7).setValues([_vacancyRow(data)]);
+  sh.getRange(row, 3, 1, 2).setNumberFormat('yyyy-mm-dd');
+  logActivity(data.actor, 'Updated vacancy', (data.property || '') + (data.rerented_on ? ' re-rented ' + data.rerented_on : ''));
+  return ContentService.createTextOutput(JSON.stringify({ok:true, row:row})).setMimeType(ContentService.MimeType.JSON);
+}
+
+function deleteVacancyEntry(data) {
+  var sh = ensureVacancyTab(SpreadsheetApp.getActiveSpreadsheet());
+  var row = Number(data.row);
+  if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error:'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
+  var info = sh.getRange(row, 1, 1, 1).getValues()[0];
+  sh.deleteRow(row);
+  logActivity(data.actor, 'Deleted vacancy flag', info[0] || '');
   return ContentService.createTextOutput(JSON.stringify({ok:true, deleted:row})).setMimeType(ContentService.MimeType.JSON);
 }

@@ -449,6 +449,23 @@
   </div>
 </div>
 
+<!-- ═══════════════════ VACANCY / NOTICE MODAL ═══════════════════ -->
+<div class="modal-overlay" id="vac-modal">
+  <div class="modal-box">
+    <h2>🏠 Vacancy / Notices <button class="modal-close" onclick="closeVacancyModal()">×</button></h2>
+    <div style="color:#4e6d8c;font-size:12px;margin:-6px 0 12px">Flag a unit the moment a tenant gives notice — the <b>Vacant Units</b> tile updates now, ahead of the statement. Set <b>Re-rented</b> (or 🗑) when it fills again.</div>
+    <label>Signed in as</label>
+    <select id="vac-actor" class="actor-pick" onchange="setActor(this.value)"><option value="">— who are you? —</option><option value="R.M">R.M — Ron</option><option value="O.M">O.M — Oshrat</option><option value="N.S">N.S — Nir</option></select>
+    <label>Property / Unit</label>
+    <select id="vac-property"><option value="">-- Select unit --</option></select>
+    <label>Vacant From</label><input type="date" id="vac-from">
+    <label>Note (optional)</label><input type="text" id="vac-note" placeholder="e.g. 60-day notice, out end of June">
+    <div class="form-msg" id="vac-msg"></div>
+    <div class="modal-actions"><button class="secondary" onclick="closeVacancyModal()">Cancel</button><button class="primary" id="vac-submit" onclick="submitVacancy()">Add Flag</button></div>
+    <div id="vac-list" style="margin-top:18px"></div>
+  </div>
+</div>
+
 <!-- ═══════════════════ ADD STATEMENT MODAL (Suncoast / MidSouth) ═══════════════════ -->
 <div class="modal-overlay" id="stmt-modal">
   <div class="modal-box">
@@ -1467,6 +1484,88 @@ async function submitDistribution() {
 }
 
 /* ============================================================
+   VACANCY / NOTICE FLAGS (manual real-time vacancy)
+   ============================================================ */
+// property -> LLC map of every unit we can flag (per-property units + the 3 manual props).
+function vacancyUnits() {
+  const map = {};
+  (PORTFOLIO_DATA.property_detail || []).forEach(r => { if (r.property) map[r.property] = r.llc || ''; });
+  (PORTFOLIO_DATA.history || []).forEach(r => { const m = String(r.source || '').match(/Manual Entry:\s*(.+)$/i); if (m) map[m[1].trim()] = 'Divando LLC'; });
+  return map;
+}
+function todayStr() { const t = new Date(); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); }
+function openVacancyModal() {
+  const sel = document.getElementById('vac-property');
+  const names = Object.keys(vacancyUnits()).sort();
+  sel.innerHTML = '<option value="">-- Select unit --</option>' + names.map(n => '<option value="' + n.replace(/"/g, '&quot;') + '">' + n + '</option>').join('');
+  document.getElementById('vac-from').value = todayStr();
+  document.getElementById('vac-note').value = '';
+  const msg = document.getElementById('vac-msg'); msg.textContent = ''; msg.className = 'form-msg';
+  syncActorSelects();
+  renderVacancyList();
+  document.getElementById('vac-modal').classList.add('open');
+}
+function closeVacancyModal() { document.getElementById('vac-modal').classList.remove('open'); }
+function renderVacancyList() {
+  const el = document.getElementById('vac-list');
+  const flags = (PORTFOLIO_DATA.vacancy || []).slice().sort((a, b) => (a.vacant_from < b.vacant_from ? 1 : -1));
+  if (!flags.length) { el.innerHTML = '<div style="color:#4e6d8c;font-size:12px">No vacancy flags yet.</div>'; return; }
+  let h = '<div style="font-size:12px;color:#8aa6c4;margin-bottom:4px;font-weight:600">Current flags</div>';
+  flags.forEach(f => {
+    const active = !f.rerented_on;
+    const badge = active ? '<span style="color:#f0a500;font-weight:600">● Vacant</span>' : '<span style="color:#00c97a">re-rented ' + f.rerented_on + '</span>';
+    h += '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #14202f">'
+      + '<div style="flex:1;min-width:0"><div style="color:#cfe0f0;font-size:13px">' + f.property + '</div>'
+      + '<div style="color:#4e6d8c;font-size:11px">from ' + (f.vacant_from || '') + ' · ' + badge + (f.note ? ' · ' + f.note : '') + '</div></div>'
+      + (active ? '<button class="secondary" style="padding:4px 8px;font-size:11px" onclick="markRerented(' + f.row + ')">Re-rented</button>' : '')
+      + '<button class="maint-del-btn" style="padding:4px 8px;font-size:11px" onclick="deleteVacancyFlag(' + f.row + ')" title="Delete flag">🗑&#xFE0E;</button>'
+      + '</div>';
+  });
+  el.innerHTML = h;
+}
+async function submitVacancy() {
+  const msgEl = document.getElementById('vac-msg');
+  const btn = document.getElementById('vac-submit');
+  const property = document.getElementById('vac-property').value;
+  const vacant_from = document.getElementById('vac-from').value;
+  if (!property || !vacant_from) { msgEl.className = 'form-msg err'; msgEl.textContent = 'Pick a unit and a vacant-from date.'; return; }
+  const actor = ensureActor(); if (!actor) return;
+  const data = { action: 'add_vacancy', property: property, llc: vacancyUnits()[property] || '', vacant_from: vacant_from, note: document.getElementById('vac-note').value, actor: actor };
+  btn.disabled = true; msgEl.className = 'form-msg'; msgEl.textContent = 'Saving...';
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(data) });
+    const result = await res.json();
+    if (result.error) { msgEl.className = 'form-msg err'; msgEl.textContent = 'Error: ' + result.error; }
+    else { msgEl.className = 'form-msg ok'; msgEl.textContent = '✅ Flagged!'; await load(); renderVacancyList(); document.getElementById('vac-note').value = ''; msgEl.textContent = '✅ Flagged & saved.'; }
+  } catch (e) { msgEl.className = 'form-msg err'; msgEl.textContent = 'Network error: ' + e.message; }
+  finally { btn.disabled = false; }
+}
+async function markRerented(row) {
+  const f = (PORTFOLIO_DATA.vacancy || []).find(x => x.row === row);
+  if (!f) return;
+  const actor = ensureActor(); if (!actor) return;
+  if (!confirm('Mark ' + f.property + ' as re-rented (occupied) as of today?')) return;
+  const data = { action: 'update_vacancy', row: row, property: f.property, llc: f.llc, vacant_from: f.vacant_from, rerented_on: todayStr(), note: f.note, actor: actor };
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(data) });
+    const r = await res.json();
+    if (r.error) { alert('Error: ' + r.error); return; }
+    await load(); renderVacancyList();
+  } catch (e) { alert('Network error: ' + e.message); }
+}
+async function deleteVacancyFlag(row) {
+  const f = (PORTFOLIO_DATA.vacancy || []).find(x => x.row === row);
+  const actor = ensureActor(); if (!actor) return;
+  if (!confirm('Delete this vacancy flag' + (f ? ' for ' + f.property : '') + '?')) return;
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'delete_vacancy', row: row, actor: actor }) });
+    const r = await res.json();
+    if (r.error) { alert('Error: ' + r.error); return; }
+    await load(); renderVacancyList();
+  } catch (e) { alert('Network error: ' + e.message); }
+}
+
+/* ============================================================
    MASTER PORTFOLIO — ADD STATEMENT MODAL (Suncoast / MidSouth)
    ============================================================ */
 function openStmtModal() {
@@ -1770,16 +1869,40 @@ function maintenanceForProp(maintenance, prop, period) {
   return maintenance.filter(m => m.period === period && m.property && normAddr(m.property).startsWith(key))
     .reduce((s, m) => s + (m.amount || 0), 0);
 }
+// ---- Manual vacancy flags (real-time, set ahead of the statement) ----
+function monthStartOf(d) { d = String(d || ''); return d.length >= 7 ? d.slice(0, 7) + '-01' : ''; }
+// A flag covers month M (period_start 'YYYY-MM-01') if it started on/before M and has NOT
+// been re-rented on/before M.
+function vacancyActiveForMonth(flag, monthPS) {
+  if (!flag || !monthPS) return false;
+  const from = monthStartOf(flag.vacant_from);
+  if (!from || from > monthPS) return false;
+  const re = monthStartOf(flag.rerented_on);
+  if (re && re <= monthPS) return false;
+  return true;
+}
+function unitMatch(a, b) {
+  if (!a || !b) return false;
+  if (String(a).trim().toLowerCase() === String(b).trim().toLowerCase()) return true;
+  const na = normAddr(a), nb = normAddr(b);
+  return !!na && na === nb;
+}
+function manualVacant(flags, prop, period) {
+  return (flags || []).some(f => unitMatch(f.property, prop) && vacancyActiveForMonth(f, period));
+}
 // Build a flat list of per-property monthly records across all sources.
 function buildPropertyRecords(data, maintenance) {
   const recs = [];
+  const flags = data.vacancy || [];
   (data.property_detail || []).forEach(r => {
     const period = r.period_start;
     const repairs = maintenanceForProp(maintenance, r.property, period);
-    const occupied = String(r.status || '').toLowerCase().indexOf('vac') === -1;
+    let occupied = String(r.status || '').toLowerCase().indexOf('vac') === -1;
+    let mv = false;
+    if (occupied && manualVacant(flags, r.property, period)) { occupied = false; mv = true; }
     recs.push({
       property: r.property, period: period, llc: r.llc || '', status: occupied ? 'Occupied' : 'Vacant',
-      occupied: occupied, cash_in: r.cash_in || 0, disbursement: r.disbursement || 0,
+      occupied: occupied, manual_vacant: mv, cash_in: r.cash_in || 0, disbursement: r.disbursement || 0,
       mortgage: r.mortgage || 0, ins_mo: r.ins_mo || 0, repairs: repairs,
       net: (r.disbursement || 0) - (r.mortgage || 0) - (r.ins_mo || 0) - repairs,
       source: 'AppFolio'
@@ -1793,9 +1916,10 @@ function buildPropertyRecords(data, maintenance) {
     const prop = m[1].trim();
     const period = r.period_start;
     const repairs = maintenanceForProp(maintenance, prop, period);
+    const mv = manualVacant(flags, prop, period);
     recs.push({
-      property: prop, period: period, llc: 'Divando LLC', status: 'Occupied', occupied: true,
-      cash_in: r.disbursement || 0, disbursement: r.disbursement || 0,
+      property: prop, period: period, llc: 'Divando LLC', status: mv ? 'Vacant' : 'Occupied', occupied: !mv,
+      manual_vacant: mv, cash_in: r.disbursement || 0, disbursement: r.disbursement || 0,
       mortgage: 0, ins_mo: 0, repairs: repairs,
       net: (r.disbursement || 0) - repairs, source: 'Manual'
     });
@@ -1902,10 +2026,15 @@ function renderAll() {
   // excluded from occupancy. Repairs come straight from the Maintenance log.
   const healthRecs = buildPropertyRecords(data, maintenance).filter(r => r.period === SELECTED_MONTH && r.source !== 'Manual');
   const occTotal = healthRecs.length;
-  const vacant = healthRecs.filter(r => !r.occupied);
-  const occOccupied = occTotal - vacant.length;
+  const occOccupied = healthRecs.filter(r => r.occupied).length;
   const occPct = occTotal ? Math.round(occOccupied / occTotal * 100) : 0;
   const occColor = occPct >= 100 ? '#00c97a' : (occPct >= 90 ? '#f0a500' : '#ff4455');
+  // Vacant list = statement/flag-vacant records this month, PLUS active manual flags whose
+  // unit has no record yet this month (e.g. a future month before its statement lands).
+  const vFlags = (data.vacancy || []).filter(f => vacancyActiveForMonth(f, SELECTED_MONTH));
+  const vacant = healthRecs.filter(r => !r.occupied)
+    .concat(vFlags.filter(f => !healthRecs.some(r => unitMatch(f.property, r.property)))
+      .map(f => ({ property: f.property, manual_vacant: true })));
   const vacColor = vacant.length ? '#f0a500' : '#00c97a';
   const repThis = maintenance.filter(m => m.period === SELECTED_MONTH);
   const repThisSum = repThis.reduce((s, m) => s + (m.amount || 0), 0);
@@ -1914,7 +2043,7 @@ function renderAll() {
   const inv = n => n + ' invoice' + (n === 1 ? '' : 's');
   html += '<div class="summary-grid">';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Occupancy</div><div class="value" id="kpi-occ" style="color:' + occColor + '">' + occPct + '%</div><div class="sublabel">' + occOccupied + '/' + occTotal + ' units · ' + (monthLabel(SELECTED_MONTH) || '') + '</div></div></div>';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Vacant Units</div><div class="value" style="color:' + vacColor + '">' + vacant.length + '</div><div class="sublabel">' + (vacant.length ? vacant.map(r => r.property).join(', ') : 'All occupied') + '</div></div></div>';
+  html += '<div class="summary-card" style="cursor:pointer" onclick="openVacancyModal()" title="Flag or clear a vacancy / notice"><div class="card-cell"><div class="label">Vacant Units 🏠</div><div class="value" style="color:' + vacColor + '">' + vacant.length + '</div><div class="sublabel">' + (vacant.length ? vacant.map(r => r.property).join(', ') : 'All occupied') + ' · click to flag</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Repairs · This Month</div><div class="value" id="kpi-rep-month" style="color:#ff4455">' + fmt(repThisSum) + '</div><div class="sublabel">' + inv(repThis.length) + ' · ' + (monthLabel(SELECTED_MONTH) || '') + '</div></div></div>';
   html += '<div class="summary-card"><div class="card-cell"><div class="label">Repairs · YTD</div><div class="value" id="kpi-rep-ytd">' + fmt(repYtdSum) + '</div><div class="sublabel">' + inv(repYtd.length) + ' · ' + selectedYear + '</div></div></div>';
   html += '</div>';
