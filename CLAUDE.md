@@ -672,6 +672,42 @@ shared. Pure **frontend** (`index.html`), **no Apps Script redeploy** — still 
 
 ---
 
+## 💵 Distribution Planner v2 — cushion + safe-to-distribute (Jun 13 2026)
+
+**REBUILT on a cushion model** (the PR #65 planner below was removed for running on the wrong
+AppFolio net). This one is **frontend-only / localStorage v1** (no redeploy): `renderDistributionPlanner(data)`
+in `index.html`, rendered after the True Cash section. Per LLC: you **type the current bank balance**
+→ it subtracts a **cushion** (bills still coming) → shows **Safe to distribute** + **Each partner**
+(÷2; Dorado **÷3** with Simon).
+- **Cushion = insurance + accountant + utilities + pending property tax (from the Property Tax tab)
+  + safety buffer**, and in **"early" mode also + mortgage + SBA**. A **timing toggle**
+  (`CASHPLAN_MODE`, localStorage `niron_cashplan_mode`, default **`late`**) switches it:
+  - **`late` (~22nd–25th, recommended):** mortgage/SBA already cleared mid-month → NOT reserved → small cushion.
+  - **`early` (1st week):** the upcoming mortgage hasn't cleared and the next rent deposit (~20th) lands
+    AFTER it → the cushion MUST hold the mortgage+SBA (big). This is the user's current habit and is
+    **what caused the Yale overdrafts** (4/8, 4/15, 5/13 fees + Divando→Yale cover transfers).
+- **Per-LLC numbers** live in **`CASHPLAN_CONFIG`** (bank-verified Mar–May 2026, editable):
+  - Divando: mort `12199.86` · SBA `2334` · ins `2909.98` · **accountant `3255`** · util `757` · buffer `2000`
+  - Donald: mort `13708` · SBA `444` · ins `1210.84` · acct `0` · util `112` · buffer `1500`
+  - Yale: mort `7279.08` · SBA `225` · ins `1037.55` · acct `0` · util `105` · buffer `1500`
+  - Dorado: **mort `0` (mortgage-FREE)** · SBA `0` · ins `453.31` · acct `1386.51` · util `454` · buffer `1000`, **÷3**
+- **Key bank findings (Mar–May 2026 CSVs):** (a) **Jeff Bergman the accountant is RECURRING, not
+  one-time** — ~**$3,255/mo on Divando** (Apr higher ~$7,482), plus occasional Donald $1,630.94 (Apr) /
+  Yale $969.48 (May) / Dorado $1,386.51 (May). (b) **Dorado has NO mortgage and no SBA** (all 3 props
+  free & clear). (c) Income (Laureate owner funds) lands ~the **18th–21st**; mortgages pull ~**15th–20th**
+  (same window → why early distribution bounces). (d) Utilities/mo: Divando ~$757 (Xcel+Compost+Aurora+Google),
+  Donald ~$112, Yale ~$105, Dorado ~$454 (Xcel+DenverWater+Compost). Dorado pays Divando **$138/mo** ins comp.
+- Balances persist in `localStorage 'niron_cash_balances'`; handlers `setCashBalance` / `setCashplanMode`
+  call `renderAll()`. Self-audit unaffected (no `#kpi-*` IDs).
+- **🔭 Next (the redeploy batch):** save balances to a shared sheet tab so Nir sees them; add the
+  **"Check Mailed" date** on maintenance (rename from "Paid", auto-reserve the check ~7 days then assume
+  cleared — user wants NO manual "cleared"); set up a **recurring 22nd-of-month reminder** (Google Calendar)
+  pinging "open dashboard, do distributions." User confirmed distribution cadence = **first week of the
+  following month** historically, but was shown that shifting to ~22nd–25th (after mortgage clears) keeps the
+  cushion small and stops the overdrafts — left as the `late`/`early` toggle for them to choose.
+
+---
+
 ## ❌ Distribution Planner DROPPED + 🚨 Net Cashflow is UNDERSTATED (Jun 7 2026, PR #65)
 
 **The Distribution Planner was REMOVED (PR #65).** The user reviewed 3 months (Mar–May 2026)
