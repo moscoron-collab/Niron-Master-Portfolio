@@ -2302,7 +2302,7 @@ function renderDistributionPlanner(data) {
     const each = safe / c.split;
     h += '<div class="llc-card"><h3>' + c.label + (c.split === 3 ? ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(÷3 w/ Simon)</span>' : '') + '</h3>';
     h += '<div class="llc-row"><span class="k">Bank balance now</span><span class="v"><input type="number" value="' + (has ? bals[key] : '') + '" placeholder="enter $" onchange="setCashBalance(\'' + key + '\', this.value)" style="width:120px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:6px;color:#fff;padding:4px 8px;font-size:13px"></span></div>';
-    if (has && cashTs[key]) h += '<div style="text-align:right;color:#4e6d8c;font-size:10px;margin-top:-4px;margin-bottom:6px">updated ' + fmtDateTime(cashTs[key]) + '</div>';
+    if (has) h += '<div style="text-align:right;color:#4e6d8c;font-size:10px;margin-top:-4px;margin-bottom:6px">' + (cashTs[key] ? 'updated ' + fmtDateTime(cashTs[key]) : 're-enter to set the date') + '</div>';
     if (mode === 'early' && c.mortgage) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Mortgage + SBA</span><span class="v" style="color:#7a93ad">' + fmt(c.mortgage + c.sba) + '</span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Insurance + accountant + utilities</span><span class="v" style="color:#7a93ad">' + fmt(lateBills) + '</span></div>';
     if (tax) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Property tax pending</span><span class="v" style="color:#7a93ad">' + fmt(tax) + '</span></div>';
