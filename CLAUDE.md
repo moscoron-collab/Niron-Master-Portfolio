@@ -708,6 +708,10 @@ in `index.html`, rendered after the True Cash section. Per LLC: you **type the c
   Donald ~$112, Yale ~$105, Dorado ~$454 (Xcel+DenverWater+Compost). Dorado pays Divando **$138/mo** ins comp.
 - Balances persist in `localStorage 'niron_cash_balances'`; handlers `setCashBalance` / `setCashplanMode`
   call `renderAll()`. Self-audit unaffected (no `#kpi-*` IDs).
+- **Per-LLC "updated" stamp (Jun 14 2026):** `setCashBalance` also writes `localStorage
+  'niron_cash_balances_ts'` (`{key: ISO}`); a small `updated <Mon D, h:mm A>` line shows under each
+  balance box (`fmtDateTime`). Per-LLC by design, but since the user enters all 4 in one sitting
+  (logs into the bank, sees all accounts) they'll usually share the same stamp. Flags a stale balance.
 - **🔭 Next (the redeploy batch):** save balances to a shared sheet tab so Nir sees them; add the
   **"Check Mailed" date** on maintenance (rename from "Paid", auto-reserve the check ~7 days then assume
   cleared — user wants NO manual "cleared"); set up a **recurring 22nd-of-month reminder** (Google Calendar)
