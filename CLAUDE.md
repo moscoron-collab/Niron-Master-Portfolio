@@ -485,6 +485,10 @@ theme; they react to the month dropdown like everything else. Pure frontend.
   `fmtShort` e.g. `$8.0K`) on the RIGHT, via `repairsMiniTable()` (groups maintenance by `shortLlc(llc)`,
   biggest first, only LLCs with repairs). The `kpi-*` value div + total are unchanged → self-audit
   unaffected. (Started as a breakdown line under the total, moved to a right-side table per user.)
+  - **FAB-overlap fix (Jun 14 2026):** the floating action buttons (`.chat-fab`/`.maint-fab`/etc,
+    `position:fixed; right:24px`) were covering the rightmost tile's mini-table numbers. Added a
+    right "lane": `@media (max-width:1560px){ .container{ padding-right:84px } }` (reset to 12px on
+    mobile ≤768). Reserves space so no tile content sits under the FABs.
 - **Repairs · YTD** (`kpi-rep-ytd`) — sum + count for Jan→selected-month of the year. Same per-LLC
   breakdown line.
   Verified = `$18,615.00 / 6` for 2026-through-May.
