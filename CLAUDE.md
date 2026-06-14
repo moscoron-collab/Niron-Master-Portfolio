@@ -713,7 +713,10 @@ in `index.html`, rendered after the True Cash section. Per LLC: you **type the c
   under each balance box (`fmtDateTime`). **Always Eastern time** (`timeZone:'America/New_York'`,
   hardcoded `ET` label — user picked one fixed zone, ET, so Ron + Nir always see the same stamp; NOT
   the viewer's local tz). Legacy balances (no saved ts) show "re-enter to set the date".
-  Per-LLC by design, but since the user enters all 4 in one sitting
+  A **"✓ Mark balances checked today"** button (`markBalancesChecked()`) stamps today on all entered
+  balances WITHOUT changing the amounts — needed because re-typing the SAME number fires no `onchange`,
+  so an unchanged-but-still-correct balance couldn't otherwise get a fresh date. The balance input also
+  shows a **`$`** prefix. Per-LLC by design, but since the user enters all 4 in one sitting
   (logs into the bank, sees all accounts) they'll usually share the same stamp. Flags a stale balance.
 - **🔭 Next (the redeploy batch):** save balances to a shared sheet tab so Nir sees them; add the
   **"Check Mailed" date** on maintenance (rename from "Paid", auto-reserve the check ~7 days then assume
