@@ -2318,7 +2318,7 @@ function renderDistributionPlanner(data) {
   return h;
 }
 function cashBalanceTs() { try { return JSON.parse(localStorage.getItem('niron_cash_balances_ts') || '{}'); } catch (e) { return {}; } }
-function fmtDateTime(iso) { const d = new Date(iso); if (isNaN(d.getTime())) return ''; return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+function fmtDateTime(iso) { const d = new Date(iso); if (isNaN(d.getTime())) return ''; return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); }
 function setCashBalance(key, val) {
   const b = cashBalances(); const ts = cashBalanceTs();
   if (val === '' || val == null) { delete b[key]; delete ts[key]; }
