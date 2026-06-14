@@ -2289,7 +2289,8 @@ function renderDistributionPlanner(data) {
   h += '<div style="color:#4e6d8c;font-size:12px;margin:-4px 0 12px">Type each account\'s current bank balance. The planner leaves a cushion for the bills still coming, then shows what\'s safe to distribute (split per LLC). Best done ' + (mode === 'late' ? '<b>~the 22nd–25th</b>, after the mortgage clears.' : '<b>in the 1st week</b> — note the cushion then has to hold the upcoming mortgage.') + '</div>';
   h += '<div style="margin-bottom:14px"><span style="color:#8aa6c4;font-size:12px;margin-right:8px">Distribution timing:</span>'
     + '<button class="' + (mode === 'late' ? 'primary' : 'secondary') + '" style="padding:5px 10px;font-size:12px;margin-right:6px" onclick="setCashplanMode(\'late\')">After bills (~22nd–25th)</button>'
-    + '<button class="' + (mode === 'early' ? 'primary' : 'secondary') + '" style="padding:5px 10px;font-size:12px" onclick="setCashplanMode(\'early\')">Early (1st week)</button></div>';
+    + '<button class="' + (mode === 'early' ? 'primary' : 'secondary') + '" style="padding:5px 10px;font-size:12px" onclick="setCashplanMode(\'early\')">Early (1st week)</button>'
+    + '<button class="secondary" style="padding:5px 10px;font-size:12px;margin-left:16px" onclick="markBalancesChecked()" title="Stamp today\'s date on all entered balances without changing the amounts">✓ Mark balances checked today</button></div>';
   h += '<div class="llc-grid">';
   Object.keys(CASHPLAN_CONFIG).forEach(key => {
     const c = CASHPLAN_CONFIG[key];
@@ -2301,7 +2302,7 @@ function renderDistributionPlanner(data) {
     const safe = Math.max(0, bal - cushion);
     const each = safe / c.split;
     h += '<div class="llc-card"><h3>' + c.label + (c.split === 3 ? ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(÷3 w/ Simon)</span>' : '') + '</h3>';
-    h += '<div class="llc-row"><span class="k">Bank balance now</span><span class="v"><input type="number" value="' + (has ? bals[key] : '') + '" placeholder="enter $" onchange="setCashBalance(\'' + key + '\', this.value)" style="width:120px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:6px;color:#fff;padding:4px 8px;font-size:13px"></span></div>';
+    h += '<div class="llc-row"><span class="k">Bank balance now</span><span class="v" style="display:flex;align-items:center;justify-content:flex-end;gap:4px"><span style="color:#7e9cbf;font-size:13px">$</span><input type="number" value="' + (has ? bals[key] : '') + '" placeholder="enter" onchange="setCashBalance(\'' + key + '\', this.value)" style="width:112px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:6px;color:#fff;padding:4px 8px;font-size:13px"></span></div>';
     if (has) h += '<div style="text-align:right;color:#4e6d8c;font-size:10px;margin-top:-4px;margin-bottom:6px">' + (cashTs[key] ? 'updated ' + fmtDateTime(cashTs[key]) : 're-enter to set the date') + '</div>';
     if (mode === 'early' && c.mortgage) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Mortgage + SBA</span><span class="v" style="color:#7a93ad">' + fmt(c.mortgage + c.sba) + '</span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Insurance + accountant + utilities</span><span class="v" style="color:#7a93ad">' + fmt(lateBills) + '</span></div>';
@@ -2328,6 +2329,14 @@ function setCashBalance(key, val) {
   renderAll();
 }
 function setCashplanMode(m) { CASHPLAN_MODE = m; localStorage.setItem('niron_cashplan_mode', m); renderAll(); }
+// Stamp today's date/time on every entered balance WITHOUT changing the amounts — so a balance
+// that's still correct (unchanged) can be confirmed as checked today (onchange wouldn't fire).
+function markBalancesChecked() {
+  const b = cashBalances(); const ts = cashBalanceTs(); const now = new Date().toISOString();
+  Object.keys(b).forEach(k => { if (b[k] != null && b[k] !== '') ts[k] = now; });
+  localStorage.setItem('niron_cash_balances_ts', JSON.stringify(ts));
+  renderAll();
+}
 
 function renderBankSection() {
   const months = bankAllMonths();
