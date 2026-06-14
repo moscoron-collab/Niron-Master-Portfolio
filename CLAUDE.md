@@ -480,8 +480,12 @@ theme; they react to the month dropdown like everything else. Pure frontend.
   `X/Y units · Month`. The self-audit recomputes BOTH halves (`htile('kpi-occ-year', …)` added).
 - **Vacant Units** — count + the vacant unit name(s) (e.g. `2993 W Yale Ave`). Gold if >0.
 - **Repairs · This Month** (`kpi-rep-month`, red) — sum + count of Maintenance-log invoices for
-  the selected month. Verified = `$11,615.00 / 4` for May 2026.
-- **Repairs · YTD** (`kpi-rep-ytd`) — sum + count for Jan→selected-month of the year.
+  the selected month. Verified = `$11,615.00 / 4` for May 2026. **Per-LLC breakdown line added
+  (Jun 14 2026):** under the total, a muted line `Divando $X · Yale $Y · …` via `repairsByLlc()`
+  (groups maintenance by `shortLlc(llc)`, biggest first, only LLCs with repairs). The `kpi-*` value
+  div + total are unchanged → self-audit unaffected.
+- **Repairs · YTD** (`kpi-rep-ytd`) — sum + count for Jan→selected-month of the year. Same per-LLC
+  breakdown line.
   Verified = `$18,615.00 / 6` for 2026-through-May.
 - The self-audit recomputes all 3 numeric tiles (`Health tile` rows).
 
