@@ -1955,6 +1955,13 @@ function aggregateLlcPeriod(rows, maintenance) {
 
 async function load() { try { const res = await dashGet(); const data = await res.json(); PORTFOLIO_DATA = data; initialRender(data); } catch (e) { document.getElementById("content").innerHTML = '<div class="error">Failed to load: ' + e.message + '</div>'; document.getElementById("status").textContent = "● Offline"; document.getElementById("status").style.color = "#ff4455"; } }
 function initialRender(data) { document.getElementById("last-updated").textContent = new Date(data.last_updated).toLocaleString(); const history = data.history || []; const months = [...new Set(history.map(h => h.period_start))].sort().reverse(); SELECTED_MONTH = months[0] || ""; renderAll(); renderTaxSection(); }
+// Short LLC label + per-LLC repairs breakdown (biggest first, only LLCs with repairs).
+function shortLlc(llc) { const n = (llc || '').toLowerCase(); if (n.includes('divando')) return 'Divando'; if (n.includes('donald')) return 'Donald'; if (n.includes('yale')) return 'Yale'; if (n.includes('dorado')) return 'Dorado'; return llc || 'Other'; }
+function repairsByLlc(records) {
+  const m = {};
+  records.forEach(r => { const k = shortLlc(r.llc); m[k] = (m[k] || 0) + (r.amount || 0); });
+  return Object.keys(m).filter(k => m[k] > 0).sort((a, b) => m[b] - m[a]).map(k => k + ' ' + fmt(m[k])).join(' · ');
+}
 function renderAll() {
   const data = PORTFOLIO_DATA; if (!data) return;
   const el = document.getElementById("content");
@@ -2070,8 +2077,10 @@ function renderAll() {
   html += '<div class="summary-grid">';
   html += '<div class="summary-card dual"><div class="card-cell"><div class="label">Occupancy · ' + selectedYear + '</div><div class="value" id="kpi-occ-year" style="color:' + occYearColor + '">' + (occYear == null ? '—' : occYear + '%') + '</div><div class="sublabel">Year to date</div></div><div class="divider"></div><div class="card-cell"><div class="label">Occupancy · Month</div><div class="value" id="kpi-occ" style="color:' + occColor + '">' + occPct + '%</div><div class="sublabel">' + occOccupied + '/' + occTotal + ' units · ' + (monthLabel(SELECTED_MONTH) || '') + '</div></div></div>';
   html += '<div class="summary-card" style="cursor:pointer" onclick="openVacancyModal()" title="Flag or clear a vacancy / notice"><div class="card-cell"><div class="label">Vacant Units 🏠</div><div class="value" style="color:' + vacColor + '">' + vacant.length + '</div><div class="sublabel">' + (vacant.length ? vacant.map(r => r.property).join(', ') : 'All occupied') + ' · click to flag</div></div></div>';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Repairs · This Month</div><div class="value" id="kpi-rep-month" style="color:#ff4455">' + fmt(repThisSum) + '</div><div class="sublabel">' + inv(repThis.length) + ' · ' + (monthLabel(SELECTED_MONTH) || '') + '</div></div></div>';
-  html += '<div class="summary-card"><div class="card-cell"><div class="label">Repairs · YTD</div><div class="value" id="kpi-rep-ytd">' + fmt(repYtdSum) + '</div><div class="sublabel">' + inv(repYtd.length) + ' · ' + selectedYear + '</div></div></div>';
+  const repThisByLlc = repairsByLlc(repThis);
+  const repYtdByLlc = repairsByLlc(repYtd);
+  html += '<div class="summary-card"><div class="card-cell"><div class="label">Repairs · This Month</div><div class="value" id="kpi-rep-month" style="color:#ff4455">' + fmt(repThisSum) + '</div>' + (repThisByLlc ? '<div class="sublabel" style="color:#7e9cbf">' + repThisByLlc + '</div>' : '') + '<div class="sublabel">' + inv(repThis.length) + ' · ' + (monthLabel(SELECTED_MONTH) || '') + '</div></div></div>';
+  html += '<div class="summary-card"><div class="card-cell"><div class="label">Repairs · YTD</div><div class="value" id="kpi-rep-ytd">' + fmt(repYtdSum) + '</div>' + (repYtdByLlc ? '<div class="sublabel" style="color:#7e9cbf">' + repYtdByLlc + '</div>' : '') + '<div class="sublabel">' + inv(repYtd.length) + ' · ' + selectedYear + '</div></div></div>';
   html += '</div>';
   html += renderBankSection();
   html += renderDistributionPlanner(data);
