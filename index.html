@@ -2283,6 +2283,7 @@ function renderDistributionPlanner(data) {
   (data.property_tax || []).forEach(r => { const k = (r.llc || '').toLowerCase(); taxByLlc[k] = (taxByLlc[k] || 0) + taxOutstanding(r); });
   const pendingTax = (m) => { let s = 0; Object.keys(taxByLlc).forEach(k => { if (k.includes(m)) s += taxByLlc[k]; }); return s; };
   const bals = cashBalances();
+  const cashTs = cashBalanceTs();
   const mode = CASHPLAN_MODE;
   let h = '<div class="section"><h2><span class="dot"></span><span>💵 Distribution Planner — how much to take this month</span></h2>';
   h += '<div style="color:#4e6d8c;font-size:12px;margin:-4px 0 12px">Type each account\'s current bank balance. The planner leaves a cushion for the bills still coming, then shows what\'s safe to distribute (split per LLC). Best done ' + (mode === 'late' ? '<b>~the 22nd–25th</b>, after the mortgage clears.' : '<b>in the 1st week</b> — note the cushion then has to hold the upcoming mortgage.') + '</div>';
@@ -2301,6 +2302,7 @@ function renderDistributionPlanner(data) {
     const each = safe / c.split;
     h += '<div class="llc-card"><h3>' + c.label + (c.split === 3 ? ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(÷3 w/ Simon)</span>' : '') + '</h3>';
     h += '<div class="llc-row"><span class="k">Bank balance now</span><span class="v"><input type="number" value="' + (has ? bals[key] : '') + '" placeholder="enter $" onchange="setCashBalance(\'' + key + '\', this.value)" style="width:120px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:6px;color:#fff;padding:4px 8px;font-size:13px"></span></div>';
+    if (has && cashTs[key]) h += '<div style="text-align:right;color:#4e6d8c;font-size:10px;margin-top:-4px;margin-bottom:6px">updated ' + fmtDateTime(cashTs[key]) + '</div>';
     if (mode === 'early' && c.mortgage) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Mortgage + SBA</span><span class="v" style="color:#7a93ad">' + fmt(c.mortgage + c.sba) + '</span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Insurance + accountant + utilities</span><span class="v" style="color:#7a93ad">' + fmt(lateBills) + '</span></div>';
     if (tax) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Property tax pending</span><span class="v" style="color:#7a93ad">' + fmt(tax) + '</span></div>';
@@ -2315,7 +2317,16 @@ function renderDistributionPlanner(data) {
   h += '</div>';
   return h;
 }
-function setCashBalance(key, val) { const b = cashBalances(); if (val === '' || val == null) delete b[key]; else b[key] = Number(val) || 0; localStorage.setItem('niron_cash_balances', JSON.stringify(b)); renderAll(); }
+function cashBalanceTs() { try { return JSON.parse(localStorage.getItem('niron_cash_balances_ts') || '{}'); } catch (e) { return {}; } }
+function fmtDateTime(iso) { const d = new Date(iso); if (isNaN(d.getTime())) return ''; return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+function setCashBalance(key, val) {
+  const b = cashBalances(); const ts = cashBalanceTs();
+  if (val === '' || val == null) { delete b[key]; delete ts[key]; }
+  else { b[key] = Number(val) || 0; ts[key] = new Date().toISOString(); }
+  localStorage.setItem('niron_cash_balances', JSON.stringify(b));
+  localStorage.setItem('niron_cash_balances_ts', JSON.stringify(ts));
+  renderAll();
+}
 function setCashplanMode(m) { CASHPLAN_MODE = m; localStorage.setItem('niron_cashplan_mode', m); renderAll(); }
 
 function renderBankSection() {
