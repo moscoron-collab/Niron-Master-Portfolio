@@ -322,6 +322,7 @@ def main():
 
     if not results:
         print("Nothing to write.")
+        print("::set-output name=wrote_data::false")
         return
 
     approval = require_approval(sheets)
@@ -338,6 +339,10 @@ def main():
         ]
         append_row(sheets, tab, row)
         print(f"Written to {tab}: {llc}")
+
+    # Signal the workflow that genuinely new rows were written this run, so the
+    # "Dashboard Updated" email only fires when there is actually new data.
+    print("::set-output name=wrote_data::true")
 
     # Send email notification
     if approval:
