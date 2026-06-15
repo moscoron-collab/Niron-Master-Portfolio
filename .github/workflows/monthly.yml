@@ -36,7 +36,7 @@ jobs:
         run: python automation/run.py
 
       - name: Send dashboard updated notification
-        if: steps.automation.outcome == 'success'
+        if: steps.automation.outcome == 'success' && steps.automation.outputs.wrote_data == 'true'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
