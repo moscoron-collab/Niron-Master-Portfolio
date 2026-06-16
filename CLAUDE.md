@@ -685,7 +685,9 @@ shared. Pure **frontend** (`index.html`), **no Apps Script redeploy** — still 
 
 **REBUILT on a cushion model** (the PR #65 planner below was removed for running on the wrong
 AppFolio net). This one is **frontend-only / localStorage v1** (no redeploy): `renderDistributionPlanner(data)`
-in `index.html`, rendered after the True Cash section. Per LLC: you **type the current bank balance**
+in `index.html`, rendered **just BELOW the Monthly Breakdown section** (user swapped the two on Jun 16 2026
+so Monthly Breakdown sits above the planner; order is True Cash → Monthly Breakdown → Planner → Partner
+Distributions). Per LLC: you **type the current bank balance**
 → it subtracts a **cushion** (bills still coming) → shows **Safe to distribute** + **Each partner**
 (÷2; Dorado **÷3** with Simon).
 - **DATE-AWARE cushion (rebuilt Jun 16 2026, user choice "only reserve what's still coming").** The cushion
