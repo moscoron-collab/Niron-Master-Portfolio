@@ -713,7 +713,10 @@ in `index.html`, rendered after the True Cash section. Per LLC: you **type the c
     ~Oct 2025) · acct `0` · util `336` **quarterly** (`utilMonths [0,3,6,9]` = Jan/Apr/Jul/Oct, Denver Compost,
     ~3rd) · software `0` · buffer `1500`. **All fixed bills draft in the first ~4 days** → in `late` mode the
     cushion is just the buffer. No Amex/software on Donald.
-  - Yale: mort `7279.08` · SBA `225` · ins `1037.55` · acct `0` · util `105` · buffer `1500`
+  - Yale (**REBUILT from 12-mo CSV, Jun 16 2026**): mort `7279.08` (Lument, ~6th — ✓ was right) · SBA `225`
+    (1st) · ins `1037.55` (Acuity, **~25th** — was wrongly 28th) · acct `0` · util `315` **quarterly**
+    (`utilMonths [0,3,6,9]`, Denver Compost, ~15th — was flat $105/mo) · software `0` · buffer `1500`. Insurance
+    (drafts ~25th) IS reserved in `late` mode (after a 22nd distribution it's still coming). Bergman $969.48 = one-off.
   - Dorado: **mort `0` (mortgage-FREE)** · SBA `0` · ins `453.31` · **acct `0`** · util `454` · buffer `1000`, **÷3**
 - **⚠️ Accountant (Jeff Bergman) is NOT a recurring monthly cushion item (user correction, Jun 16 2026).**
   The user confirmed the Divando **$3,255 was a ONE-TIME payment**, not a monthly bill, so it must NOT be
