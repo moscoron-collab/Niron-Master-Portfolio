@@ -2355,9 +2355,9 @@ function upcomingRepairDrafts(data, matchStr) {
   }).reduce((s, m) => s + (Number(m.amount) || 0), 0);
 }
 function renderDistributionPlanner(data) {
-  const taxByLlc = {};
-  (data.property_tax || []).forEach(r => { const k = (r.llc || '').toLowerCase(); taxByLlc[k] = (taxByLlc[k] || 0) + taxOutstanding(r); });
-  const pendingTax = (m) => { let s = 0; Object.keys(taxByLlc).forEach(k => { if (k.includes(m)) s += taxByLlc[k]; }); return s; };
+  // Property tax is NOT in the planner cushion: it's an annual lump sum (Divando/Dorado paid
+  // ~by May; Donald/Yale escrowed in the mortgage), tracked on the Property Tax tab + KPI tile —
+  // not a recurring monthly bill, so reserving it every month was wrong (user, Jun 16 2026).
   const bals = cashBalances();
   const cashTs = cashBalanceTs();
   const mode = CASHPLAN_MODE;
@@ -2373,11 +2373,10 @@ function renderDistributionPlanner(data) {
   h += '<div class="llc-grid">';
   Object.keys(CASHPLAN_CONFIG).forEach(key => {
     const c = CASHPLAN_CONFIG[key];
-    const tax = pendingTax(c.match);
     const repairsDue = upcomingRepairDrafts(data, c.match);
     const software = c.software || 0;
     const lateBills = c.insurance + c.accountant + c.utilities;
-    const cushion = lateBills + software + (mode === 'early' ? (c.mortgage + c.sba) : 0) + tax + repairsDue + c.buffer;
+    const cushion = lateBills + software + (mode === 'early' ? (c.mortgage + c.sba) : 0) + repairsDue + c.buffer;
     const has = bals[key] != null && bals[key] !== '';
     const bal = Number(bals[key]) || 0;
     const safe = Math.max(0, bal - cushion);
@@ -2388,7 +2387,6 @@ function renderDistributionPlanner(data) {
     if (mode === 'early' && c.mortgage) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Mortgage + SBA</span><span class="v" style="color:#7a93ad">' + fmt(c.mortgage + c.sba) + '</span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Insurance + utilities</span><span class="v" style="color:#7a93ad">' + fmt(lateBills) + '</span></div>';
     if (software) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Software (ACE Cloud Hosting)</span><span class="v" style="color:#7a93ad">' + fmt(software) + '</span></div>';
-    if (tax) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Property tax pending</span><span class="v" style="color:#7a93ad">' + fmt(tax) + '</span></div>';
     if (repairsDue) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Repairs you just paid (about to draft)</span><span class="v" style="color:#7a93ad">' + fmt(repairsDue) + '</span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Safety buffer</span><span class="v" style="color:#7a93ad">' + fmt(c.buffer) + '</span></div>';
     h += '<div class="llc-row"><span class="k">Cushion to leave</span><span class="v" style="color:#f0a500">' + fmt(cushion) + '</span></div>';
@@ -2408,7 +2406,6 @@ function renderDistributionPlanner(data) {
         h += '<div class="llc-row" style="font-size:11.5px"><span class="k" style="color:' + col + '"' + tipAttr + '>' + monAbbr + ' ' + ordinal(it.day) + ' · ' + it.label + tipMark + tag + '</span><span class="v" style="color:' + col + '">' + fmt(it.amt) + '</span></div>';
       });
       if (repairsDue) h += '<div class="llc-row" style="font-size:11.5px"><span class="k" style="color:#9fb6cf">soon · Repairs you just paid</span><span class="v" style="color:#9fb6cf">' + fmt(repairsDue) + '</span></div>';
-      if (tax) h += '<div class="llc-row" style="font-size:11.5px"><span class="k" style="color:#9fb6cf">when due · Property tax</span><span class="v" style="color:#9fb6cf">' + fmt(tax) + '</span></div>';
       h += '</div>';
     }
     h += '</div>';
