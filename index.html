@@ -2400,6 +2400,8 @@ function renderDistributionPlanner(data) {
     reserved.forEach(it => {
       h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− ' + it.label + ' <span style="color:#4e6d8c;font-size:10px">' + monAbbr + ' ' + ordinal(it.day) + '</span></span><span class="v" style="color:#7a93ad">' + fmt(it.amt) + '</span></div>';
     });
+    // Upcoming maintenance — ALWAYS shown (reserved amount, or an explicit "none" so you can
+    // tell the planner checked vs. is broken). Paid-by-debit / cleared-check / CPA are excluded.
     if (maintSum) {
       h += '<div class="llc-row"><span class="k" style="color:#e8b04b">− Upcoming maintenance <span style="color:#4e6d8c;font-size:10px">(' + maintList.length + ' invoice' + (maintList.length > 1 ? 's' : '') + ')</span></span><span class="v" style="color:#e8b04b">' + fmt(maintSum) + '</span></div>';
       maintList.forEach(m => {
@@ -2407,8 +2409,11 @@ function renderDistributionPlanner(data) {
         const st = m.paid ? 'check mailed' : 'unpaid';
         h += '<div class="llc-row" style="font-size:10.5px"><span class="k" style="color:#7a93ad;padding-left:10px">· ' + who + ' <span style="color:#4e6d8c">(' + st + ')</span></span><span class="v" style="color:#7a93ad">' + fmt(Number(m.amount) || 0) + '</span></div>';
       });
+    } else {
+      const paidRecent = (data.maintenance || []).filter(m => m.llc && m.llc.toLowerCase().indexOf(c.match) >= 0 && m.paid && (m.paid_by || '') !== 'Sent to CPA' && m.period === SELECTED_MONTH).length;
+      h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">Upcoming maintenance: none unpaid' + (paidRecent ? ' <span style="color:#3f5874">(' + paidRecent + ' already paid this month)</span>' : '') + '</span><span class="v" style="color:#4e6d8c">—</span></div>';
     }
-    if (!reserved.length && !maintSum) h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">All fixed bills already drafted this cycle ✓</span><span class="v"></span></div>';
+    if (!reserved.length) h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">All fixed bills already drafted this cycle ✓</span><span class="v"></span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Safety buffer</span><span class="v" style="color:#7a93ad">' + fmt(c.buffer) + '</span></div>';
     h += '<div class="llc-row"><span class="k">Cushion to leave</span><span class="v" style="color:#f0a500">' + fmt(cushion) + '</span></div>';
     h += '<div class="llc-row total"><span class="k">Safe to distribute</span><span class="v ' + (has ? (safe > 0 ? 'green' : 'red') : '') + '">' + (has ? fmt(safe) : '—') + '</span></div>';

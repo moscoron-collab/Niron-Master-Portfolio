@@ -763,7 +763,11 @@ in `index.html`, rendered after the True Cash section. Per LLC: you **type the c
   list (`maintSum`), **always adds it to `cushion`** (it's owed money, not tied to a draft day), shows a
   **"− Upcoming maintenance (N invoices)"** line that **itemizes each invoice** (property/vendor + unpaid|check
   mailed + amount), and a "soon · Upcoming maintenance" line in the dated list. **So logging a repair invoice
-  immediately reserves its cash before distribution** — that's the workflow. **Frontend-only, no redeploy.**
+  immediately reserves its cash before distribution** — that's the workflow. It is **ALWAYS shown on every LLC
+  card** — when nothing qualifies it prints **"Upcoming maintenance: none unpaid (N already paid this month)"**
+  so you can tell the planner checked vs. is broken (this resolved the user's "Divando didn't show maintenance"
+  confusion — Divando just had no UNPAID invoices; paid-by-debit repairs are already withdrawn, not reserved).
+  The reserve is fully generic by `c.match` — Divando/Donald/Yale/Dorado run identical code. **Frontend-only, no redeploy.**
   (Replaced the older narrow `upcomingRepairDrafts` which only caught paid-by-check-within-7-days and missed
   unpaid invoices — that was the gap the user hit.) ⚠️ Still keys off invoice date for the check-clearing
   window (no paid-date column); a Paid-Date column would need an Apps Script redeploy (not built).
