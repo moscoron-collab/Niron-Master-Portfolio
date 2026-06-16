@@ -1824,9 +1824,33 @@ const CASHPLAN_CONFIG = {
   yale:    { label: 'Yale',    match: 'yale',    mortgage: 7279.08,  sba: 225,  insurance: 1037.55, accountant: 0,    utilities: 105, buffer: 1500, split: 2 },
   dorado:  { label: 'Dorado',  match: 'dorado',  mortgage: 0,        sba: 0,    insurance: 453.31,  accountant: 1386.51, utilities: 454, buffer: 1000, split: 3 }
 };
-// Distribution timing: 'late' = ~22nd–25th, after the mortgage clears (small cushion,
-// avoids the overdrafts we saw); 'early' = 1st week, must reserve the upcoming mortgage.
-let CASHPLAN_MODE = localStorage.getItem('niron_cashplan_mode') || 'late';
+// Expected DRAFT day-of-month for each recurring cost, per LLC. Bank-verified where noted
+// (Mar–May 2026 CSVs): SBA drafts the 1st; Divando State Farm end-of-month (~29th); Yale
+// Lument mortgage ~6th; Dorado National Indemnity ~7th; other mortgages pull mid-month
+// (~15th–20th). The rest (utilities, accountant, Yale/Donald insurance) are ESTIMATES —
+// tell me to correct any. Amounts come from CASHPLAN_CONFIG (single source of truth).
+const CASHPLAN_DAYS = {
+  divando: { sba: 1, mortgage: 16, accountant: 15, utilities: 20, insurance: 29 },
+  donald:  { sba: 1, mortgage: 16, utilities: 20, insurance: 28 },
+  yale:    { sba: 1, mortgage: 6,  utilities: 20, insurance: 28 },
+  dorado:  { accountant: 15, utilities: 20, insurance: 7 }
+};
+// Build the dated upcoming-expense list for one LLC (sorted by day-of-month), pulling
+// amounts from CASHPLAN_CONFIG and days from CASHPLAN_DAYS. Only includes costs with a
+// known day + a non-zero amount.
+function planExpenseItems(key, c) {
+  const days = CASHPLAN_DAYS[key] || {};
+  const defs = [
+    { f: 'sba', label: 'SBA loan' },
+    { f: 'mortgage', label: 'Mortgage' },
+    { f: 'insurance', label: 'Insurance' },
+    { f: 'accountant', label: 'Accountant' },
+    { f: 'utilities', label: 'Utilities' }
+  ];
+  return defs.filter(d => days[d.f] && c[d.f]).map(d => ({ day: days[d.f], label: d.label, amt: c[d.f] }))
+    .sort((a, b) => a.day - b.day);
+}
+function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 function cashBalances() { try { return JSON.parse(localStorage.getItem('niron_cash_balances') || '{}'); } catch (e) { return {}; } }
 
 // (which only holds the $2,334 SBA line), so add them to the Loan Balances display.
@@ -2326,6 +2350,9 @@ function renderDistributionPlanner(data) {
   const bals = cashBalances();
   const cashTs = cashBalanceTs();
   const mode = CASHPLAN_MODE;
+  const planNow = new Date();
+  const todayDay = planNow.getDate();
+  const monAbbr = planNow.toLocaleString('en-US', { month: 'short' });
   let h = '<div class="section"><h2><span class="dot"></span><span>💵 Distribution Planner — how much to take this month</span></h2>';
   h += '<div style="color:#4e6d8c;font-size:12px;margin:-4px 0 12px">Type each account\'s current bank balance. The planner leaves a cushion for the bills still coming, then shows what\'s safe to distribute (split per LLC). Best done ' + (mode === 'late' ? '<b>~the 22nd–25th</b>, after the mortgage clears.' : '<b>in the 1st week</b> — note the cushion then has to hold the upcoming mortgage.') + '</div>';
   h += '<div style="margin-bottom:14px"><span style="color:#8aa6c4;font-size:12px;margin-right:8px">Distribution timing:</span>'
@@ -2354,10 +2381,25 @@ function renderDistributionPlanner(data) {
     h += '<div class="llc-row"><span class="k">Cushion to leave</span><span class="v" style="color:#f0a500">' + fmt(cushion) + '</span></div>';
     h += '<div class="llc-row total"><span class="k">Safe to distribute</span><span class="v ' + (has ? (safe > 0 ? 'green' : 'red') : '') + '">' + (has ? fmt(safe) : '—') + '</span></div>';
     if (has) h += '<div class="llc-row"><span class="k" style="color:#00c97a">Each partner</span><span class="v" style="color:#00c97a">' + fmt(each) + '</span></div>';
+    // Dated "upcoming expenses" list so you can SEE what's coming and when (not just the
+    // lumped cushion). Items already drafted earlier this month are dimmed with ✓.
+    const items = planExpenseItems(key, c);
+    if (items.length) {
+      h += '<div style="margin-top:10px;border-top:1px solid #16263c;padding-top:8px"><div style="color:#8aa6c4;font-size:11px;font-weight:600;margin-bottom:4px">📅 Coming up this cycle</div>';
+      items.forEach(it => {
+        const drafted = it.day < todayDay;
+        const col = drafted ? '#4e6d8c' : '#9fb6cf';
+        const tag = drafted ? ' <span style="color:#3f5874">✓ drafted</span>' : (it.day === todayDay ? ' <span style="color:#f0a500">today</span>' : '');
+        h += '<div class="llc-row" style="font-size:11.5px"><span class="k" style="color:' + col + '">' + monAbbr + ' ' + ordinal(it.day) + ' · ' + it.label + tag + '</span><span class="v" style="color:' + col + '">' + fmt(it.amt) + '</span></div>';
+      });
+      if (repairsDue) h += '<div class="llc-row" style="font-size:11.5px"><span class="k" style="color:#9fb6cf">soon · Repairs you just paid</span><span class="v" style="color:#9fb6cf">' + fmt(repairsDue) + '</span></div>';
+      if (tax) h += '<div class="llc-row" style="font-size:11.5px"><span class="k" style="color:#9fb6cf">when due · Property tax</span><span class="v" style="color:#9fb6cf">' + fmt(tax) + '</span></div>';
+      h += '</div>';
+    }
     h += '</div>';
   });
   h += '</div>';
-  h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">Cushion figures are bank-verified estimates (Mar–May 2026) — tell me to adjust any. The cushion now also reserves any <b>repair invoice you marked Paid</b> (it drafts within ~a week, then auto-clears 7 days after the invoice date). Balances still save on this browser for now; shared-save comes with the next backend update.</div>';
+  h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">Cushion figures are bank-verified estimates (Mar–May 2026) — tell me to adjust any. The <b>📅 Coming up this cycle</b> list shows each expense on its expected draft date (✓ = already drafted this month); dates are bank-verified where known and best-estimates otherwise (SBA 1st, Yale mortgage ~6th, Dorado insurance ~7th, mortgages mid-month, Divando insurance end-of-month) — tell me to correct any. The cushion also reserves any <b>repair invoice you marked Paid</b> (drafts within ~a week, auto-clears 7 days after the invoice date). Balances still save on this browser for now; shared-save comes with the next backend update.</div>';
   h += '</div>';
   return h;
 }
