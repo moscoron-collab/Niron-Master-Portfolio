@@ -1,9 +1,14 @@
 name: Monthly Propertyware Pull — Suncoast + MidSouth
 
 on:
-  schedule:
-    # Runs daily at 12pm EDT / 4pm UTC from the 15th to 25th of each month
-    - cron: "0 16 15-25 * *"
+  # DISABLED Jun 16 2026 (user request): the scheduled auto-pull was failing every run
+  # because the Propertyware login no longer succeeds (password field never hides → login
+  # rejected; likely expired credentials or a new captcha/2FA). Suncoast + Mid South are
+  # entered MANUALLY via the dashboard (📋 Add Monthly Statement), so the daily failures were
+  # just noise. Re-enable by un-commenting the schedule below once the Propertyware login is fixed.
+  # schedule:
+  #   # Runs daily at 12pm EDT / 4pm UTC from the 15th to 25th of each month
+  #   - cron: "0 16 15-25 * *"
   workflow_dispatch:  # allows manual trigger from GitHub UI
 
 jobs:
