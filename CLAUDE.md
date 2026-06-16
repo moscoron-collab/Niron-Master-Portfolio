@@ -688,8 +688,12 @@ AppFolio net). This one is **frontend-only / localStorage v1** (no redeploy): `r
 in `index.html`, rendered after the True Cash section. Per LLC: you **type the current bank balance**
 → it subtracts a **cushion** (bills still coming) → shows **Safe to distribute** + **Each partner**
 (÷2; Dorado **÷3** with Simon).
-- **Cushion = insurance + accountant + utilities + pending property tax (from the Property Tax tab)
-  + upcoming repair drafts + safety buffer**, and in **"early" mode also + mortgage + SBA**. A **timing toggle**
+- **Cushion = insurance + utilities + software (Divando ACE) + upcoming repair drafts + safety buffer**,
+  and in **"early" mode also + mortgage + SBA**. **Property tax is NOT in the cushion** (removed Jun 16 2026,
+  user): it's an annual lump (Divando/Dorado paid ~by May; Donald/Yale escrowed), tracked on the Property
+  Tax tab + KPI tile — reserving it every month was wrong. The `pendingTax`/`taxByLlc` helper + the
+  "− Property tax pending" / "when due · Property tax" lines were deleted from `renderDistributionPlanner`.
+  A **timing toggle**
   (`CASHPLAN_MODE`, localStorage `niron_cashplan_mode`, default **`late`**) switches it:
   - **`late` (~22nd–25th, recommended):** mortgage/SBA already cleared mid-month → NOT reserved → small cushion.
   - **`early` (1st week):** the upcoming mortgage hasn't cleared and the next rent deposit (~20th) lands
