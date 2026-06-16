@@ -696,8 +696,10 @@ in `index.html`, rendered after the True Cash section. Per LLC: you **type the c
     AFTER it → the cushion MUST hold the mortgage+SBA (big). This is the user's current habit and is
     **what caused the Yale overdrafts** (4/8, 4/15, 5/13 fees + Divando→Yale cover transfers).
 - **Per-LLC numbers** live in **`CASHPLAN_CONFIG`** (bank-verified Mar–May 2026, editable):
-  - Divando: mort `12199.86` · SBA `2334` · ins `2909.98` · **accountant `0`** · util `757` · buffer `2000`
-  - Donald: mort `13708` · SBA `444` · ins `1210.84` · acct `0` · util `112` · buffer `1500`
+  - Divando (**REBUILT from 12-mo CSV, user-reviewed Jun 16 2026**): mort `12199.86` (~15th) · SBA `2334` (1st) ·
+    ins `2909.98` (~29th) · **accountant `0`** · util `685` (~15th, lumped+tooltip) · **software `288.98`** (ACE Cloud
+    Hosting, ~28th via Amex) · buffer `2000`
+  - Donald: mort `13708` · SBA `444` · ins `1210.84` · acct `0` · util `112` · software `0` · buffer `1500`
   - Yale: mort `7279.08` · SBA `225` · ins `1037.55` · acct `0` · util `105` · buffer `1500`
   - Dorado: **mort `0` (mortgage-FREE)** · SBA `0` · ins `453.31` · **acct `0`** · util `454` · buffer `1000`, **÷3**
 - **⚠️ Accountant (Jeff Bergman) is NOT a recurring monthly cushion item (user correction, Jun 16 2026).**
@@ -714,8 +716,17 @@ in `index.html`, rendered after the True Cash section. Per LLC: you **type the c
   occasional Donald $1,630.94 Apr / Yale $969.48 May / Dorado $1,386.51 May) but are **occasional /
   per-project, NOT a fixed monthly** (user confirmed) — so not in the recurring cushion. (b) **Dorado has
   NO mortgage and no SBA** (all 3 props free & clear). (c) Income (Laureate owner funds) lands ~the **18th–21st**; mortgages pull ~**15th–20th**
-  (same window → why early distribution bounces). (d) Utilities/mo: Divando ~$757 (Xcel+Compost+Aurora+Google),
-  Donald ~$112, Yale ~$105, Dorado ~$454 (Xcel+DenverWater+Compost). Dorado pays Divando **$138/mo** ins comp.
+  (same window → why early distribution bounces). (d) Utilities/mo: **Divando ~$685** (Google+Xcel+Aurora
+  Water+Denver Compost — varies monthly; user said lump it with a tooltip, NOT itemize), Donald ~$112,
+  Yale ~$105, Dorado ~$454 (Xcel+DenverWater+Compost). Dorado pays Divando **$138/mo** ins comp.
+  (e) **Divando Amex autopay (~$450/mo, ~28th): only the recurring `ACE CLOUD HOSTING` $288.98 is reserved**
+  (user, Jun 16 2026 — "ignore the rest" of the Amex, the rest is variable/non-recurring). Stored as the new
+  `software` field in `CASHPLAN_CONFIG` (Divando `288.98`, others `0`); shows as its own "− Software (ACE
+  Cloud Hosting)" cushion line + a dated list item (~28th). (f) **Mortgage rebuilt:** it's 6 loan transfers
+  = `12199.86` total drafting **~the 15th** (ranged 15th–21st across the year) — the old hardcoded "16th"
+  made it light up as "today" on Jun 16; now `15th`, shows ✓ drafted by mid-month. Mortgage+SBA stay in the
+  dated list as **✓ reference** (user choice) — visible but dimmed once past, and excluded from the cushion
+  in `late` mode (already cleared before a 22nd–25th distribution).
 - Balances persist in `localStorage 'niron_cash_balances'`; handlers `setCashBalance` / `setCashplanMode`
   call `renderAll()`. Self-audit unaffected (no `#kpi-*` IDs).
 - **📅 "Coming up this cycle" dated list (Jun 16 2026):** each LLC card now shows a dated list of its
