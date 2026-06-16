@@ -1819,21 +1819,25 @@ function effectiveIns(llc, sheetIns) {
 // "after bills paid" mode (they clear mid-month, before you distribute ~22nd–25th).
 // Distributions: Divando/Yale/Donald split ÷2 (Ron/Nir); Dorado ÷3 (Ron/Nir/Simon).
 const CASHPLAN_CONFIG = {
-  divando: { label: 'Divando', match: 'divando', mortgage: 12199.86, sba: 2334, insurance: 2909.98, accountant: 3255, utilities: 757, buffer: 2000, split: 2 },
-  donald:  { label: 'Donald',  match: 'donald',  mortgage: 13708,    sba: 444,  insurance: 1210.84, accountant: 0,    utilities: 112, buffer: 1500, split: 2 },
-  yale:    { label: 'Yale',    match: 'yale',    mortgage: 7279.08,  sba: 225,  insurance: 1037.55, accountant: 0,    utilities: 105, buffer: 1500, split: 2 },
-  dorado:  { label: 'Dorado',  match: 'dorado',  mortgage: 0,        sba: 0,    insurance: 453.31,  accountant: 1386.51, utilities: 454, buffer: 1000, split: 3 }
+  divando: { label: 'Divando', match: 'divando', mortgage: 12199.86, sba: 2334, insurance: 2909.98, accountant: 0, utilities: 757, buffer: 2000, split: 2 },
+  donald:  { label: 'Donald',  match: 'donald',  mortgage: 13708,    sba: 444,  insurance: 1210.84, accountant: 0, utilities: 112, buffer: 1500, split: 2 },
+  yale:    { label: 'Yale',    match: 'yale',    mortgage: 7279.08,  sba: 225,  insurance: 1037.55, accountant: 0, utilities: 105, buffer: 1500, split: 2 },
+  dorado:  { label: 'Dorado',  match: 'dorado',  mortgage: 0,        sba: 0,    insurance: 453.31,  accountant: 0, utilities: 454, buffer: 1000, split: 3 }
 };
+// NOTE: accountant (Jeff Bergman) is set to 0 — it is NOT a fixed monthly bill, it's a
+// one-time / occasional charge (user confirmed Jun 16 2026 the $3,255 was a one-time payment).
+// So it is NOT baked into the recurring cushion. If a known accountant bill is coming in a
+// given month, enter it as a maintenance invoice (Paid By = Check) so it's reserved that month.
 // Expected DRAFT day-of-month for each recurring cost, per LLC. Bank-verified where noted
 // (Mar–May 2026 CSVs): SBA drafts the 1st; Divando State Farm end-of-month (~29th); Yale
 // Lument mortgage ~6th; Dorado National Indemnity ~7th; other mortgages pull mid-month
-// (~15th–20th). The rest (utilities, accountant, Yale/Donald insurance) are ESTIMATES —
+// (~15th–20th). The rest (utilities, Yale/Donald insurance) are ESTIMATES —
 // tell me to correct any. Amounts come from CASHPLAN_CONFIG (single source of truth).
 const CASHPLAN_DAYS = {
-  divando: { sba: 1, mortgage: 16, accountant: 15, utilities: 20, insurance: 29 },
+  divando: { sba: 1, mortgage: 16, utilities: 20, insurance: 29 },
   donald:  { sba: 1, mortgage: 16, utilities: 20, insurance: 28 },
   yale:    { sba: 1, mortgage: 6,  utilities: 20, insurance: 28 },
-  dorado:  { accountant: 15, utilities: 20, insurance: 7 }
+  dorado:  { utilities: 20, insurance: 7 }
 };
 // Build the dated upcoming-expense list for one LLC (sorted by day-of-month), pulling
 // amounts from CASHPLAN_CONFIG and days from CASHPLAN_DAYS. Only includes costs with a
@@ -2378,7 +2382,7 @@ function renderDistributionPlanner(data) {
     h += '<div class="llc-row"><span class="k">Bank balance now</span><span class="v" style="display:flex;align-items:center;justify-content:flex-end;gap:4px"><span style="color:#7e9cbf;font-size:13px">$</span><input type="number" value="' + (has ? bals[key] : '') + '" placeholder="enter" onchange="setCashBalance(\'' + key + '\', this.value)" style="width:112px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:6px;color:#fff;padding:4px 8px;font-size:13px"></span></div>';
     if (has) h += '<div style="text-align:right;color:#4e6d8c;font-size:10px;margin-top:-4px;margin-bottom:6px">' + (cashTs[key] ? 'updated ' + fmtDateTime(cashTs[key]) : 're-enter to set the date') + '</div>';
     if (mode === 'early' && c.mortgage) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Mortgage + SBA</span><span class="v" style="color:#7a93ad">' + fmt(c.mortgage + c.sba) + '</span></div>';
-    h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Insurance + accountant + utilities</span><span class="v" style="color:#7a93ad">' + fmt(lateBills) + '</span></div>';
+    h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Insurance + utilities</span><span class="v" style="color:#7a93ad">' + fmt(lateBills) + '</span></div>';
     if (tax) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Property tax pending</span><span class="v" style="color:#7a93ad">' + fmt(tax) + '</span></div>';
     if (repairsDue) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Repairs you just paid (about to draft)</span><span class="v" style="color:#7a93ad">' + fmt(repairsDue) + '</span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Safety buffer</span><span class="v" style="color:#7a93ad">' + fmt(c.buffer) + '</span></div>';

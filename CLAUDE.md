@@ -696,14 +696,24 @@ in `index.html`, rendered after the True Cash section. Per LLC: you **type the c
     AFTER it → the cushion MUST hold the mortgage+SBA (big). This is the user's current habit and is
     **what caused the Yale overdrafts** (4/8, 4/15, 5/13 fees + Divando→Yale cover transfers).
 - **Per-LLC numbers** live in **`CASHPLAN_CONFIG`** (bank-verified Mar–May 2026, editable):
-  - Divando: mort `12199.86` · SBA `2334` · ins `2909.98` · **accountant `3255`** · util `757` · buffer `2000`
+  - Divando: mort `12199.86` · SBA `2334` · ins `2909.98` · **accountant `0`** · util `757` · buffer `2000`
   - Donald: mort `13708` · SBA `444` · ins `1210.84` · acct `0` · util `112` · buffer `1500`
   - Yale: mort `7279.08` · SBA `225` · ins `1037.55` · acct `0` · util `105` · buffer `1500`
-  - Dorado: **mort `0` (mortgage-FREE)** · SBA `0` · ins `453.31` · acct `1386.51` · util `454` · buffer `1000`, **÷3**
-- **Key bank findings (Mar–May 2026 CSVs):** (a) **Jeff Bergman the accountant is RECURRING, not
-  one-time** — ~**$3,255/mo on Divando** (Apr higher ~$7,482), plus occasional Donald $1,630.94 (Apr) /
-  Yale $969.48 (May) / Dorado $1,386.51 (May). (b) **Dorado has NO mortgage and no SBA** (all 3 props
-  free & clear). (c) Income (Laureate owner funds) lands ~the **18th–21st**; mortgages pull ~**15th–20th**
+  - Dorado: **mort `0` (mortgage-FREE)** · SBA `0` · ins `453.31` · **acct `0`** · util `454` · buffer `1000`, **÷3**
+- **⚠️ Accountant (Jeff Bergman) is NOT a recurring monthly cushion item (user correction, Jun 16 2026).**
+  The user confirmed the Divando **$3,255 was a ONE-TIME payment**, not a monthly bill, so it must NOT be
+  baked into the planner's recurring cushion (it was wrongly showing as "Jun 15th · Accountant ✓ drafted
+  $3,255"). `accountant` is now `0` in `CASHPLAN_CONFIG` for **all** LLCs and removed from `CASHPLAN_DAYS`
+  (so it no longer appears in the dated "Coming up this cycle" list). This supersedes the earlier
+  bank-CSV finding that called Bergman "recurring ~$3,255/mo" — the charges are actually occasional /
+  per-project (varying amounts, different LLCs different months), so a fixed monthly reserve was wrong.
+  If a known accountant bill is coming, enter it as a maintenance invoice (Paid By = Check) so it's
+  reserved just for that month. (The True Cash bank-import section is unaffected — it reads the ACTUAL
+  Bergman charge from each month's CSV, which is correct.)
+- **Key bank findings (Mar–May 2026 CSVs):** (a) Bergman charges appear across months (Divando, plus
+  occasional Donald $1,630.94 Apr / Yale $969.48 May / Dorado $1,386.51 May) but are **occasional /
+  per-project, NOT a fixed monthly** (user confirmed) — so not in the recurring cushion. (b) **Dorado has
+  NO mortgage and no SBA** (all 3 props free & clear). (c) Income (Laureate owner funds) lands ~the **18th–21st**; mortgages pull ~**15th–20th**
   (same window → why early distribution bounces). (d) Utilities/mo: Divando ~$757 (Xcel+Compost+Aurora+Google),
   Donald ~$112, Yale ~$105, Dorado ~$454 (Xcel+DenverWater+Compost). Dorado pays Divando **$138/mo** ins comp.
 - Balances persist in `localStorage 'niron_cash_balances'`; handlers `setCashBalance` / `setCashplanMode`
