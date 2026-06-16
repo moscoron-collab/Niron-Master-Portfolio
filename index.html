@@ -1344,20 +1344,28 @@ function setSelectValue(selId, value, label) {
 function populatePropertyDropdown() { const sel = document.getElementById("maint-property"); if (!sel || !PORTFOLIO_DATA) return; const properties = PORTFOLIO_DATA.properties || []; const grouped = {}; properties.forEach(p => { if (!grouped[p.llc]) grouped[p.llc] = []; grouped[p.llc].push(p); }); let html = '<option value="">-- Select Property --</option>'; Object.keys(grouped).sort().forEach(llc => { html += '<optgroup label="' + llc + '">'; grouped[llc].forEach(p => { const label = p.notes ? p.address + ' (' + p.notes + ')' : p.address; html += '<option value="' + p.address + '" data-llc="' + p.llc + '">' + label + '</option>'; }); html += '</optgroup>'; }); sel.innerHTML = html; }
 function onPropertyChange(sel) { const opt = sel.options[sel.selectedIndex]; const llc = opt ? opt.getAttribute("data-llc") || "" : ""; document.getElementById("maint-llc").value = llc; }
 function closeMaintModal() { document.getElementById("maint-modal").classList.remove("open"); ["maint-row", "maint-property", "maint-llc", "maint-sub", "maint-category", "maint-desc", "maint-amount", "maint-paidby", "maint-notes", "maint-file"].forEach(id => { document.getElementById(id).value = ""; }); document.getElementById("maint-paid").checked = false; document.getElementById("maint-file-current").textContent = ""; }
+// Subs/vendors live in the shared "Subs" Google Sheet tab (data.subs) so a name added
+// on ANY device shows for everyone. A localStorage cache is kept only as a fallback so a
+// sub added before the Apps Script redeploy still shows that session.
 function loadCustomSubs() {
   const sel = document.getElementById("maint-sub"); if (!sel) return;
-  let subs = []; try { subs = JSON.parse(localStorage.getItem("niron_custom_subs") || "[]"); } catch (e) { subs = []; }
-  subs.forEach(name => {
+  const names = [];
+  if (typeof PORTFOLIO_DATA !== "undefined" && PORTFOLIO_DATA && Array.isArray(PORTFOLIO_DATA.subs)) PORTFOLIO_DATA.subs.forEach(s => { if (s) names.push(String(s).trim()); });
+  try { JSON.parse(localStorage.getItem("niron_custom_subs") || "[]").forEach(s => { if (s) names.push(String(s).trim()); }); } catch (e) {}
+  names.forEach(name => {
     if (!name) return;
-    const exists = Array.prototype.some.call(sel.options, o => o.value === name);
+    const exists = Array.prototype.some.call(sel.options, o => o.value.toLowerCase() === name.toLowerCase());
     if (!exists) { const opt = document.createElement("option"); opt.value = name; opt.text = name; sel.insertBefore(opt, sel.lastElementChild); }
   });
 }
 function rememberSub(name) {
-  let subs = []; try { subs = JSON.parse(localStorage.getItem("niron_custom_subs") || "[]"); } catch (e) { subs = []; }
-  if (!subs.includes(name)) { subs.push(name); localStorage.setItem("niron_custom_subs", JSON.stringify(subs)); }
+  // Local cache (instant, survives until the shared copy reloads).
+  try { let subs = JSON.parse(localStorage.getItem("niron_custom_subs") || "[]"); if (!subs.some(s => String(s).toLowerCase() === name.toLowerCase())) { subs.push(name); localStorage.setItem("niron_custom_subs", JSON.stringify(subs)); } } catch (e) {}
+  // Shared store (Google Sheet) so it lives everywhere, for everyone.
+  const actor = (typeof getActor === "function" ? getActor() : "") || "Dashboard";
+  fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify({ action: "add_sub", sub: name, actor }) }).catch(function () {});
 }
-function onSubChange(sel) { if (sel.value === "__add_new__") { const newSub = prompt("Enter the new sub/vendor name:"); if (newSub && newSub.trim()) { const name = newSub.trim(); const exists = Array.prototype.some.call(sel.options, o => o.value === name); if (!exists) { const opt = document.createElement("option"); opt.value = name; opt.text = name; sel.insertBefore(opt, sel.lastElementChild); } rememberSub(name); sel.value = name; } else { sel.value = ""; } } }
+function onSubChange(sel) { if (sel.value === "__add_new__") { const newSub = prompt("Enter the new sub/vendor name:"); if (newSub && newSub.trim()) { const name = newSub.trim(); const exists = Array.prototype.some.call(sel.options, o => o.value.toLowerCase() === name.toLowerCase()); if (!exists) { const opt = document.createElement("option"); opt.value = name; opt.text = name; sel.insertBefore(opt, sel.lastElementChild); } rememberSub(name); sel.value = name; } else { sel.value = ""; } } }
 function onCategoryChange(sel) { if (sel.value === "__add_new__") { const newCat = prompt("Enter the new category name:"); if (newCat && newCat.trim()) { const opt = document.createElement("option"); opt.value = newCat.trim(); opt.text = newCat.trim(); sel.insertBefore(opt, sel.lastElementChild); sel.value = newCat.trim(); } else { sel.value = ""; } } }
 async function submitMaintenance() {
   const msgEl = document.getElementById("maint-msg"); const btn = document.getElementById("maint-submit"); const editRow = document.getElementById("maint-row").value;

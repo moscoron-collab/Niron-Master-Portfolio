@@ -1250,6 +1250,32 @@ The `index.html` side goes live on merge.
 
 ---
 
+## 🏷️ Maintenance Category + Sub/Vendor dropdowns (Jun 16 2026)
+
+**Category dropdown** (`#maint-category` in `index.html`) gained **Paint** + **Landscape**
+options and a **`+ Add new category...`** option (`onCategoryChange` → `prompt`, mirrors the
+sub pattern). Cleaned up the overlap at the same time: **"Flooring / Walls / Paint"** →
+**"Flooring / Walls"**, and **"Yard / Irrigation"** was removed (covered by Landscape). Custom
+categories are session-only (not persisted) — only the **subs** list is remembered (below).
+
+**Subs/Vendors are now SHARED, server-side** (not per-browser). The maintenance form's
+**`+ Add new sub...`** option saves the new vendor to a **`Subs` Google Sheet tab** so it shows
+for everyone on every device — like all other data.
+- **Apps Script (`AppsScript.gs`):** `ensureSubsTab(ss)` auto-creates + seeds the tab (base list
+  Rigo/Samuel/Rolando/Tamir/Rudy/Rosalio/Melchor) on first read, like the Vacancy/Property Tax
+  tabs. Cols A–C = `Sub / Vendor · Added By · Updated At`, data from row 5. Live `getDashboardJson`
+  reads it → `data.subs`. `doPost` routes **`add_sub`** → `addSubEntry` (case-insensitive de-dupe,
+  `logActivity`). Edit the **LAST** copies (the live `getDashboardJson` ~1741 + live `doPost` ~1125).
+- **Frontend (`index.html`):** `loadCustomSubs()` (called in `openMaintModal` + `openMaintEdit`)
+  injects `PORTFOLIO_DATA.subs` into the dropdown; `rememberSub(name)` POSTs `add_sub` to the
+  sheet AND keeps a `localStorage 'niron_custom_subs'` fallback (so a sub added before the redeploy
+  still shows that session). **Backward-safe:** if the script isn't redeployed, `data.subs` is
+  undefined → falls back to localStorage, base list still works.
+- 🚀 **Going live (REQUIRED):** redeploy `AppsScript.gs` (Sheet → Extensions → Apps Script → paste
+  → Deploy → Manage deployments → Edit → New version → Deploy). The `Subs` tab auto-creates on the
+  first load after redeploy. The `index.html` side goes live on merge; new subs just won't persist
+  to the shared sheet until the redeploy.
+
 ## 🔧 Maintenance Invoices — Add / Edit / Delete (BUILT)
 
 The **Maintenance Invoices** table on the dashboard (index.html, rendered ~line 1459) is
