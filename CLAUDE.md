@@ -717,7 +717,12 @@ in `index.html`, rendered after the True Cash section. Per LLC: you **type the c
     (1st) · ins `1037.55` (Acuity, **~25th** — was wrongly 28th) · acct `0` · util `315` **quarterly**
     (`utilMonths [0,3,6,9]`, Denver Compost, ~15th — was flat $105/mo) · software `0` · buffer `1500`. Insurance
     (drafts ~25th) IS reserved in `late` mode (after a 22nd distribution it's still coming). Bergman $969.48 = one-off.
-  - Dorado: **mort `0` (mortgage-FREE)** · SBA `0` · ins `453.31` · **acct `0`** · util `454` · buffer `1000`, **÷3**
+  - Dorado (**REBUILT from 12-mo CSV, Jun 16 2026**): **mort `0` (mortgage-FREE)** · SBA `0` · ins `453.31`
+    (National Indemnity, ~7th — ✓ was right) · **acct `0`** (Bergman $1,386 one-off) · util `454`
+    **monthly** (Xcel + Denver Water + Compost, varies — **~5th**, was wrongly 20th; NOT quarterly like
+    Donald/Yale) · software `0` · buffer `1000`, **÷3** (Ron/Nir/Simon). All fixed bills draft early month →
+    `late` cushion ≈ buffer. Property tax (City&County/Adams, big) + the $138/mo Divando ins-comp transfer
+    excluded from the cushion.
 - **⚠️ Accountant (Jeff Bergman) is NOT a recurring monthly cushion item (user correction, Jun 16 2026).**
   The user confirmed the Divando **$3,255 was a ONE-TIME payment**, not a monthly bill, so it must NOT be
   baked into the planner's recurring cushion (it was wrongly showing as "Jun 15th · Accountant ✓ drafted
