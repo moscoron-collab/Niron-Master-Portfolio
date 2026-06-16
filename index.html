@@ -2341,23 +2341,24 @@ function bankAllMonths() { const s = new Set(); Object.values(BANK_ACTUALS).forE
 function bankSetMonth(v) { BANK_MONTH = v; renderAll(); }
 
 // ===== Distribution Planner — cushion + safe-to-distribute (per LLC) =====
-// Repairs you paid by MAILED CHECK that are about to draft from the LLC's operating account.
-// A mailed check drafts within ~a week, so we hold its amount in the cushion, then auto-stop
-// reserving it ~7 days after the invoice date (assumed cleared). We reserve ONLY Paid By =
-// "Check" invoices: a "Debit Card" buy (Home Depot etc.) draws INSTANTLY — it's already gone
-// from the balance you type, so reserving it would double-count; "Sent to CPA" is paid by the
-// CPA, not this account. Keys off each invoice's date (your flow: mark Paid when you mail it).
-function upcomingRepairDrafts(data, matchStr) {
+// UPCOMING MAINTENANCE that will still draw from this LLC's operating account — the money you
+// must hold back BEFORE distributing. Returns the list of pending invoices (so the planner can
+// show each one) for the LLC. An invoice counts as still-owed-from-this-account when:
+//   • it's UNPAID (paid = false) — logged but not paid yet = upcoming spend, OR
+//   • it was paid by mailed CHECK within the last ~7 days — about to draft (auto-clears after 7d).
+// It is EXCLUDED when: paid by Debit Card (drew instantly, already out of your balance), paid by
+// an old check (already cleared), or Sent to CPA (the CPA pays it, not this account).
+function upcomingMaintenance(data, matchStr) {
   const today = new Date();
   const cutoff = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
   return (data.maintenance || []).filter(m => {
-    if (!m.paid) return false;
-    if ((m.paid_by || '') !== 'Check') return false;
     if (!m.llc || m.llc.toLowerCase().indexOf(matchStr) < 0) return false;
-    const d = new Date((m.date || '') + 'T12:00:00');
-    if (isNaN(d.getTime())) return false;
-    return d >= cutoff && d <= today;
-  }).reduce((s, m) => s + (Number(m.amount) || 0), 0);
+    if ((m.paid_by || '') === 'Sent to CPA') return false;     // CPA pays it, not this account
+    if (!m.paid) return true;                                  // logged but unpaid = still owed
+    if ((m.paid_by || '') !== 'Check') return false;           // paid by debit = already drawn
+    const d = new Date((m.date || '') + 'T12:00:00');          // mailed check: reserve ~7 days
+    return !isNaN(d.getTime()) && d >= cutoff && d <= today;
+  });
 }
 function renderDistributionPlanner(data) {
   // Property tax is NOT in the planner cushion: it's an annual lump sum (Divando/Dorado paid
@@ -2379,13 +2380,15 @@ function renderDistributionPlanner(data) {
   const refDay = (mode === 'late') ? 22 : 1;  // distribution window: late ~22nd–25th, early ~1st week
   Object.keys(CASHPLAN_CONFIG).forEach(key => {
     const c = CASHPLAN_CONFIG[key];
-    const repairsDue = upcomingRepairDrafts(data, c.match);
+    const maintList = upcomingMaintenance(data, c.match);        // pending repair invoices for this LLC
+    const maintSum = maintList.reduce((s, m) => s + (Number(m.amount) || 0), 0);
     const items = planExpenseItems(key, c, planNow.getMonth());
     // Date-aware cushion: reserve only the bills that haven't drafted yet by your distribution
     // date (draft day >= refDay). Bills that already drafted are gone from the balance you typed,
-    // so reserving them would double-count and understate what's safe to distribute.
+    // so reserving them would double-count and understate what's safe to distribute. Upcoming
+    // maintenance is ALWAYS reserved (it's money still owed, not tied to a draft day).
     const reserved = items.filter(it => it.day >= refDay);
-    const cushion = reserved.reduce((s, it) => s + it.amt, 0) + repairsDue + c.buffer;
+    const cushion = reserved.reduce((s, it) => s + it.amt, 0) + maintSum + c.buffer;
     const has = bals[key] != null && bals[key] !== '';
     const bal = Number(bals[key]) || 0;
     const safe = Math.max(0, bal - cushion);
@@ -2397,8 +2400,15 @@ function renderDistributionPlanner(data) {
     reserved.forEach(it => {
       h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− ' + it.label + ' <span style="color:#4e6d8c;font-size:10px">' + monAbbr + ' ' + ordinal(it.day) + '</span></span><span class="v" style="color:#7a93ad">' + fmt(it.amt) + '</span></div>';
     });
-    if (repairsDue) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Repairs you just paid (about to draft)</span><span class="v" style="color:#7a93ad">' + fmt(repairsDue) + '</span></div>';
-    if (!reserved.length && !repairsDue) h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">All fixed bills already drafted this cycle ✓</span><span class="v"></span></div>';
+    if (maintSum) {
+      h += '<div class="llc-row"><span class="k" style="color:#e8b04b">− Upcoming maintenance <span style="color:#4e6d8c;font-size:10px">(' + maintList.length + ' invoice' + (maintList.length > 1 ? 's' : '') + ')</span></span><span class="v" style="color:#e8b04b">' + fmt(maintSum) + '</span></div>';
+      maintList.forEach(m => {
+        const who = m.property || m.sub || m.description || 'Repair';
+        const st = m.paid ? 'check mailed' : 'unpaid';
+        h += '<div class="llc-row" style="font-size:10.5px"><span class="k" style="color:#7a93ad;padding-left:10px">· ' + who + ' <span style="color:#4e6d8c">(' + st + ')</span></span><span class="v" style="color:#7a93ad">' + fmt(Number(m.amount) || 0) + '</span></div>';
+      });
+    }
+    if (!reserved.length && !maintSum) h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">All fixed bills already drafted this cycle ✓</span><span class="v"></span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Safety buffer</span><span class="v" style="color:#7a93ad">' + fmt(c.buffer) + '</span></div>';
     h += '<div class="llc-row"><span class="k">Cushion to leave</span><span class="v" style="color:#f0a500">' + fmt(cushion) + '</span></div>';
     h += '<div class="llc-row total"><span class="k">Safe to distribute</span><span class="v ' + (has ? (safe > 0 ? 'green' : 'red') : '') + '">' + (has ? fmt(safe) : '—') + '</span></div>';
@@ -2415,13 +2425,13 @@ function renderDistributionPlanner(data) {
         const tipMark = it.tip ? ' <span style="color:#5e7da0;cursor:help">ⓘ</span>' : '';
         h += '<div class="llc-row" style="font-size:11.5px"><span class="k" style="color:' + col + '"' + tipAttr + '>' + monAbbr + ' ' + ordinal(it.day) + ' · ' + it.label + tipMark + tag + '</span><span class="v" style="color:' + col + '">' + fmt(it.amt) + '</span></div>';
       });
-      if (repairsDue) h += '<div class="llc-row" style="font-size:11.5px"><span class="k" style="color:#9fb6cf">soon · Repairs you just paid</span><span class="v" style="color:#9fb6cf">' + fmt(repairsDue) + '</span></div>';
+      if (maintSum) h += '<div class="llc-row" style="font-size:11.5px"><span class="k" style="color:#e8b04b">soon · Upcoming maintenance (' + maintList.length + ')</span><span class="v" style="color:#e8b04b">' + fmt(maintSum) + '</span></div>';
       h += '</div>';
     }
     h += '</div>';
   });
   h += '</div>';
-  h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">The cushion reserves <b>only the bills that haven\'t drafted yet by your distribution date</b> — <b>After bills (~22nd–25th)</b> assumes anything before the 22nd already cleared; <b>Early (1st week)</b> reserves everything still coming this month. So a bill that already drafted (shown ✓ in the list) is NOT double-counted. The <b>📅 Coming up this cycle</b> list shows every recurring bill on its draft date (✓ = drafted as of today). Dates are bank-verified for Divando + Donald (12-mo CSV) and estimates for Yale/Dorado — tell me to correct any. The cushion also reserves repair invoices you paid by <b>Check (mailed)</b> (auto-clears 7 days after the invoice date); debit-card buys are NOT reserved (they draw instantly). Balances still save on this browser for now; shared-save comes with the next backend update.</div>';
+  h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">The cushion reserves <b>only the bills that haven\'t drafted yet by your distribution date</b> — <b>After bills (~22nd–25th)</b> assumes anything before the 22nd already cleared; <b>Early (1st week)</b> reserves everything still coming this month. So a bill that already drafted (shown ✓ in the list) is NOT double-counted. The <b>📅 Coming up this cycle</b> list shows every recurring bill on its draft date (✓ = drafted as of today). Dates are bank-verified for Divando + Donald (12-mo CSV) and estimates for Yale/Dorado — tell me to correct any. It also reserves <b>upcoming maintenance</b> — every repair invoice in your Maintenance Log that is still owed from this account (logged but <b>unpaid</b>, or paid by <b>mailed check</b> in the last ~7 days). Debit-card buys (already drawn) and Sent-to-CPA invoices are NOT reserved. So log a repair the moment you know about it and the planner holds the cash for it before you distribute. Balances still save on this browser for now; shared-save comes with the next backend update.</div>';
   h += '</div>';
   return h;
 }
