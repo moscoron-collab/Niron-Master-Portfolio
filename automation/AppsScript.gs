@@ -1164,6 +1164,9 @@ function doPost(e) {
     if (body.action === 'delete_vacancy') {
       return deleteVacancyEntry(body);
     }
+    if (body.action === 'add_sub') {
+      return addSubEntry(body);
+    }
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({error: 'Parse error: ' + err.message}))
       .setMimeType(ContentService.MimeType.JSON);
@@ -1740,7 +1743,7 @@ function logActivity(actor, action, details) {
 // Override: getDashboardJson with properties + new maintenance structure
 function getDashboardJson() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], vacancy: [], activity: [], settings: {} };
+  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], vacancy: [], subs: [], activity: [], settings: {} };
 
   // Track the most-recent real data-change timestamp (Activity Log + History "Logged At" +
   // Property Detail "Updated"), so the dashboard's "Last Updated" reflects when the data
@@ -1901,6 +1904,16 @@ function getDashboardJson() {
         vacant_from: vIso(r[2]), rerented_on: vIso(r[3]), note: r[4] || '',
         entered_by: r[5] || '', updated: r[6] instanceof Date ? r[6].toISOString() : (r[6] || '')
       });
+    });
+  }
+
+  // ----- Subs / Vendors (shared maintenance-form dropdown list) -----
+  // Column A = the sub/vendor name. Added via the dashboard "+ Add new sub..." so the
+  // list is shared across every device/user (not per-browser). Data from row 5.
+  var subsSh = ensureSubsTab(ss);
+  if (subsSh && subsSh.getLastRow() >= 5) {
+    subsSh.getRange(5, 1, subsSh.getLastRow() - 4, 1).getValues().forEach(function(r) {
+      if (r[0]) data.subs.push(String(r[0]).trim());
     });
   }
 
@@ -2187,4 +2200,43 @@ function deleteVacancyEntry(data) {
   sh.deleteRow(row);
   logActivity(data.actor, 'Deleted vacancy flag', info[0] || '');
   return ContentService.createTextOutput(JSON.stringify({ok:true, deleted:row})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ----- Subs / Vendors (shared maintenance-form dropdown) -----
+// Auto-created + seeded with the base vendor list the first time it's read (like the
+// Vacancy / Property Tax tabs). Title row 1, header row 4, data from row 5.
+// Columns A-C: Sub / Vendor, Added By, Updated At.
+function ensureSubsTab(ss) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('Subs');
+  if (sh) return sh;
+  sh = ss.insertSheet('Subs');
+  sh.getRange(1, 1).setValue('SUBS / VENDORS — shared dropdown list for the maintenance form (add via the dashboard "+ Add new sub...")').setFontWeight('bold');
+  var headers = ['Sub / Vendor', 'Added By', 'Updated At'];
+  sh.getRange(4, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+  var seed = ['Rigo', 'Samuel', 'Rolando', 'Tamir', 'Rudy', 'Rosalio', 'Melchor'];
+  var rows = seed.map(function(n) { return [n, 'System', new Date()]; });
+  sh.getRange(5, 1, rows.length, 3).setValues(rows);
+  sh.setFrozenRows(4);
+  return sh;
+}
+
+function addSubEntry(data) {
+  var sh = ensureSubsTab(SpreadsheetApp.getActiveSpreadsheet());
+  var name = (data.sub || '').toString().trim();
+  if (!name) return ContentService.createTextOutput(JSON.stringify({error:'Sub name is required'})).setMimeType(ContentService.MimeType.JSON);
+  // De-dupe (case-insensitive) so re-adding an existing vendor is a no-op, not a dup row.
+  var last = sh.getLastRow();
+  if (last >= 5) {
+    var existing = sh.getRange(5, 1, last - 4, 1).getValues();
+    for (var i = 0; i < existing.length; i++) {
+      if (String(existing[i][0]).trim().toLowerCase() === name.toLowerCase()) {
+        return ContentService.createTextOutput(JSON.stringify({ok:true, duplicate:true})).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+  }
+  var nextRow = Math.max(5, last + 1);
+  sh.getRange(nextRow, 1, 1, 3).setValues([[name, data.actor || 'Dashboard', new Date()]]);
+  logActivity(data.actor, 'Added sub/vendor', name);
+  return ContentService.createTextOutput(JSON.stringify({ok:true, row:nextRow})).setMimeType(ContentService.MimeType.JSON);
 }
