@@ -689,7 +689,7 @@ in `index.html`, rendered after the True Cash section. Per LLC: you **type the c
 → it subtracts a **cushion** (bills still coming) → shows **Safe to distribute** + **Each partner**
 (÷2; Dorado **÷3** with Simon).
 - **Cushion = insurance + accountant + utilities + pending property tax (from the Property Tax tab)
-  + safety buffer**, and in **"early" mode also + mortgage + SBA**. A **timing toggle**
+  + upcoming repair drafts + safety buffer**, and in **"early" mode also + mortgage + SBA**. A **timing toggle**
   (`CASHPLAN_MODE`, localStorage `niron_cashplan_mode`, default **`late`**) switches it:
   - **`late` (~22nd–25th, recommended):** mortgage/SBA already cleared mid-month → NOT reserved → small cushion.
   - **`early` (1st week):** the upcoming mortgage hasn't cleared and the next rent deposit (~20th) lands
@@ -708,6 +708,20 @@ in `index.html`, rendered after the True Cash section. Per LLC: you **type the c
   Donald ~$112, Yale ~$105, Dorado ~$454 (Xcel+DenverWater+Compost). Dorado pays Divando **$138/mo** ins comp.
 - Balances persist in `localStorage 'niron_cash_balances'`; handlers `setCashBalance` / `setCashplanMode`
   call `renderAll()`. Self-audit unaffected (no `#kpi-*` IDs).
+- **🔧 Upcoming repair drafts reserve (Jun 16 2026):** the cushion now also holds back repair invoices
+  the user **marked Paid** so the planner doesn't tell them to distribute money that's about to leave for
+  a mailed check. `upcomingRepairDrafts(data, matchStr)` sums `data.maintenance` rows where `m.paid` is
+  true, `m.paid_by` does NOT contain "cpa" (CPA-paid invoices don't draft from the LLC account), the LLC
+  matches (`m.llc.toLowerCase().includes(c.match)`), and the invoice **`m.date` is within the last 7
+  days** — so it **auto-clears ~7 days after the invoice date** (user picked auto-clear, NO manual
+  "cleared" step). Shown as a "− Repairs you just paid (about to draft)" cushion line (only when >0) and
+  added into `cushion`. **Frontend-only, live on merge, no redeploy.** ⚠️ **Known limitation:** it keys
+  off the **invoice date**, NOT a separate "marked-paid" timestamp (the Maintenance schema has no
+  paid-date column). So it's accurate when the user enters/marks-paid the invoice around when they mail
+  the check (their normal flow: upload + mark Paid together). For exact "7 days after you click Paid"
+  timing, add a Paid-Date column (Maintenance Log col M) written by `addMaintenanceEntry` /
+  `set_maintenance_paid` + read in `getDashboardJson` → needs an Apps Script redeploy. Offered as a
+  follow-up; not built yet.
 - **Per-LLC "updated" stamp (Jun 14 2026):** `setCashBalance` also writes `localStorage
   'niron_cash_balances_ts'` (`{key: ISO}`); a small `updated <Mon D, YYYY, h:mm AM/PM ET>` line shows
   under each balance box (`fmtDateTime`). **Always Eastern time** (`timeZone:'America/New_York'`,
