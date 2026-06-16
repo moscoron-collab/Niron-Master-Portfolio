@@ -688,22 +688,31 @@ AppFolio net). This one is **frontend-only / localStorage v1** (no redeploy): `r
 in `index.html`, rendered after the True Cash section. Per LLC: you **type the current bank balance**
 → it subtracts a **cushion** (bills still coming) → shows **Safe to distribute** + **Each partner**
 (÷2; Dorado **÷3** with Simon).
-- **Cushion = insurance + utilities + software (Divando ACE) + upcoming repair drafts + safety buffer**,
-  and in **"early" mode also + mortgage + SBA**. **Property tax is NOT in the cushion** (removed Jun 16 2026,
-  user): it's an annual lump (Divando/Dorado paid ~by May; Donald/Yale escrowed), tracked on the Property
-  Tax tab + KPI tile — reserving it every month was wrong. The `pendingTax`/`taxByLlc` helper + the
-  "− Property tax pending" / "when due · Property tax" lines were deleted from `renderDistributionPlanner`.
-  A **timing toggle**
-  (`CASHPLAN_MODE`, localStorage `niron_cashplan_mode`, default **`late`**) switches it:
-  - **`late` (~22nd–25th, recommended):** mortgage/SBA already cleared mid-month → NOT reserved → small cushion.
-  - **`early` (1st week):** the upcoming mortgage hasn't cleared and the next rent deposit (~20th) lands
-    AFTER it → the cushion MUST hold the mortgage+SBA (big). This is the user's current habit and is
-    **what caused the Yale overdrafts** (4/8, 4/15, 5/13 fees + Divando→Yale cover transfers).
+- **DATE-AWARE cushion (rebuilt Jun 16 2026, user choice "only reserve what's still coming").** The cushion
+  reserves **only the recurring bills whose draft day ≥ `refDay`** (where `refDay` = 22 in `late` mode, 1 in
+  `early` mode) **+ upcoming repair drafts (mailed checks) + safety buffer**. A bill that already drafted by
+  your distribution date is gone from the typed balance, so reserving it would double-count (the same bug
+  class as the debit-card / mortgage-on-wrong-day issues). `renderDistributionPlanner` builds
+  `items = planExpenseItems(key, c, monthIdx)`, then `reserved = items.filter(it => it.day >= refDay)` and
+  `cushion = sum(reserved) + repairsDue + buffer`. The breakdown lists each reserved bill with its date; if
+  none are pending it shows "All fixed bills already drafted this cycle ✓". **Property tax is NOT in the
+  cushion** (removed Jun 16 2026): annual lump (Divando/Dorado ~by May; Donald/Yale escrowed), tracked on the
+  Property Tax tab + KPI tile. The **timing toggle** (`CASHPLAN_MODE`, localStorage `niron_cashplan_mode`,
+  default **`late`**) sets `refDay`:
+  - **`late` (~22nd–25th, recommended):** anything before the 22nd already cleared → not reserved → small
+    cushion. For **Donald** (mortgage/SBA/insurance ALL draft in the first ~4 days) this means the late
+    cushion = just the safety buffer (+ repair checks).
+  - **`early` (1st week):** `refDay`=1 → everything still coming this month is reserved (incl. mortgage+SBA).
+    This is the user's current habit and is **what caused the Yale overdrafts** (4/8, 4/15, 5/13 fees).
 - **Per-LLC numbers** live in **`CASHPLAN_CONFIG`** (bank-verified Mar–May 2026, editable):
   - Divando (**REBUILT from 12-mo CSV, user-reviewed Jun 16 2026**): mort `12199.86` (~15th) · SBA `2334` (1st) ·
     ins `2909.98` (~29th) · **accountant `0`** · util `685` (~15th, lumped+tooltip) · **software `288.98`** (ACE Cloud
     Hosting, ~28th via Amex) · buffer `2000`
-  - Donald: mort `13708` · SBA `444` · ins `1210.84` · acct `0` · util `112` · software `0` · buffer `1500`
+  - Donald (**REBUILT from 12-mo CSV, user-reviewed Jun 16 2026**): mort `13708` (CBRE, **1st** — was wrongly
+    16th) · SBA `444` (1st) · ins `1210.84` (Westfield, **~4th** — was wrongly 28th; switched from State Farm
+    ~Oct 2025) · acct `0` · util `336` **quarterly** (`utilMonths [0,3,6,9]` = Jan/Apr/Jul/Oct, Denver Compost,
+    ~3rd) · software `0` · buffer `1500`. **All fixed bills draft in the first ~4 days** → in `late` mode the
+    cushion is just the buffer. No Amex/software on Donald.
   - Yale: mort `7279.08` · SBA `225` · ins `1037.55` · acct `0` · util `105` · buffer `1500`
   - Dorado: **mort `0` (mortgage-FREE)** · SBA `0` · ins `453.31` · **acct `0`** · util `454` · buffer `1000`, **÷3**
 - **⚠️ Accountant (Jeff Bergman) is NOT a recurring monthly cushion item (user correction, Jun 16 2026).**

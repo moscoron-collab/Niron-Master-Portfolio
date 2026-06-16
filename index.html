@@ -1819,8 +1819,8 @@ function effectiveIns(llc, sheetIns) {
 // "after bills paid" mode (they clear mid-month, before you distribute ~22nd–25th).
 // Distributions: Divando/Yale/Donald split ÷2 (Ron/Nir); Dorado ÷3 (Ron/Nir/Simon).
 const CASHPLAN_CONFIG = {
-  divando: { label: 'Divando', match: 'divando', mortgage: 12199.86, sba: 2334, insurance: 2909.98, accountant: 0, utilities: 685, software: 288.98, buffer: 2000, split: 2 },
-  donald:  { label: 'Donald',  match: 'donald',  mortgage: 13708,    sba: 444,  insurance: 1210.84, accountant: 0, utilities: 112, software: 0, buffer: 1500, split: 2 },
+  divando: { label: 'Divando', match: 'divando', mortgage: 12199.86, sba: 2334, insurance: 2909.98, accountant: 0, utilities: 685, software: 288.98, buffer: 2000, split: 2, utilTip: 'Google + Xcel + Aurora Water + Denver Compost — varies every month, ~$685 total' },
+  donald:  { label: 'Donald',  match: 'donald',  mortgage: 13708,    sba: 444,  insurance: 1210.84, accountant: 0, utilities: 336, software: 0, buffer: 1500, split: 2, utilMonths: [0, 3, 6, 9], utilTip: 'Denver Compost — billed ~quarterly (Jan/Apr/Jul/Oct), $336' },
   yale:    { label: 'Yale',    match: 'yale',    mortgage: 7279.08,  sba: 225,  insurance: 1037.55, accountant: 0, utilities: 105, software: 0, buffer: 1500, split: 2 },
   dorado:  { label: 'Dorado',  match: 'dorado',  mortgage: 0,        sba: 0,    insurance: 453.31,  accountant: 0, utilities: 454, software: 0, buffer: 1000, split: 3 }
 };
@@ -1828,33 +1828,38 @@ const CASHPLAN_CONFIG = {
 // one-time / occasional charge (user confirmed Jun 16 2026 the $3,255 was a one-time payment).
 // So it is NOT baked into the recurring cushion. If a known accountant bill is coming in a
 // given month, enter it as a maintenance invoice (Paid By = Check) so it's reserved that month.
-// DIVANDO REBUILT from 12 months of bank CSV (Jun 2025–May 2026, user-reviewed Jun 16 2026):
-// utilities lumped ~$685/mo (Google+Xcel+Aurora Water+Denver Compost, varies); software =
-// the ONE recurring Amex charge "ACE CLOUD HOSTING" $288.98/mo (user said ignore the rest of
-// Amex); mortgage drafts ~15th (6 loan transfers), SBA 1st, State Farm insurance ~29th.
-// Expected DRAFT day-of-month for each recurring cost, per LLC. Bank-verified for Divando
-// (12-month CSV): SBA 1st, mortgage ~15th, insurance ~29th, utilities mid-month, software (ACE)
-// ~28th via the Amex autopay. Other LLCs' utilities/insurance days are ESTIMATES — tell me to
-// correct. Amounts come from CASHPLAN_CONFIG (single source of truth).
+// DIVANDO + DONALD REBUILT from 12 months of bank CSV (Jun 2025–May 2026, user-reviewed):
+//   Divando: utilities lumped ~$685/mo; software = ACE CLOUD HOSTING $288.98/mo (~28th via Amex);
+//     mortgage ~15th (6 loan transfers), SBA 1st, State Farm insurance ~29th.
+//   Donald: CBRE mortgage $13,708 + SBA $444 + Westfield insurance $1,210.84 ALL draft in the
+//     first ~4 days (mortgage/SBA 1st, insurance ~4th); utilities = Denver Compost $336 billed
+//     ~quarterly (utilMonths Jan/Apr/Jul/Oct, 0-indexed). No software/Amex on Donald.
+// `utilMonths` (0-indexed) = the months a seasonal/quarterly utility is actually billed; absent
+// => billed every month. `utilTip` = hover text for the Utilities line.
 const CASHPLAN_DAYS = {
   divando: { sba: 1, mortgage: 15, utilities: 15, software: 28, insurance: 29 },
-  donald:  { sba: 1, mortgage: 16, utilities: 20, insurance: 28 },
+  donald:  { sba: 1, mortgage: 1,  utilities: 3,  insurance: 4 },
   yale:    { sba: 1, mortgage: 6,  utilities: 20, insurance: 28 },
   dorado:  { utilities: 20, insurance: 7 }
 };
-// Build the dated upcoming-expense list for one LLC (sorted by day-of-month), pulling
-// amounts from CASHPLAN_CONFIG and days from CASHPLAN_DAYS. Only includes costs with a
-// known day + a non-zero amount. `tip` adds a hover tooltip (e.g. what's inside Utilities).
-function planExpenseItems(key, c) {
+// Build the dated upcoming-expense list for one LLC (sorted by day-of-month), pulling amounts
+// from CASHPLAN_CONFIG and days from CASHPLAN_DAYS. Only includes costs with a known day + a
+// non-zero amount. A seasonal utility (utilMonths) only shows in its billing months. monthIdx
+// is 0-indexed (Jan=0). `tip` adds a hover tooltip (e.g. what's inside Utilities).
+function planExpenseItems(key, c, monthIdx) {
   const days = CASHPLAN_DAYS[key] || {};
   const defs = [
     { f: 'sba', label: 'SBA loans' },
     { f: 'mortgage', label: 'Mortgage' },
-    { f: 'utilities', label: 'Utilities', tip: 'Google + Xcel + Aurora Water + Denver Compost — varies every month, ~$685 total' },
+    { f: 'utilities', label: 'Utilities' },
     { f: 'software', label: 'ACE Cloud Hosting' },
     { f: 'insurance', label: 'Insurance' }
   ];
-  return defs.filter(d => days[d.f] && c[d.f]).map(d => ({ day: days[d.f], label: d.label, amt: c[d.f], tip: d.tip }))
+  return defs.filter(d => {
+    if (!days[d.f] || !c[d.f]) return false;
+    if (d.f === 'utilities' && Array.isArray(c.utilMonths) && (monthIdx == null || c.utilMonths.indexOf(monthIdx) < 0)) return false;
+    return true;
+  }).map(d => ({ day: days[d.f], label: d.label, amt: c[d.f], tip: (d.f === 'utilities' ? c.utilTip : undefined) }))
     .sort((a, b) => a.day - b.day);
 }
 function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
@@ -2371,12 +2376,16 @@ function renderDistributionPlanner(data) {
     + '<button class="' + (mode === 'early' ? 'primary' : 'secondary') + '" style="padding:5px 10px;font-size:12px" onclick="setCashplanMode(\'early\')">Early (1st week)</button>'
     + '<button class="secondary" style="padding:5px 10px;font-size:12px;margin-left:16px" onclick="markBalancesChecked()" title="Stamp today\'s date on all entered balances without changing the amounts">✓ Mark balances checked today</button></div>';
   h += '<div class="llc-grid">';
+  const refDay = (mode === 'late') ? 22 : 1;  // distribution window: late ~22nd–25th, early ~1st week
   Object.keys(CASHPLAN_CONFIG).forEach(key => {
     const c = CASHPLAN_CONFIG[key];
     const repairsDue = upcomingRepairDrafts(data, c.match);
-    const software = c.software || 0;
-    const lateBills = c.insurance + c.accountant + c.utilities;
-    const cushion = lateBills + software + (mode === 'early' ? (c.mortgage + c.sba) : 0) + repairsDue + c.buffer;
+    const items = planExpenseItems(key, c, planNow.getMonth());
+    // Date-aware cushion: reserve only the bills that haven't drafted yet by your distribution
+    // date (draft day >= refDay). Bills that already drafted are gone from the balance you typed,
+    // so reserving them would double-count and understate what's safe to distribute.
+    const reserved = items.filter(it => it.day >= refDay);
+    const cushion = reserved.reduce((s, it) => s + it.amt, 0) + repairsDue + c.buffer;
     const has = bals[key] != null && bals[key] !== '';
     const bal = Number(bals[key]) || 0;
     const safe = Math.max(0, bal - cushion);
@@ -2384,17 +2393,18 @@ function renderDistributionPlanner(data) {
     h += '<div class="llc-card"><h3>' + c.label + (c.split === 3 ? ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(÷3 w/ Simon)</span>' : '') + '</h3>';
     h += '<div class="llc-row"><span class="k">Bank balance now</span><span class="v" style="display:flex;align-items:center;justify-content:flex-end;gap:4px"><span style="color:#7e9cbf;font-size:13px">$</span><input type="number" value="' + (has ? bals[key] : '') + '" placeholder="enter" onchange="setCashBalance(\'' + key + '\', this.value)" style="width:112px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:6px;color:#fff;padding:4px 8px;font-size:13px"></span></div>';
     if (has) h += '<div style="text-align:right;color:#4e6d8c;font-size:10px;margin-top:-4px;margin-bottom:6px">' + (cashTs[key] ? 'updated ' + fmtDateTime(cashTs[key]) : 're-enter to set the date') + '</div>';
-    if (mode === 'early' && c.mortgage) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Mortgage + SBA</span><span class="v" style="color:#7a93ad">' + fmt(c.mortgage + c.sba) + '</span></div>';
-    h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Insurance + utilities</span><span class="v" style="color:#7a93ad">' + fmt(lateBills) + '</span></div>';
-    if (software) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Software (ACE Cloud Hosting)</span><span class="v" style="color:#7a93ad">' + fmt(software) + '</span></div>';
+    // Cushion breakdown — itemized, only the bills still to draft by your distribution date.
+    reserved.forEach(it => {
+      h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− ' + it.label + ' <span style="color:#4e6d8c;font-size:10px">' + monAbbr + ' ' + ordinal(it.day) + '</span></span><span class="v" style="color:#7a93ad">' + fmt(it.amt) + '</span></div>';
+    });
     if (repairsDue) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Repairs you just paid (about to draft)</span><span class="v" style="color:#7a93ad">' + fmt(repairsDue) + '</span></div>';
+    if (!reserved.length && !repairsDue) h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">All fixed bills already drafted this cycle ✓</span><span class="v"></span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Safety buffer</span><span class="v" style="color:#7a93ad">' + fmt(c.buffer) + '</span></div>';
     h += '<div class="llc-row"><span class="k">Cushion to leave</span><span class="v" style="color:#f0a500">' + fmt(cushion) + '</span></div>';
     h += '<div class="llc-row total"><span class="k">Safe to distribute</span><span class="v ' + (has ? (safe > 0 ? 'green' : 'red') : '') + '">' + (has ? fmt(safe) : '—') + '</span></div>';
     if (has) h += '<div class="llc-row"><span class="k" style="color:#00c97a">Each partner</span><span class="v" style="color:#00c97a">' + fmt(each) + '</span></div>';
-    // Dated "upcoming expenses" list so you can SEE what's coming and when (not just the
-    // lumped cushion). Items already drafted earlier this month are dimmed with ✓.
-    const items = planExpenseItems(key, c);
+    // Dated "Coming up this cycle" list — shows ALL recurring bills on their dates (factual,
+    // dimmed ✓ once drafted as of today), so you see everything even if it's not reserved.
     if (items.length) {
       h += '<div style="margin-top:10px;border-top:1px solid #16263c;padding-top:8px"><div style="color:#8aa6c4;font-size:11px;font-weight:600;margin-bottom:4px">📅 Coming up this cycle</div>';
       items.forEach(it => {
@@ -2411,7 +2421,7 @@ function renderDistributionPlanner(data) {
     h += '</div>';
   });
   h += '</div>';
-  h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">Cushion figures are bank-verified estimates (Mar–May 2026) — tell me to adjust any. The <b>📅 Coming up this cycle</b> list shows each expense on its expected draft date (✓ = already drafted this month); dates are bank-verified where known and best-estimates otherwise (SBA 1st, Yale mortgage ~6th, Dorado insurance ~7th, mortgages mid-month, Divando insurance end-of-month) — tell me to correct any. The cushion also reserves repair invoices you paid by <b>Check (mailed)</b> — they draft within ~a week, then auto-clear 7 days after the invoice date. Debit-card buys are NOT reserved (they draw instantly, already out of your balance). Balances still save on this browser for now; shared-save comes with the next backend update.</div>';
+  h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">The cushion reserves <b>only the bills that haven\'t drafted yet by your distribution date</b> — <b>After bills (~22nd–25th)</b> assumes anything before the 22nd already cleared; <b>Early (1st week)</b> reserves everything still coming this month. So a bill that already drafted (shown ✓ in the list) is NOT double-counted. The <b>📅 Coming up this cycle</b> list shows every recurring bill on its draft date (✓ = drafted as of today). Dates are bank-verified for Divando + Donald (12-mo CSV) and estimates for Yale/Dorado — tell me to correct any. The cushion also reserves repair invoices you paid by <b>Check (mailed)</b> (auto-clears 7 days after the invoice date); debit-card buys are NOT reserved (they draw instantly). Balances still save on this browser for now; shared-save comes with the next backend update.</div>';
   h += '</div>';
   return h;
 }
