@@ -379,7 +379,7 @@
     <label>Description (optional)</label><textarea id="maint-desc" placeholder="e.g. Fixed leaky bathroom faucet"></textarea>
     <label>Amount ($)</label><input type="number" id="maint-amount" step="0.01" placeholder="0.00">
     <label>Paid By</label>
-    <select id="maint-paidby"><option value="">-- choose --</option><option value="LLC Debit Card">LLC Debit Card (I paid it)</option><option value="Sent to CPA">Sent to CPA (CPA pays it)</option></select>
+    <select id="maint-paidby"><option value="">-- choose --</option><option value="Debit Card">Debit Card (instant draw)</option><option value="Check">Check (mailed — drafts ~1 wk)</option><option value="Sent to CPA">Sent to CPA (CPA pays it)</option></select>
     <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:normal;font-size:13px;color:#ccd9ea;margin-top:12px;font-weight:400"><input type="checkbox" id="maint-paid" style="width:auto;margin:0"> Paid <span style="color:#4e6d8c;font-size:11px">(check once the CPA has actually paid it)</span></label>
     <label>Notes (optional)</label><textarea id="maint-notes" placeholder="e.g. paid by Zelle, or split with tenant"></textarea>
     <label>Invoice file (optional)</label><input type="file" id="maint-file" accept="image/*,application/pdf,.pdf">
@@ -563,7 +563,7 @@
         <li style="margin-bottom:16px">
           <b>Enter repair / maintenance invoices</b> — click the <b>🔧</b> button (bottom-right)<br>
           For each invoice: date, property (the LLC auto-fills), category, amount, description. Set
-          <b>“Paid By”</b> (LLC Debit Card or Sent to CPA), tick <b>Paid</b> if it's already paid, and attach the
+          <b>“Paid By”</b> (Debit Card = instant draw · Check = mailed, drafts ~1 wk · Sent to CPA), tick <b>Paid</b> if it's already paid, and attach the
           invoice file if you have it. Anything marked <b>“Sent to CPA / unpaid”</b> shows up in the
           <b>🧾 CPA Invoices</b> list for the accountant.
         </li>
@@ -2189,7 +2189,8 @@ function renderAll() {
           : '';
         const payBadge = m.paid_by === 'Sent to CPA'
           ? '<span style="color:' + (m.paid ? '#00c97a' : '#f0a500') + ';font-size:11px">🧾 CPA · ' + (m.paid ? 'paid' : 'unpaid') + '</span>'
-          : (m.paid_by === 'LLC Debit Card' ? '<span style="color:#7e9cbf;font-size:11px">💳 Debit</span>' : '<span style="color:#4e6d8c">—</span>');
+          : (m.paid_by === 'Check' ? '<span style="color:#7e9cbf;font-size:11px">🧾 Check</span>'
+          : ((m.paid_by === 'Debit Card' || m.paid_by === 'LLC Debit Card') ? '<span style="color:#7e9cbf;font-size:11px">💳 Debit</span>' : '<span style="color:#4e6d8c">—</span>'));
         const fileLink = m.invoice_url ? ' <a href="' + m.invoice_url + '" target="_blank" title="View invoice file" style="text-decoration:none">📎</a>' : '';
         html += '<tr><td style="white-space:nowrap">' + dateLabel(m.date) + '</td><td>' + m.llc + '</td><td style="font-size:12px">' + (m.property || '—') + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td><td style="white-space:nowrap">' + payBadge + fileLink + '</td><td style="white-space:nowrap">' + actions + '</td></tr>';
       });
@@ -2325,18 +2326,18 @@ function bankAllMonths() { const s = new Set(); Object.values(BANK_ACTUALS).forE
 function bankSetMonth(v) { BANK_MONTH = v; renderAll(); }
 
 // ===== Distribution Planner — cushion + safe-to-distribute (per LLC) =====
-// Repairs you've MARKED PAID that are about to draft from the LLC's operating account.
-// You said: marking an invoice Paid means the check is mailed and it drafts within ~a week.
-// So we hold its amount in the cushion, then auto-stop reserving it ~7 days after the
-// invoice date (assumed cleared). Excludes "Sent to CPA" invoices — the CPA pays those,
-// they don't draft from this LLC's account. Keys off each invoice's date (your normal
-// flow is to upload + mark paid around when you mail the check).
+// Repairs you paid by MAILED CHECK that are about to draft from the LLC's operating account.
+// A mailed check drafts within ~a week, so we hold its amount in the cushion, then auto-stop
+// reserving it ~7 days after the invoice date (assumed cleared). We reserve ONLY Paid By =
+// "Check" invoices: a "Debit Card" buy (Home Depot etc.) draws INSTANTLY — it's already gone
+// from the balance you type, so reserving it would double-count; "Sent to CPA" is paid by the
+// CPA, not this account. Keys off each invoice's date (your flow: mark Paid when you mail it).
 function upcomingRepairDrafts(data, matchStr) {
   const today = new Date();
   const cutoff = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
   return (data.maintenance || []).filter(m => {
     if (!m.paid) return false;
-    if ((m.paid_by || '').toLowerCase().indexOf('cpa') >= 0) return false;
+    if ((m.paid_by || '') !== 'Check') return false;
     if (!m.llc || m.llc.toLowerCase().indexOf(matchStr) < 0) return false;
     const d = new Date((m.date || '') + 'T12:00:00');
     if (isNaN(d.getTime())) return false;
@@ -2399,7 +2400,7 @@ function renderDistributionPlanner(data) {
     h += '</div>';
   });
   h += '</div>';
-  h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">Cushion figures are bank-verified estimates (Mar–May 2026) — tell me to adjust any. The <b>📅 Coming up this cycle</b> list shows each expense on its expected draft date (✓ = already drafted this month); dates are bank-verified where known and best-estimates otherwise (SBA 1st, Yale mortgage ~6th, Dorado insurance ~7th, mortgages mid-month, Divando insurance end-of-month) — tell me to correct any. The cushion also reserves any <b>repair invoice you marked Paid</b> (drafts within ~a week, auto-clears 7 days after the invoice date). Balances still save on this browser for now; shared-save comes with the next backend update.</div>';
+  h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">Cushion figures are bank-verified estimates (Mar–May 2026) — tell me to adjust any. The <b>📅 Coming up this cycle</b> list shows each expense on its expected draft date (✓ = already drafted this month); dates are bank-verified where known and best-estimates otherwise (SBA 1st, Yale mortgage ~6th, Dorado insurance ~7th, mortgages mid-month, Divando insurance end-of-month) — tell me to correct any. The cushion also reserves repair invoices you paid by <b>Check (mailed)</b> — they draft within ~a week, then auto-clear 7 days after the invoice date. Debit-card buys are NOT reserved (they draw instantly, already out of your balance). Balances still save on this browser for now; shared-save comes with the next backend update.</div>';
   h += '</div>';
   return h;
 }

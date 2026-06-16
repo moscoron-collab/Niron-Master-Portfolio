@@ -719,13 +719,13 @@ in `index.html`, rendered after the True Cash section. Per LLC: you **type the c
   State Farm ~29th/end-of-month, other mortgages ~16th mid-month) and **ESTIMATES otherwise** (utilities
   ~20th, accountant ~15th, Yale/Donald insurance ~28th) — footnote says "tell me to correct any." If the
   user gives exact draft dates, update `CASHPLAN_DAYS`. Frontend-only, live on merge.
-- **🔧 Upcoming repair drafts reserve (Jun 16 2026):** the cushion now also holds back repair invoices
-  the user **marked Paid** so the planner doesn't tell them to distribute money that's about to leave for
-  a mailed check. `upcomingRepairDrafts(data, matchStr)` sums `data.maintenance` rows where `m.paid` is
-  true, `m.paid_by` does NOT contain "cpa" (CPA-paid invoices don't draft from the LLC account), the LLC
-  matches (`m.llc.toLowerCase().includes(c.match)`), and the invoice **`m.date` is within the last 7
-  days** — so it **auto-clears ~7 days after the invoice date** (user picked auto-clear, NO manual
-  "cleared" step). Shown as a "− Repairs you just paid (about to draft)" cushion line (only when >0) and
+- **🔧 Upcoming repair drafts reserve (Jun 16 2026):** the cushion holds back repair invoices the user
+  paid by **mailed Check** so the planner doesn't tell them to distribute money that's about to leave for
+  that check. `upcomingRepairDrafts(data, matchStr)` sums `data.maintenance` rows where `m.paid` is true,
+  **`m.paid_by === 'Check'`** (Debit-card buys draw INSTANTLY → already out of the typed balance, reserving
+  them would double-count; CPA-paid don't draft from the LLC account), the LLC matches
+  (`m.llc.toLowerCase().includes(c.match)`), and the invoice **`m.date` is within the last 7 days** — so it
+  **auto-clears ~7 days after the invoice date** (user picked auto-clear, NO manual "cleared" step). Shown as a "− Repairs you just paid (about to draft)" cushion line (only when >0) and
   added into `cushion`. **Frontend-only, live on merge, no redeploy.** ⚠️ **Known limitation:** it keys
   off the **invoice date**, NOT a separate "marked-paid" timestamp (the Maintenance schema has no
   paid-date column). So it's accurate when the user enters/marks-paid the invoice around when they mail
@@ -1243,8 +1243,14 @@ cols and emits `paid_by, paid, notes, invoice_url`; `addMaintenanceEntry` /
 `updateMaintenanceEntry` write all 12.
 
 ### Form (Add/Edit Maintenance modal)
-- **Paid By** dropdown: `LLC Debit Card` / `Sent to CPA`. **Defaults to blank "-- choose --"**
-  (user picked option A — forces a conscious pick so an invoice can't silently skip the CPA list).
+- **Paid By** dropdown (Jun 16 2026, reworked): `Debit Card` (instant draw — Home Depot etc.) /
+  `Check` (mailed, drafts ~1 wk) / `Sent to CPA`. **Defaults to blank "-- choose --"** (forces a
+  conscious pick so an invoice can't silently skip the CPA list). **Why the split:** the planner's
+  repair reserve (`upcomingRepairDrafts`) reserves **ONLY `Check`** invoices — a debit-card buy draws
+  instantly so it's already gone from the typed bank balance (reserving it would double-count), and
+  CPA-paid invoices don't draft from the LLC account. Legacy rows with the old value `LLC Debit Card`
+  still render the 💳 Debit badge (treated as instant, not reserved). Table badge: `🧾 Check` /
+  `💳 Debit` / `🧾 CPA · paid|unpaid`.
 - **Paid** checkbox (defaults unpaid) — check it once the CPA actually pays.
 - **Notes** free-text.
 - **Invoice file** upload (image/PDF). Frontend reads it to base64 (`readFileAsPayload`) and
