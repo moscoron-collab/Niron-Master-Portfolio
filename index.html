@@ -2301,6 +2301,24 @@ function bankAllMonths() { const s = new Set(); Object.values(BANK_ACTUALS).forE
 function bankSetMonth(v) { BANK_MONTH = v; renderAll(); }
 
 // ===== Distribution Planner — cushion + safe-to-distribute (per LLC) =====
+// Repairs you've MARKED PAID that are about to draft from the LLC's operating account.
+// You said: marking an invoice Paid means the check is mailed and it drafts within ~a week.
+// So we hold its amount in the cushion, then auto-stop reserving it ~7 days after the
+// invoice date (assumed cleared). Excludes "Sent to CPA" invoices — the CPA pays those,
+// they don't draft from this LLC's account. Keys off each invoice's date (your normal
+// flow is to upload + mark paid around when you mail the check).
+function upcomingRepairDrafts(data, matchStr) {
+  const today = new Date();
+  const cutoff = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  return (data.maintenance || []).filter(m => {
+    if (!m.paid) return false;
+    if ((m.paid_by || '').toLowerCase().indexOf('cpa') >= 0) return false;
+    if (!m.llc || m.llc.toLowerCase().indexOf(matchStr) < 0) return false;
+    const d = new Date((m.date || '') + 'T12:00:00');
+    if (isNaN(d.getTime())) return false;
+    return d >= cutoff && d <= today;
+  }).reduce((s, m) => s + (Number(m.amount) || 0), 0);
+}
 function renderDistributionPlanner(data) {
   const taxByLlc = {};
   (data.property_tax || []).forEach(r => { const k = (r.llc || '').toLowerCase(); taxByLlc[k] = (taxByLlc[k] || 0) + taxOutstanding(r); });
@@ -2318,8 +2336,9 @@ function renderDistributionPlanner(data) {
   Object.keys(CASHPLAN_CONFIG).forEach(key => {
     const c = CASHPLAN_CONFIG[key];
     const tax = pendingTax(c.match);
+    const repairsDue = upcomingRepairDrafts(data, c.match);
     const lateBills = c.insurance + c.accountant + c.utilities;
-    const cushion = lateBills + (mode === 'early' ? (c.mortgage + c.sba) : 0) + tax + c.buffer;
+    const cushion = lateBills + (mode === 'early' ? (c.mortgage + c.sba) : 0) + tax + repairsDue + c.buffer;
     const has = bals[key] != null && bals[key] !== '';
     const bal = Number(bals[key]) || 0;
     const safe = Math.max(0, bal - cushion);
@@ -2330,6 +2349,7 @@ function renderDistributionPlanner(data) {
     if (mode === 'early' && c.mortgage) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Mortgage + SBA</span><span class="v" style="color:#7a93ad">' + fmt(c.mortgage + c.sba) + '</span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Insurance + accountant + utilities</span><span class="v" style="color:#7a93ad">' + fmt(lateBills) + '</span></div>';
     if (tax) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Property tax pending</span><span class="v" style="color:#7a93ad">' + fmt(tax) + '</span></div>';
+    if (repairsDue) h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Repairs you just paid (about to draft)</span><span class="v" style="color:#7a93ad">' + fmt(repairsDue) + '</span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Safety buffer</span><span class="v" style="color:#7a93ad">' + fmt(c.buffer) + '</span></div>';
     h += '<div class="llc-row"><span class="k">Cushion to leave</span><span class="v" style="color:#f0a500">' + fmt(cushion) + '</span></div>';
     h += '<div class="llc-row total"><span class="k">Safe to distribute</span><span class="v ' + (has ? (safe > 0 ? 'green' : 'red') : '') + '">' + (has ? fmt(safe) : '—') + '</span></div>';
@@ -2337,7 +2357,7 @@ function renderDistributionPlanner(data) {
     h += '</div>';
   });
   h += '</div>';
-  h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">Cushion figures are bank-verified estimates (Mar–May 2026) — tell me to adjust any. Balances save on this browser for now; shared-save + the "check mailed" reserve come with the next backend update.</div>';
+  h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">Cushion figures are bank-verified estimates (Mar–May 2026) — tell me to adjust any. The cushion now also reserves any <b>repair invoice you marked Paid</b> (it drafts within ~a week, then auto-clears 7 days after the invoice date). Balances still save on this browser for now; shared-save comes with the next backend update.</div>';
   h += '</div>';
   return h;
 }
