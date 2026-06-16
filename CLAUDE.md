@@ -708,6 +708,17 @@ in `index.html`, rendered after the True Cash section. Per LLC: you **type the c
   Donald ~$112, Yale ~$105, Dorado ~$454 (Xcel+DenverWater+Compost). Dorado pays Divando **$138/mo** ins comp.
 - Balances persist in `localStorage 'niron_cash_balances'`; handlers `setCashBalance` / `setCashplanMode`
   call `renderAll()`. Self-audit unaffected (no `#kpi-*` IDs).
+- **📅 "Coming up this cycle" dated list (Jun 16 2026):** each LLC card now shows a dated list of its
+  recurring expenses (the user wanted to SEE upcoming expenses by date, not just the lumped cushion).
+  `CASHPLAN_DAYS` holds the expected **draft day-of-month** per cost per LLC; `planExpenseItems(key, c)`
+  builds the sorted list (amounts from `CASHPLAN_CONFIG`, days from `CASHPLAN_DAYS`); `ordinal()` formats
+  the day. Rendered after "Each partner" as `📅 Coming up this cycle` — `<Mon> <day>th · <label>  $amt`,
+  sorted by day; items with `day < todayDay` are **dimmed + "✓ drafted"**, `day === todayDay` shows
+  **"today"** (amber). Repairs-just-paid + pending tax append as undated "soon"/"when due" lines.
+  **Dates bank-verified where known** (SBA 1st, Yale Lument ~6th, Dorado Nat'l Indemnity ~7th, Divando
+  State Farm ~29th/end-of-month, other mortgages ~16th mid-month) and **ESTIMATES otherwise** (utilities
+  ~20th, accountant ~15th, Yale/Donald insurance ~28th) — footnote says "tell me to correct any." If the
+  user gives exact draft dates, update `CASHPLAN_DAYS`. Frontend-only, live on merge.
 - **🔧 Upcoming repair drafts reserve (Jun 16 2026):** the cushion now also holds back repair invoices
   the user **marked Paid** so the planner doesn't tell them to distribute money that's about to leave for
   a mailed check. `upcomingRepairDrafts(data, matchStr)` sums `data.maintenance` rows where `m.paid` is
