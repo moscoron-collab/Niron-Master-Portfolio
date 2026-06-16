@@ -73,7 +73,10 @@
   .section h2 { color: #ffffff; font-size: 18px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #1e2d42; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .section h2 .dot { width: 8px; height: 8px; border-radius: 50%; background: #00BFFF; box-shadow: 0 0 8px #00BFFF; }
   .llc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
-  .llc-card { background: linear-gradient(135deg, #0d1825 0%, #111620 100%); border: 1px solid #1e2d42; border-radius: 10px; padding: 18px; }
+  .llc-card { background: linear-gradient(135deg, #0d1825 0%, #111620 100%); border: 1px solid #1e2d42; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; height: 100%; }
+  .plan-cushion { min-height: 118px; }
+  .plan-upcoming { margin-top: auto; border-top: 1px solid #16263c; padding-top: 8px; }
+  .plan-upcoming-title { color: #8aa6c4; font-size: 11px; font-weight: 600; margin-bottom: 4px; }
   .llc-card h3 { color: #ffffff; font-size: 15px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #1e2d42; }
   .llc-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
   .llc-row .k { color: #4e6d8c; }
@@ -2394,9 +2397,12 @@ function renderDistributionPlanner(data) {
     const safe = Math.max(0, bal - cushion);
     const each = safe / c.split;
     h += '<div class="llc-card"><h3>' + c.label + (c.split === 3 ? ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(÷3 w/ Simon)</span>' : '') + '</h3>';
+    h += '<div class="plan-top">';
     h += '<div class="llc-row"><span class="k">Bank balance now</span><span class="v" style="display:flex;align-items:center;justify-content:flex-end;gap:4px"><span style="color:#7e9cbf;font-size:13px">$</span><input type="number" value="' + (has ? bals[key] : '') + '" placeholder="enter" onchange="setCashBalance(\'' + key + '\', this.value)" style="width:112px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:6px;color:#fff;padding:4px 8px;font-size:13px"></span></div>';
     if (has) h += '<div style="text-align:right;color:#4e6d8c;font-size:10px;margin-top:-4px;margin-bottom:6px">' + (cashTs[key] ? 'updated ' + fmtDateTime(cashTs[key]) : 're-enter to set the date') + '</div>';
-    // Cushion breakdown — itemized, only the bills still to draft by your distribution date.
+    h += '</div>';
+    // Cushion breakdown — fixed min-height so the totals line up across all 4 cards.
+    h += '<div class="plan-cushion">';
     reserved.forEach(it => {
       h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− ' + it.label + ' <span style="color:#4e6d8c;font-size:10px">' + monAbbr + ' ' + ordinal(it.day) + '</span></span><span class="v" style="color:#7a93ad">' + fmt(it.amt) + '</span></div>';
     });
@@ -2415,13 +2421,16 @@ function renderDistributionPlanner(data) {
     }
     if (!reserved.length) h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">All fixed bills already drafted this cycle ✓</span><span class="v"></span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Safety buffer</span><span class="v" style="color:#7a93ad">' + fmt(c.buffer) + '</span></div>';
+    h += '</div>';
+    // Totals block — aligned row-for-row across all 4 cards.
+    h += '<div class="plan-totals">';
     h += '<div class="llc-row"><span class="k">Cushion to leave</span><span class="v" style="color:#f0a500">' + fmt(cushion) + '</span></div>';
     h += '<div class="llc-row total"><span class="k">Safe to distribute</span><span class="v ' + (has ? (safe > 0 ? 'green' : 'red') : '') + '">' + (has ? fmt(safe) : '—') + '</span></div>';
-    if (has) h += '<div class="llc-row"><span class="k" style="color:#00c97a">Each partner</span><span class="v" style="color:#00c97a">' + fmt(each) + '</span></div>';
-    // Dated "Coming up this cycle" list — shows ALL recurring bills on their dates (factual,
-    // dimmed ✓ once drafted as of today), so you see everything even if it's not reserved.
+    h += '<div class="llc-row"><span class="k" style="color:#00c97a">Each partner</span><span class="v" style="color:#00c97a">' + (has ? fmt(each) : '—') + '</span></div>';
+    h += '</div>';
+    // Dated "Coming up this cycle" list — pinned to the bottom so all 4 cards bottom-align.
     if (items.length) {
-      h += '<div style="margin-top:10px;border-top:1px solid #16263c;padding-top:8px"><div style="color:#8aa6c4;font-size:11px;font-weight:600;margin-bottom:4px">📅 Coming up this cycle</div>';
+      h += '<div class="plan-upcoming"><div class="plan-upcoming-title">📅 Coming up this cycle</div>';
       items.forEach(it => {
         const drafted = it.day < todayDay;
         const col = drafted ? '#4e6d8c' : '#9fb6cf';
