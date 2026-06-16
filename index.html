@@ -1851,6 +1851,9 @@ function planExpenseItems(key, c) {
     .sort((a, b) => a.day - b.day);
 }
 function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+// Distribution timing: 'late' = ~22nd–25th, after the mortgage clears (small cushion,
+// avoids the overdrafts we saw); 'early' = 1st week, must reserve the upcoming mortgage.
+let CASHPLAN_MODE = localStorage.getItem('niron_cashplan_mode') || 'late';
 function cashBalances() { try { return JSON.parse(localStorage.getItem('niron_cash_balances') || '{}'); } catch (e) { return {}; } }
 
 // (which only holds the $2,334 SBA line), so add them to the Loan Balances display.
