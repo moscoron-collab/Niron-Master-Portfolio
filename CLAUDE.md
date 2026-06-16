@@ -750,6 +750,14 @@ in `index.html`, rendered after the True Cash section. Per LLC: you **type the c
   in `late` mode (already cleared before a 22nd–25th distribution).
 - Balances persist in `localStorage 'niron_cash_balances'`; handlers `setCashBalance` / `setCashplanMode`
   call `renderAll()`. Self-audit unaffected (no `#kpi-*` IDs).
+- **🎚️ Card layout aligned across all 4 (Jun 16 2026, user request "align tiles, professional").** Each
+  `.llc-card` is a flex column (`height:100%`) with zones: `.plan-top` (balance+stamp), **`.plan-cushion`
+  (`min-height:118px`** so the breakdown pads to equal height → the totals line up row-for-row),
+  `.plan-totals` (Cushion to leave / Safe to distribute / Each partner — always 3 rows, `Each partner`
+  shows `—` when no balance), and **`.plan-upcoming` (`margin-top:auto`** → pinned to the bottom so all
+  cards bottom-align). User picked "totals aligned across all 4" (vs. bottom-aligned only). Pure CSS/markup,
+  no logic change. ⚠️ A card with many maintenance invoices can exceed the 118px min-height and push its own
+  totals down (acceptable edge case; bump min-height if it becomes common).
 - **📅 "Coming up this cycle" dated list (Jun 16 2026):** each LLC card now shows a dated list of its
   recurring expenses (the user wanted to SEE upcoming expenses by date, not just the lumped cushion).
   `CASHPLAN_DAYS` holds the expected **draft day-of-month** per cost per LLC; `planExpenseItems(key, c)`
