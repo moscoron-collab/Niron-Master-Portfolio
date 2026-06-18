@@ -2,8 +2,12 @@ name: Monthly AppFolio Data Pull
 
 on:
   schedule:
-    # Runs daily at 12pm EDT / 4pm UTC from the 15th to 25th of each month
+    # Runs twice daily from the 15th to 25th of each month, so a statement that
+    # lands midday is caught the same day (duplicate-check skips months already saved):
+    #   - 12pm EDT / 16:00 UTC (noon ET)
     - cron: "0 16 15-25 * *"
+    #   -  4pm EDT / 20:00 UTC (4pm ET)
+    - cron: "0 20 15-25 * *"
   workflow_dispatch:  # allows manual trigger from GitHub UI
 
 jobs:
