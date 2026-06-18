@@ -106,6 +106,17 @@ def append_row(sheets, tab, row):
     ).execute()
 
 
+def update_row(sheets, tab, row_index, row):
+    """Overwrite a row in place (cols A:M) — fills a blank placeholder row instead
+    of appending a duplicate beside it."""
+    sheets.values().update(
+        spreadsheetId=SHEET_ID,
+        range=f"'{tab}'!A{row_index}:M{row_index}",
+        valueInputOption="USER_ENTERED",
+        body={"values": [row]},
+    ).execute()
+
+
 def ensure_detail_tab(sheets):
     """Create the Property Detail tab (with header) if it doesn't exist yet."""
     meta = sheets.get(spreadsheetId=SHEET_ID).execute()
@@ -131,15 +142,44 @@ def _month_key(value):
     return f"{m.group(1)}-{m.group(2)}" if m else s
 
 
-def already_recorded(sheets, property_name, month_label):
-    """True if this unit + month already exists in Property Detail (col D=Property,
-    col B=Month). Prevents the daily run from appending duplicates."""
+# The 5 Yale units this pull writes every month — used to decide "is the month
+# already pulled?" so the daily run can stop logging into AppFolio.
+EXPECTED_PROPERTIES = sorted(YALE_PROPERTY.values())
+
+
+def _current_month_label():
+    """First day of the current calendar month, e.g. '2026-06-01'."""
+    return datetime.datetime.now().replace(day=1).strftime("%Y-%m-01")
+
+
+def find_existing(sheets, property_name, month_label):
+    """Find this unit + month in Property Detail (col D=Property, col B=Month).
+    Returns (sheet_row_index, filled): `filled` = the Disbursement cell (col H) is
+    non-empty, so a BLANK placeholder row reads filled=False and gets filled in
+    instead of blocking the real data. (None, False) if there is no row at all."""
     target = _month_key(month_label)
-    rows = read_sheet(sheets, f"'{DETAIL_TAB}'!A:D")
-    for row in rows[1:]:
-        if len(row) >= 4 and row[3].strip() == property_name and _month_key(row[1]) == target:
-            return True
-    return False
+    result = (None, False)
+    rows = read_sheet(sheets, f"'{DETAIL_TAB}'!A:H")
+    for i, row in enumerate(rows):
+        if i == 0 or len(row) < 4:
+            continue
+        if row[3].strip() == property_name and _month_key(row[1]) == target:
+            filled = len(row) >= 8 and str(row[7]).strip() != ""
+            if filled:
+                return (i + 1, True)
+            result = (i + 1, False)
+    return result
+
+
+def already_recorded(sheets, property_name, month_label):
+    """Back-compat: True only when a FILLED row exists (a blank row does NOT count)."""
+    return find_existing(sheets, property_name, month_label)[1]
+
+
+def month_already_pulled(sheets, month_label):
+    """True when every Yale unit already has a FILLED row for this month — so the
+    daily run can skip AppFolio entirely (no re-login until next month)."""
+    return all(find_existing(sheets, p, month_label)[1] for p in EXPECTED_PROPERTIES)
 
 
 # ── PDF parsing ──────────────────────────────────────────────────────
@@ -427,6 +467,13 @@ def main():
     month_label = date_range = None
     errors = []
 
+    # Once every unit is already in for this month, don't log into AppFolio again.
+    ensure_detail_tab(sheets)
+    exp_month = _current_month_label()
+    if month_already_pulled(sheets, exp_month):
+        print(f"{exp_month}: all {len(EXPECTED_PROPERTIES)} units already pulled — skipping AppFolio login.")
+        return
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context()
@@ -467,10 +514,14 @@ def main():
     written = 0
     for row in rows:
         property_name = row[3]
-        if already_recorded(sheets, property_name, month_label):
+        idx, filled = find_existing(sheets, property_name, month_label)
+        if filled:
             print(f"Already recorded {property_name} for {month_label}, skipping.")
             continue
-        append_row(sheets, DETAIL_TAB, row)
+        if idx:                                    # blank placeholder row → fill it
+            update_row(sheets, DETAIL_TAB, idx, row)
+        else:
+            append_row(sheets, DETAIL_TAB, row)
         written += 1
         print(f"Written: {property_name} -> CashIn ${row[4]:,.2f}, "
               f"Rent ${row[5]:,.2f}, Disb ${row[7]:,.2f}, {row[10]}")

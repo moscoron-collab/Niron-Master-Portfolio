@@ -93,6 +93,17 @@ def append_row(sheets, tab, row):
     ).execute()
 
 
+def update_row(sheets, tab, row_index, row):
+    """Overwrite an existing row in place (cols A:L) — used to fill a blank
+    placeholder row instead of appending a duplicate beside it."""
+    sheets.values().update(
+        spreadsheetId=SHEET_ID,
+        range=f"'{tab}'!A{row_index}:L{row_index}",
+        valueInputOption="USER_ENTERED",
+        body={"values": [row]},
+    ).execute()
+
+
 def require_approval(sheets):
     rows = read_sheet(sheets, "Settings!B3")
     val = rows[0][0] if rows and rows[0] else "YES"
@@ -114,14 +125,46 @@ def _month_key(value):
     return f"{m.group(1)}-{m.group(2)}" if m else s
 
 
-def already_recorded(sheets, property_name, month_label):
-    """Check if a given property + month is already in History."""
+# Core AppFolio properties expected every current month (Galeras/Cabo is a plug,
+# not an AppFolio statement, so it's excluded from the "is the month pulled?" test).
+MOSS_CORE_PROPERTIES = [p for p in PROPERTY_FIXED_COSTS if p != CABO_PROPERTY]
+
+
+def _current_month_label():
+    """First day of the current calendar month, e.g. '2026-06-01' — the month the
+    15th-25th run is pulling (the statement's 'to' date lands in it)."""
+    return datetime.date.today().replace(day=1).strftime("%Y-%m-01")
+
+
+def find_existing(sheets, property_name, month_label):
+    """Find an existing History row for this property + month.
+    Returns (sheet_row_index, filled): `filled` means the Disbursement cell (col D)
+    is non-empty. A BLANK placeholder row reads filled=False, so the real pull fills
+    it in (update-in-place) instead of being blocked by it — this is what stopped a
+    blank Kearney row from hiding the real $3,926.51. (None, False) = no row at all."""
     target = _month_key(month_label)
-    rows = read_sheet(sheets, "History!A:C")
-    for row in rows[1:]:
-        if len(row) >= 3 and row[2].strip() == property_name and _month_key(row[1]) == target:
-            return True
-    return False
+    result = (None, False)
+    rows = read_sheet(sheets, "History!A:D")
+    for i, row in enumerate(rows):
+        if i == 0 or len(row) < 3:
+            continue
+        if row[2].strip() == property_name and _month_key(row[1]) == target:
+            filled = len(row) >= 4 and str(row[3]).strip() != ""
+            if filled:
+                return (i + 1, True)   # a real, filled row wins
+            result = (i + 1, False)    # remember the blank row, keep looking
+    return result
+
+
+def already_recorded(sheets, property_name, month_label):
+    """Back-compat: True only when a FILLED row exists (a blank row does NOT count)."""
+    return find_existing(sheets, property_name, month_label)[1]
+
+
+def month_already_pulled(sheets, month_label):
+    """True when every core AppFolio property already has a FILLED row for this month
+    — so the daily run can skip AppFolio entirely (no re-login until next month)."""
+    return all(find_existing(sheets, p, month_label)[1] for p in MOSS_CORE_PROPERTIES)
 
 
 # ── PDF parsing ──────────────────────────────────────────────────────
@@ -383,6 +426,13 @@ def main():
     month_label = None
     date_range = None
 
+    # Once this month's data is already in, don't log into AppFolio again — the
+    # daily 15th-25th runs just confirm "already pulled" and stop here.
+    exp_month = _current_month_label()
+    if month_already_pulled(sheets, exp_month):
+        print(f"{exp_month}: all core properties already pulled — skipping AppFolio login.")
+        return
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context()
@@ -425,7 +475,8 @@ def main():
 
     for r in per_property_results:
         property_name = r["property"]
-        if already_recorded(sheets, property_name, month_label):
+        idx, filled = find_existing(sheets, property_name, month_label)
+        if filled:
             print(f"Already recorded {property_name} for {month_label}, skipping.")
             continue
         fixed = PROPERTY_FIXED_COSTS.get(property_name, {"mortgage": 0, "ins_mo": 0})
@@ -443,21 +494,30 @@ def main():
             maintenance, net,
             "System — Automation", now_str,
         ]
-        append_row(sheets, tab, row)
+        if idx:                                    # blank placeholder row → fill it
+            update_row(sheets, "History", idx, row)
+            print(f"Filled blank row: {property_name} -> Disb ${disbursement:,.2f}, Net ${net:,.2f}")
+        else:
+            append_row(sheets, tab, row)
+            print(f"Written ({tab}): {property_name} -> Disb ${disbursement:,.2f}, Net ${net:,.2f}")
         written += 1
-        print(f"Written ({tab}): {property_name} -> Disb ${disbursement:,.2f}, Net ${net:,.2f}")
 
     # Cabo plug — manual fixed $2,300/mo through Dec 2026
-    if cabo_should_plug(month_label) and not already_recorded(sheets, CABO_PROPERTY, month_label):
-        row = [
-            date_range or "", month_label, CABO_PROPERTY,
-            CABO_DISBURSEMENT_PLUG, 0,
-            0, 0, 0, 0, CABO_DISBURSEMENT_PLUG,
-            "Manual plug (Cabo $2,300/mo through Dec 2026)", now_str,
-        ]
-        append_row(sheets, tab, row)
-        written += 1
-        print(f"Written ({tab}): {CABO_PROPERTY} (Cabo plug) -> ${CABO_DISBURSEMENT_PLUG:,.2f}")
+    if cabo_should_plug(month_label):
+        idx, filled = find_existing(sheets, CABO_PROPERTY, month_label)
+        if not filled:
+            row = [
+                date_range or "", month_label, CABO_PROPERTY,
+                CABO_DISBURSEMENT_PLUG, 0,
+                0, 0, 0, 0, CABO_DISBURSEMENT_PLUG,
+                "Manual plug (Cabo $2,300/mo through Dec 2026)", now_str,
+            ]
+            if idx:
+                update_row(sheets, "History", idx, row)
+            else:
+                append_row(sheets, tab, row)
+            written += 1
+            print(f"Written ({tab}): {CABO_PROPERTY} (Cabo plug) -> ${CABO_DISBURSEMENT_PLUG:,.2f}")
 
     print(f"\nDone. Wrote {written} rows to {tab}.")
 
