@@ -2,9 +2,13 @@ name: Monthly AppFolio Data Pull — Moss
 
 on:
   schedule:
-    # Runs daily at 10am UTC from the 15th to 25th of each month
-    # (one hour after the Niron job so they don't race on AppFolio cookies).
+    # Runs twice daily from the 15th to 25th of each month, each staggered an
+    # hour after the matching Niron run so they don't race on the shared
+    # AppFolio cookies (duplicate-check skips months already saved):
+    #   - 10:00 UTC (6am ET) — morning
     - cron: "0 10 15-25 * *"
+    #   - 21:00 UTC (5pm ET) — one hour after Niron's 4pm ET afternoon run
+    - cron: "0 21 15-25 * *"
   workflow_dispatch:  # allows manual trigger from GitHub UI
 
 jobs:
