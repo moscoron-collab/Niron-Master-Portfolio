@@ -56,9 +56,17 @@ def append_row(sheets, tab, row):
 
 
 def require_approval(sheets):
-    rows = read_sheet(sheets, "Settings!B3")
-    val = rows[0][0] if rows and rows[0] else "YES"
-    return val.strip().upper() != "NO"
+    # Find the "Require Approval Before Saving" row by its LABEL in column A
+    # (the value is in the adjacent column B). Scanning by label avoids the
+    # off-by-one breakage when the Settings layout shifts a row (the label is
+    # at A4 in this sheet, not A3). Defaults to requiring approval if missing.
+    rows = read_sheet(sheets, "Settings!A:B")
+    for row in rows or []:
+        label = (row[0] if row else "").strip().lower()
+        if label.startswith("require approval"):
+            val = (row[1] if len(row) > 1 else "").strip().upper()
+            return val != "NO"
+    return True
 
 
 def already_recorded(sheets, llc, month_label):

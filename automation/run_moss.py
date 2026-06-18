@@ -251,6 +251,54 @@ def login(page):
     print("Login complete.")
 
 
+def _dump_page_diagnostics(page, tag="DIAG"):
+    """Print the live Statements page structure so we can re-target selectors
+    after an AppFolio layout change. Read this in the Actions log."""
+    try:
+        print(f"===== {tag}: PAGE DIAGNOSTICS =====")
+        print(f"{tag} url: {page.url}")
+        try:
+            print(f"{tag} title: {page.title()}")
+        except Exception:
+            pass
+        # All headings (LLC names usually live here)
+        try:
+            heads = page.query_selector_all("h1, h2, h3, h4")
+            print(f"{tag} headings ({len(heads)}):")
+            for h in heads[:40]:
+                t = (h.inner_text() or "").strip().replace("\n", " ")
+                if t:
+                    print(f"{tag}   <{h.evaluate('e=>e.tagName')}.{h.evaluate('e=>e.className')}> {t[:120]}")
+        except Exception as e:
+            print(f"{tag} heading dump failed: {e}")
+        # Anything that looks like a card / statement container
+        try:
+            for sel in ["[class*='card']", "[class*='statement']", "[data-testid]"]:
+                els = page.query_selector_all(sel)
+                classes = sorted({(e.get_attribute("class") or "")[:80] for e in els})
+                print(f"{tag} selector '{sel}': {len(els)} els; classes={classes[:15]}")
+        except Exception as e:
+            print(f"{tag} card-scan failed: {e}")
+        # Download links
+        try:
+            links = page.query_selector_all("a")
+            dl = [(a.get_attribute("href") or "")[:90] for a in links
+                  if "statement" in ((a.get_attribute("href") or "").lower())
+                  or "download" in ((a.get_attribute("class") or "").lower())]
+            print(f"{tag} statement/download links ({len(dl)}): {dl[:15]}")
+        except Exception as e:
+            print(f"{tag} link dump failed: {e}")
+        # Truncated body text so we can see the LLC names + layout
+        try:
+            body = page.inner_text("body")
+            print(f"{tag} body text (first 1500 chars):\n{body[:1500]}")
+        except Exception as e:
+            print(f"{tag} body dump failed: {e}")
+        print(f"===== {tag}: END DIAGNOSTICS =====")
+    except Exception as e:
+        print(f"{tag}: diagnostics crashed: {e}")
+
+
 def download_packet(page, tmp_dir):
     """Find the Moss Investments card on the Owner Statements page and download
     the most recent packet. Returns (file_path, month_label, date_range)."""
@@ -262,6 +310,9 @@ def download_packet(page, tmp_dir):
         print("WARNING: Timed out waiting for cards")
     cards = page.query_selector_all(".card")
     print(f"Cards found: {len(cards)}")
+    if len(cards) < 2:
+        # Expected one card per LLC/owner; <2 means the layout likely changed.
+        _dump_page_diagnostics(page, tag="MOSS_DIAG")
 
     for card in cards:
         h2 = card.query_selector("h2.card-title")

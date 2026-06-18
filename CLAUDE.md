@@ -105,6 +105,70 @@ If a secret is missing, the run crashes with `KeyError` at script start.
 
 ---
 
+## ⏰ Monthly pull schedule (updated Jun 18 2026)
+
+Both AppFolio pulls now run **twice daily on the 15th–25th** so a statement that lands
+midday is caught the same day (the duplicate-check skips months already saved):
+- **Niron `monthly.yml`** (4 LLCs): **12pm ET (16:00 UTC)** + **4pm ET (20:00 UTC)**.
+- **Moss `monthly_moss.yml`**: **6am ET (10:00 UTC)** + **5pm ET (21:00 UTC)** — the afternoon
+  run is staggered **one hour after Niron's 4pm** on purpose, because both share the same
+  `APPFOLIO_COOKIES` secret and would otherwise race on the cookie save.
+- Per-property monitors unchanged (Divando 11am / Yale 12pm / Donald 1pm UTC, once daily).
+
+## 🚨 AppFolio session expiry — recovery procedure (Jun 18 2026, REAL INCIDENT)
+
+The **entire** AppFolio auto-pull (Niron `run.py` 4 LLCs **and** Moss) silently stopped
+pulling for ~a month. Symptom in the Actions log: `WARNING: Timed out waiting for cards` /
+`Cards found: 1` / `No card found for '<LLC>'` / `Nothing to write.` — but the jobs still
+showed a **green ✓** (they exit 0 when there's "nothing to write"), so it looked fine.
+
+**Root cause = expired session, NOT a layout change.** A diagnostic dump (added to
+`run_moss.py` `download_packet`, prints page structure when `< 2` cards are found — keep it)
+revealed the runner was sitting on `…/oportal/users/log_in` (the "1 card" was the
+`login-card`). The saved `APPFOLIO_COOKIES` lapsed; AppFolio has **device-trust 2FA** that
+SMS-challenges a browser unused for ~1 month, and a GitHub runner is a "new browser" every
+run, so it can **never** complete that 2FA. The weekly `keepalive.py` had been bounced to the
+login wall too and kept **saving the dead login-page cookies back**, perpetuating the break
+while reporting "success" (it never verifies login).
+
+**Recovery (what fixed it — repeat this when it recurs):**
+1. User logs into AppFolio in their **browser** and completes the SMS 2FA (trusts the device).
+2. User exports cookies for `laureatetld.appfolio.com` with the **Cookie-Editor** browser
+   extension (Export → JSON). The two that matter: **`_oportal_session`** (the login) +
+   **`2fa_user_token`** (device-trust, so the runner isn't re-challenged).
+3. Convert that Cookie-Editor JSON → Playwright format → **base64**: map `expirationDate`→
+   `expires` (or `-1` for session cookies), `sameSite` `lax/strict/no_restriction`→
+   `Lax/Strict/None`, **omit** `sameSite` when null (Playwright errors on `None`+insecure).
+   `run.py`/`run_moss.py` `_normalize_cookies` tolerates raw or base64; **`keepalive.py` needs
+   base64-of-Playwright**, so produce that canonical form.
+4. User pastes the base64 into the **`APPFOLIO_COOKIES`** repo secret (the agent can't set
+   secrets — `…/settings/secrets/actions/APPFOLIO_COOKIES`).
+5. Re-run the pulls. ✅ Verified Jun 18: Moss + all 4 Niron LLCs + Divando(15)/Yale(5)/Donald(8)
+   per-property all pulled June. Once a run authenticates, its **Save updated cookies** step
+   re-seeds a fresh full session, so the secret self-heals going forward.
+
+**Known latent issues (user chose "fix data first" — hardening deferred):**
+- ⚠️ **`run.py` (Niron monthly) cannot write the secret** — its cookie-save step errors
+  `Resource not accessible by integration` (GITHUB_TOKEN lacks secret-write). Moss + the
+  per-property workflows **can** write it, so cookie refresh rides on those. Pre-existing.
+- ⚠️ **Scripts don't verify login** and **save cookies even on failure**, so a lapse silently
+  rots while showing green. The agreed (not-yet-built) hardening: verify we're not on
+  `log_in` after login, DON'T save cookies / fail loudly when login failed, and make
+  `keepalive.py` do the same. Revisit when the user is ready.
+
+## ⚙️ Settings!B4 — "Require Approval Before Saving" (Jun 18 2026 fix)
+
+The Niron **Settings** tab: row 3 = `AUTOMATION MODE` header, **row 4** = label
+`Require Approval Before Saving to History` (A4) with the value in **B4** (`YES`/`NO`).
+`run.py` previously read **`Settings!B3`** (the blank header row) → always defaulted to
+`YES` → every pull went to **Pending Review** even though B4 said **NO**. Fixed: `run.py`
+`require_approval()` now **scans column A for the "Require Approval" label** and reads the
+adjacent B cell (robust to row shifts). `NO` (any case) → writes **straight to History**;
+anything else → Pending Review. **Moss's sheet has the toggle at B3 and works**, so
+`run_moss.py` was left as-is. (User confirmed they want auto-save = `NO`/no approval.)
+
+---
+
 ## 📡 Divando per-property monitoring (BUILT)
 
 A per-property monitor for Divando's 18 properties (15 AppFolio + 3 manual out-of-state).
