@@ -154,6 +154,48 @@ midday is caught the same day (the duplicate-check skips months already saved):
   `APPFOLIO_COOKIES` secret and would otherwise race on the cookie save.
 - Per-property monitors unchanged (Divando 11am / Yale 12pm / Donald 1pm UTC, once daily).
 
+## ⚡ FAST RECOVERY — "the pulls went quiet / data stopped updating" (READ FIRST)
+
+> A condensed runbook so this is a ~5-minute fix next time. Full detail in the section below.
+
+**SYMPTOM:** Actions logs show `Timed out waiting for cards` / `Cards found: 1` /
+`No card found for '<LLC>'` / `Nothing to write` on Niron AND/OR Moss — but the jobs are
+**GREEN** (they exit 0 on "nothing to write"). Dashboard stops updating for the month.
+**CAUSE (99% of the time):** the `APPFOLIO_COOKIES` session expired. AppFolio device-trust
+2FA re-SMS-challenges a browser idle ~1 month; the GitHub runner can't enter that code, so it
+sits on `/oportal/users/log_in` (the "1 card" IS the login-card). It is **NOT** an AppFolio
+layout change — confirm with the diagnostic dump in `run_moss.py download_packet` (prints the
+page when `< 2` cards; if `url = …/users/log_in` → expired session, done diagnosing).
+
+**FIX (the agent can do everything except set the secret):**
+1. User logs into `laureatetld.appfolio.com` in their browser, completes the SMS 2FA.
+2. User exports cookies with the **Cookie-Editor** extension (on the appfolio tab → Export →
+   JSON) and pastes the JSON into chat.
+3. Agent converts JSON → Playwright **base64** with a python script in-sandbox: map
+   `expirationDate`→`expires` (`session:true`→`-1`), `sameSite` `lax/strict/no_restriction`→
+   `Lax/Strict/None`, **OMIT** `sameSite` when null. Must include **`_oportal_session`** +
+   **`2fa_user_token`**. Round-trip-verify, hand the user the base64 string.
+4. User pastes it into the **`APPFOLIO_COOKIES`** repo secret (agent CAN'T write secrets):
+   `https://github.com/moscoron-collab/Niron-Master-Portfolio/settings/secrets/actions/APPFOLIO_COOKIES`
+5. Agent re-runs the pulls (`workflow_dispatch`). Validate the log says `Found card for …` /
+   `Done. Wrote N rows`. Once one run authenticates, its **Save updated cookies** step re-seeds
+   a fresh full session → the secret self-heals.
+
+**CATCH UP THE MONTH** (run sequentially — they share the cookie secret): `monthly.yml` (4 Niron
+LLCs) + `monthly_moss.yml` + `monthly_divando.yml` / `monthly_yale.yml` / `monthly_donald.yml`
+(15/5/8 units). Niron writes straight to History (Settings!B4 = NO); Moss + per-property always
+do. **Note:** once a month is already fully pulled, each script now **exits before login**
+(prints "already pulled — skipping AppFolio login"), so a re-run that says that is correct, not a
+failure — it means the data is already in.
+
+**GOTCHAS that slowed it down the first time (Jun 18 2026):** (a) green checks hid the outage for
+~a month — don't trust green, check for `Wrote N rows`. (b) Niron `run.py` cookie-save errors
+`Resource not accessible by integration` (can't write the secret) — refresh rides on Moss +
+per-property + weekly `keepalive.py`. (c) the Settings approval toggle is at **B4 not B3**
+(run.py reads it by label now). (d) Scripts DON'T verify login and save cookies even on failure
+(silent-rot hardening still deferred). (e) Agent can't reach `script.google.com`/the sheet
+directly (sandbox) — sheet edits go through the user or the dashboard.
+
 ## 🚨 AppFolio session expiry — recovery procedure (Jun 18 2026, REAL INCIDENT)
 
 The **entire** AppFolio auto-pull (Niron `run.py` 4 LLCs **and** Moss) silently stopped
