@@ -55,6 +55,17 @@ def append_row(sheets, tab, row):
     ).execute()
 
 
+def update_row(sheets, tab, row_index, row):
+    """Overwrite an existing row in place (cols A:L) — used to fill a blank
+    placeholder row instead of appending a duplicate beside it."""
+    sheets.values().update(
+        spreadsheetId=SHEET_ID,
+        range=f"'{tab}'!A{row_index}:L{row_index}",
+        valueInputOption="USER_ENTERED",
+        body={"values": [row]},
+    ).execute()
+
+
 def require_approval(sheets):
     # Find the "Require Approval Before Saving" row by its LABEL in column A
     # (the value is in the adjacent column B). Scanning by label avoids the
@@ -69,13 +80,55 @@ def require_approval(sheets):
     return True
 
 
-def already_recorded(sheets, llc, month_label):
+def _month_key(value):
+    """Normalize a period cell or 'YYYY-MM-01' label to 'YYYY-MM' (Sheets may
+    return the month formatted as '6/1/2026'), so the match is robust."""
+    s = str(value).strip()
+    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%Y/%m/%d"):
+        try:
+            return datetime.datetime.strptime(s, fmt).strftime("%Y-%m")
+        except ValueError:
+            continue
+    m = re.match(r"(\d{4})[-/](\d{2})", s)
+    return f"{m.group(1)}-{m.group(2)}" if m else s
+
+
+def _current_month_label():
+    """First day of the current calendar month, e.g. '2026-06-01' — the month the
+    15th-25th run is pulling (the statement's 'to' date lands in it)."""
+    return datetime.datetime.now().replace(day=1).strftime("%Y-%m-01")
+
+
+def find_existing(sheets, llc, month_label):
+    """Find an existing row for this LLC + month across History and Pending Review.
+    Returns (tab, sheet_row_index, filled): `filled` means the Disbursement cell
+    (col D) is non-empty, so a BLANK placeholder row reads filled=False and gets
+    filled in (update-in-place) rather than blocking the real data.
+    (None, None, False) if there is no row at all."""
+    target = _month_key(month_label)
+    result = (None, None, False)
     for tab in ("History", "Pending Review"):
-        rows = read_sheet(sheets, f"'{tab}'!A:C")
-        for row in rows[1:]:
-            if len(row) >= 3 and row[1] == month_label and row[2] == llc:
-                return True
-    return False
+        rows = read_sheet(sheets, f"'{tab}'!A:D")
+        for i, row in enumerate(rows):
+            if i == 0 or len(row) < 3:
+                continue
+            if row[2] == llc and _month_key(row[1]) == target:
+                filled = len(row) >= 4 and str(row[3]).strip() != ""
+                if filled:
+                    return (tab, i + 1, True)
+                result = (tab, i + 1, False)
+    return result
+
+
+def already_recorded(sheets, llc, month_label):
+    """Back-compat: True only when a FILLED row exists (a blank row does NOT count)."""
+    return find_existing(sheets, llc, month_label)[2]
+
+
+def month_already_pulled(sheets, month_label):
+    """True when all 4 LLCs already have a FILLED row for this month — so the daily
+    run can skip AppFolio entirely (no re-login until next month)."""
+    return all(find_existing(sheets, llc, month_label)[2] for llc in LLC_MAP.keys())
 
 
 def get_fixed_costs(sheets, llc):
@@ -280,6 +333,14 @@ def main():
     results = {}
     errors  = []
 
+    # Once all 4 LLCs are already in for this month, don't log into AppFolio again —
+    # the daily 15th-25th runs just confirm "already pulled" and stop here.
+    exp_month = _current_month_label()
+    if month_already_pulled(sheets, exp_month):
+        print(f"{exp_month}: all 4 LLCs already pulled — skipping AppFolio login.")
+        print("::set-output name=wrote_data::false")
+        return
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context()
@@ -298,7 +359,8 @@ def main():
                     if not file_path or not month_label:
                         errors.append(f"{llc}: Could not download packet")
                         continue
-                    if already_recorded(sheets, llc, month_label):
+                    ex_tab, ex_idx, ex_filled = find_existing(sheets, llc, month_label)
+                    if ex_filled:
                         print(f"Already recorded {llc} for {month_label}, skipping.")
                         continue
                     pdf_path = get_pdf_path(file_path, tmp_dir, llc)
@@ -317,6 +379,7 @@ def main():
                         "disbursement": disbursement, "mgmt_fee": mgmt_fee or 0,
                         "mortgage": mortgage, "tax_mo": tax_mo, "ins_mo": ins_mo,
                         "maintenance": maintenance, "net": net,
+                        "existing_tab": ex_tab, "existing_row": ex_idx,
                     }
                     print(f"OK {llc}: Disbursement=${disbursement:,.2f}, Net=${net:,.2f}")
                 except Exception as e:
@@ -345,8 +408,12 @@ def main():
             d["maintenance"], d["net"],
             "System — Automation", now_str,
         ]
-        append_row(sheets, tab, row)
-        print(f"Written to {tab}: {llc}")
+        if d.get("existing_row"):                  # blank placeholder row → fill it
+            update_row(sheets, d["existing_tab"], d["existing_row"], row)
+            print(f"Filled blank row ({d['existing_tab']}): {llc}")
+        else:
+            append_row(sheets, tab, row)
+            print(f"Written to {tab}: {llc}")
 
     # Signal the workflow that genuinely new rows were written this run, so the
     # "Dashboard Updated" email only fires when there is actually new data.

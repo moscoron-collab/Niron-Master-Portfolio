@@ -105,6 +105,45 @@ If a secret is missing, the run crashes with `KeyError` at script start.
 
 ---
 
+## 🛑 Stop logging in once the month is pulled + blank-row fill (Jun 18 2026)
+
+Two changes applied to **ALL 5 AppFolio pulls** (`run.py`, `run_moss.py`, `run_divando.py`,
+`run_yale.py`, `run_donald.py`) so the daily 15th–25th runs don't hammer AppFolio after the
+month's data is already in, and so a blank placeholder row can never again hide real data
+(the 1959 S Kearney Way bug). Each script now has the same helper set:
+`_current_month_label()`, `find_existing(...)`, `month_already_pulled(...)`, `update_row(...)`,
+plus a back-compat `already_recorded()` wrapper. `EXPECTED_PROPERTIES`/`LLC_MAP.keys()` is the
+per-pipeline expected set (Niron 4 LLCs · Moss 4 core props `[p for p in PROPERTY_FIXED_COSTS
+if p != CABO_PROPERTY]` · Divando/Donald `set(PROPERTY_CODE_MAP.values())` = 15/8 · Yale
+`YALE_PROPERTY.values()` = 5).
+
+- **Stop re-logging in (Part B):** at the **top of `main()`, BEFORE launching Playwright**, the
+  script computes `exp_month = _current_month_label()` (first of the current calendar month — the
+  month the 15–25 window pulls, since the statement's "to" date lands in it) and, if
+  `month_already_pulled(sheets, exp_month)` is True (every expected entity has a **filled**
+  disbursement row), it prints "already pulled — skipping AppFolio login" and **returns without
+  logging in**. So once a month lands, the remaining daily runs do a ~2-second sheet read and quit.
+  (The workflow cron still fires daily — GitHub cron can't self-disable — but no AppFolio login.)
+  Session longevity is still maintained by the **weekly `keepalive.py`** (within the ~1-month
+  device-trust window), so reducing daily logins is safe. The Niron skip path also prints
+  `::set-output name=wrote_data::false` so no "Dashboard Updated" email fires.
+- **Blank row can't block real data (Part A):** `find_existing(...)` returns `(row_index, filled)`
+  where **`filled` = the Disbursement cell is non-empty**. A blank placeholder row reads
+  `filled=False`, so: if a filled row exists → skip; if only a **blank** row exists → **`update_row`
+  fills it in place (cols A:L for History, A:M for Property Detail)** instead of appending a
+  duplicate; if no row → append. `$0` is a number (non-empty) so a legitimately-vacant/$0 month
+  still counts as filled — only a truly empty cell triggers the fill. Niron threads the existing
+  `(tab, row_index)` through `results` and updates in whichever tab (History/Pending Review) the
+  blank sits; Moss/per-property update in their data tab.
+- **Column refs:** History/Moss rows = 12 cols A:L, key = month col B + LLC/property col C,
+  disbursement = col D. Property Detail rows = 13 cols A:M, key = month col B + property col D,
+  disbursement = col H. `_month_key` normalizes the month so `2026-06-01` and `6/1/2026` match.
+- **Backfills unaffected:** `backfill*.py` keep their own dedup; the run_* changes are additive +
+  back-compat (the old `already_recorded(sheets, …)→bool` signature still exists).
+- ⚠️ **Edge:** if a unit is genuinely missing from a packet (sold / not-yet-on-AppFolio), the
+  expected set never fully fills, so that pipeline keeps logging in daily (safe — never a
+  false "complete"). Update the expected set / maps when a property is added or removed.
+
 ## ⏰ Monthly pull schedule (updated Jun 18 2026)
 
 Both AppFolio pulls now run **twice daily on the 15th–25th** so a statement that lands
