@@ -1,0 +1,44 @@
+name: Cleanup — remove bogus $0 Moss rows (Manual Only)
+
+# Removes the bad "$0.00 / System — Backfill" rows from the Moss History sheet.
+# DRY RUN by default (lists what it would delete). Set confirm = YES to actually
+# back up (to a new History_Backup_<timestamp> tab) and then delete them.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type YES to actually delete (otherwise dry run only)"
+        required: true
+        default: "NO"
+      property_filter:
+        description: "Optional: only rows whose property contains this (e.g. Kearney)"
+        required: false
+        default: ""
+      year_filter:
+        description: "Optional: only rows in this year (e.g. 2023)"
+        required: false
+        default: ""
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install google-auth google-auth-httplib2 google-api-python-client
+
+      - name: Run cleanup
+        env:
+          MOSS_SHEET_ID: ${{ secrets.MOSS_SHEET_ID }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          CONFIRM_DELETE: ${{ inputs.confirm }}
+          PROPERTY_FILTER: ${{ inputs.property_filter }}
+          YEAR_FILTER: ${{ inputs.year_filter }}
+        run: python automation/cleanup_moss_zero_rows.py

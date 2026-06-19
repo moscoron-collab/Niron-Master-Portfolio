@@ -4,6 +4,7 @@ AppFolio Monthly Cashflow Automation
 
 import os
 import re
+import sys
 import json
 import base64
 import zipfile
@@ -248,17 +249,32 @@ def trigger_email_notification():
 
 
 def login(page):
+    """Authenticate to AppFolio. Returns True only if we end up OFF the login page.
+
+    A GitHub runner can't complete AppFolio's device-trust SMS 2FA, so when the
+    saved cookies expire the runner is bounced back to /oportal/users/log_in and
+    can never proceed. We MUST detect that and report failure, so the caller can
+    (a) refuse to save the dead login-page cookies over the good ones, and
+    (b) fail the run loudly instead of exiting green with no data."""
     page.goto(APPFOLIO_URL)
     page.wait_for_load_state("networkidle")
     if "log_in" not in page.url:
         print("Already logged in via cookies.")
-        return
+        return True
     print("Logging in with credentials...")
-    page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
-    page.fill("input[name='user[password]']", APPFOLIO_PASS)
-    page.click("input[type='submit']")
-    page.wait_for_load_state("networkidle")
+    try:
+        page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
+        page.fill("input[name='user[password]']", APPFOLIO_PASS)
+        page.click("input[type='submit']")
+        page.wait_for_load_state("networkidle")
+    except Exception as e:
+        print(f"Login form interaction failed: {e}")
+    if "log_in" in page.url:
+        print(f"LOGIN FAILED — still on the login page ({page.url}). This is almost "
+              "always expired APPFOLIO_COOKIES + 2FA. Refusing to treat this as success.")
+        return False
     print("Login complete.")
+    return True
 
 
 def download_packet_for_llc(page, llc, tmp_dir):
@@ -349,8 +365,37 @@ def main():
         if cookies:
             context.add_cookies(cookies)
         page = context.new_page()
-        login(page)
-        save_cookies(context)
+        logged_in = login(page)
+        if logged_in:
+            # Only persist cookies when we are genuinely authenticated — never save
+            # the dead login-page cookies over a previously-good session.
+            save_cookies(context)
+        else:
+            print("::error::AppFolio login failed (expired cookies + 2FA wall). "
+                  "Not saving cookies; will exit non-zero so the failure is visible.")
+            errors.append("AppFolio login failed — not authenticated")
+            browser.close()
+            print("Nothing to write (not logged in).")
+            print("::set-output name=wrote_data::false")
+            sys.exit(1)
+
+        # Guard: logged in, but if the Statements page shows NO owner cards at all,
+        # the session is effectively dead (the "1 card" in an outage is the login
+        # box). Fail loudly rather than silently writing nothing and exiting green.
+        page.goto("https://laureatetld.appfolio.com/oportal/statements")
+        page.wait_for_load_state("networkidle")
+        try:
+            page.wait_for_selector("#statements-root .card", timeout=20000)
+        except Exception:
+            pass
+        n_cards = len(page.query_selector_all("h2.card-title"))
+        print(f"Owner cards on Statements page: {n_cards}")
+        if n_cards < 1:
+            print("::error::AppFolio Statements page shows 0 owner cards — session likely "
+                  "expired (2FA wall). Exiting non-zero so the failure is visible.")
+            browser.close()
+            print("::set-output name=wrote_data::false")
+            sys.exit(1)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             for llc in LLC_MAP.keys():

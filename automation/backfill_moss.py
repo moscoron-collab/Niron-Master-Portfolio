@@ -225,13 +225,25 @@ def extract_per_property_from_pdf(pdf_path):
             # disbursement on the Owner Packet (matches run_moss.py).
             maintenance = 0
 
+            # CRITICAL: if the Owner Disbursement could NOT be parsed, SKIP this
+            # property — do NOT write a $0 row. This is exactly what produced the
+            # bogus 2023 "$0.00 / System — Backfill" Kearney rows: `disbursement or 0`
+            # turned a parse failure into a real-looking $0 row that then distorted
+            # history (and, mirrored as a browser override, masked live data).
+            # `disbursement is None` = parse failure (skip); a genuinely-parsed 0.0
+            # is kept (real vacant/reserve month).
+            if disbursement is None:
+                print(f"    Page {page_idx + 1}: {canonical} — no Owner Disbursement parsed, "
+                      "SKIPPING (will not write a $0 row).")
+                continue
+
             results.append({
                 "property":     canonical,
-                "disbursement": disbursement or 0,
+                "disbursement": disbursement,
                 "mgmt_fee":     mgmt_fee or 0,
                 "maintenance":  maintenance,
             })
-            print(f"    Page {page_idx + 1}: {canonical} → Disb=${disbursement or 0:,.2f}, Mgmt=${mgmt_fee or 0:,.2f}")
+            print(f"    Page {page_idx + 1}: {canonical} → Disb=${disbursement:,.2f}, Mgmt=${mgmt_fee or 0:,.2f}")
     return results
 
 
