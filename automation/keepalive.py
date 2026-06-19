@@ -5,6 +5,7 @@ and saves updated cookies back to GitHub Secrets.
 """
 
 import os
+import sys
 import json
 import base64
 
@@ -46,14 +47,29 @@ def main():
 
         if "log_in" in page.url:
             print("Cookies expired — logging in with credentials...")
-            page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
-            page.fill("input[name='user[password]']", APPFOLIO_PASS)
-            page.click("input[type='submit']")
-            page.wait_for_load_state("networkidle")
-            print("Login successful.")
+            try:
+                page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
+                page.fill("input[name='user[password]']", APPFOLIO_PASS)
+                page.click("input[type='submit']")
+                page.wait_for_load_state("networkidle")
+            except Exception as e:
+                print(f"Login form interaction failed: {e}")
         else:
             print("Session still active via cookies.")
 
+        # CRITICAL: if we are still on the login page, the session is dead and a
+        # human must re-seed APPFOLIO_COOKIES (the runner can't pass 2FA). Saving
+        # the cookies now would overwrite the good secret with dead login-page
+        # cookies — exactly what perpetuated the Jun 18 2026 outage. So DON'T save,
+        # and exit non-zero so the failure is visible (don't keep reporting green).
+        if "log_in" in page.url:
+            print(f"::error::Keepalive could NOT authenticate — still on {page.url}. "
+                  "Expired APPFOLIO_COOKIES + 2FA. NOT saving cookies (would clobber the "
+                  "good secret). A human must re-seed APPFOLIO_COOKIES.")
+            browser.close()
+            sys.exit(1)
+
+        print("Login/session OK.")
         save_cookies(context)
         browser.close()
         print("Keepalive complete.")

@@ -228,14 +228,50 @@ while reporting "success" (it never verifies login).
    per-property all pulled June. Once a run authenticates, its **Save updated cookies** step
    re-seeds a fresh full session, so the secret self-heals going forward.
 
-**Known latent issues (user chose "fix data first" — hardening deferred):**
+**Known latent issues:**
 - ⚠️ **`run.py` (Niron monthly) cannot write the secret** — its cookie-save step errors
   `Resource not accessible by integration` (GITHUB_TOKEN lacks secret-write). Moss + the
   per-property workflows **can** write it, so cookie refresh rides on those. Pre-existing.
-- ⚠️ **Scripts don't verify login** and **save cookies even on failure**, so a lapse silently
-  rots while showing green. The agreed (not-yet-built) hardening: verify we're not on
-  `log_in` after login, DON'T save cookies / fail loudly when login failed, and make
-  `keepalive.py` do the same. Revisit when the user is ready.
+
+## ✅ Silent-rot hardening — login is now verified, failures are LOUD (Jun 19 2026, BUILT)
+
+The deferred hardening from the Jun 18 incident is now in. Applied to `run.py`, `run_moss.py`,
+and `keepalive.py`:
+- **`login()` returns a bool and VERIFIES success** — after submitting credentials it checks the
+  URL is no longer `/oportal/users/log_in`. A GitHub runner can't pass the device-trust SMS 2FA,
+  so an expired session lands back on `log_in`; `login()` now returns **False** there instead of
+  printing a fake "Login complete."
+- **Never save dead cookies:** `save_cookies()` is only called when `login()` returns True. On a
+  failed login the scripts **do NOT** overwrite `APPFOLIO_COOKIES` (this was the loop that let
+  `keepalive.py` clobber the good secret with login-page cookies and perpetuate the outage).
+- **Fail loudly:** on failed login — or when the Statements page shows **0 owner cards**
+  (`h2.card-title` count < 1, the outage signature) — the scripts print a `::error::` annotation
+  and **`sys.exit(1)`** so the GitHub job goes **RED** instead of green-with-no-data. (GitHub
+  emails on workflow failure = the "real notification.")
+- **Still green when legitimately done:** the `month_already_pulled(...)` early-return (before
+  login) is unchanged, and "statement not posted yet" still finds the prior-month card (≥1 card,
+  logged in) → no false red. Only a true auth/0-card outage trips the non-zero exit.
+
+## 🧹 Bogus $0 Moss rows — writer fixed + cleanup script (Jun 19 2026, Part B)
+
+**Root:** the old `backfill_moss.py` (and `run_moss.py`) parsed `disbursement or 0`, so a page
+that failed to parse wrote a **real-looking $0 row**. This produced the 2023 "$0.00 /
+System — Backfill" Kearney rows (02–10/2023) that distorted history and — mirrored as a browser
+override — masked live data on the combined dashboard.
+- **Writer fixed:** `extract_per_property_from_pdf` in BOTH `run_moss.py` and `backfill_moss.py`
+  now **skips a property when the Owner Disbursement can't be parsed** (`disbursement is None`) —
+  it never writes a $0 row. A genuinely-parsed `0.0` (real vacant/reserve month) is still kept.
+  (`run.py` already had this guard.) Safe side effect: a skipped property leaves
+  `month_already_pulled` False, so the daily run keeps retrying — never a false "complete".
+- **Cleanup of the existing bad rows** (agent can't reach the sheet — sandbox blocks
+  `script.google.com`): `automation/cleanup_moss_zero_rows.py` + workflow
+  `cleanup_moss_zero_rows.yml`. It matches History rows where Disbursement (col D) is blank/0
+  **AND** "Entered By" (col K) contains `Backfill`, with optional `PROPERTY_FILTER`/`YEAR_FILTER`.
+  **DRY RUN by default**; only with `confirm=YES` does it (1) copy every matched row to a new
+  `History_Backup_<timestamp>` tab FIRST, then (2) delete them bottom-up. **Run it from
+  GitHub Actions:** Actions → "Cleanup — remove bogus $0 Moss rows" → Run workflow → review the
+  dry-run log → re-run with confirm = `YES`. Cabo plug rows ($2,300, "Manual plug") and real
+  backfill rows (non-zero disbursement) are never matched.
 
 ## ⚙️ Settings!B4 — "Require Approval Before Saving" (Jun 18 2026 fix)
 

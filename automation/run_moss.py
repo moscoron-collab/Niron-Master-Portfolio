@@ -19,6 +19,7 @@ through Dec 2026 (per user spec).
 
 import os
 import re
+import sys
 import json
 import base64
 import zipfile
@@ -211,13 +212,23 @@ def extract_per_property_from_pdf(pdf_path):
             # "Supplies / Maintenance" parser for the transactions table.
             maintenance = 0
 
+            # CRITICAL: if the Owner Disbursement could NOT be parsed, SKIP this
+            # property — do NOT write a $0 row. A blank/garbled page once produced
+            # bogus $0 rows that masked real data (the same class as the 2023
+            # Kearney $0 rows). `disbursement is None` = parse failure (skip); a
+            # genuinely-parsed 0.0 is kept (real vacant/reserve month).
+            if disbursement is None:
+                print(f"  Page {page_idx + 1}: {canonical} — no Owner Disbursement parsed, "
+                      "SKIPPING (will not write a $0 row).")
+                continue
+
             results.append({
                 "property":     canonical,
-                "disbursement": disbursement or 0,
+                "disbursement": disbursement,
                 "mgmt_fee":     mgmt_fee or 0,
                 "maintenance":  maintenance,
             })
-            print(f"  Page {page_idx + 1}: {canonical} → Disb=${disbursement or 0:,.2f}, Mgmt=${mgmt_fee or 0:,.2f}")
+            print(f"  Page {page_idx + 1}: {canonical} → Disb=${disbursement:,.2f}, Mgmt=${mgmt_fee or 0:,.2f}")
     return results
 
 
@@ -281,17 +292,31 @@ def save_cookies(context):
 
 
 def login(page):
+    """Authenticate to AppFolio. Returns True only if we end up OFF the login page.
+
+    A GitHub runner can't complete AppFolio's device-trust SMS 2FA, so when the
+    saved cookies expire the runner is bounced back to /oportal/users/log_in and
+    can never proceed. We MUST detect that so the caller refuses to save the dead
+    login-page cookies over the good ones and fails the run loudly."""
     page.goto(APPFOLIO_URL)
     page.wait_for_load_state("networkidle")
     if "log_in" not in page.url:
         print("Already logged in via cookies.")
-        return
+        return True
     print("Logging in with credentials...")
-    page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
-    page.fill("input[name='user[password]']", APPFOLIO_PASS)
-    page.click("input[type='submit']")
-    page.wait_for_load_state("networkidle")
+    try:
+        page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
+        page.fill("input[name='user[password]']", APPFOLIO_PASS)
+        page.click("input[type='submit']")
+        page.wait_for_load_state("networkidle")
+    except Exception as e:
+        print(f"Login form interaction failed: {e}")
+    if "log_in" in page.url:
+        print(f"LOGIN FAILED — still on the login page ({page.url}). This is almost "
+              "always expired APPFOLIO_COOKIES + 2FA. Refusing to treat this as success.")
+        return False
     print("Login complete.")
+    return True
 
 
 def _dump_page_diagnostics(page, tag="DIAG"):
@@ -441,8 +466,34 @@ def main():
         if cookies:
             context.add_cookies(cookies)
         page = context.new_page()
-        login(page)
-        save_cookies(context)
+        logged_in = login(page)
+        if logged_in:
+            # Only persist cookies when genuinely authenticated — never save the
+            # dead login-page cookies over a previously-good session.
+            save_cookies(context)
+        else:
+            print("::error::AppFolio login failed (expired cookies + 2FA wall). "
+                  "Not saving cookies; exiting non-zero so the failure is visible.")
+            browser.close()
+            print("Nothing to write (not logged in).")
+            sys.exit(1)
+
+        # Guard: logged in, but if the Statements page shows NO owner cards at all,
+        # the session is effectively dead (the diagnostic dump in download_packet
+        # prints why). Fail loudly rather than silently writing nothing.
+        page.goto("https://laureatetld.appfolio.com/oportal/statements")
+        page.wait_for_load_state("networkidle")
+        try:
+            page.wait_for_selector("#statements-root .card", timeout=20000)
+        except Exception:
+            pass
+        n_cards = len(page.query_selector_all("h2.card-title"))
+        print(f"Owner cards on Statements page: {n_cards}")
+        if n_cards < 1:
+            print("::error::AppFolio Statements page shows 0 owner cards — session likely "
+                  "expired (2FA wall). Exiting non-zero so the failure is visible.")
+            browser.close()
+            sys.exit(1)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             try:
