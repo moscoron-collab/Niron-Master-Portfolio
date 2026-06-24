@@ -80,6 +80,10 @@ safe(LLC) = ending_balance(LLC)
 if safe < 0 → safe = 0   (and say the account can't distribute this month)
 
 per_partner = safe / (3 if Dorado else 2)
+# THEN round each per-partner amount DOWN to the nearest $50 (user pref: clean
+# round numbers, and rounding down never over-distributes). e.g. 1,133→1,100,
+# 1,053→1,050, 938→900. Show the rounded figure as the headline; keep the exact
+# one only if the user asks.
 ```
 
 - **cushion(LLC)** (per-LLC buffers, user-chosen): **Divando $2,000 · Donald $1,500 ·
