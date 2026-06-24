@@ -2984,8 +2984,14 @@ function auditRun(openModal) {
       kpi('kpi-life-total', 'Lifetime - Total', lifeY + lifeN);
 
       // ---- Per-LLC cards: rendered net vs recompute; sum == Net tile ----
+      // Scope to the Monthly Breakdown section ONLY. The Distribution Planner and the
+      // True-Cash bank section reuse the .llc-card class but are NOT portfolio-net cards;
+      // their short titles ("Divando", "Donald", "Dorado (÷3 w/ Simon)"...) don't match an
+      // LLC data row, which produced bogus "no matching data" warnings on every audit run.
       let cardSum = 0;
-      document.querySelectorAll('#tab-master .llc-card').forEach(el => {
+      const mbSection = (function () { for (const h of document.querySelectorAll('#tab-master .section h2')) if (h.textContent.indexOf('Monthly Breakdown') !== -1) return h.parentElement; return null; })();
+      const mbCards = mbSection ? mbSection.querySelectorAll('.llc-card') : document.querySelectorAll('#tab-master .llc-card');
+      mbCards.forEach(el => {
         const h3 = el.querySelector('h3'); const totV = el.querySelector('.llc-row.total .v');
         if (!h3 || !totV) return;
         const llc = h3.textContent.trim(), dispNet = _pm(totV.textContent);
