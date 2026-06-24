@@ -92,18 +92,22 @@ per_partner = safe / (3 if Dorado else 2)
   its expected amount because it's still coming. Most common: **Divando insurance
   ~$2,909.98 drafts ~the 29th**, so it's not in a statement cut on/before the 24th–25th →
   reserve it. (Donald/Dorado/Yale insurance draft early, so they're usually already in.)
-- **inter-account amounts owed** — if a statement shows a `TRANSFER FROM X#### …` **credit**
-  that covered an overdraft (e.g. June: Donald received `$3,000` from Yale `X2321`), that LLC
-  **owes it back** → subtract it. A `TRANSFER … TO X#### OVERDRAFT` **debit** means this LLC
-  *lent* to a sibling (it's owed money — neutral, don't add it back as available).
-- **Co-owned pair shortcut:** Yale and Donald are **both Ron/Nir 50/50**, so a loan between
-  them is just the owners' own money moving — for the decision they can be viewed as one
-  combined Ron/Nir pool (`combined safe = both operating nets − both cushions`, ÷2). Mention
-  this option, but it doesn't override the cushion/overdraft judgment below.
-- Also note (don't subtract) if the account **was overdrawn / paid overdraft fees** — that's a
-  signal to distribute conservatively. **If a tight account can't cover its cushion AND repay a
-  sibling from this month's cash, recommend $0 (hold) and let it rebuild the buffer** — don't
-  force a distribution out of an account that just overdrafted.
+- **inter-account amounts owed** — only subtract a transfer that is **still UNREPAID at month-end**.
+  Many bridges net out within the cycle: an owner wire IN (`REQUESTED BY: RONEN …` credit) paid back
+  the same month (`REQUESTED BY: RON …` debit) is a **wash** — exclude both, it's NOT a drain. A sibling
+  `TRANSFER FROM X#### …` that hasn't been returned IS owed back → subtract it from the borrower (the
+  lender gets it back, so don't penalize the lender).
+- **Co-owned pair shortcut:** Yale and Donald are **both Ron/Nir 50/50**, so a loan between them is just
+  the owners' own money moving — for the decision they can be viewed as one combined Ron/Nir pool
+  (`combined safe = both operating nets − both cushions`, ÷2). If one of the pair is physically short
+  because its cash is parked in the other, just take its share from the sibling — same pockets.
+- **Overdraft ≠ hold.** If an account paid overdraft fees, **distinguish a timing overdraft from a real
+  shortfall.** A timing overdraft = early-month bills (mortgage/SBA, ~1st–8th) landing before the ~22nd
+  Laureate owner-funds deposit; if an owner or sibling **wired a bridge that was repaid the same cycle**,
+  the account is **square, not depleted** → distribute its operating net − cushion − reserves as normal.
+  **Only recommend $0 (hold)** if operating net after cushion + reserves is genuinely ≤ 0, or the account
+  carries an **unrepaid** loan that will drain it. (Do NOT repeat the June miss where Donald & Yale were
+  wrongly held over a timing overdraft Ron had already covered and been repaid for.)
 
 ---
 
@@ -124,7 +128,10 @@ per_partner = safe / (3 if Dorado else 2)
 
 • Dorado — $<repairs total> repairs ($<pending> still to clear). Safe to split ~$<safe> → $<each> each (you/me/Simon).
 
-• Donald — $<repairs total> repairs (<status>). <one-line note — e.g. skip / owes Yale / overdrawn>. Safe ~$<safe> → $<each> each.
+• Donald — $<repairs total> repairs (<status>). Safe to split ~$<safe> → $<each> each. <only add a note here if it's genuinely held, e.g. unrepaid loan>
+
+• <add any account being held to $0 with a one-line reason, only if truly held>
+
 
 • Yale — $<repairs total or "no repairs">. Safe to split ~$<safe> → $<each> each.
 
@@ -169,33 +176,36 @@ reference amount only to reserve a bill that is **missing** (still upcoming).
 
 ## Worked example — June 2026 (the actual decision; sanity check for the method)
 
-All 4 accounts ran tight in June (mortgages/SBA draft ~1st–8th; Laureate owner funds didn't
-land until the 22nd → early-month overdrafts). Cushions applied, Divando insurance (~29th) +
+All 4 accounts ran tight (mortgages/SBA draft ~1st–8th; Laureate owner funds land ~22nd →
+early-month overdrafts), but the overdrafts were **timing only**: Ron wired bridges and was
+**repaid the 23rd**, so all four are square. Cushions applied, Divando insurance (~29th) +
 software (~28th) reserved, the Divando $744.47 debit-card buy treated as paid. **Decision:
-distribute from the two healthy accounts, hold the two that overdrafted.**
+distribute from all four.**
 
 | LLC | Calc (flow-based, cushion on) | Safe | Each |
 |---|---|---|---|
 | **Divando** | 34,475 in − 12,200 mort − 2,334 SBA − 2,534 tax − 626 util − 7,444 repairs − 2,910 ins(res) − 289 software(res) − **2,000** cushion | **$4,138** | **$2,069** (Ron/Nir) |
+| **Donald** | 22,218 in − 13,682 mort − 444 SBA − 1,211 ins − 45 fees − 3,070 repairs − **1,500** cushion | **$2,266** | **$1,133** (Ron/Nir) |
+| **Yale** | 12,235 in − 7,337 mort − 225 SBA − 30 fees − 1,038 ins(res) − **1,500** cushion | **$2,106** | **$1,053** (Ron/Nir) |
 | **Dorado** | 10,016 in − 453 ins − 4,156 tax − 268 util − 975 repairs(incl. $450 prior check) − 350 pending − **1,000** cushion | **$2,813** | **$938** (Ron/Nir/Simon) |
-| **Donald** | net +3,766, **owes Yale $3,000** + 1,500 cushion → below zero | **$0 hold** | — |
-| **Yale** | net +3,606 but **$3,000 parked in Donald** + 1,500 cushion → below zero | **$0 hold** | — |
 
-→ **Ron $3,007 · Nir $3,007 · Simon $938.** At $0 cushions: Divando $3,069 ea, Dorado $1,271 ea.
+→ **Ron $5,193 · Nir $5,193 · Simon $938.**
 
 Maintenance reconciliation that fed this: Divando $7,444 ($6,010 cleared incl. the $744.47
 debit buy; pending = furnace $660 + garage $774); Dorado $875 ($525 cleared via `CHECK 3286` =
 Rolando's two; $350 Walter pending; a $450 prior-month `CHECK 3285` also cleared); Donald
 $3,070 all cleared (`CHECK 7256` $2,950 + `CHECK 7257` $120); Yale no repairs.
 
-Inter-account in June: Yale→Donald $3,000 (unrepaid, the entanglement), plus Ron personally
-floated $5,000 into Yale + $1,500 into Donald on the 12th and took both back on the 23rd
-(washes), plus small overdraft-cover loans to `X5369` ($600 Divando, $100 Yale).
+Inter-account in June (all washes / settled): Ron floated $5,000 into Yale + $1,500 into Donald
+on the 12th and **both repaid him on the 23rd**; Yale also sent $3,000 to Donald on the 1st (if
+not yet returned to Yale, take Yale's share from Donald — same owners); small overdraft-cover
+loans to `X5369` ($600 Divando, $100 Yale).
 
-> These figures were **flow-based** (income − costs) because ending balances weren't provided.
-> The chosen method is **ending-balance based** — when the user gives the 4 balances, recompute
-> with the Step-2 formula and prefer those numbers (they'll be a bit lower since the accounts
-> overdrafted, i.e. started below their cushion).
+> ⚠️ **Lesson:** the first pass wrongly **held Donald & Yale** ($0) over the overdrafts + the $3k.
+> That was WRONG — the overdrafts were timing and Ron's bridge was already repaid, so the accounts
+> are square. Never hold an account for a timing overdraft that's been covered + repaid.
+> These figures are **flow-based + cushion-conservative**; with the 4 **ending balances** recompute
+> exactly (Donald/Yale likely have a touch more room).
 
 ## Guardrails
 
