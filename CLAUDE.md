@@ -1615,6 +1615,51 @@ reconcile against each LLC's **bank account** to see which invoices haven't cash
 
 ---
 
+## 🗓️ `/monthly-distribution` skill — month-end reconcile + distribution prep (Jun 24 2026)
+
+A project skill at **`.claude/skills/monthly-distribution/SKILL.md`** (invoke with
+**`/monthly-distribution`**). Built from the Jun 2026 session where we reconciled maintenance
+against the bank and worked out safe-to-distribute per LLC. Run it at the **end of every month**
+for the **4 LLC accounts**. **READ-ONLY** — produces analysis + a Nir text, never writes the
+sheet/dashboard.
+
+- **Inputs the user provides:** (1) the **4 bank-statement CSVs** (`3 Divando LLC 3442` →
+  Divando ÷2 · `1 Donald LLC 9364` → Donald ÷2 · `2 Yale LLC 2321` → Yale ÷2 · `4 Dorado LLC
+  2189` → Dorado ÷3 +Simon); (2) the **dashboard Maintenance export CSV** (the `⬇ Export`
+  button, month dropdown set to the closing month); (3) **each account's END-OF-MONTH BALANCE**
+  (the chosen basis — ask if missing).
+- **Step 1 — maintenance reconcile:** match each invoice to a bank line. Debit-card (`DBT CRD`/
+  `DDA B/P`) by exact amount; checks (`CHECK ####`) by amount, trying **per-vendor sums** (the
+  CPA cuts **one check per vendor per LLC** — e.g. Divando `CHECK 260` $2,650 = Rolando's 5 jobs).
+  No match in-window = **still to clear**; a check dated before the work = prior-month. **Flag
+  invoices marked `Paid` in the sheet but not yet cashed** (the gap the user wants).
+- **Step 2 — safe to distribute (balance-based, user-chosen method):**
+  `safe = ending_balance − cushion − maintenance_still_to_clear − upcoming_recurring_bills_not_yet_drafted
+  − inter_account_owed`, clamp ≥0, then `÷2` (Dorado `÷3`).
+  - **Cushions (user-chosen per-LLC):** Divando **$2,000** · Donald **$1,500** · Yale **$1,500** ·
+    Dorado **$1,000**.
+  - **Reserve upcoming bills** not yet drafted by the statement date — most importantly **Divando
+    insurance ~$2,909.98 (~the 29th)**, which never lands in a statement cut on/before the 24th.
+  - **Inter-account owed:** an unrepaid overdraft-cover `TRANSFER FROM X####` credit (e.g. Jun:
+    Donald got **$3,000 from Yale X2321**) is **owed back** → subtract it. Note any account that
+    overdrafted (distribute conservatively).
+- **Step 3 — output:** per-LLC cleared/pending tables + a safe-to-distribute table + a short
+  **copyable Nir text** (per-LLC: repairs total, still-to-clear, safe-to-split → each).
+- **Splits (fixed):** Divando/Donald/Yale = Ron 50% / Nir 50%; **Dorado = Ron/Nir/Simon ⅓ each**.
+- The SKILL.md embeds the full **bank-line classification** rules + the **recurring-cost/draft-day
+  reference table** (so it can tell what's still "upcoming") + a **June worked example** as a
+  sanity check. Distributions on the statement (`BILL PAID-RONEN`=Ron, `BILL PAID-SIMON HAVIV`=Simon,
+  `TRANSFER … TO X9562`=Nir) and own-account transfers are excluded from expenses, like the dashboard's
+  bank importer. Keep the reference numbers in sync with `CASHPLAN_CONFIG` when fixed costs change.
+
+> 🔭 Open: (a) **Yale** had no June statement/balance yet, so its June number is still pending.
+> (b) the user picked **ending-balance** basis — the Jun figures I gave earlier were flow-based
+> estimates; recompute from balances when provided. (c) the deferred "Cleared by bank" per-invoice
+> checkbox (would auto-track pending vs cashed instead of the manual match) was NOT built — it needs
+> an Apps Script column + redeploy.
+
+---
+
 ## 📄 Moss Owner Packet PDF structure
 
 Pages:
