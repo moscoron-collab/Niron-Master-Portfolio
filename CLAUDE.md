@@ -661,11 +661,15 @@ audit's dedup key (`month | LLC | source`) collapses all 3 into one and flags a 
 They are **NOT duplicates** (3 distinct properties) and the **dollars are correct** — col C is already
 `Divando LLC`, so they roll up into the Divando card/net properly. The only effects are this cosmetic
 warning + April's per-property table can't split them by property. **Fix = relabel col K (Source) on
-those 3 April rows** to `Manual Entry: <property>` (map each by its disbursement amount). ⚠️ The
-existing `relabel_manual.py` does **NOT** catch these — it only rewrites rows where col C = the property
-name, but these already have col C = `Divando LLC`. So the relabel is a manual sheet edit (the agent
-can't write the sheet; sandbox blocks `script.google.com`). The writer `enter_suncoast_manual.py` is
-already fixed (writes the per-property Source), so this won't recur for new months.
+those 3 April rows** to `Manual Entry: <property>`. ✅ **`relabel_manual.py` now does this in one click**
+(Jun 24 2026): it was extended to also catch the "Shape B" rows (col C already `Divando LLC` + bare
+`Manual Entry` source) by matching the **Owner Disbursement amount** (col D) to the property, using the
+user-confirmed April mapping (`$478.25`→Joest · `$920`→Stockport · `$1,209`→Hare). Run **Actions →
+"Relabel Manual Entries (Suncoast / Mid South)" → Run workflow**; it only relabels the Source (never
+changes the amount) and is idempotent. The writer `enter_suncoast_manual.py` is already fixed (writes
+the per-property Source), so this won't recur for new months. ⚠️ The April Hare row's amount reads
+**$1,209** in the sheet (the $1,125.40 figure was *May's* Hare deposit) — the relabel does not touch it;
+correct the amount separately only if the user says $1,209 is wrong.
 
 > Self-audit is pure frontend (`index.html`) — no Apps Script change, goes live on merge.
 
