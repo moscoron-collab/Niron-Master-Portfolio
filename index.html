@@ -2195,7 +2195,10 @@ function renderAll() {
     const maintOpts = '<option value=""' + (maintMonth === '' ? ' selected' : '') + '>All months</option>' +
       maintMonths.map(m => '<option value="' + m + '"' + (m === maintMonth ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
     html += '<div class="section"><h2><span class="dot"></span><span>Maintenance Invoices</span>' +
-      '<select class="header-month-select" onchange="maintSetMonth(this.value)" title="Month">' + maintOpts + '</select></h2>';
+      '<select class="header-month-select" onchange="maintSetMonth(this.value)" title="Month">' + maintOpts + '</select>' +
+      '<button onclick="exportMaintCsv()" title="Download these invoices grouped by LLC (CSV) — send to Nir" style="margin-left:auto;background:#0080cc;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">⬇ Export</button>' +
+      '<button onclick="printMaint()" title="Clean printable sheet grouped by LLC (save as PDF / share)" style="background:#13243a;color:#9fc1e0;border:1px solid #29456a;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit">🖨 Print</button>' +
+      '</h2>';
     html += '<table><thead><tr><th>Date</th><th>LLC</th><th>Property</th><th>Sub</th><th>Category</th><th>Description</th><th>Amount</th><th>Pay / File</th><th>Edit</th></tr></thead><tbody>';
     if (!maintFiltered.length) {
       html += '<tr><td colspan="9" style="color:#7e9cbf;text-align:center;padding:14px">No maintenance invoices for ' + monthLabel(maintMonth) + '.</td></tr>';
@@ -3182,6 +3185,89 @@ function printCpa() {
   const body = rows.map(m => '<tr><td>' + dateLabel(m.date) + '</td><td>' + (m.llc || '') + '</td><td>' + (m.property || '') + '</td><td>' + (m.sub || '') + '</td><td>' + (m.category || '') + '</td><td>' + (m.description || '') + '</td><td style="text-align:right">' + fmt(m.amount) + '</td><td>' + (m.notes || '') + '</td></tr>').join('');
   const w = window.open('', '_blank');
   w.document.write('<html><head><title>CPA Unpaid Invoices</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{font-size:18px;margin:0 0 4px}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left}th{background:#f0f0f0}tfoot td{font-weight:bold}</style></head><body><h1>Niron - CPA Unpaid Invoices</h1><div>Generated ' + new Date().toLocaleString() + ' · ' + rows.length + ' invoice(s)</div><table><thead><tr><th>Date</th><th>LLC</th><th>Property</th><th>Vendor</th><th>Category</th><th>Description</th><th>Amount</th><th>Notes</th></tr></thead><tbody>' + body + '</tbody><tfoot><tr><td colspan="6">TOTAL</td><td style="text-align:right">' + fmt(total) + '</td><td></td></tr></tfoot></table></body></html>');
+  w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
+}
+
+/* ============================================================
+   MAINTENANCE EXPORT — every invoice grouped by LLC, with a per-LLC
+   subtotal AND a "still owed (unpaid)" subtotal, plus a grand total.
+   Built so Ron can send Nir a per-LLC view of maintenance spend before
+   deciding distributions, and reconcile against each bank account (the
+   Paid By / Paid columns show what's a debit-draw vs a mailed check vs
+   CPA-paid). Respects the Maintenance table's month dropdown (MAINT_MONTH;
+   '' = All months). CSV + a clean printable sheet, like the CPA view.
+   ============================================================ */
+function maintExportRows() {
+  // Same filter the on-screen table uses, but ordered by LLC then date
+  // (newest first within each LLC) so the grouped output is stable.
+  const all = (PORTFOLIO_DATA && PORTFOLIO_DATA.maintenance) || [];
+  const rows = (MAINT_MONTH ? all.filter(m => m.period === MAINT_MONTH) : all.slice());
+  return rows.sort((a, b) =>
+    (a.llc || '').localeCompare(b.llc || '') || (b.date || '').localeCompare(a.date || ''));
+}
+function maintPaidByLabel(m) {
+  const p = m.paid_by || '';
+  if (p === 'Sent to CPA') return 'Sent to CPA';
+  if (p === 'Check') return 'Check (mailed)';
+  if (p === 'Debit Card' || p === 'LLC Debit Card') return 'Debit Card';
+  return '—';
+}
+function maintScopeLabel() { return MAINT_MONTH ? monthLabel(MAINT_MONTH) : 'All months'; }
+// Group the sorted rows into {llc: [rows]} preserving alphabetical LLC order.
+function maintGroupByLlc(rows) {
+  const by = {};
+  rows.forEach(m => { const k = m.llc || '—'; (by[k] = by[k] || []).push(m); });
+  return by;
+}
+function exportMaintCsv() {
+  const rows = maintExportRows();
+  if (!rows.length) { alert('No maintenance invoices to export for ' + maintScopeLabel() + '.'); return; }
+  const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const blank = ['', '', '', '', '', '', '', '', '', '', ''];
+  const lines = [['LLC', 'Date', 'Property', 'Vendor', 'Category', 'Description', 'Amount', 'Paid By', 'Paid', 'Notes', 'Invoice File'].map(esc).join(',')];
+  const byLlc = maintGroupByLlc(rows);
+  let grandTotal = 0, grandUnpaid = 0;
+  Object.keys(byLlc).forEach(llc => {
+    let sub = 0, subUnpaid = 0;
+    byLlc[llc].forEach(m => {
+      const amt = m.amount || 0; sub += amt; if (!m.paid) subUnpaid += amt;
+      lines.push([m.llc, m.date, m.property, m.sub, m.category, m.description, amt.toFixed(2), maintPaidByLabel(m), m.paid ? 'Yes' : 'No', m.notes, m.invoice_url].map(esc).join(','));
+    });
+    grandTotal += sub; grandUnpaid += subUnpaid;
+    lines.push([llc + ' — subtotal', '', '', '', '', '', sub.toFixed(2), '', '', '', ''].map(esc).join(','));
+    lines.push([llc + ' — still owed (unpaid)', '', '', '', '', '', subUnpaid.toFixed(2), '', '', '', ''].map(esc).join(','));
+    lines.push(blank.map(esc).join(','));
+  });
+  lines.push(['GRAND TOTAL', '', '', '', '', '', grandTotal.toFixed(2), '', '', '', ''].map(esc).join(','));
+  lines.push(['GRAND TOTAL — still owed (unpaid)', '', '', '', '', '', grandUnpaid.toFixed(2), '', '', '', ''].map(esc).join(','));
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/csv' });
+  const tag = MAINT_MONTH ? MAINT_MONTH : 'all-months';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Niron_Maintenance_' + tag + '_' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+}
+function printMaint() {
+  const rows = maintExportRows();
+  if (!rows.length) { alert('No maintenance invoices to export for ' + maintScopeLabel() + '.'); return; }
+  const byLlc = maintGroupByLlc(rows);
+  let grandTotal = 0, grandUnpaid = 0, body = '';
+  Object.keys(byLlc).forEach(llc => {
+    let sub = 0, subUnpaid = 0;
+    const trs = byLlc[llc].map(m => {
+      const amt = m.amount || 0; sub += amt; if (!m.paid) subUnpaid += amt;
+      return '<tr><td>' + dateLabel(m.date) + '</td><td>' + (m.property || '') + '</td><td>' + (m.sub || '') + '</td><td>' + (m.category || '') + '</td><td>' + (m.description || '') + '</td><td style="text-align:right">' + fmt(amt) + '</td><td>' + maintPaidByLabel(m) + '</td><td style="text-align:center">' + (m.paid ? 'Yes' : 'No') + '</td></tr>';
+    }).join('');
+    grandTotal += sub; grandUnpaid += subUnpaid;
+    body += '<h2>' + llc + '</h2><table><thead><tr><th>Date</th><th>Property</th><th>Vendor</th><th>Category</th><th>Description</th><th>Amount</th><th>Paid By</th><th>Paid</th></tr></thead><tbody>' + trs +
+      '<tr class="sub"><td colspan="5">' + llc + ' subtotal</td><td style="text-align:right">' + fmt(sub) + '</td><td colspan="2"></td></tr>' +
+      '<tr class="sub owed"><td colspan="5">' + llc + ' — still owed (unpaid)</td><td style="text-align:right">' + fmt(subUnpaid) + '</td><td colspan="2"></td></tr>' +
+      '</tbody></table>';
+  });
+  const w = window.open('', '_blank');
+  w.document.write('<html><head><title>Niron Maintenance - ' + maintScopeLabel() + '</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:20px 0 6px;color:#0a3d62}table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left;vertical-align:top}th{background:#f0f0f0}tr.sub td{font-weight:bold;background:#f7f7f7}tr.owed td{color:#b00020}.grand{margin-top:18px;font-size:14px;font-weight:bold;border-top:2px solid #333;padding-top:10px}.grand .owed{color:#b00020}</style></head><body>' +
+    '<h1>Niron - Maintenance Invoices</h1>' +
+    '<div>Scope: <b>' + maintScopeLabel() + '</b> &middot; ' + rows.length + ' invoice(s) &middot; generated ' + new Date().toLocaleString() + '</div>' +
+    body +
+    '<div class="grand">GRAND TOTAL: ' + fmt(grandTotal) + '<br><span class="owed">Still owed (unpaid): ' + fmt(grandUnpaid) + '</span></div>' +
+    '</body></html>');
   w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
 }
 
