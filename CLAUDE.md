@@ -1585,6 +1585,36 @@ its own once merged.
 
 ---
 
+## 📤 Maintenance Export — CSV + Print, grouped by LLC (Jun 24 2026)
+
+The **Maintenance Invoices** section header now has two buttons next to its month dropdown
+(pushed right via `margin-left:auto`): **`⬇ Export`** (`exportMaintCsv()`) and **`🖨 Print`**
+(`printMaint()`). Purpose (user, Jun 24 2026): send Nir a **per-LLC view of maintenance spend**
+so he can decide how much to distribute to each partner from each LLC, and let the user
+reconcile against each LLC's **bank account** to see which invoices haven't cashed yet.
+- **Scope = the Maintenance table's own month dropdown** (`MAINT_MONTH`; `''` = All months). So
+  "export what you see" — pick a month to narrow it, or All months for everything. Both buttons
+  alert + no-op if the current scope has zero invoices.
+- **Grouped by LLC** (alphabetical), every invoice as a detail row, then **two subtotal lines per
+  LLC**: `— subtotal` (all invoices) and **`— still owed (unpaid)`** (sum of rows where the
+  `paid` checkbox is false — the "upcoming" number), then a **GRAND TOTAL** + **GRAND TOTAL —
+  still owed (unpaid)** at the bottom.
+- **Columns:** LLC · Date · Property · Vendor (sub) · Category · Description · Amount · **Paid By**
+  (`maintPaidByLabel`: `Debit Card` = instant draw / `Check (mailed)` = may not have cleared /
+  `Sent to CPA` = CPA pays it / `—`) · **Paid** (Yes/No from the `paid` flag) · Notes · Invoice File.
+  The Paid By + Paid columns are what the user ticks against the bank to find uncashed invoices.
+- Helpers: `maintExportRows()` (filter+sort by LLC then date desc), `maintGroupByLlc()`,
+  `maintPaidByLabel()`, `maintScopeLabel()`. CSV is UTF-8 (em-dash labels are fine), filename
+  `Niron_Maintenance_<month|all-months>_<today>.csv`. Print opens a clean B/W sheet (per-LLC
+  table + subtotal + grand total, "still owed" in red), like `printCpa()`.
+- **Pure frontend (`index.html`), live on merge — NO Apps Script redeploy.** Mirrors the existing
+  CPA export pattern (`exportCpaCsv`/`printCpa`). Self-audit unaffected (no `#kpi-*` IDs). The
+  "still owed (unpaid)" subtotal keys off the `paid` checkbox only — there is no per-invoice
+  "cleared by bank" flag (that would need an Apps Script column + redeploy; not built — the user
+  does the bank reconciliation manually, which is the point).
+
+---
+
 ## 📄 Moss Owner Packet PDF structure
 
 Pages:
