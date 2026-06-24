@@ -1652,11 +1652,25 @@ sheet/dashboard.
   `TRANSFER … TO X9562`=Nir) and own-account transfers are excluded from expenses, like the dashboard's
   bank importer. Keep the reference numbers in sync with `CASHPLAN_CONFIG` when fixed costs change.
 
-> 🔭 Open: (a) **Yale** had no June statement/balance yet, so its June number is still pending.
-> (b) the user picked **ending-balance** basis — the Jun figures I gave earlier were flow-based
-> estimates; recompute from balances when provided. (c) the deferred "Cleared by bank" per-invoice
-> checkbox (would auto-track pending vs cashed instead of the manual match) was NOT built — it needs
-> an Apps Script column + redeploy.
+**Cushion is a run-time lever (user request Jun 24 2026):** the skill applies the default per-LLC
+cushions but must **state them and offer to change them every run** (the user explicitly wants to
+adjust the buffer per month). It also shows the $0-cushion numbers as a quick trade-off reference.
+
+**Co-owned-pair rule:** Yale + Donald are both Ron/Nir 50/50, so a loan between them is just the
+owners' own money — they can be viewed as one combined pool for the decision. And **a tight account
+that can't cover its cushion + repay a sibling from the month's cash → recommend $0 (hold), let it
+rebuild** (don't force a distribution out of an account that just overdrafted).
+
+**✅ June 2026 decision (all 4 reconciled, user said "you make the call"):** distribute from the two
+healthy accounts, **hold the two that overdrafted** — **Divando $4,138 → $2,069 ea** (Ron/Nir) +
+**Dorado $2,813 → $938 ea** (Ron/Nir/Simon); **Donald $0** (owes Yale $3,000, below cushion) +
+**Yale $0** ($3,000 parked in Donald, below cushion). Totals: Ron $3,007 · Nir $3,007 · Simon $938.
+All 4 accounts ran tight (owner funds land ~22nd; mortgages draft ~1st–8th → early-month overdrafts;
+Ron floated $5k into Yale + $1.5k into Donald on the 12th, repaid the 23rd). Figures are flow-based
+(income − costs); the chosen basis is ending balances — recompute lower if the user provides them.
+
+> 🔭 Open: the deferred **"Cleared by bank" per-invoice checkbox** (auto-track pending vs cashed
+> instead of the manual statement match) was NOT built — it needs an Apps Script column + redeploy.
 
 ---
 
