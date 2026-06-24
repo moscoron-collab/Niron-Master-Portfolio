@@ -1672,6 +1672,13 @@ the 12th) and **both repaid him on the 23rd** → the accounts are **square, not
 that an owner/sibling covered and was **repaid the same cycle is NOT a reason to hold** — each account's own
 income covers its bills with a surplus. (Yale also moved $3,000 to Donald on the 1st; if not yet returned,
 take Yale's share from Donald — same Ron/Nir 50/50 pockets.) Skill + worked example updated to match.
+**Follow-up (Divando July checks):** user then flagged ~$4,500 of repair checks drafting **first week of
+July** (Rolando/Holly ~$3,000 + Rigo the painter ~$1,500) — before July income (~22nd). Since that
+consumes essentially all of Divando's $4,138 June surplus, **recommended holding Divando's June
+distribution (take $0), distribute from the other 3, and pay Divando's share in July** once the checks
+clear + income lands (unless Divando's actual balance has slack beyond the checks — then it can spare
+some). Revised totals with Divando held: **Ron $3,124 · Nir $3,124 · Simon $938.** **Principle added to
+the skill: reserve known upcoming maintenance/checks due before next income — ask the user every run.**
 
 > 🔭 Open: the deferred **"Cleared by bank" per-invoice checkbox** (auto-track pending vs cashed
 > instead of the manual statement match) was NOT built — it needs an Apps Script column + redeploy.

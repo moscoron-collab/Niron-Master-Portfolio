@@ -92,6 +92,12 @@ per_partner = safe / (3 if Dorado else 2)
   its expected amount because it's still coming. Most common: **Divando insurance
   ~$2,909.98 drafts ~the 29th**, so it's not in a statement cut on/before the 24th–25th →
   reserve it. (Donald/Dorado/Yale insurance draft early, so they're usually already in.)
+- **known upcoming maintenance / mailed checks** — **ASK the user each run** whether any repair
+  checks are due to draft **before next month's income lands** (owner funds arrive ~the 22nd;
+  checks written early month hit first). Reserve those too. A big upcoming-check batch can zero out
+  an otherwise-healthy account's distributable. (June→July example: Divando had ~$4,500 of early-July
+  checks — Rolando/Holly ~$3,000 + Rigo the painter ~$1,500 — which consumed essentially all of its
+  $4,138 June surplus → **Divando held to ~$0 for the month, its share deferred to July**.)
 - **inter-account amounts owed** — only subtract a transfer that is **still UNREPAID at month-end**.
   Many bridges net out within the cycle: an owner wire IN (`REQUESTED BY: RONEN …` credit) paid back
   the same month (`REQUESTED BY: RON …` debit) is a **wash** — exclude both, it's NOT a drain. A sibling
