@@ -83,7 +83,10 @@ per_partner = safe / (3 if Dorado else 2)
 ```
 
 - **cushion(LLC)** (per-LLC buffers, user-chosen): **Divando $2,000 · Donald $1,500 ·
-  Yale $1,500 · Dorado $1,000.**
+  Yale $1,500 · Dorado $1,000.** These are the defaults — **at run time, state the cushion
+  you're applying per LLC and explicitly offer to change it** before finalizing (the user
+  wants this lever every month). Also show what the numbers become at $0 cushion as a quick
+  reference so they can see the trade-off.
 - **upcoming bills not yet drafted** — scan the statement for each recurring bill in the
   reference table below; if a bill is **absent** (or dated after the statement end), reserve
   its expected amount because it's still coming. Most common: **Divando insurance
@@ -93,8 +96,14 @@ per_partner = safe / (3 if Dorado else 2)
   that covered an overdraft (e.g. June: Donald received `$3,000` from Yale `X2321`), that LLC
   **owes it back** → subtract it. A `TRANSFER … TO X#### OVERDRAFT` **debit** means this LLC
   *lent* to a sibling (it's owed money — neutral, don't add it back as available).
+- **Co-owned pair shortcut:** Yale and Donald are **both Ron/Nir 50/50**, so a loan between
+  them is just the owners' own money moving — for the decision they can be viewed as one
+  combined Ron/Nir pool (`combined safe = both operating nets − both cushions`, ÷2). Mention
+  this option, but it doesn't override the cushion/overdraft judgment below.
 - Also note (don't subtract) if the account **was overdrawn / paid overdraft fees** — that's a
-  signal to distribute conservatively from it regardless of the formula.
+  signal to distribute conservatively. **If a tight account can't cover its cushion AND repay a
+  sibling from this month's cash, recommend $0 (hold) and let it rebuild the buffer** — don't
+  force a distribution out of an account that just overdrafted.
 
 ---
 
@@ -158,23 +167,35 @@ reference amount only to reserve a bill that is **missing** (still upcoming).
 
 ---
 
-## Worked example — June 2026 (sanity check for the method)
+## Worked example — June 2026 (the actual decision; sanity check for the method)
 
-With the per-LLC cushions, reserving Divando's ~29th insurance, treating the Divando
-$744.47 debit-card buy as paid, and netting Donald's $3,000 owed to Yale:
+All 4 accounts ran tight in June (mortgages/SBA draft ~1st–8th; Laureate owner funds didn't
+land until the 22nd → early-month overdrafts). Cushions applied, Divando insurance (~29th) +
+software (~28th) reserved, the Divando $744.47 debit-card buy treated as paid. **Decision:
+distribute from the two healthy accounts, hold the two that overdrafted.**
 
-- **Divando** — repairs $7,444.33 ($6,010 cleared incl. the $744.47; $1,434.47 pending =
-  furnace $660 + garage $774). Reserved insurance $2,909.98. (Flow-based safe ≈ **$6,427 →
-  $3,213 each**; redo from the ending balance when provided.)
-- **Dorado** — repairs $875 ($525 cleared via `CHECK 3286`; $350 Walter pending). Safe ≈
-  **$3,813 → $1,271 each** (÷3).
-- **Donald** — repairs $3,070 all cleared (`CHECK 7256` $2,950 + `CHECK 7257` $120), **but
-  overdrawn early month + owes Yale $3,000** → only ~$766 free → **recommend skip/minimal**.
-- **Yale** — no repairs; statement still needed for its number.
+| LLC | Calc (flow-based, cushion on) | Safe | Each |
+|---|---|---|---|
+| **Divando** | 34,475 in − 12,200 mort − 2,334 SBA − 2,534 tax − 626 util − 7,444 repairs − 2,910 ins(res) − 289 software(res) − **2,000** cushion | **$4,138** | **$2,069** (Ron/Nir) |
+| **Dorado** | 10,016 in − 453 ins − 4,156 tax − 268 util − 975 repairs(incl. $450 prior check) − 350 pending − **1,000** cushion | **$2,813** | **$938** (Ron/Nir/Simon) |
+| **Donald** | net +3,766, **owes Yale $3,000** + 1,500 cushion → below zero | **$0 hold** | — |
+| **Yale** | net +3,606 but **$3,000 parked in Donald** + 1,500 cushion → below zero | **$0 hold** | — |
 
-> The June figures above were computed **flow-based** (income − costs) because ending
-> balances weren't provided yet. The skill's chosen method is **ending-balance based** — when
-> the user gives the 4 balances, recompute with the Step-2 formula and prefer those numbers.
+→ **Ron $3,007 · Nir $3,007 · Simon $938.** At $0 cushions: Divando $3,069 ea, Dorado $1,271 ea.
+
+Maintenance reconciliation that fed this: Divando $7,444 ($6,010 cleared incl. the $744.47
+debit buy; pending = furnace $660 + garage $774); Dorado $875 ($525 cleared via `CHECK 3286` =
+Rolando's two; $350 Walter pending; a $450 prior-month `CHECK 3285` also cleared); Donald
+$3,070 all cleared (`CHECK 7256` $2,950 + `CHECK 7257` $120); Yale no repairs.
+
+Inter-account in June: Yale→Donald $3,000 (unrepaid, the entanglement), plus Ron personally
+floated $5,000 into Yale + $1,500 into Donald on the 12th and took both back on the 23rd
+(washes), plus small overdraft-cover loans to `X5369` ($600 Divando, $100 Yale).
+
+> These figures were **flow-based** (income − costs) because ending balances weren't provided.
+> The chosen method is **ending-balance based** — when the user gives the 4 balances, recompute
+> with the Step-2 formula and prefer those numbers (they'll be a bit lower since the accounts
+> overdrafted, i.e. started below their cushion).
 
 ## Guardrails
 
