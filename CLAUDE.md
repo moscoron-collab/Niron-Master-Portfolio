@@ -1661,13 +1661,17 @@ owners' own money — they can be viewed as one combined pool for the decision. 
 that can't cover its cushion + repay a sibling from the month's cash → recommend $0 (hold), let it
 rebuild** (don't force a distribution out of an account that just overdrafted).
 
-**✅ June 2026 decision (all 4 reconciled, user said "you make the call"):** distribute from the two
-healthy accounts, **hold the two that overdrafted** — **Divando $4,138 → $2,069 ea** (Ron/Nir) +
-**Dorado $2,813 → $938 ea** (Ron/Nir/Simon); **Donald $0** (owes Yale $3,000, below cushion) +
-**Yale $0** ($3,000 parked in Donald, below cushion). Totals: Ron $3,007 · Nir $3,007 · Simon $938.
-All 4 accounts ran tight (owner funds land ~22nd; mortgages draft ~1st–8th → early-month overdrafts;
-Ron floated $5k into Yale + $1.5k into Donald on the 12th, repaid the 23rd). Figures are flow-based
-(income − costs); the chosen basis is ending balances — recompute lower if the user provides them.
+**✅ June 2026 decision (all 4 reconciled; CORRECTED after user note):** distribute from **all four** —
+**Divando $2,069 ea** (Ron/Nir) · **Donald $1,133 ea** (Ron/Nir) · **Yale $1,053 ea** (Ron/Nir) ·
+**Dorado $938 ea** (Ron/Nir/Simon). Totals: **Ron $5,193 · Nir $5,193 · Simon $938** (cushion-conservative,
+flow-based — recompute from ending balances when provided; Donald/Yale likely have a touch more room).
+**⚠️ LESSON — the first pass WRONGLY held Donald & Yale at $0** over their overdrafts + a $3k Yale→Donald
+transfer. The user corrected it: the early-month overdrafts were **timing only** (mortgages draft ~1st–8th,
+Laureate owner funds land ~22nd). **Ron personally wired the bridge** ($5k into Yale + $1.5k into Donald on
+the 12th) and **both repaid him on the 23rd** → the accounts are **square, not depleted**. A timing overdraft
+that an owner/sibling covered and was **repaid the same cycle is NOT a reason to hold** — each account's own
+income covers its bills with a surplus. (Yale also moved $3,000 to Donald on the 1st; if not yet returned,
+take Yale's share from Donald — same Ron/Nir 50/50 pockets.) Skill + worked example updated to match.
 
 > 🔭 Open: the deferred **"Cleared by bank" per-invoice checkbox** (auto-track pending vs cashed
 > instead of the manual statement match) was NOT built — it needs an Apps Script column + redeploy.
