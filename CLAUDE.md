@@ -1693,8 +1693,10 @@ up to $2,500 ea (it's the only flush/mortgage-free account) but conservative = i
 Divando $0 (cash committed to insurance + the ~$4,500 July checks); Yale $0 — its $6,651 balance is
 LESS than its $7,337 July mortgage, so it overdraws ~the 8th regardless and needs ~$2,700 bridged.**
 Recommended conservative: **Ron $1,300 · Nir $1,300 · Simon $900** (Dorado $900 ea; can pull more).
-⚠️ Open: confirm no more **Dorado property tax** due this year (June's $4,156 was likely the 2nd-half
-2025 payment) before drawing Dorado down to $2,500 ea. **Skill updated: `safe` now reserves ALL
+✅ **User confirmed (Jun 24): no more Dorado property tax this year** → Dorado goes to its full safe
+ceiling **$2,500 ea**. **FINAL June distribution: Ron $2,900 · Nir $2,900 · Simon $2,500** (Donald $400
+ea, Dorado $2,500 ea, Divando + Yale HELD). Dorado at $2,500 ea leaves it ~$1,000 (its cushion) after
+insurance/util clear, then July income refills it — safe. **Skill updated: `safe` now reserves ALL
 outflows before next income incl. the next-month mortgage (timing per LLC), treats `safe` as a ceiling
 not a target, and flags any account whose balance < its pre-income bills as a hold + bridge.**
 
