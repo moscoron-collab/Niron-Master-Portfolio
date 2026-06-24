@@ -635,11 +635,37 @@ catches real rendering / label / totalling drift (not just re-printing the same 
   are **NOT being tracked** and the Remaining column was dropped from the loan table (#5), so a
   missing remaining balance is not a finding — the check was deleted to stop 5 noise warnings.
   **Do NOT propose DSCR/equity/LTV in Phase 2 unless the user revives it.**
-- **Expected steady state:** the chip sits at amber (not green) only because of the 2 insurance
-  override-vs-sheet drifts (Divando + Yale); those clear when insurance moves into the sheet
-  (#11). This is correct behaviour, not a bug.
+- **Expected steady state (updated Jun 24 2026):** insurance is now a **PASS** (bank-verified, no
+  longer drift), so the only remaining warning is the **1 April-2026 Divando "Manual Entry" group**
+  (see below) — everything else is green. The chip stays amber solely because of that one April
+  data-label leftover; clearing it (relabel the 3 rows' Source) takes the chip green.
 - Verified with a synthetic-DOM harness: 22 pass / 0 fail / 3 expected warns on correct data;
   catches an injected wrong KPI as a FAIL.
+
+### 🐛 "no matching data" × 4 on the LLC cards = audit-selector bug, FIXED (Jun 24 2026)
+A June-2026 audit showed **4 WARN | LLC card | Divando/Donald/Yale/"Dorado (÷3 w/ Simon)" | no
+matching data**. **Not a data problem** — the audit's per-LLC-card check used the broad selector
+`#tab-master .llc-card`, which the **Distribution Planner** (`renderDistributionPlanner`, line ~2402)
+and the **True-Cash bank section** (line ~2501) ALSO use. Those planner cards have short titles
+("Divando", "Donald", "Dorado (÷3 w/ Simon)") that don't match a canonical LLC data row, so the check
+emitted bogus "no matching data" warnings every run. **Fix:** the check now scopes its `.llc-card`
+query to the **Monthly Breakdown section only** (found via its `<h2>`), which contains exactly the 4
+real per-LLC summary cards. The real cards still PASS and `sum-of-cards = Net tile` is unaffected.
+Pure frontend, live on merge.
+
+### 🏷️ The 1 remaining audit warning = April-2026 Divando "Manual Entry" rows (known, deferred)
+**WARN | History data | 2026-04-01 | Divando LLC | Manual Entry | 1 row | 3 rows | Possible duplicate
+statement.** The 3 out-of-state manual props (8222 Hare Ave / 3899 Joest Rd / 6580 Stockport Dr) for
+April 2026 all carry a **bare Source `"Manual Entry"`** instead of `"Manual Entry: <property>"`, so the
+audit's dedup key (`month | LLC | source`) collapses all 3 into one and flags a "possible duplicate."
+They are **NOT duplicates** (3 distinct properties) and the **dollars are correct** — col C is already
+`Divando LLC`, so they roll up into the Divando card/net properly. The only effects are this cosmetic
+warning + April's per-property table can't split them by property. **Fix = relabel col K (Source) on
+those 3 April rows** to `Manual Entry: <property>` (map each by its disbursement amount). ⚠️ The
+existing `relabel_manual.py` does **NOT** catch these — it only rewrites rows where col C = the property
+name, but these already have col C = `Divando LLC`. So the relabel is a manual sheet edit (the agent
+can't write the sheet; sandbox blocks `script.google.com`). The writer `enter_suncoast_manual.py` is
+already fixed (writes the per-property Source), so this won't recur for new months.
 
 > Self-audit is pure frontend (`index.html`) — no Apps Script change, goes live on merge.
 
