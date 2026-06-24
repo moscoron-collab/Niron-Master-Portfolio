@@ -74,10 +74,12 @@ window may just not have posted yet — call it "posting, treat as paid" if the 
 ```
 safe(LLC) = ending_balance(LLC)
           − cushion(LLC)
-          − maintenance_still_to_clear(LLC)          # from Step 1
-          − upcoming_recurring_bills_not_yet_drafted(LLC)   # see reference table
-          − inter_account_amounts_owed(LLC)          # overdraft-cover transfers IN, not repaid
-if safe < 0 → safe = 0   (and say the account can't distribute this month)
+          − outflows_before_next_income(LLC)   # EVERYTHING that drafts before the ~22nd
+                                                # deposit: next-month mortgage/SBA/insurance/
+                                                # utilities that hit pre-22nd + pending &
+                                                # upcoming repair checks. SEE TIMING NOTE.
+          − inter_account_amounts_owed(LLC)     # overdraft-cover transfers IN, not repaid
+if safe < 0 → safe = 0   (account is below its working balance → HOLD; may need a bridge)
 
 per_partner = safe / (3 if Dorado else 2)
 # THEN round each per-partner amount DOWN to the nearest $50 (user pref: clean
@@ -91,11 +93,26 @@ per_partner = safe / (3 if Dorado else 2)
   you're applying per LLC and explicitly offer to change it** before finalizing (the user
   wants this lever every month). Also show what the numbers become at $0 cushion as a quick
   reference so they can see the trade-off.
-- **upcoming bills not yet drafted** — scan the statement for each recurring bill in the
-  reference table below; if a bill is **absent** (or dated after the statement end), reserve
-  its expected amount because it's still coming. Most common: **Divando insurance
-  ~$2,909.98 drafts ~the 29th**, so it's not in a statement cut on/before the 24th–25th →
-  reserve it. (Donald/Dorado/Yale insurance draft early, so they're usually already in.)
+- **outflows before next income (THE BIG ONE — this is what causes the overdrafts).** Reserve
+  **everything that will draft before the next Laureate deposit (~the 22nd)** — and that INCLUDES
+  **next month's mortgage/SBA/insurance/utilities if they draft before the 22nd**, not just this
+  month's leftovers. The money is committed even though next month's income will replace it.
+  ⏱️ **Mortgage draft timing per LLC (from the statements) is the crux:**
+  - **Donald** CBRE drafts **~the 1st**, **Yale** Lument **~the 8th** → both hit **well before** the
+    22nd income → **reserve the FULL mortgage** (this is why they overdraft).
+  - **Divando** loans draft **~the 22nd = same day as income** → **do NOT reserve** the mortgage.
+  - **Dorado** has **no mortgage** → almost nothing to reserve → its balance is mostly free.
+  - SBA all ~1st (reserve). Insurance: Divando ~29th, Donald ~4th, Dorado ~7th all draft before the
+    22nd (reserve); **Yale Acuity ~25th drafts AFTER the 22nd** (don't reserve). Utilities: reserve if
+    the LLC's draft day is before the 22nd (quarterly ones only in Jan/Apr/Jul/Oct).
+- **Balance < pre-income outflows ⇒ the account WILL overdraft no matter what → distribute $0, and
+  flag it needs a bridge / time to rebuild a working balance.** (June: Yale's $6,651 balance was LESS
+  than its $7,337 July mortgage → it overdraws ~the 8th regardless; hold it and pre-fund/bridge ~$2.7k.)
+- **`safe` is a CEILING, not a target.** It's the MOST you can take without overdrafting before next
+  income. You can take less (just the month's earnings) and let cash build. A mortgage-free account
+  that has accumulated cash (e.g. Dorado at ~$9.9k) shows a high ceiling — taking the full amount draws
+  down its buffer, which is a choice: **confirm no big bill (esp. property tax) is due first**, and
+  offer the conservative "just this month's earnings" amount alongside the max.
 - **known upcoming maintenance / mailed checks** — **ASK the user each run** whether any repair
   checks are due to draft **before next month's income lands** (owner funds arrive ~the 22nd;
   checks written early month hit first). Reserve those too. A big upcoming-check batch can zero out

@@ -1683,6 +1683,20 @@ distribution (take $0), distribute from the other 3, and pay Divando's share in 
 clear + income lands (unless Divando's actual balance has slack beyond the checks — then it can spare
 some). Revised totals with Divando held: **Ron $3,124 · Nir $3,124 · Simon $938.** **Principle added to
 the skill: reserve known upcoming maintenance/checks due before next income — ask the user every run.**
+**🔑 BALANCE-BASED re-run (user sent the 4 ending balances — Jun 24):** Divando **$12,671** · Donald
+**$18,002** · Yale **$6,651** · Dorado **$9,932**. This revealed the real driver of the overdrafts —
+**mortgage draft timing vs the ~22nd income deposit:** Donald CBRE drafts ~1st and Yale Lument ~8th
+(both BEFORE income → most of their balance is committed to the next mortgage), Divando loans ~22nd
+(same day as income → not a gap), Dorado has **no mortgage** (balance mostly free). Safe = balance −
+cushion − everything due before the 22nd. Result: **Donald ~$800 → $400 ea; Dorado ceiling ~$7,500 →
+up to $2,500 ea (it's the only flush/mortgage-free account) but conservative = its ~$900/ea earnings;
+Divando $0 (cash committed to insurance + the ~$4,500 July checks); Yale $0 — its $6,651 balance is
+LESS than its $7,337 July mortgage, so it overdraws ~the 8th regardless and needs ~$2,700 bridged.**
+Recommended conservative: **Ron $1,300 · Nir $1,300 · Simon $900** (Dorado $900 ea; can pull more).
+⚠️ Open: confirm no more **Dorado property tax** due this year (June's $4,156 was likely the 2nd-half
+2025 payment) before drawing Dorado down to $2,500 ea. **Skill updated: `safe` now reserves ALL
+outflows before next income incl. the next-month mortgage (timing per LLC), treats `safe` as a ceiling
+not a target, and flags any account whose balance < its pre-income bills as a hold + bridge.**
 
 > 🔭 Open: the deferred **"Cleared by bank" per-invoice checkbox** (auto-track pending vs cashed
 > instead of the manual statement match) was NOT built — it needs an Apps Script column + redeploy.
