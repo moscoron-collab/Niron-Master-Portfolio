@@ -1019,6 +1019,22 @@ Distributions). Per LLC: you **type the current bank balance**
 
 ---
 
+### 👁 Distribution Planner hide/show toggle — HIDDEN by default (Jun 28 2026)
+The Distribution Planner section is now gated behind a **`👁 Show Planner` / `🙈 Hide Planner`
+button** in the header button row (next to 📖 Monthly Guide, `id="planner-btn"`). Per-browser
+state in `localStorage 'niron_show_planner'` (`'1'` = show, default/null = **HIDDEN**). Helpers in
+`index.html`: `plannerVisible()`, `syncPlannerBtn()` (sets the button label, called at the top of
+`renderAll`), `togglePlanner()` (flips the flag + re-renders). The render call at ~line 2161 is
+`if (plannerVisible()) html += renderDistributionPlanner(data);`. **Why:** the user wants the
+planner hidden until they walk Nir through it in person, then they'll decide whether to keep it
+visible. Pure frontend, live on merge — no redeploy. To default it visible later, flip the toggle
+in the browser or change `plannerVisible()` to default true. (Item #1 from the same request — the
+invoice payment-lifecycle / "paid vs cashed" tracking — was discussed as **ideas only**, NOT built;
+the user will decide after showing Nir the whole db. Gist: an invoice has a lifecycle sent-to-CPA →
+check mailed → in transit → cashed, and cash only truly leaves at "cashed"; the fix direction is a
+status field where anything not "Cleared" is held back from distribution, auto-clear ~10 days after
+mailed, trued up by the monthly bank reconcile. Not implemented.)
+
 ## ❌ Distribution Planner DROPPED + 🚨 Net Cashflow is UNDERSTATED (Jun 7 2026, PR #65)
 
 **The Distribution Planner was REMOVED (PR #65).** The user reviewed 3 months (Mar–May 2026)
