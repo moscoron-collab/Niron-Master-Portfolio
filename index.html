@@ -2263,7 +2263,18 @@ function renderAll() {
   const allLoans = loans.concat(DIVANDO_PROPERTY_LOANS).slice().sort((a, b) => a.llc.localeCompare(b.llc));
   if (allLoans.length) { html += '<div class="section"><h2><span class="dot"></span>Loan Details per LLC</h2><table><thead><tr><th>LLC</th><th>Lender</th><th>Monthly</th></tr></thead><tbody>'; allLoans.forEach(l => { html += '<tr><td>' + l.llc + '</td><td style="font-size:12px">' + l.lender + '</td><td>' + fmt(l.monthly_payment) + '</td></tr>'; }); html += '</tbody></table></div>'; }
   html += renderPropertyDetailSection(data, maintenance);
-  html += '<div class="section"><h2><span class="dot"></span>History (newest first)</h2><table><thead><tr><th>Month</th><th>LLC</th><th>Disbursement</th><th>Mortgage</th><th>Insurance</th><th>Maintenance</th><th>Net</th></tr></thead><tbody>';
+  html += '<div class="section"><h2><span class="dot"></span>Monthly Performance by LLC (newest first)' +
+    '<span class="kpi-info">ⓘ<span class="kpi-tip">' +
+    '<b>One row = one LLC for one month.</b> It shows how each LLC did that month.' +
+    '<span class="formula">Net = Disbursement − Mortgage − Insurance − Maintenance</span>' +
+    '<b>Disbursement</b> = cash that actually hit the LLC bank account (the AppFolio owner disbursement). ' +
+    '<b>Mortgage</b> = that LLC full monthly loan cost. <b>Maintenance</b> = repair invoices logged for the LLC that month. ' +
+    'Divando rows also include the 3 out-of-state properties (Hare / Joest / Stockport).' +
+    '<span class="tax-note">Property tax is NOT subtracted here — Yale &amp; Donald pay it through escrow in the mortgage; ' +
+    'Divando &amp; Dorado pay it as a spring lump sum (shown for info only). This is the AppFolio-based estimate, ' +
+    'not the month-end true-bank-cash figure.</span>' +
+    '</span></span>' +
+    '</h2><table><thead><tr><th>Month</th><th>LLC</th><th>Disbursement</th><th>Mortgage</th><th>Insurance</th><th>Maintenance</th><th>Net</th></tr></thead><tbody>';
   sortedHistory.slice(0, 100).forEach(h => { html += '<tr><td style="white-space:nowrap">' + monthLabel(h.period_start) + '</td><td>' + h.llc + '</td><td>' + fmt(h.disbursement) + '</td><td>' + fmt(h.mortgage + extraMortgage(h.llc)) + '</td><td>' + fmt(h.ins_mo) + '</td><td>' + fmt(h.maintenance) + '</td><td class="' + (h.net_cashflow >= 0 ? 'green' : 'red') + '">' + fmt(h.net_cashflow) + '</td></tr>'; });
   html += '</tbody></table></div>';
   el.innerHTML = html;
@@ -2872,7 +2883,7 @@ function auditRun(openModal) {
 
       // ---- History table: every visible row must foot on screen ----
       const secByTitle = t => { for (const h of document.querySelectorAll('#tab-master .section h2')) if (h.textContent.indexOf(t) !== -1) return h.parentElement; return null; };
-      const histSec = secByTitle('History (newest first)');
+      const histSec = secByTitle('Monthly Performance by LLC');
       if (histSec) {
         let bad = 0, rows = 0;
         histSec.querySelectorAll('tbody tr').forEach(tr => {
