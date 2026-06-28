@@ -1043,6 +1043,18 @@ check mailed → in transit → cashed, and cash only truly leaves at "cashed"; 
 status field where anything not "Cleared" is held back from distribution, auto-clear ~10 days after
 mailed, trued up by the monthly bank reconcile. Not implemented.)
 
+### 💬 Header-button explanatory tooltips (Jun 28 2026)
+All **6 header buttons** (🩺 Run Audit · 🧾 CPA Invoices · 📋 Activity · 📥 Import Bank · 📖 Monthly
+Guide · 👁 Show/Hide Planner) now have **styled hover tooltips** written for a **first-time viewer**
+(Nir/anyone): each is two short sentences — **what it does + what it's for**. Replaced the old terse
+native `title=` attributes (removed from these 6 to avoid a double tooltip). Each button is wrapped in
+`<span class="btn-wrap">` containing the button + a `<span class="btn-tip">`; CSS (`.btn-wrap` /
+`.btn-tip` near the `.kpi-tip` block, ~line 60) matches the KPI-card `ⓘ` tooltip theme (dark
+`#0c1a2e`, cyan border, instant on hover, 250px). The **3 rightmost** tooltips (Import Bank, Monthly
+Guide, Show Planner) use **`.btn-tip.right`** (right-anchored) so they don't overflow the viewport
+edge. `syncPlannerBtn()` still finds the button by `id="planner-btn"` (wrapping doesn't break it).
+Pure frontend, live on merge — no redeploy. To add a tooltip to another button, wrap it the same way.
+
 ## ❌ Distribution Planner DROPPED + 🚨 Net Cashflow is UNDERSTATED (Jun 7 2026, PR #65)
 
 **The Distribution Planner was REMOVED (PR #65).** The user reviewed 3 months (Mar–May 2026)
