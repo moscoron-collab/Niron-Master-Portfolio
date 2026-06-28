@@ -1469,6 +1469,28 @@ TOTAL monthly-debt row**.
     with the **property list on hover** (native `title`, dotted-underline `.has-tip` hint); CBRE /
     SBA / Lument show as-is. Amounts right-aligned tabular-nums.
 
+### 🏠 Per-Property Monitor moved to its OWN main tab (Jun 28 2026)
+The **Per-Property Monitor** (the multi-LLC Divando/Yale/Donald section with the chart + table +
+LLC/chart/month/metric dropdowns) was moved off the Master Portfolio page into its own **5th main
+tab `🏠 Property Monitor`**, right of Loan Details (order: Master · Noble Insurance · Property Tax ·
+Loan Details · Property Monitor). User decisions: **move it** (removed from Master) · **keep the LLC
+dropdown / all 3 LLCs** · **visuals unchanged** (just relocated).
+- **How (pure frontend, no redeploy):** new pane `#tab-props` / `#props-content`. `renderAll` no
+  longer appends `renderPropertyDetailSection(...)` to the Master `#content`; instead, right after
+  `el.innerHTML = html`, it does `document.getElementById('props-content').innerHTML =
+  renderPropertyDetailSection(data, maintenance)` and still calls `renderPropertyChart()` (the
+  `#propChart` canvas now lives in the props pane). All the `pdSet*` controls still call `renderAll`,
+  so the pane rebuilds on every interaction.
+- **Chart-while-hidden fix:** a Chart.js canvas drawn while its pane is `display:none` comes out
+  0-sized, so `switchMainTab('props')` calls `renderPropertyChart()` again to redraw at full size
+  once the pane is visible.
+- **Wiring:** `switchMainTab` handles `'props'` (chat tag `PROPERTY MONITOR`, persists `?tab=props`);
+  the `?tab=` deep-link parser + URL-persist list include `props`.
+- **Self-audit kept:** the audit's per-property check looked up `secByTitle('Per-Property Monitor')`
+  scoped to `#tab-master`; widened to search **all panes** (`document.querySelectorAll('.section h2')`)
+  so the per-property table/chart/TOTAL checks still run from the new tab. (The History `secByTitle`
+  stays `#tab-master`-scoped — that table is still on Master.)
+
 ---
 
 ## 📖 Monthly Guide & Distribution Decider button (Jun 8 2026 · renamed + expanded Jun 28 2026)
