@@ -1454,14 +1454,20 @@ TOTAL monthly-debt row**.
   (the `allLoans`/"Loan Details per LLC" section ~line 2275) was deleted. Self-audit unaffected (it
   never footed the loan table; the histSec lookup is scoped to `#tab-master`).
 - Dorado shows **PAID OFF $0.00** (from the Loans sheet) → its subtotal is $0, correct.
-- **Visual polish (Jun 28 2026, user request):** styled to match the Property Tax tab — scoped
-  `#loans-content` CSS (sticky header, zebra `loan-alt` rows, `loan-llc` band header per LLC,
-  `loan-sub` subtotal band, `loan-total` grand-total band). The **LLC name shows once as a band
-  header** (NOT repeated on every loan row — fixed the misaligned CBRE/SBA/Lender-column issue).
-  The amount header is **"Monthly Payment"** (was "Monthly"). Each loan row has a **colored type
-  tag** via `loanTag(lender)`: `🏠 Mortgage` (green), `🏦 SBA` (blue), `✅ Paid off` (grey). The
-  redundant "Property Mortgage — " prefix is stripped from Divando rows (the tag says Mortgage);
-  Dorado's paid-off row shows "no loan". Amounts are right-aligned tabular-nums.
+- **Redesigned to CARD layout (Jun 28 2026, user request — the wide table "looked messy").** User
+  reviewed a band-header table version and rejected it (full-width stretch, tall rows, repeated
+  colored tags = noise). Final design (user-chosen via 4 questions): **compact card per LLC + a
+  summary tile strip + NO tags + shortened lender (full address on hover)**. Scoped `#loans-content`
+  CSS only — no table.
+  - **Summary tiles** (`.loan-tiles`): a highlighted **Total Monthly Debt** tile (red value) + one
+    small tile per LLC (label = `shortLlc(name)`, value = that LLC's monthly total).
+  - **Cards** (`.loan-cards` grid, `repeat(auto-fill, minmax(320px,1fr))`): one `.loan-card` per LLC
+    with a header (LLC name + `$X/mo` total, green; grey when $0) and one `.loan-row` per loan
+    (lender left, amount right). Dorado (paid off) → `.paid` styling, row reads "No loan (paid off)".
+  - **No type tags** (removed `loanTag`). **Lender shortened** via `loanShort(lender)`: Divando's
+    long "Property Mortgage — <addresses> (acct 0210)" becomes **"Property Mortgage · acct 0210"**
+    with the **property list on hover** (native `title`, dotted-underline `.has-tip` hint); CBRE /
+    SBA / Lument show as-is. Amounts right-aligned tabular-nums.
 
 ---
 
