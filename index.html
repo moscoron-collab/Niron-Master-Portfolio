@@ -1940,7 +1940,7 @@ let PD_METRIC = 'net';   // chart metric: net | disbursement | cash_in | occupan
 let PD_MONTH = '';       // anchor month ('' = newest); table columns + chart window end here
 let PD_CHART = 'bars';   // chart style: bars (selected month) | lines (trend over range)
 let PD_CACHE = null;     // last-built dataset, used by the chart renderer
-let MAINT_MONTH = '';    // maintenance table month filter ('' = All months)
+let MAINT_MONTH = null;  // maintenance table month filter (null = not yet chosen → defaults to current month; '' = All months)
 function maintSetMonth(v) { MAINT_MONTH = v; renderAll(); }
 let DIST_MONTH = null;   // Partner Distributions section month (own dropdown; null = newest)
 function distSetMonth(v) { DIST_MONTH = v; renderAll(); }
@@ -2218,10 +2218,14 @@ function renderAll() {
   html += '</div>';
   if (months.length > 1) html += '<div class="section"><h2><span class="dot"></span>Cashflow Trend (Bars per LLC + Total Line)</h2><div class="chart-container"><canvas id="trendChart"></canvas></div></div>';
   if (maintenance.length) {
-    // Maintenance has its OWN independent month dropdown (defaults to All months)
-    // so past invoices are always reachable regardless of the per-property picker.
-    const maintMonths = [...new Set(maintenance.map(m => m.period))].filter(Boolean).sort().reverse();
-    const maintMonth = (MAINT_MONTH && maintMonths.includes(MAINT_MONTH)) ? MAINT_MONTH : '';
+    // Maintenance has its OWN independent month dropdown (defaults to the CURRENT month;
+    // pick "All months" to see every invoice regardless of the per-property picker).
+    // Current month is always in the dropdown (like the main picker) so it's selectable
+    // even before any invoices land for it.
+    const maintMonths = [...new Set([currentPeriod(), ...maintenance.map(m => m.period).filter(Boolean)])].sort().reverse();
+    const maintMonth = (MAINT_MONTH === null)
+      ? currentPeriod()
+      : ((MAINT_MONTH && maintMonths.includes(MAINT_MONTH)) ? MAINT_MONTH : '');
     const maintFiltered = (maintMonth
       ? maintenance.filter(m => m.period === maintMonth)
       : maintenance.slice()).sort((a,b) => b.date.localeCompare(a.date));
