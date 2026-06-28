@@ -1486,6 +1486,11 @@ dropdown / all 3 LLCs** · **visuals unchanged** (just relocated).
   once the pane is visible.
 - **Wiring:** `switchMainTab` handles `'props'` (chat tag `PROPERTY MONITOR`, persists `?tab=props`);
   the `?tab=` deep-link parser + URL-persist list include `props`.
+- **⚠️ Table-CSS scoping fix (Jun 28 2026):** the per-property table came out cramped/unstyled on the
+  new tab because the table rules (`width:100%`, th/td padding/borders, `.green`/`.red`) were scoped
+  to **`#tab-master`** only. Fixed by extending those 6 selectors to **`#tab-master, #tab-props`** so
+  the moved table looks identical to before. **Lesson: when moving a styled section to a new pane,
+  any `#tab-master`-scoped CSS it relied on must be extended to the new pane id.**
 - **Self-audit kept:** the audit's per-property check looked up `secByTitle('Per-Property Monitor')`
   scoped to `#tab-master`; widened to search **all panes** (`document.querySelectorAll('.section h2')`)
   so the per-property table/chart/TOTAL checks still run from the new tab. (The History `secByTitle`
