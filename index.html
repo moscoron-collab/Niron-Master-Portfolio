@@ -711,6 +711,7 @@
     <button class="main-tab active" id="main-tab-master" onclick="switchMainTab('master')">📊 Master Portfolio</button>
     <button class="main-tab" id="main-tab-noble" onclick="switchMainTab('noble')">🛡️ Noble Insurance</button>
     <button class="main-tab" id="main-tab-tax" onclick="switchMainTab('tax')">🧾 Property Tax</button>
+    <button class="main-tab" id="main-tab-loans" onclick="switchMainTab('loans')">🏦 Loan Details</button>
   </div>
 
   <!-- ─────────── MASTER PORTFOLIO PANE ─────────── -->
@@ -721,6 +722,11 @@
   <!-- ─────────── PROPERTY TAX PANE ─────────── -->
   <div id="tab-tax" class="main-pane">
     <div id="tax-content"><div class="loading"><div class="spinner"></div><div>Loading property tax…</div></div></div>
+  </div>
+
+  <!-- ─────────── LOAN DETAILS PANE ─────────── -->
+  <div id="tab-loans" class="main-pane">
+    <div id="loans-content"><div class="loading"><div class="spinner"></div><div>Loading loan details…</div></div></div>
   </div>
 
   <!-- ─────────── NOBLE INSURANCE PANE ─────────── -->
@@ -1243,7 +1249,7 @@ function showDashboard() {
   // honor ?tab= deep link
   const params = new URLSearchParams(location.search);
   const tabParam = params.get('tab');
-  const initial = (tabParam === 'noble' || tabParam === 'tax') ? tabParam : 'master';
+  const initial = (tabParam === 'noble' || tabParam === 'tax' || tabParam === 'loans') ? tabParam : 'master';
   switchMainTab(initial, true);
   restoreActor();
   load();
@@ -1301,17 +1307,21 @@ function switchMainTab(tab, skipUrl) {
   } else if (tab === 'tax') {
     tag.textContent = 'PROPERTY TAX';
     hint.textContent = 'Track each parcel\'s tax — due dates, what you paid, balance.';
+  } else if (tab === 'loans') {
+    tag.textContent = 'LOAN DETAILS';
+    hint.textContent = 'Try: "What\'s the total monthly debt across all LLCs?"';
   } else {
     tag.textContent = 'PORTFOLIO';
     hint.textContent = 'Try: "Which LLC was most profitable last month?"';
   }
 
   if (tab === 'tax') renderTaxSection();
+  if (tab === 'loans') renderLoansSection();
 
   // Update URL
   if (!skipUrl) {
     const url = new URL(location.href);
-    if (tab === 'noble' || tab === 'tax') url.searchParams.set('tab', tab);
+    if (tab === 'noble' || tab === 'tax' || tab === 'loans') url.searchParams.set('tab', tab);
     else url.searchParams.delete('tab');
     history.replaceState({}, '', url);
   }
@@ -2042,7 +2052,7 @@ function aggregateLlcPeriod(rows, maintenance) {
 }
 
 async function load() { try { const res = await dashGet(); const data = await res.json(); PORTFOLIO_DATA = data; initialRender(data); } catch (e) { document.getElementById("content").innerHTML = '<div class="error">Failed to load: ' + e.message + '</div>'; document.getElementById("status").textContent = "● Offline"; document.getElementById("status").style.color = "#ff4455"; } }
-function initialRender(data) { document.getElementById("last-updated").textContent = new Date(data.last_updated).toLocaleString(); const history = data.history || []; const months = [...new Set(history.map(h => h.period_start))].sort().reverse(); SELECTED_MONTH = months[0] || ""; renderAll(); renderTaxSection(); }
+function initialRender(data) { document.getElementById("last-updated").textContent = new Date(data.last_updated).toLocaleString(); const history = data.history || []; const months = [...new Set(history.map(h => h.period_start))].sort().reverse(); SELECTED_MONTH = months[0] || ""; renderAll(); renderTaxSection(); renderLoansSection(); }
 // Short LLC label + per-LLC repairs mini-table (vertical, biggest first, only LLCs with repairs).
 function shortLlc(llc) { const n = (llc || '').toLowerCase(); if (n.includes('divando')) return 'Divando'; if (n.includes('donald')) return 'Donald'; if (n.includes('yale')) return 'Yale'; if (n.includes('dorado')) return 'Dorado'; return llc || 'Other'; }
 function repairsMiniTable(records) {
@@ -2261,9 +2271,7 @@ function renderAll() {
     }
     html += '</tbody></table></div>';
   }
-  // Loan Details sits below Maintenance Invoices (user layout preference).
-  const allLoans = loans.concat(DIVANDO_PROPERTY_LOANS).slice().sort((a, b) => a.llc.localeCompare(b.llc));
-  if (allLoans.length) { html += '<div class="section"><h2><span class="dot"></span>Loan Details per LLC</h2><table><thead><tr><th>LLC</th><th>Lender</th><th>Monthly</th></tr></thead><tbody>'; allLoans.forEach(l => { html += '<tr><td>' + l.llc + '</td><td style="font-size:12px">' + l.lender + '</td><td>' + fmt(l.monthly_payment) + '</td></tr>'; }); html += '</tbody></table></div>'; }
+  // Loan Details moved to its own main tab (🏦 Loan Details) — see renderLoansSection().
   html += renderPropertyDetailSection(data, maintenance);
   // Resolve the table filter: null (not chosen) defaults to the current month.
   const histSel = (HIST_FILTER === null) ? currentPeriod() : HIST_FILTER;
@@ -3296,6 +3304,54 @@ function copyParcel(ev, val) {
       try { document.execCommand('copy'); } catch (e) {} ta.remove(); done();
     });
   } catch (e) {}
+}
+
+// ===== Loan Details tab (own main tab, right of Property Tax) =====
+// Grouped by LLC with a per-LLC monthly subtotal + a grand TOTAL monthly debt row.
+// Divando's 6 property mortgages live in DIVANDO_PROPERTY_LOANS (not in the Loans sheet),
+// so they're concatenated in here just like the old Master-tab table did.
+function renderLoansSection() {
+  const el = document.getElementById('loans-content');
+  if (!el) return;
+  const loans = (PORTFOLIO_DATA && PORTFOLIO_DATA.loans) || [];
+  const allLoans = loans.concat(DIVANDO_PROPERTY_LOANS).slice()
+    .sort((a, b) => (a.llc.localeCompare(b.llc)) || ((b.monthly_payment || 0) - (a.monthly_payment || 0)));
+  let html = '<div class="section">';
+  html += '<h2><span class="dot"></span>Loan Details per LLC' +
+    '<span class="kpi-info">ⓘ<span class="kpi-tip">' +
+    '<b>Every loan each LLC pays, with its monthly payment.</b> Rows are grouped by LLC with a ' +
+    'monthly subtotal, then a grand <b>TOTAL monthly debt</b> at the bottom.' +
+    '<span class="tax-note">Divando carries 6 property mortgages (acct 0210–0215) plus an SBA line; ' +
+    'Donald has CBRE + SBA; Yale has Lument + SBA; Dorado is mortgage-free. ' +
+    'This is the recurring monthly loan cost — not remaining balances.</span>' +
+    '</span></span></h2>';
+  if (!allLoans.length) { html += '<div style="color:#4e6d8c;padding:14px">No loan rows yet.</div></div>'; el.innerHTML = html; return; }
+
+  // Group by LLC, preserving alphabetical LLC order.
+  const byLlc = {};
+  allLoans.forEach(l => { (byLlc[l.llc] = byLlc[l.llc] || []).push(l); });
+  const llcNames = Object.keys(byLlc).sort();
+  let grand = 0;
+
+  html += '<table><thead><tr><th>LLC</th><th>Lender</th><th style="text-align:right">Monthly</th></tr></thead><tbody>';
+  llcNames.forEach(name => {
+    const rows = byLlc[name];
+    let sub = 0;
+    rows.forEach(l => {
+      sub += (l.monthly_payment || 0);
+      html += '<tr><td>' + name + '</td><td style="font-size:12px">' + l.lender + '</td>' +
+        '<td style="text-align:right;font-variant-numeric:tabular-nums">' + fmt(l.monthly_payment) + '</td></tr>';
+    });
+    grand += sub;
+    html += '<tr style="font-weight:700;background:#0d1e30;border-top:1px solid #1e2d42">' +
+      '<td colspan="2" style="white-space:nowrap">' + name + ' — monthly total</td>' +
+      '<td style="text-align:right;font-variant-numeric:tabular-nums">' + fmt(sub) + '</td></tr>';
+  });
+  html += '<tr style="font-weight:700;background:#0b2236;border-top:2px solid #21456b;font-size:15px">' +
+    '<td colspan="2" style="white-space:nowrap">TOTAL — monthly debt (all LLCs)</td>' +
+    '<td style="text-align:right;font-variant-numeric:tabular-nums;color:#ff6b7d">' + fmt(grand) + '</td></tr>';
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
 }
 
 function renderTaxSection() {

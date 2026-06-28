@@ -1436,6 +1436,25 @@ the `position:relative` `.main-tabs`) that **slides** between tabs via a CSS tra
 on `window resize`, and on `document.fonts.ready` (so it stays aligned after the web font loads).
 Emojis were kept as-is (user chose "leave icons alone"). Pure frontend, live on merge.
 
+### 🏦 Loan Details moved to its OWN main tab (Jun 28 2026)
+The **Loan Details per LLC** table used to render at the BOTTOM of the Master Portfolio page
+(inside `renderAll`). User moved it to its **own 4th main tab `🏦 Loan Details`**, placed to the
+**right of Property Tax** (order: Master · Noble Insurance · Property Tax · Loan Details). User
+decisions: **move it** (removed from Master, not duplicated) + **add per-LLC subtotals + a grand
+TOTAL monthly-debt row**.
+- **Frontend (`index.html`, pure — no redeploy):** new pane `#tab-loans` / `#loans-content`; new
+  `renderLoansSection()` (placed just before `renderTaxSection`) reads `PORTFOLIO_DATA.loans`
+  concatenated with `DIVANDO_PROPERTY_LOANS` (the 6 Divando property mortgages aren't in the Loans
+  sheet), groups rows by LLC, prints a **"<LLC> — monthly total"** subtotal per LLC and a bottom
+  **"TOTAL — monthly debt (all LLCs)"** row (red). Has the same `ⓘ` tooltip pattern explaining the
+  numbers are monthly payments, not remaining balances.
+- **Wiring:** `switchMainTab` handles `'loans'` (chat tag `LOAN DETAILS`, calls `renderLoansSection()`,
+  persists `?tab=loans`); the `?tab=` deep-link parser + URL-persist list now include `loans`;
+  `initialRender` calls `renderLoansSection()` after data loads. The old loan block in `renderAll`
+  (the `allLoans`/"Loan Details per LLC" section ~line 2275) was deleted. Self-audit unaffected (it
+  never footed the loan table; the histSec lookup is scoped to `#tab-master`).
+- Dorado shows **PAID OFF $0.00** (from the Loans sheet) → its subtotal is $0, correct.
+
 ---
 
 ## 📖 Monthly Guide & Distribution Decider button (Jun 8 2026 · renamed + expanded Jun 28 2026)
