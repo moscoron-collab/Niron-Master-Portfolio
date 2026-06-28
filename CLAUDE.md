@@ -1115,7 +1115,21 @@ accurate, lumpy tax.) STILL TO CONFIRM: what Bergman is; annual tax per LLC; whe
 repair checks should be logged. **Lesson: do NOT build distribution/cash tools on the AppFolio-
 only net again — it is not true cash.**
 
-### ✅ BUILT — Bank-CSV importer + "True Cash — Bank-Verified" section (Jun 7 2026)
+### ❌ REMOVED — Bank-CSV importer + "True Cash — Bank-Verified" section (Jun 28 2026)
+**The entire Import Bank / True Cash feature was DELETED** (user decision — it duplicated the
+`/monthly-distribution` skill, which does the same bank-true-cash math better, and it sat empty
+because it required manually re-importing CSVs in the browser every month + was per-browser so Nir
+never saw it). Removed from `index.html`: the **📥 Import Bank header button**, the `bank-modal`,
+`renderBankSection()` + its render call, and ALL bank JS (`BANK_ACTUALS`/`BANK_LLCS`/`BANK_MONTH`,
+`parseBankFile`/`bankCategorize`/`handleBankFiles`/`bankStoredSummary`/`openBankModal`/`clearBankData`/
+`bankAllMonths`/`bankSetMonth`/`blankBankMonth`/`parseCsvLine`). **Verified self-contained first:**
+nothing else read `BANK_ACTUALS`, so no card/KPI/net/audit calculation changed. The Distribution
+Planner (which was sandwiched BETWEEN the bank functions in the source) was carefully preserved.
+The month-end bank-true-cash workflow now lives ONLY in the **`/monthly-distribution` skill** (chat) +
+the **Distribution Decider** walkthrough added to the Monthly Guide modal (see that section). The
+classification rules below are kept for reference (the skill mirrors them) but no longer run in the page.
+
+#### (historical) The removed importer — Bank-CSV importer + "True Cash" section (Jun 7 2026)
 Frontend-only (no Apps Script, no redeploy, no sheet changes — user was fed up with the redeploy
 dance). In `index.html`:
 - **`📥 Import Bank` header button** → `bank-modal`: user picks the monthly transaction CSVs
@@ -1424,13 +1438,23 @@ Emojis were kept as-is (user chose "leave icons alone"). Pure frontend, live on 
 
 ---
 
-## 📖 Monthly Guide button (Jun 8 2026)
+## 📖 Monthly Guide & Distribution Decider button (Jun 8 2026 · renamed + expanded Jun 28 2026)
 
-A **`📖 Monthly Guide`** button in the header button row (next to 📥 Import Bank, `id="guide-btn"`)
-opens a static checklist modal (`guide-modal`, `openGuideModal`/`closeGuideModal`, toggles the
-`.open` class like the other modals — no render function, content is hardcoded HTML). User-picked
-shape: **in-dashboard button · Niron only · everything end-to-end · partner-shareable** (written so
-Nir/Oshrat could follow it). Pure frontend, live on merge.
+A header button (`id="guide-btn"`) opens a static checklist modal (`guide-modal`,
+`openGuideModal`/`closeGuideModal`, toggles the `.open` class — no render function, content is
+hardcoded HTML). User-picked shape: **in-dashboard button · Niron only · everything end-to-end ·
+partner-shareable** (written so Nir/Oshrat could follow it). Pure frontend, live on merge.
+
+**Renamed Jun 28 2026** from `📖 Monthly Guide` → **`📖 Monthly Guide & Distribution Decider`** (user
+picked this exact name) when the Import Bank / True Cash feature was removed. The old step 6 ("📥
+Import Bank CSVs for the True Cash section") was **deleted** and replaced by a **"💸 Distribution
+Decider"** explainer block appended after the checklist — a step-by-step of **how we decide what's
+safe to distribute** (so Nir can see the logic; Ron actually runs it via the `/monthly-distribution`
+skill). The decider block mirrors the skill: ending balance − per-LLC cushion (Divando $2,000 ·
+Donald $1,500 · Yale $1,500 · Dorado $1,000) − uncleared repair checks − bills before next income −
+inter-account amounts owed = safe ceiling, split Ron/Nir 50/50 (Dorado Ron/Nir/Simon ⅓), rounded
+**down to nearest $50**; an account that can't cover its cushion + upcoming bills → take $0. Keep
+this block in sync with the `/monthly-distribution` SKILL.md if the cushions/rules change.
 
 The guide's ordered steps (keep in sync if the workflow changes): **(0)** set "Signed in as" + pick
 the new month first; **(1)** confirm the AppFolio auto-pull landed (runs daily 15th–25th, the 4 LLCs
@@ -1438,8 +1462,8 @@ are automatic — nothing to push); **(2)** 📋 enter the 3 out-of-state statem
 deposited amount not NOI, roll up under Divando); **(3)** 🔧 maintenance invoices (Paid By + CPA flag);
 **(4)** 💰 partner distributions (Ron/Nir, Dorado +Simon, equal split); **(5)** 🧾 Property Tax tab — ✏️
 record paid date/amount/conf# only when a bill is actually paid (Donald/Yale escrow = nothing);
-**(6)** 📥 Import Bank CSVs for the True Cash section; **(7)** 🩺 Run Audit chip + eyeball the cards.
-Note in the modal: order matters most for step 1; 2–6 are any order.
+**(6)** 🩺 Run Audit chip + eyeball the cards. Then the **💸 Distribution Decider** explainer block.
+Note in the modal: order matters most for step 1; 2–5 are any order, then verify (6).
 
 ---
 
