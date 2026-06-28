@@ -734,6 +734,7 @@
     <button class="main-tab" id="main-tab-noble" onclick="switchMainTab('noble')">🛡️ Noble Insurance</button>
     <button class="main-tab" id="main-tab-tax" onclick="switchMainTab('tax')">🧾 Property Tax</button>
     <button class="main-tab" id="main-tab-loans" onclick="switchMainTab('loans')">🏦 Loan Details</button>
+    <button class="main-tab" id="main-tab-props" onclick="switchMainTab('props')">🏠 Property Monitor</button>
   </div>
 
   <!-- ─────────── MASTER PORTFOLIO PANE ─────────── -->
@@ -749,6 +750,11 @@
   <!-- ─────────── LOAN DETAILS PANE ─────────── -->
   <div id="tab-loans" class="main-pane">
     <div id="loans-content"><div class="loading"><div class="spinner"></div><div>Loading loan details…</div></div></div>
+  </div>
+
+  <!-- ─────────── PROPERTY MONITOR PANE ─────────── -->
+  <div id="tab-props" class="main-pane">
+    <div id="props-content"><div class="loading"><div class="spinner"></div><div>Loading property monitor…</div></div></div>
   </div>
 
   <!-- ─────────── NOBLE INSURANCE PANE ─────────── -->
@@ -1271,7 +1277,7 @@ function showDashboard() {
   // honor ?tab= deep link
   const params = new URLSearchParams(location.search);
   const tabParam = params.get('tab');
-  const initial = (tabParam === 'noble' || tabParam === 'tax' || tabParam === 'loans') ? tabParam : 'master';
+  const initial = (tabParam === 'noble' || tabParam === 'tax' || tabParam === 'loans' || tabParam === 'props') ? tabParam : 'master';
   switchMainTab(initial, true);
   restoreActor();
   load();
@@ -1332,6 +1338,9 @@ function switchMainTab(tab, skipUrl) {
   } else if (tab === 'loans') {
     tag.textContent = 'LOAN DETAILS';
     hint.textContent = 'Try: "What\'s the total monthly debt across all LLCs?"';
+  } else if (tab === 'props') {
+    tag.textContent = 'PROPERTY MONITOR';
+    hint.textContent = 'Try: "Which Divando unit had the highest income?"';
   } else {
     tag.textContent = 'PORTFOLIO';
     hint.textContent = 'Try: "Which LLC was most profitable last month?"';
@@ -1339,11 +1348,14 @@ function switchMainTab(tab, skipUrl) {
 
   if (tab === 'tax') renderTaxSection();
   if (tab === 'loans') renderLoansSection();
+  // The per-property pane is built during renderAll; redraw its chart now that the pane is
+  // visible (a Chart.js canvas drawn while display:none comes out 0-sized).
+  if (tab === 'props') renderPropertyChart();
 
   // Update URL
   if (!skipUrl) {
     const url = new URL(location.href);
-    if (tab === 'noble' || tab === 'tax' || tab === 'loans') url.searchParams.set('tab', tab);
+    if (tab === 'noble' || tab === 'tax' || tab === 'loans' || tab === 'props') url.searchParams.set('tab', tab);
     else url.searchParams.delete('tab');
     history.replaceState({}, '', url);
   }
@@ -2293,8 +2305,8 @@ function renderAll() {
     }
     html += '</tbody></table></div>';
   }
-  // Loan Details moved to its own main tab (🏦 Loan Details) — see renderLoansSection().
-  html += renderPropertyDetailSection(data, maintenance);
+  // Loan Details + the Per-Property Monitor each moved to their own main tab; the monitor
+  // is rendered into #props-content below (after el.innerHTML), not into the Master flow.
   // Resolve the table filter: null (not chosen) defaults to the current month.
   const histSel = (HIST_FILTER === null) ? currentPeriod() : HIST_FILTER;
   html += '<div class="section"><h2><span class="dot"></span>Monthly Performance by LLC (newest first)' +
@@ -2344,6 +2356,9 @@ function renderAll() {
   }
   html += '</tbody></table></div>';
   el.innerHTML = html;
+  // Per-Property Monitor lives on its own tab now — render it into that pane.
+  const propsEl = document.getElementById('props-content');
+  if (propsEl) propsEl.innerHTML = renderPropertyDetailSection(data, maintenance);
   if (months.length > 1) renderChart(enrichedHistory, months);
   renderPropertyChart();
   // Self-audit runs after every render so the header chip stays live. Wrapped so a
@@ -2962,7 +2977,8 @@ function auditRun(openModal) {
 
       // ---- Per-property table + chart (the LLC currently shown) ----
       if (PD_CACHE && PD_CACHE.latest) {
-        const ppSec = secByTitle('Per-Property Monitor');
+        // Per-Property Monitor now lives on its own tab (#tab-props), so search all panes.
+        const ppSec = (function () { for (const h of document.querySelectorAll('.section h2')) if (h.textContent.indexOf('Per-Property Monitor') !== -1) return h.parentElement; return null; })();
         if (ppSec) {
           let expSum = 0, dispSum = 0, mism = 0;
           ppSec.querySelectorAll('tbody tr').forEach(tr => {
