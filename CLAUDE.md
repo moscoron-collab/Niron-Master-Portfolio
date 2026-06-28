@@ -1454,6 +1454,14 @@ TOTAL monthly-debt row**.
   (the `allLoans`/"Loan Details per LLC" section ~line 2275) was deleted. Self-audit unaffected (it
   never footed the loan table; the histSec lookup is scoped to `#tab-master`).
 - Dorado shows **PAID OFF $0.00** (from the Loans sheet) → its subtotal is $0, correct.
+- **Visual polish (Jun 28 2026, user request):** styled to match the Property Tax tab — scoped
+  `#loans-content` CSS (sticky header, zebra `loan-alt` rows, `loan-llc` band header per LLC,
+  `loan-sub` subtotal band, `loan-total` grand-total band). The **LLC name shows once as a band
+  header** (NOT repeated on every loan row — fixed the misaligned CBRE/SBA/Lender-column issue).
+  The amount header is **"Monthly Payment"** (was "Monthly"). Each loan row has a **colored type
+  tag** via `loanTag(lender)`: `🏠 Mortgage` (green), `🏦 SBA` (blue), `✅ Paid off` (grey). The
+  redundant "Property Mortgage — " prefix is stripped from Divando rows (the tag says Mortgage);
+  Dorado's paid-off row shows "no loan". Amounts are right-aligned tabular-nums.
 
 ---
 

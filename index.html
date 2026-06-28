@@ -353,6 +353,25 @@
   #tax-content .ctr { text-align: center; }
   /* Outstanding marker: solid, static emphasis — no animation (motion looked cheap) */
   .tax-blink { font-weight: 700; }
+  /* ── Loan Details tab (mirrors the Property Tax table styling) ── */
+  #loans-content table { border-collapse: collapse; width: 100%; }
+  #loans-content thead th { position: sticky; top: 0; z-index: 2; background: #0b1828; color: #8fb3d9; font-weight: 600; padding: 11px 16px; border-bottom: 2px solid #21456b; white-space: nowrap; text-align: left; letter-spacing: 0.4px; }
+  #loans-content thead th.num { text-align: right; }
+  #loans-content tbody td { padding: 11px 16px; border-bottom: 1px solid #13243a; }
+  #loans-content tbody tr.loan-alt td { background: rgba(120,160,210,0.04); }
+  #loans-content tbody tr:hover td { background: rgba(0,191,255,0.06); }
+  #loans-content tr.loan-llc td { background: linear-gradient(90deg, #11243a, #0c1a2b); border-top: 2px solid #21456b; border-bottom: 1px solid #21456b; padding: 9px 16px; font-weight: 700; font-size: 14px; color: #d4e6fb; letter-spacing: 0.5px; }
+  #loans-content tr.loan-llc:first-child td { border-top: none; }
+  #loans-content tr.loan-sub td { background: rgba(0,191,255,0.07); border-bottom: 2px solid #21456b; font-weight: 700; color: #cfe3f5; }
+  #loans-content tr.loan-sub:hover td { background: rgba(0,191,255,0.07); }
+  #loans-content tr.loan-total td { background: #0b2236; border-top: 2px solid #21456b; font-weight: 800; font-size: 15px; color: #eaf3fc; }
+  #loans-content tr.loan-total:hover td { background: #0b2236; }
+  #loans-content .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #loans-content .loan-lender-text { color: #c3d5ea; }
+  #loans-content .loan-tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 11px; margin-right: 9px; vertical-align: middle; letter-spacing: 0.2px; white-space: nowrap; }
+  #loans-content .loan-tag.mortgage { background: rgba(0,201,122,0.13); color: #37d99a; border: 1px solid rgba(0,201,122,0.42); }
+  #loans-content .loan-tag.sba { background: rgba(0,140,255,0.14); color: #5cb3ff; border: 1px solid rgba(0,140,255,0.42); }
+  #loans-content .loan-tag.paid { background: rgba(150,170,200,0.12); color: #9fb8d0; border: 1px solid rgba(150,170,200,0.33); }
 </style>
 </head>
 <body>
@@ -3327,31 +3346,44 @@ function renderLoansSection() {
     '</span></span></h2>';
   if (!allLoans.length) { html += '<div style="color:#4e6d8c;padding:14px">No loan rows yet.</div></div>'; el.innerHTML = html; return; }
 
-  // Group by LLC, preserving alphabetical LLC order.
+  // Group by LLC, preserving alphabetical LLC order. The LLC name is shown once as a
+  // band header above its loans (not repeated on every row).
   const byLlc = {};
   allLoans.forEach(l => { (byLlc[l.llc] = byLlc[l.llc] || []).push(l); });
   const llcNames = Object.keys(byLlc).sort();
   let grand = 0;
 
-  html += '<table><thead><tr><th>LLC</th><th>Lender</th><th style="text-align:right">Monthly</th></tr></thead><tbody>';
+  html += '<table><thead><tr><th>Lender</th><th class="num">Monthly Payment</th></tr></thead><tbody>';
   llcNames.forEach(name => {
     const rows = byLlc[name];
     let sub = 0;
-    rows.forEach(l => {
-      sub += (l.monthly_payment || 0);
-      html += '<tr><td>' + name + '</td><td style="font-size:12px">' + l.lender + '</td>' +
-        '<td style="text-align:right;font-variant-numeric:tabular-nums">' + fmt(l.monthly_payment) + '</td></tr>';
+    html += '<tr class="loan-llc"><td colspan="2">' + name + '</td></tr>';
+    rows.forEach((l, i) => {
+      sub += (l.monthly_payment || 0); grand += (l.monthly_payment || 0);
+      const tag = loanTag(l.lender);
+      // The tag already says "Mortgage", so drop the redundant "Property Mortgage —" prefix.
+      let text = (l.lender || '').replace(/^Property Mortgage\s*—\s*/, '');
+      if (tag && tag.cls === 'paid') text = '<span style="color:#7e9cbf">no loan</span>';
+      const tagHtml = tag ? '<span class="loan-tag ' + tag.cls + '">' + tag.label + '</span>' : '';
+      html += '<tr' + (i % 2 ? ' class="loan-alt"' : '') + '><td>' + tagHtml +
+        '<span class="loan-lender-text">' + text + '</span></td>' +
+        '<td class="num">' + fmt(l.monthly_payment) + '</td></tr>';
     });
-    grand += sub;
-    html += '<tr style="font-weight:700;background:#0d1e30;border-top:1px solid #1e2d42">' +
-      '<td colspan="2" style="white-space:nowrap">' + name + ' — monthly total</td>' +
-      '<td style="text-align:right;font-variant-numeric:tabular-nums">' + fmt(sub) + '</td></tr>';
+    html += '<tr class="loan-sub"><td>' + name + ' — monthly total</td><td class="num">' + fmt(sub) + '</td></tr>';
   });
-  html += '<tr style="font-weight:700;background:#0b2236;border-top:2px solid #21456b;font-size:15px">' +
-    '<td colspan="2" style="white-space:nowrap">TOTAL — monthly debt (all LLCs)</td>' +
-    '<td style="text-align:right;font-variant-numeric:tabular-nums;color:#ff6b7d">' + fmt(grand) + '</td></tr>';
+  html += '<tr class="loan-total"><td>TOTAL — monthly debt (all LLCs)</td>' +
+    '<td class="num" style="color:#ff6b7d">' + fmt(grand) + '</td></tr>';
   html += '</tbody></table></div>';
   el.innerHTML = html;
+}
+
+// Classify a loan by its lender string into a small colored tag for the Loan Details tab.
+function loanTag(lender) {
+  const L = (lender || '').toUpperCase();
+  if (L.indexOf('PAID OFF') >= 0) return { cls: 'paid', label: '✅ Paid off' };
+  if (L.indexOf('SBA') >= 0) return { cls: 'sba', label: '🏦 SBA' };
+  if (L.indexOf('MORTGAGE') >= 0 || L.indexOf('CBRE') >= 0 || L.indexOf('LUMENT') >= 0) return { cls: 'mortgage', label: '🏠 Mortgage' };
+  return null;
 }
 
 function renderTaxSection() {
