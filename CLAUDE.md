@@ -848,11 +848,19 @@ lookups). To translate another card, wrap its label/tooltip text in `L('English'
 
 A **Partner Distributions (You vs Nir)** section sits just below Monthly Breakdown. Pure
 read of the Distributions tab; no new data needed. Answers the partners' #1 question: how
-much each has taken out, YTD and lifetime.
-- 4 tiles: **Lifetime You** (`kpi-life-you`), **Lifetime Nir** (`kpi-life-nir`),
-  **Lifetime Total** (`kpi-life-total`), and a dual **YTD You / YTD Nir** tile.
-- A **per-year table** (Year | You | Nir | Total) with an "All time" total row — handy at tax time.
-- Self-audit recomputes the 3 lifetime tiles.
+much each has taken out, this month and YTD.
+- **SIMPLIFIED Jun 28 2026 (user request — "much simpler", lifetime "not realistic"):** the 3
+  Lifetime tiles (`kpi-life-you/nir/total`) were **REMOVED**. Now just **2 dual tiles**:
+  **This Month — You | Nir** (`kpi-dist-mo-you` / `kpi-dist-mo-nir`) and **YTD — You | Nir**
+  (`kpi-dist-ytd-you` / `kpi-dist-ytd-nir`).
+- **Own month dropdown** (`DIST_MONTH` / `distSetMonth()`, in the section `<h2>` like the
+  Maintenance section) lists every month that has a distribution (newest first), defaults to the
+  newest. The This-Month tiles reflect the picked month; YTD = Jan→picked month of that month's year.
+  Independent of the main/Monthly-Breakdown picker.
+- A **per-year table** (Year | You | Nir | Total) with an **"All time" total row** — KEPT as-is
+  (handy at tax time; `byYear` + `lifeYou`/`lifeNir` still computed for the table only).
+- **Self-audit updated** to recompute the **4 new tiles** (This Month + YTD, You & Nir) via the
+  same `DIST_MONTH` logic — the old 3-lifetime-tile audit block is gone. Pure frontend, live on merge.
 
 ### 💰 Add Distribution modal — 50/50 default + Equal/Custom split (Jun 12 2026)
 Reworked so Nir (or anyone) can enter the monthly distribution without confusion once the db is
