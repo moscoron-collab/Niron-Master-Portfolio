@@ -1942,6 +1942,8 @@ let PD_CHART = 'bars';   // chart style: bars (selected month) | lines (trend ov
 let PD_CACHE = null;     // last-built dataset, used by the chart renderer
 let MAINT_MONTH = null;  // maintenance table month filter (null = not yet chosen → defaults to current month; '' = All months)
 function maintSetMonth(v) { MAINT_MONTH = v; renderAll(); }
+let HIST_FILTER = 'all'; // Monthly Performance by LLC table filter: 'all' | 'ytd' | a month value 'YYYY-MM-DD'
+function histSetFilter(v) { HIST_FILTER = v; renderAll(); }
 let DIST_MONTH = null;   // Partner Distributions section month (own dropdown; null = newest)
 function distSetMonth(v) { DIST_MONTH = v; renderAll(); }
 // Hebrew/English toggle for the Net Cashflow + Your Distribution KPI cards (label + tooltip).
@@ -2274,8 +2276,39 @@ function renderAll() {
     'Divando &amp; Dorado pay it as a spring lump sum (shown for info only). This is the AppFolio-based estimate, ' +
     'not the month-end true-bank-cash figure.</span>' +
     '</span></span>' +
+    // ---- Own filter dropdown: a specific month · YTD · All months ----
+    (function(){
+      const histMonths = [...new Set(sortedHistory.map(h => h.period_start))].filter(Boolean).sort().reverse();
+      const histYear = (histMonths[0] || currentPeriod()).slice(0, 4);
+      const sel = v => (HIST_FILTER === v ? ' selected' : '');
+      let opts = '<option value="all"' + sel('all') + '>All months</option>' +
+        '<option value="ytd"' + sel('ytd') + '>YTD ' + histYear + '</option>';
+      opts += histMonths.map(m => '<option value="' + m + '"' + sel(m) + '>' + monthLabel(m) + '</option>').join('');
+      return '<select class="header-month-select" onchange="histSetFilter(this.value)" title="Filter the table">' + opts + '</select>';
+    })() +
     '</h2><table><thead><tr><th>Month</th><th>LLC</th><th>Disbursement</th><th>Mortgage</th><th>Insurance</th><th>Maintenance</th><th>Net</th></tr></thead><tbody>';
-  sortedHistory.slice(0, 100).forEach(h => { html += '<tr><td style="white-space:nowrap">' + monthLabel(h.period_start) + '</td><td>' + h.llc + '</td><td>' + fmt(h.disbursement) + '</td><td>' + fmt(h.mortgage + extraMortgage(h.llc)) + '</td><td>' + fmt(h.ins_mo) + '</td><td>' + fmt(h.maintenance) + '</td><td class="' + (h.net_cashflow >= 0 ? 'green' : 'red') + '">' + fmt(h.net_cashflow) + '</td></tr>'; });
+  // Apply the filter: a month value shows that month, 'ytd' shows the newest data year
+  // (Jan→latest), 'all' shows everything. Default 'all'.
+  const histYearSel = ([...new Set(sortedHistory.map(h => h.period_start))].sort().reverse()[0] || currentPeriod()).slice(0, 4);
+  let histRows = sortedHistory;
+  if (HIST_FILTER === 'ytd') histRows = sortedHistory.filter(h => (h.period_start || '').slice(0, 4) === histYearSel);
+  else if (HIST_FILTER !== 'all') histRows = sortedHistory.filter(h => h.period_start === HIST_FILTER);
+  histRows = histRows.slice(0, 100);
+  histRows.forEach(h => { html += '<tr><td style="white-space:nowrap">' + monthLabel(h.period_start) + '</td><td>' + h.llc + '</td><td>' + fmt(h.disbursement) + '</td><td>' + fmt(h.mortgage + extraMortgage(h.llc)) + '</td><td>' + fmt(h.ins_mo) + '</td><td>' + fmt(h.maintenance) + '</td><td class="' + (h.net_cashflow >= 0 ? 'green' : 'red') + '">' + fmt(h.net_cashflow) + '</td></tr>'; });
+  if (!histRows.length) {
+    html += '<tr><td colspan="7" style="color:#7e9cbf;text-align:center;padding:14px">No rows for this selection.</td></tr>';
+  } else if (HIST_FILTER !== 'all' && histRows.length > 1) {
+    // Totals row for a single month / YTD view (sum foots like every other row, so the audit passes).
+    const tD = histRows.reduce((s, h) => s + (h.disbursement || 0), 0);
+    const tM = histRows.reduce((s, h) => s + (h.mortgage + extraMortgage(h.llc)), 0);
+    const tI = histRows.reduce((s, h) => s + (h.ins_mo || 0), 0);
+    const tR = histRows.reduce((s, h) => s + (h.maintenance || 0), 0);
+    const tN = histRows.reduce((s, h) => s + (h.net_cashflow || 0), 0);
+    const tLabel = HIST_FILTER === 'ytd' ? ('TOTAL — YTD ' + histYearSel) : ('TOTAL — ' + monthLabel(HIST_FILTER));
+    html += '<tr style="font-weight:700;background:#0d1e30;border-top:2px solid #1e2d42">' +
+      '<td colspan="2" style="white-space:nowrap">' + tLabel + '</td><td>' + fmt(tD) + '</td><td>' + fmt(tM) + '</td><td>' + fmt(tI) + '</td><td>' + fmt(tR) + '</td>' +
+      '<td class="' + (tN >= 0 ? 'green' : 'red') + '">' + fmt(tN) + '</td></tr>';
+  }
   html += '</tbody></table></div>';
   el.innerHTML = html;
   if (months.length > 1) renderChart(enrichedHistory, months);
