@@ -29,12 +29,13 @@
   /* ============================================================
      MAIN TAB BAR (Master / Noble switcher)
      ============================================================ */
-  .main-tabs { position: relative; display: flex; gap: 4px; background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42; border-radius: 12px; padding: 6px; margin-bottom: 20px; overflow-x: auto; }
+  .main-tabs { position: relative; display: flex; gap: 8px; background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42; border-radius: 12px; padding: 6px; margin-bottom: 20px; overflow-x: auto; }
   /* Sliding highlight behind the active tab */
   .tab-thumb { position: absolute; left: 0; top: 6px; height: 0; width: 0; border-radius: 8px; background: linear-gradient(135deg, #0b6fb0, #1ba7e8); box-shadow: 0 3px 12px rgba(0, 191, 255, 0.2); transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1), width 0.28s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; z-index: 0; }
-  .main-tab { position: relative; z-index: 1; flex: 0 0 auto; padding: 11px 24px; background: transparent; color: #8aa6c4; border: none; border-radius: 8px; font-size: 13.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; cursor: pointer; transition: color 0.2s; white-space: nowrap; font-family: inherit; }
-  .main-tab:hover { color: #d4e2f2; }
-  .main-tab.active { color: #ffffff; }
+  /* Each tab reads as its own outlined box; the active one goes transparent so the blue thumb shows behind it */
+  .main-tab { position: relative; z-index: 1; flex: 0 0 auto; padding: 11px 22px; background: rgba(255, 255, 255, 0.025); color: #8aa6c4; border: 1px solid #243750; border-radius: 8px; font-size: 13.5px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; cursor: pointer; transition: color 0.2s, background 0.2s, border-color 0.2s; white-space: nowrap; font-family: inherit; }
+  .main-tab:hover { color: #d4e2f2; background: rgba(255, 255, 255, 0.06); border-color: #34507a; }
+  .main-tab.active { color: #ffffff; background: transparent; border-color: transparent; }
   .main-pane { display: none; }
   .main-pane.active { display: block; }
   @media (max-width: 480px) {
