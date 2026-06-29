@@ -1436,6 +1436,14 @@ the `position:relative` `.main-tabs`) that **slides** between tabs via a CSS tra
 on `window resize`, and on `document.fonts.ready` (so it stays aligned after the web font loads).
 Emojis were kept as-is (user chose "leave icons alone"). Pure frontend, live on merge.
 
+### 🔲 Boxed tabs for separation (Jun 28 2026)
+User wanted visual separation between the (now 6) main tabs. Each `.main-tab` now reads as its own
+**outlined box** (`border:1px solid #243750` + faint `rgba(255,255,255,0.025)` bg, gap bumped 4→8px);
+hover brightens border+bg. The **active tab goes `background:transparent; border-color:transparent`**
+so the existing blue **`.tab-thumb` sliding highlight shows through behind it** (user chose: boxed +
+keep the sliding highlight). The thumb is sized from the active tab's `offsetWidth/Height` (border-box),
+so the 1px transparent border keeps it aligned — no `positionTabThumb` change. Pure CSS, live on merge.
+
 ### 🏦 Loan Details moved to its OWN main tab (Jun 28 2026)
 The **Loan Details per LLC** table used to render at the BOTTOM of the Master Portfolio page
 (inside `renderAll`). User moved it to its **own 4th main tab `🏦 Loan Details`**, placed to the
