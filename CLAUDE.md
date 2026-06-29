@@ -1735,6 +1735,30 @@ its own once merged.
 
 ---
 
+## 🔧 Maintenance Invoices moved to its OWN main tab (Jun 28 2026)
+The **Maintenance Invoices** section moved off the Master Portfolio page into its own **6th main
+tab `🔧 Maintenance`** (rightmost: Master · Noble Insurance · Property Tax · Loan Details · Property
+Monitor · Maintenance). User decisions: **move it** (removed from Master) · **🔧 Add-Invoice FAB shows
+on BOTH** Master and the Maintenance tab · **visuals identical**.
+- **How (pure frontend, no redeploy):** new pane `#tab-maint` / `#maint-content`; the section body
+  was extracted verbatim into **`renderMaintenanceSection(maintenance)`** (own month dropdown defaulting
+  to current month, ⬇ Export + 🖨 Print, the edit/delete table, Total row). `renderAll` no longer
+  appends it to Master `#content`; instead, after `el.innerHTML`, it does
+  `document.getElementById('maint-content').innerHTML = renderMaintenanceSection(maintenance)`. Empty
+  state shows "click the 🔧 button to add one."
+- **FAB on both:** `switchMainTab` now shows `maint-fab` when `tab === 'master' || tab === 'maint'`
+  (dist-fab/stmt-fab stay master-only). The FAB is `position:fixed` so it floats over the tab.
+- **Table CSS:** extended the `#tab-master, #tab-props` table rules to also include **`#tab-maint`**
+  (same scoping lesson as Property Monitor — a moved table needs its `#tab-master`-scoped CSS on the
+  new pane id). `.header-month-select` / `.maint-edit-btn` / `.maint-del-btn` / `.section h2` are
+  global, so they worked unchanged.
+- **Wiring:** `switchMainTab` handles `'maint'` (chat tag `MAINTENANCE`, persists `?tab=maint`); the
+  `?tab=` deep-link parser + URL-persist list include `maint`. Self-audit unaffected (it reads
+  maintenance from `PORTFOLIO_DATA`, never the DOM table). Add/edit/delete still call the same reload →
+  `renderAll` path, which now refreshes `#maint-content`.
+
+---
+
 ## 📤 Maintenance Export — CSV + Print, grouped by LLC (Jun 24 2026)
 
 The **Maintenance Invoices** section header now has two buttons next to its month dropdown
