@@ -2325,6 +2325,19 @@ wrong answer). ⚠️ **Needs the usual AppsScript redeploy to go live** (Sheet 
 → paste new `automation/AppsScript.gs` → Deploy → Manage deployments → Edit → New version → Deploy) —
 the repo file is only a copy.
 
+### 💬 Chat answers rendered raw (markdown tables/`**bold**` showed literal `|` and `*`) — FIXED (Jun 30 2026)
+After the per-property fix above, the chatbot correctly returned Blackhawk's invoices but as a **markdown
+table**, and the chat panel rendered every message with `el.textContent` (`index.html` `appendChatMsg` /
+`loadChatHistory`), so all the `| … |` pipes, the `|---|` separator row, and `**bold**` asterisks showed
+as literal characters. **Fix (pure frontend, live on merge — NO redeploy):** added **`formatChatHtml(text)`**
+(+ `escapeHtml`/`isTableRow`/`isTableSep`/`splitCells` helpers) that HTML-escapes first, converts markdown
+tables → clean `<table class="chat-tbl">` (dropping the separator row), `**bold**` → `<strong>`, and
+newlines → `<br>`. New **`setChatContent(el, text, kind)`** renders **bot** (non-typing) messages via
+`innerHTML = formatChatHtml(...)` and everything else (user/typing) via `textContent` (safe — bot text is
+escaped before formatting). Wired into both `appendChatMsg` and `loadChatHistory`. Added `.chat-tbl` CSS
+(borderless, theme-matched). So both new and history-restored bot messages render cleanly. To support more
+markdown later, extend `formatChatHtml`'s `inlineFmt`.
+
 ---
 
 ## 📝 Known limitations / future improvements
