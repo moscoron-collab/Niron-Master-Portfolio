@@ -2284,6 +2284,25 @@ turn, so follow-up questions keep full conversational context.
 3. **Deploy → Manage deployments → Edit → New version → Deploy** (the web app URL stays the same).
 4. Hard-refresh the dashboard and ask a per-unit question to confirm.
 
+### 🐛 Chatbot couldn't find per-property invoices (e.g. "invoices for Blackhawk") — FIXED (Jun 30 2026)
+User asked the chatbot "what were the last 5-10 invoices for Blackhawk" and it said the maintenance
+log "doesn't show any entries specifically for Blackhawk Way… tracks LLC-level entries but not the
+specific property" — **wrong**, the invoices ARE tagged with `4776 Blackhawk Way` in the Property
+column. **Root cause:** the chatbot's maintenance reader in the **live `buildPortfolioContext`**
+(~line 1428) read only **7 columns** and emitted `Date | LLC | r[3] | r[4] | dollar(r[5])`, which
+**(a) NEVER sent the Property column (C / r[2])** to the model — so it literally had no per-property
+info — and **(b) printed the Description (col F / r[5]) as the dollar amount** instead of the real
+Amount (col G / r[6]). The canonical Maintenance Log is 12 cols `A Date · B LLC · C Property · D Sub ·
+E Category · F Description · G Amount · H Entered By · I Paid By · J Paid · K Notes · L Invoice URL`
+(see the live `getDashboardJson` reader ~line 1821). **Fix:** the chatbot reader now reads all 12 cols,
+sorts newest-first, prints `Date | LLC | Property | Vendor | Category | Description | Amount | Paid`,
+and adds a **PER-PROPERTY TOTALS** block (invoice count + total per property) so "invoices for
+<address>" / totals are reliable. Also updated the system-prompt section-1 description so it tells the
+model the maintenance log is per-property (it framed maintenance as "LLC-level," which reinforced the
+wrong answer). ⚠️ **Needs the usual AppsScript redeploy to go live** (Sheet → Extensions → Apps Script
+→ paste new `automation/AppsScript.gs` → Deploy → Manage deployments → Edit → New version → Deploy) —
+the repo file is only a copy.
+
 ---
 
 ## 📝 Known limitations / future improvements
