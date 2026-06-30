@@ -1167,6 +1167,9 @@ function doPost(e) {
     if (body.action === 'add_sub') {
       return addSubEntry(body);
     }
+    if (body.action === 'set_buffer') {
+      return setBufferEntry(body);
+    }
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({error: 'Parse error: ' + err.message}))
       .setMimeType(ContentService.MimeType.JSON);
@@ -1743,7 +1746,7 @@ function logActivity(actor, action, details) {
 // Override: getDashboardJson with properties + new maintenance structure
 function getDashboardJson() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], vacancy: [], subs: [], activity: [], settings: {} };
+  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], vacancy: [], subs: [], buffers: {}, activity: [], settings: {} };
 
   // Track the most-recent real data-change timestamp (Activity Log + History "Logged At" +
   // Property Detail "Updated"), so the dashboard's "Last Updated" reflects when the data
@@ -1914,6 +1917,15 @@ function getDashboardJson() {
   if (subsSh && subsSh.getLastRow() >= 5) {
     subsSh.getRange(5, 1, subsSh.getLastRow() - 4, 1).getValues().forEach(function(r) {
       if (r[0]) data.subs.push(String(r[0]).trim());
+    });
+  }
+
+  // Per-LLC safety buffers for the Distribution Planner (editable on the planner cards).
+  var bufSh = ensureBuffersTab(ss);
+  if (bufSh && bufSh.getLastRow() >= 5) {
+    bufSh.getRange(5, 1, bufSh.getLastRow() - 4, 3).getValues().forEach(function(r) {
+      var k = String(r[0] || '').trim().toLowerCase();
+      if (k && r[2] !== '' && r[2] != null && !isNaN(Number(r[2]))) data.buffers[k] = Number(r[2]);
     });
   }
 
@@ -2239,4 +2251,48 @@ function addSubEntry(data) {
   sh.getRange(nextRow, 1, 1, 3).setValues([[name, data.actor || 'Dashboard', new Date()]]);
   logActivity(data.actor, 'Added sub/vendor', name);
   return ContentService.createTextOutput(JSON.stringify({ok:true, row:nextRow})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// --- Cash buffers (per-LLC safety cushion for the Distribution Planner) -----------
+// Auto-created + seeded with the original hardcoded defaults on first read, like the
+// Subs / Vacancy tabs. Keyed by the planner key (divando/donald/yale/dorado).
+function ensureBuffersTab(ss) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('Buffers');
+  if (sh) return sh;
+  sh = ss.insertSheet('Buffers');
+  sh.getRange(1, 1).setValue('CASH BUFFERS — per-LLC safety cushion for the Distribution Planner (edit on the dashboard planner cards)').setFontWeight('bold');
+  var headers = ['LLC Key', 'Label', 'Buffer', 'Updated At'];
+  sh.getRange(4, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+  var seed = [['divando', 'Divando', 2000], ['donald', 'Donald', 1500], ['yale', 'Yale', 1500], ['dorado', 'Dorado', 1000]];
+  var rows = seed.map(function(s) { return [s[0], s[1], s[2], new Date()]; });
+  sh.getRange(5, 1, rows.length, 4).setValues(rows);
+  sh.setFrozenRows(4);
+  return sh;
+}
+
+// Upsert one LLC's buffer (update the existing row by key, else append). Logs who changed it.
+function setBufferEntry(data) {
+  var key = (data.key || '').toString().trim().toLowerCase();
+  if (!key) return ContentService.createTextOutput(JSON.stringify({error: 'LLC key is required'})).setMimeType(ContentService.MimeType.JSON);
+  var amt = Number(data.buffer);
+  if (isNaN(amt) || amt < 0) return ContentService.createTextOutput(JSON.stringify({error: 'Buffer must be a number 0 or more'})).setMimeType(ContentService.MimeType.JSON);
+  var sh = ensureBuffersTab(SpreadsheetApp.getActiveSpreadsheet());
+  var last = sh.getLastRow();
+  var found = 0;
+  if (last >= 5) {
+    var keys = sh.getRange(5, 1, last - 4, 1).getValues();
+    for (var i = 0; i < keys.length; i++) {
+      if (String(keys[i][0]).trim().toLowerCase() === key) { found = 5 + i; break; }
+    }
+  }
+  if (found) {
+    sh.getRange(found, 3).setValue(amt);
+    sh.getRange(found, 4).setValue(new Date());
+  } else {
+    found = Math.max(5, last + 1);
+    sh.getRange(found, 1, 1, 4).setValues([[key, data.label || key, amt, new Date()]]);
+  }
+  logActivity(data.actor, 'Set safety buffer', (data.label || key) + ' = ' + amt);
+  return ContentService.createTextOutput(JSON.stringify({ok: true, row: found})).setMimeType(ContentService.MimeType.JSON);
 }
