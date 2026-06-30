@@ -2480,6 +2480,14 @@ function renderDistributionPlanner(data) {
   h += '<div style="color:#4e6d8c;font-size:12px;margin:-4px 0 12px">Type each account\'s current bank balance. The planner reserves the bills still coming <b>before your next income deposit (~' + incomeLabel + ')</b>, then shows what\'s safe to distribute (split per LLC). It rolls forward on its own — once a bill drafts it drops into <b>✓ Drafted this month</b> and next month\'s bills take its place.</div>';
   h += '<div style="margin-bottom:14px"><button class="secondary" style="padding:5px 10px;font-size:12px" onclick="markBalancesChecked()" title="Stamp today\'s date on all entered balances without changing the amounts">✓ Mark balances checked today</button></div>';
   h += '<div class="llc-grid">';
+  // 💡 hover tooltip (English + Hebrew) explaining how the upcoming-maintenance reserve works —
+  // the ~7-day mailed-check hold + Cleared override. Reused on both the "(N invoices)" line and
+  // the "none unpaid" line.
+  const maintTip = '<span class="kpi-info" style="margin-left:4px">💡<span class="kpi-tip" style="width:300px">'
+    + '<b>How upcoming maintenance is held</b><br>'
+    + 'A repair stays reserved in the cushion until <b>~7 days after you mark it Paid</b> (the mailed check is clearing), then it drops off automatically. Tick <b>Cleared</b> on the invoice to drop it sooner. Unpaid repairs are always held; debit-card buys are not (already drawn).'
+    + '<span class="tax-note" dir="rtl" style="text-align:right">תיקון נשאר שמור בכרית הביטחון עד <b>כ-7 ימים אחרי שסימנת "שולם"</b> (הצ׳ק בדואר מתקזז), ואז יורד אוטומטית. סמן <b>"נפרע"</b> בחשבונית כדי להוריד אותו מוקדם יותר. תיקונים שלא שולמו נשמרים תמיד; קניות בכרטיס דביט לא (כבר ירדו).</span>'
+    + '</span></span>';
   Object.keys(CASHPLAN_CONFIG).forEach(key => {
     const c = CASHPLAN_CONFIG[key];
     const maintList = upcomingMaintenance(data, c.match);        // pending repair invoices for this LLC
@@ -2510,7 +2518,7 @@ function renderDistributionPlanner(data) {
     // Upcoming maintenance — ALWAYS shown (reserved amount, or an explicit "none" so you can
     // tell the planner checked vs. is broken). Paid-by-debit / cleared-check / CPA are excluded.
     if (maintSum) {
-      h += '<div class="llc-row"><span class="k" style="color:#e8b04b">− Upcoming maintenance <span style="color:#4e6d8c;font-size:10px">(' + maintList.length + ' invoice' + (maintList.length > 1 ? 's' : '') + ')</span></span><span class="v" style="color:#e8b04b">' + fmt(maintSum) + '</span></div>';
+      h += '<div class="llc-row"><span class="k" style="color:#e8b04b">− Upcoming maintenance' + maintTip + ' <span style="color:#4e6d8c;font-size:10px">(' + maintList.length + ' invoice' + (maintList.length > 1 ? 's' : '') + ')</span></span><span class="v" style="color:#e8b04b">' + fmt(maintSum) + '</span></div>';
       maintList.forEach(m => {
         const who = m.property || m.sub || m.description || 'Repair';
         const st = m.paid ? ('check mailed' + (m.paid_date ? ' ' + dateLabel(m.paid_date) : '')) : 'unpaid';
@@ -2518,7 +2526,7 @@ function renderDistributionPlanner(data) {
       });
     } else {
       const paidRecent = (data.maintenance || []).filter(m => m.llc && m.llc.toLowerCase().indexOf(c.match) >= 0 && m.paid && (m.paid_by || '') !== 'Sent to CPA' && m.period === SELECTED_MONTH).length;
-      h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">Upcoming maintenance: none unpaid' + (paidRecent ? ' <span style="color:#3f5874">(' + paidRecent + ' already paid this month)</span>' : '') + '</span><span class="v" style="color:#4e6d8c">—</span></div>';
+      h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">Upcoming maintenance' + maintTip + ' none unpaid' + (paidRecent ? ' <span style="color:#3f5874">(' + paidRecent + ' already paid this month)</span>' : '') + '</span><span class="v" style="color:#4e6d8c">—</span></div>';
     }
     if (!reserved.length) h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">No fixed bills due before your next deposit ✓</span><span class="v"></span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Safety buffer <span style="color:#4e6d8c;font-size:10px">✏️ editable</span></span><span class="v" style="display:flex;align-items:center;justify-content:flex-end;gap:3px"><span style="color:#7e9cbf;font-size:12px">$</span><input type="number" min="0" step="50" value="' + buffer + '" onchange="setBuffer(\'' + key + '\', this.value)" title="Your safety cushion for ' + c.label + ' — saved to the sheet so Nir sees it too." style="width:78px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:5px;color:#cfe0f2;padding:2px 6px;font-size:12px"></span></div>';

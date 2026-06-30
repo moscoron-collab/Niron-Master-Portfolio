@@ -1713,6 +1713,11 @@ manual **Cleared** override.
 - 🚀 **Going live:** needs the Apps Script **redeploy** (M/N columns + the new action). The
   `index.html` side is live on merge; until redeploy, `data.paid_date`/`cleared` are blank so it
   falls back to the old invoice-date behavior (no breakage).
+- **💡 Tooltip (Jun 30 2026, pure frontend):** a `💡` hover bubble sits next to **"Upcoming
+  maintenance"** on every planner card (both the "(N invoices)" line and the "none unpaid —" line),
+  explaining the ~7-day-from-paid hold + Cleared override. Built once as `const maintTip` in
+  `renderDistributionPlanner` (reuses the `.kpi-info`/`.kpi-tip` bubble) with **English + Hebrew**
+  (Hebrew in a `.tax-note dir="rtl"` block). To edit the wording, edit `maintTip`.
 
 ### Form (Add/Edit Maintenance modal)
 - **Paid By** dropdown (Jun 16 2026, reworked): `Debit Card` (instant draw — Home Depot etc.) /
