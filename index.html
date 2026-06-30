@@ -417,7 +417,8 @@
     <label>Amount ($)</label><input type="number" id="maint-amount" step="0.01" placeholder="0.00">
     <label>Paid By</label>
     <select id="maint-paidby"><option value="">-- choose --</option><option value="Debit Card">Debit Card (instant draw)</option><option value="Check">Check (mailed — drafts ~1 wk)</option><option value="Sent to CPA">Sent to CPA (CPA pays it)</option></select>
-    <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:normal;font-size:13px;color:#ccd9ea;margin-top:12px;font-weight:400"><input type="checkbox" id="maint-paid" style="width:auto;margin:0"> Paid <span style="color:#4e6d8c;font-size:11px">(check once the CPA has actually paid it)</span></label>
+    <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:normal;font-size:13px;color:#ccd9ea;margin-top:12px;font-weight:400"><input type="checkbox" id="maint-paid" style="width:auto;margin:0"> Paid <span style="color:#4e6d8c;font-size:11px">(check once it's actually been paid / the check is mailed)</span></label>
+    <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:normal;font-size:13px;color:#ccd9ea;margin-top:8px;font-weight:400"><input type="checkbox" id="maint-cleared" style="width:auto;margin:0"> Cleared the bank <span style="color:#4e6d8c;font-size:11px">(for a mailed check — tick once it's actually cashed; the planner stops reserving it)</span></label>
     <label>Notes (optional)</label><textarea id="maint-notes" placeholder="e.g. paid by Zelle, or split with tenant"></textarea>
     <label>Invoice file (optional)</label><input type="file" id="maint-file" accept="image/*,application/pdf,.pdf">
     <div id="maint-file-current" style="font-size:11px;color:#7e9cbf;margin-top:4px"></div>
@@ -1413,6 +1414,7 @@ function openMaintEdit(rowNum) {
   document.getElementById("maint-amount").value = m.amount || "";
   document.getElementById("maint-paidby").value = m.paid_by || "";
   document.getElementById("maint-paid").checked = !!m.paid;
+  document.getElementById("maint-cleared").checked = !!m.cleared;
   document.getElementById("maint-notes").value = m.notes || "";
   document.getElementById("maint-file").value = "";
   document.getElementById("maint-file-current").innerHTML = m.invoice_url
@@ -1431,7 +1433,7 @@ function setSelectValue(selId, value, label) {
 }
 function populatePropertyDropdown() { const sel = document.getElementById("maint-property"); if (!sel || !PORTFOLIO_DATA) return; const properties = PORTFOLIO_DATA.properties || []; const grouped = {}; properties.forEach(p => { if (!grouped[p.llc]) grouped[p.llc] = []; grouped[p.llc].push(p); }); let html = '<option value="">-- Select Property --</option>'; Object.keys(grouped).sort().forEach(llc => { html += '<optgroup label="' + llc + '">'; grouped[llc].forEach(p => { const label = p.notes ? p.address + ' (' + p.notes + ')' : p.address; html += '<option value="' + p.address + '" data-llc="' + p.llc + '">' + label + '</option>'; }); html += '</optgroup>'; }); sel.innerHTML = html; }
 function onPropertyChange(sel) { const opt = sel.options[sel.selectedIndex]; const llc = opt ? opt.getAttribute("data-llc") || "" : ""; document.getElementById("maint-llc").value = llc; }
-function closeMaintModal() { document.getElementById("maint-modal").classList.remove("open"); ["maint-row", "maint-property", "maint-llc", "maint-sub", "maint-category", "maint-desc", "maint-amount", "maint-paidby", "maint-notes", "maint-file"].forEach(id => { document.getElementById(id).value = ""; }); document.getElementById("maint-paid").checked = false; document.getElementById("maint-file-current").textContent = ""; }
+function closeMaintModal() { document.getElementById("maint-modal").classList.remove("open"); ["maint-row", "maint-property", "maint-llc", "maint-sub", "maint-category", "maint-desc", "maint-amount", "maint-paidby", "maint-notes", "maint-file"].forEach(id => { document.getElementById(id).value = ""; }); document.getElementById("maint-paid").checked = false; document.getElementById("maint-cleared").checked = false; document.getElementById("maint-file-current").textContent = ""; }
 // Subs/vendors live in the shared "Subs" Google Sheet tab (data.subs) so a name added
 // on ANY device shows for everyone. A localStorage cache is kept only as a fallback so a
 // sub added before the Apps Script redeploy still shows that session.
@@ -1463,6 +1465,7 @@ async function submitMaintenance() {
     category: document.getElementById("maint-category").value, description: document.getElementById("maint-desc").value,
     amount: parseFloat(document.getElementById("maint-amount").value) || 0,
     paid_by: document.getElementById("maint-paidby").value, paid: document.getElementById("maint-paid").checked,
+    cleared: document.getElementById("maint-cleared").checked,
     notes: document.getElementById("maint-notes").value, entered_by: "Dashboard" };
   if (editRow) data.row = Number(editRow);
   if (!data.date || !data.property || !data.llc || !data.amount) { msgEl.className = "form-msg err"; msgEl.textContent = "Please fill in Date, Property, and Amount."; return; }
@@ -2410,8 +2413,11 @@ function upcomingMaintenance(data, matchStr) {
     if ((m.paid_by || '') === 'Sent to CPA') return false;     // CPA pays it, not this account
     if (!m.paid) return true;                                  // logged but unpaid = still owed
     if ((m.paid_by || '') !== 'Check') return false;           // paid by debit = already drawn
-    const d = new Date((m.date || '') + 'T12:00:00');          // mailed check: reserve ~7 days
-    return !isNaN(d.getTime()) && d >= cutoff && d <= today;
+    if (m.cleared) return false;                               // bank confirmed cashed -> drop now
+    // Mailed check: reserve ~7 days counted from the PAID/mailed date (when you marked it paid),
+    // not the invoice date. Falls back to the invoice date for legacy rows with no paid date.
+    const d = new Date((m.paid_date || m.date || '') + 'T12:00:00');
+    return !isNaN(d.getTime()) && d >= cutoff;
   });
 }
 function renderDistributionPlanner(data) {
@@ -2467,7 +2473,7 @@ function renderDistributionPlanner(data) {
       h += '<div class="llc-row"><span class="k" style="color:#e8b04b">− Upcoming maintenance <span style="color:#4e6d8c;font-size:10px">(' + maintList.length + ' invoice' + (maintList.length > 1 ? 's' : '') + ')</span></span><span class="v" style="color:#e8b04b">' + fmt(maintSum) + '</span></div>';
       maintList.forEach(m => {
         const who = m.property || m.sub || m.description || 'Repair';
-        const st = m.paid ? 'check mailed' : 'unpaid';
+        const st = m.paid ? ('check mailed' + (m.paid_date ? ' ' + dateLabel(m.paid_date) : '')) : 'unpaid';
         h += '<div class="llc-row" style="font-size:10.5px"><span class="k" style="color:#7a93ad;padding-left:10px">· ' + who + ' <span style="color:#4e6d8c">(' + st + ')</span></span><span class="v" style="color:#7a93ad">' + fmt(Number(m.amount) || 0) + '</span></div>';
       });
     } else {
@@ -3197,6 +3203,19 @@ async function markInvoicePaid(row) {
     renderCpaModal(); load();
   } catch (e) { alert('Network error: ' + e.message); }
 }
+// Mark a mailed check as cleared (or not) — the planner stops reserving it once cleared.
+async function setMaintCleared(row, cleared) {
+  const actor = ensureActor(); if (!actor) return;
+  const m = (PORTFOLIO_DATA.maintenance || []).find(x => x.row === Number(row));
+  if (m) m.cleared = !!cleared;                 // optimistic
+  renderAll();
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'set_maintenance_cleared', row: Number(row), cleared: !!cleared, actor: actor }) });
+    const r = await res.json();
+    if (r && r.error) { alert('Applied for this session, but not saved: ' + r.error + '\n\nIf this just shipped, the Apps Script needs its redeploy (New version).'); return; }
+    load();
+  } catch (e) { alert('Applied for this session, but the save failed (network): ' + e.message); }
+}
 function exportCpaCsv() {
   const rows = cpaInvoices();
   const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
@@ -3439,10 +3458,25 @@ function renderMaintenanceSection(maintenance) {
         ? '<button class="maint-edit-btn" title="Edit" onclick="openMaintEdit(' + m.row + ')">✏️</button>' +
           '<button class="maint-del-btn" title="Delete" onclick="deleteMaint(' + m.row + ')">🗑&#xFE0E;</button>'
         : '';
-      const payBadge = m.paid_by === 'Sent to CPA'
-        ? '<span style="color:' + (m.paid ? '#00c97a' : '#f0a500') + ';font-size:11px">🧾 CPA · ' + (m.paid ? 'paid' : 'unpaid') + '</span>'
-        : (m.paid_by === 'Check' ? '<span style="color:#7e9cbf;font-size:11px">🧾 Check</span>'
-        : ((m.paid_by === 'Debit Card' || m.paid_by === 'LLC Debit Card') ? '<span style="color:#7e9cbf;font-size:11px">💳 Debit</span>' : '<span style="color:#4e6d8c">—</span>'));
+      let payBadge;
+      if (m.paid_by === 'Sent to CPA') {
+        payBadge = '<span style="color:' + (m.paid ? '#00c97a' : '#f0a500') + ';font-size:11px">🧾 CPA · ' + (m.paid ? 'paid' : 'unpaid') + '</span>';
+      } else if (m.paid_by === 'Check') {
+        // For a paid mailed check show a cleared toggle (the planner reserves it until cleared
+        // or ~7 days from the paid date) + the paid date.
+        let extra = '';
+        if (m.paid) {
+          extra += m.cleared
+            ? ' <span style="color:#00c97a;font-size:10px" title="Bank cashed it — no longer reserved">✓ cleared</span>'
+            : ' <a href="#" onclick="setMaintCleared(' + m.row + ',true);return false" style="color:#f0a500;font-size:10px" title="Tick once the bank cashes the check — the planner stops reserving it">mark cleared</a>';
+          if (m.paid_date) extra += ' <span style="color:#4e6d8c;font-size:10px">paid ' + dateLabel(m.paid_date) + '</span>';
+        }
+        payBadge = '<span style="color:#7e9cbf;font-size:11px">🧾 Check</span>' + extra;
+      } else if (m.paid_by === 'Debit Card' || m.paid_by === 'LLC Debit Card') {
+        payBadge = '<span style="color:#7e9cbf;font-size:11px">💳 Debit</span>';
+      } else {
+        payBadge = '<span style="color:#4e6d8c">—</span>';
+      }
       const fileLink = m.invoice_url ? ' <a href="' + m.invoice_url + '" target="_blank" title="View invoice file" style="text-decoration:none">📎</a>' : '';
       html += '<tr><td style="white-space:nowrap">' + dateLabel(m.date) + '</td><td>' + m.llc + '</td><td style="font-size:12px">' + (m.property || '—') + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td><td style="white-space:nowrap">' + payBadge + fileLink + '</td><td style="white-space:nowrap">' + actions + '</td></tr>';
     });

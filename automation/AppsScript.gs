@@ -1140,6 +1140,9 @@ function doPost(e) {
     if (body.action === 'set_maintenance_paid') {
       return setMaintenancePaid(body);
     }
+    if (body.action === 'set_maintenance_cleared') {
+      return setMaintenanceCleared(body);
+    }
     if (body.action === 'add_distribution') {
       return addDistributionEntry(body);
     }
@@ -1689,13 +1692,19 @@ function addMaintenanceEntry(data) {
     try { invoiceUrl = saveInvoiceFile(data.file); }
     catch (err) { return ContentService.createTextOutput(JSON.stringify({error:'File upload failed: ' + err.message})).setMimeType(ContentService.MimeType.JSON); }
   }
-  // Columns A-L: Date, LLC, Property, Sub, Category, Description, Amount, Entered By,
-  //              Paid By, Paid, Notes, Invoice File URL
-  sh.getRange(nextRow, 1, 1, 12).setValues([[
+  // Columns A-N: Date, LLC, Property, Sub, Category, Description, Amount, Entered By,
+  //              Paid By, Paid, Notes, Invoice File URL, Paid Date, Cleared
+  var paid = data.paid ? true : false;
+  // Stamp the paid date when adding an already-paid invoice (use the supplied date if given,
+  // else today) so the planner's mailed-check window counts from when it was paid, not the
+  // invoice date. Left blank for unpaid invoices.
+  var paidDate = paid ? (data.paid_date ? new Date(data.paid_date + 'T12:00:00') : new Date()) : '';
+  sh.getRange(nextRow, 1, 1, 14).setValues([[
     dateObj, data.llc, data.property || '', data.sub || '',
     data.category || '', data.description || '',
     Number(data.amount) || 0, data.entered_by || 'Dashboard',
-    data.paid_by || '', data.paid ? true : false, data.notes || '', invoiceUrl
+    data.paid_by || '', paid, data.notes || '', invoiceUrl,
+    paidDate, data.cleared ? true : false
   ]]);
   logActivity(data.actor, 'Added invoice', (data.property || data.llc) + ' · ' + (data.category || '') + ' · $' + (Number(data.amount) || 0));
   return ContentService.createTextOutput(JSON.stringify({ok:true, row:nextRow, invoice_url:invoiceUrl})).setMimeType(ContentService.MimeType.JSON);
@@ -1716,11 +1725,22 @@ function updateMaintenanceEntry(data) {
     try { invoiceUrl = saveInvoiceFile(data.file); }
     catch (err) { return ContentService.createTextOutput(JSON.stringify({error:'File upload failed: ' + err.message})).setMimeType(ContentService.MimeType.JSON); }
   }
-  sh.getRange(row, 1, 1, 12).setValues([[
+  // Paid date: if the invoice is now paid, keep the existing stamp (or use the supplied date);
+  // if it's newly paid with no stamp, stamp today; if it's not paid, clear it. The cleared flag
+  // is taken from the form when sent, else preserved.
+  var paid = data.paid ? true : false;
+  var prevPaidDate = sh.getRange(row, 13).getValue();
+  var paidDate;
+  if (data.paid_date) paidDate = new Date(data.paid_date + 'T12:00:00');
+  else if (paid) paidDate = (prevPaidDate ? prevPaidDate : new Date());
+  else paidDate = '';
+  var clearedVal = (data.cleared != null) ? (data.cleared ? true : false) : (sh.getRange(row, 14).getValue() === true);
+  sh.getRange(row, 1, 1, 14).setValues([[
     dateObj, data.llc, data.property || '', data.sub || '',
     data.category || '', data.description || '',
     Number(data.amount) || 0, data.entered_by || 'Dashboard',
-    data.paid_by || '', data.paid ? true : false, data.notes || '', invoiceUrl
+    data.paid_by || '', paid, data.notes || '', invoiceUrl,
+    paidDate, clearedVal
   ]]);
   logActivity(data.actor, 'Edited invoice', (data.property || data.llc) + ' · ' + (data.category || '') + ' · $' + (Number(data.amount) || 0));
   return ContentService.createTextOutput(JSON.stringify({ok:true, row:row, invoice_url:invoiceUrl})).setMimeType(ContentService.MimeType.JSON);
@@ -1744,10 +1764,29 @@ function setMaintenancePaid(data) {
   if (!sh) return ContentService.createTextOutput(JSON.stringify({error:'Maintenance Log not found'})).setMimeType(ContentService.MimeType.JSON);
   var row = Number(data.row);
   if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error:'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
-  sh.getRange(row, 10).setValue(data.paid ? true : false);
+  var paid = data.paid ? true : false;
+  sh.getRange(row, 10).setValue(paid);
+  // Stamp the Paid Date (col M) when marking paid so the mailed-check clearing window counts
+  // from now; clear the date + Cleared flag (col N) when marking unpaid.
+  sh.getRange(row, 13).setValue(paid ? new Date() : '');
+  if (!paid) sh.getRange(row, 14).setValue(false);
   var pinfo = sh.getRange(row, 1, 1, 7).getValues()[0];
-  logActivity(data.actor, data.paid ? 'Marked invoice paid' : 'Marked invoice unpaid', (pinfo[2] || pinfo[1]) + ' · $' + (Number(pinfo[6]) || 0));
-  return ContentService.createTextOutput(JSON.stringify({ok:true, row:row, paid:!!data.paid})).setMimeType(ContentService.MimeType.JSON);
+  logActivity(data.actor, paid ? 'Marked invoice paid' : 'Marked invoice unpaid', (pinfo[2] || pinfo[1]) + ' · $' + (Number(pinfo[6]) || 0));
+  return ContentService.createTextOutput(JSON.stringify({ok:true, row:row, paid:paid})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Flip just the Cleared column (N) for a row - the planner stops reserving a mailed check once
+// it's marked cleared (you confirmed the bank cashed it), overriding the ~7-day auto window.
+function setMaintenanceCleared(data) {
+  var sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Maintenance Log');
+  if (!sh) return ContentService.createTextOutput(JSON.stringify({error:'Maintenance Log not found'})).setMimeType(ContentService.MimeType.JSON);
+  var row = Number(data.row);
+  if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error:'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
+  var cleared = data.cleared ? true : false;
+  sh.getRange(row, 14).setValue(cleared);
+  var cinfo = sh.getRange(row, 1, 1, 7).getValues()[0];
+  logActivity(data.actor, cleared ? 'Marked check cleared' : 'Marked check uncleared', (cinfo[2] || cinfo[1]) + ' · $' + (Number(cinfo[6]) || 0));
+  return ContentService.createTextOutput(JSON.stringify({ok:true, row:row, cleared:cleared})).setMimeType(ContentService.MimeType.JSON);
 }
 
 // Save an uploaded invoice file to a dedicated Drive folder; return its view URL.
@@ -1854,11 +1893,14 @@ function getDashboardJson() {
     // edit/delete the exact row via update_maintenance / delete_maintenance.
     // Columns A-L: Date, LLC, Property, Sub, Category, Description, Amount, Entered By,
     //              Paid By (I/8), Paid (J/9), Notes (K/10), Invoice File URL (L/11).
-    maint.getRange(5, 1, maint.getLastRow() - 4, 12).getValues().forEach(function(r, i) {
+    maint.getRange(5, 1, maint.getLastRow() - 4, 14).getValues().forEach(function(r, i) {
       if (r[0] && r[1]) {
         var d = r[0] instanceof Date ? r[0] : new Date(r[0]);
         if (isNaN(d)) return;
         var yyyy = d.getFullYear(); var mm = String(d.getMonth()+1).padStart(2,'0');
+        // M (12) = Paid Date (stamped when marked paid), N (13) = Cleared (bank cashed it).
+        var pd = '';
+        if (r[12]) { var pdo = r[12] instanceof Date ? r[12] : new Date(r[12]); if (!isNaN(pdo)) pd = pdo.toISOString().slice(0,10); }
         data.maintenance.push({
           row: 5 + i,
           date: d.toISOString().slice(0,10),
@@ -1867,7 +1909,8 @@ function getDashboardJson() {
           category: r[4] || "", description: r[5] || "",
           amount: Number(r[6])||0, entered_by: r[7] || "",
           paid_by: r[8] || "", paid: r[9] === true || String(r[9]).toLowerCase() === 'true',
-          notes: r[10] || "", invoice_url: r[11] || ""
+          notes: r[10] || "", invoice_url: r[11] || "",
+          paid_date: pd, cleared: r[13] === true || String(r[13]).toLowerCase() === 'true'
         });
       }
     });

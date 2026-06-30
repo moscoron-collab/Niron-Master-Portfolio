@@ -1685,12 +1685,34 @@ unaffected (it recomputes from `PORTFOLIO_DATA`, not the table DOM; the 7 column
 
 Closes the loop between entering an invoice, how it was paid, and the CPA paying it.
 
-### Maintenance Log now has 12 columns (was 8) — BACKWARD COMPATIBLE
+### Maintenance Log now has 14 columns (was 8) — BACKWARD COMPATIBLE
 `A Date · B LLC · C Property · D Sub · E Category · F Description · G Amount · H Entered By`
-**+ new:** `I Paid By · J Paid · K Notes · L Invoice File URL`. Old 8-col rows still read
-fine (the new fields come back blank/false). `getDashboardJson` maint reader now reads 12
-cols and emits `paid_by, paid, notes, invoice_url`; `addMaintenanceEntry` /
-`updateMaintenanceEntry` write all 12.
+**+ :** `I Paid By · J Paid · K Notes · L Invoice File URL` **+ NEW (Jun 30 2026):**
+`M Paid Date · N Cleared`. Old 8/12-col rows still read fine (the new fields come back
+blank/false). `getDashboardJson` maint reader now reads 14 cols and emits
+`paid_by, paid, notes, invoice_url, paid_date, cleared`; `addMaintenanceEntry` /
+`updateMaintenanceEntry` write all 14.
+
+### 🧾→💵 Mailed-check clearing window now counts from PAID DATE + manual "Cleared" (Jun 30 2026)
+User caught that the planner's "Upcoming maintenance" mailed-check reservation counted its ~7-day
+window from the **invoice date**, not from when the check was actually marked paid/mailed — so a
+check on an older invoice could drop off the cushion the moment it was marked paid (or never show).
+Fix (user chose **"Both"** via AskUserQuestion): auto-drop ~7 days **from the paid date** AND a
+manual **Cleared** override.
+- **Cols M (Paid Date) + N (Cleared)** added. **`setMaintenancePaid`** stamps M = today when you mark
+  paid (clears M + N when unmarked). **`addMaintenanceEntry`** stamps M when added already-paid;
+  **`updateMaintenanceEntry`** preserves M (or stamps today on newly-paid) + writes N. New action
+  **`set_maintenance_cleared`** → **`setMaintenanceCleared`** flips just col N (+ `logActivity`).
+  Edit the **LAST** copies (reader ~1821, add ~1644, update ~1670, setPaid ~1706, doPost ~1125).
+- **Frontend (`index.html`):** **`upcomingMaintenance`** now: skip if `cleared`; for a paid Check
+  reserve only if `paid_date` (fallback invoice `date` for legacy) is within the last ~7 days. Add
+  modal has a **"Cleared the bank"** checkbox (`#maint-cleared`, wired in submit/edit/close). The
+  Maintenance table's Pay/File cell shows, for a paid check, a **"mark cleared"** link (→
+  `setMaintCleared(row, true)`) or **"✓ cleared"** + the **paid date**. Planner maintenance sub-line
+  shows "check mailed <paid date>". **Backward-safe** (legacy rows with no paid_date use invoice date).
+- 🚀 **Going live:** needs the Apps Script **redeploy** (M/N columns + the new action). The
+  `index.html` side is live on merge; until redeploy, `data.paid_date`/`cleared` are blank so it
+  falls back to the old invoice-date behavior (no breakage).
 
 ### Form (Add/Edit Maintenance modal)
 - **Paid By** dropdown (Jun 16 2026, reworked): `Debit Card` (instant draw — Home Depot etc.) /
