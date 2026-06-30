@@ -1555,7 +1555,10 @@ skill). The decider block mirrors the skill: ending balance − per-LLC cushion 
 Donald $1,500 · Yale $1,500 · Dorado $1,000) − uncleared repair checks − bills before next income −
 inter-account amounts owed = safe ceiling, split Ron/Nir 50/50 (Dorado Ron/Nir/Simon ⅓), rounded
 **down to nearest $50**; an account that can't cover its cushion + upcoming bills → take $0. Keep
-this block in sync with the `/monthly-distribution` SKILL.md if the cushions/rules change.
+this block in sync with the `/monthly-distribution` SKILL.md if the cushions/rules change. **(Jun 30
+2026)** the decider block also has a boxed **"📅 How the on-screen Distribution Planner shows this"**
+note explaining the rolling "Coming up before your next deposit (~the 21st)" + collapsed "✓ Drafted
+this month" wording + why the cushion looks big at month-end — so Nir recognizes the planner card.
 
 The guide's ordered steps (keep in sync if the workflow changes): **(0)** set "Signed in as" + pick
 the new month first; **(1)** confirm the AppFolio auto-pull landed (runs daily 15th–25th, the 4 LLCs
