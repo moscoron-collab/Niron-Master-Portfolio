@@ -165,8 +165,9 @@
   .chat-msg.bot { background: #182030; color: #ccd9ea; align-self: flex-start; border-bottom-left-radius: 4px; }
   .chat-msg.bot.err { color: #ff4455; background: rgba(255, 68, 85, 0.1); }
   .chat-msg.typing { color: #4e6d8c; font-style: italic; }
-  .chat-msg.bot .chat-tbl { white-space: normal; border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 12.5px; }
-  .chat-msg.bot .chat-tbl th, .chat-msg.bot .chat-tbl td { text-align: left; padding: 5px 8px; border-bottom: 1px solid #2a3850; vertical-align: top; }
+  .chat-msg.bot:has(.chat-tbl) { max-width: 100%; align-self: stretch; overflow: hidden; }
+  .chat-msg.bot .chat-tbl { white-space: normal; border-collapse: collapse; width: 100%; table-layout: fixed; margin: 6px 0; font-size: 12px; }
+  .chat-msg.bot .chat-tbl th, .chat-msg.bot .chat-tbl td { text-align: left; padding: 5px 7px; border-bottom: 1px solid #2a3850; vertical-align: top; word-break: break-word; overflow-wrap: anywhere; }
   .chat-msg.bot .chat-tbl th { color: #8fb3d9; font-weight: 600; border-bottom: 1px solid #3a4f6e; }
   .chat-msg.bot .chat-tbl tr:last-child td { border-bottom: none; }
   .chat-msg.bot strong { color: #e8f0fb; font-weight: 600; }
