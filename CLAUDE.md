@@ -935,6 +935,25 @@ shared. Pure **frontend** (`index.html`), **no Apps Script redeploy** — still 
 >   drafted-this-month reference list). `CASHPLAN_CONFIG`/`CASHPLAN_DAYS` unchanged. Self-audit unaffected
 >   (no `#kpi-*` IDs). Added `.plan-drafted` CSS (collapsible ▸/▾). Footer + intro text rewritten.
 
+> ### ✏️ Editable per-LLC safety buffer — SHARED via the sheet (Jun 30 2026, needs redeploy)
+> The buffer was hardcoded in `CASHPLAN_CONFIG` (Divando $2,000 · Donald/Yale $1,500 · Dorado $1,000).
+> User wanted it editable (decisions via AskUserQuestion: **inline box on each card · keep per-LLC ·
+> shared with Nir via the sheet**). Now:
+> - **Apps Script (`AppsScript.gs`, needs redeploy):** new **`Buffers`** tab auto-created + seeded with
+>   the 4 defaults by **`ensureBuffersTab()`** (cols A–D = `LLC Key · Label · Buffer · Updated At`, data
+>   row 5, keyed by planner key divando/donald/yale/dorado). Live `getDashboardJson` reads it →
+>   **`data.buffers`** (map key→amount). `doPost` routes **`set_buffer`** → **`setBufferEntry()`**
+>   (upsert by key, `logActivity`). Edit the **LAST** `getDashboardJson` (~1744) + `doPost` (~1125).
+> - **Frontend (`index.html`, live on merge):** the "− Safety buffer" line on each planner card is now an
+>   editable `$` input (`✏️ editable`). **`bufferFor(key, c)`** = `data.buffers[key]` ?? `CASHPLAN_CONFIG`
+>   default (so it's **backward-safe** before redeploy). **`setBuffer(key, val)`** requires `ensureActor()`,
+>   optimistically updates `PORTFOLIO_DATA.buffers` + `renderAll()`, then POSTs `set_buffer` and `load()`s
+>   on success. On error (e.g. pre-redeploy) it KEEPS the value for the session + alerts that the redeploy
+>   is needed (doesn't revert). The per-card `cushion` now uses `buffer` (not `c.buffer`).
+> - 🚀 **Going live (REQUIRED):** redeploy `AppsScript.gs` (Sheet → Extensions → Apps Script → paste →
+>   Deploy → Manage deployments → Edit → New version → Deploy). The `Buffers` tab auto-creates on first
+>   load after redeploy. Until then, edits apply for the session but won't save to the sheet/share to Nir.
+
 **REBUILT on a cushion model** (the PR #65 planner below was removed for running on the wrong
 AppFolio net). This one is **frontend-only / localStorage v1** (no redeploy): `renderDistributionPlanner(data)`
 in `index.html`, rendered **just BELOW the Monthly Breakdown section** (user swapped the two on Jun 16 2026

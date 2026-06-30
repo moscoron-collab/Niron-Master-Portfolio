@@ -1986,6 +1986,13 @@ function planUpcoming(key, c, fromDate, untilDate) {
 // Income deposit day-of-month — Laureate owner funds land ~the 18th–22nd; we use the 21st as the
 // cutoff the rolling cushion holds bills until (user choice, Jun 30 2026).
 const CASHPLAN_INCOME_DAY = 21;
+// Per-LLC safety buffer: editable + shared via the Buffers sheet tab (data.buffers, keyed by
+// planner key). Falls back to the CASHPLAN_CONFIG default if the sheet has no value yet (e.g.
+// before the Apps Script redeploy), so this is backward-safe.
+function bufferFor(key, c) {
+  const ov = (typeof PORTFOLIO_DATA !== 'undefined' && PORTFOLIO_DATA && PORTFOLIO_DATA.buffers) ? PORTFOLIO_DATA.buffers[key] : undefined;
+  return (ov != null && ov !== '' && !isNaN(Number(ov))) ? Number(ov) : c.buffer;
+}
 function cashBalances() { try { return JSON.parse(localStorage.getItem('niron_cash_balances') || '{}'); } catch (e) { return {}; } }
 
 // (which only holds the $2,334 SBA line), so add them to the Loan Balances display.
@@ -2437,7 +2444,8 @@ function renderDistributionPlanner(data) {
     // only, in the collapsed "Drafted this month" list). Upcoming maintenance is ALWAYS reserved.
     const reserved = planUpcoming(key, c, startToday, incomeDate);
     const draftedThisMonth = planExpenseItems(key, c, planNow.getMonth()).filter(it => it.day < todayDay);
-    const cushion = reserved.reduce((s, it) => s + it.amt, 0) + maintSum + c.buffer;
+    const buffer = bufferFor(key, c);
+    const cushion = reserved.reduce((s, it) => s + it.amt, 0) + maintSum + buffer;
     const has = bals[key] != null && bals[key] !== '';
     const bal = Number(bals[key]) || 0;
     const safe = Math.max(0, bal - cushion);
@@ -2467,7 +2475,7 @@ function renderDistributionPlanner(data) {
       h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">Upcoming maintenance: none unpaid' + (paidRecent ? ' <span style="color:#3f5874">(' + paidRecent + ' already paid this month)</span>' : '') + '</span><span class="v" style="color:#4e6d8c">—</span></div>';
     }
     if (!reserved.length) h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">No fixed bills due before your next deposit ✓</span><span class="v"></span></div>';
-    h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Safety buffer</span><span class="v" style="color:#7a93ad">' + fmt(c.buffer) + '</span></div>';
+    h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Safety buffer <span style="color:#4e6d8c;font-size:10px">✏️ editable</span></span><span class="v" style="display:flex;align-items:center;justify-content:flex-end;gap:3px"><span style="color:#7e9cbf;font-size:12px">$</span><input type="number" min="0" step="50" value="' + buffer + '" onchange="setBuffer(\'' + key + '\', this.value)" title="Your safety cushion for ' + c.label + ' — saved to the sheet so Nir sees it too." style="width:78px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:5px;color:#cfe0f2;padding:2px 6px;font-size:12px"></span></div>';
     h += '</div>';
     // Totals block — aligned row-for-row across all 4 cards.
     h += '<div class="plan-totals">';
@@ -2517,6 +2525,24 @@ function setCashBalance(key, val) {
   localStorage.setItem('niron_cash_balances', JSON.stringify(b));
   localStorage.setItem('niron_cash_balances_ts', JSON.stringify(ts));
   renderAll();
+}
+// Save a per-LLC safety buffer to the shared Buffers sheet tab (so Nir sees the same value).
+// Optimistic: applies in-memory + re-renders immediately, then reloads from the sheet on success.
+// Backward-safe: before the Apps Script redeploy the POST returns an error — we keep the value for
+// this session and explain the redeploy is needed, rather than reverting silently.
+async function setBuffer(key, val) {
+  const actor = ensureActor(); if (!actor) { renderAll(); return; }
+  const n = Number(val);
+  if (isNaN(n) || n < 0) { alert('Enter a valid buffer amount ($0 or more).'); renderAll(); return; }
+  PORTFOLIO_DATA.buffers = PORTFOLIO_DATA.buffers || {};
+  PORTFOLIO_DATA.buffers[key] = n;            // optimistic — recalc now
+  renderAll();
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'set_buffer', key: key, buffer: n, label: (CASHPLAN_CONFIG[key] || {}).label || key, actor: actor }) });
+    const r = await res.json();
+    if (r && r.error) { alert('Buffer applied for this session, but not saved to the sheet yet:\n' + r.error + '\n\nIf this just shipped, the Google Apps Script still needs its redeploy (New version) before buffer edits save for everyone.'); return; }
+    load();                                   // success -> refresh shared data
+  } catch (e) { alert('Buffer applied for this session, but the save failed (network): ' + e.message); }
 }
 // Stamp today's date/time on every entered balance WITHOUT changing the amounts — so a balance
 // that's still correct (unchanged) can be confirmed as checked today (onchange wouldn't fire).
