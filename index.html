@@ -84,6 +84,11 @@
   .plan-cushion { min-height: 118px; }
   .plan-upcoming { margin-top: auto; border-top: 1px solid #16263c; padding-top: 8px; }
   .plan-upcoming-title { color: #8aa6c4; font-size: 11px; font-weight: 600; margin-bottom: 4px; }
+  .plan-drafted { margin-top: 8px; border-top: 1px dashed #16263c; padding-top: 6px; }
+  .plan-drafted > summary { color: #4e6d8c; font-size: 11px; cursor: pointer; list-style: none; user-select: none; }
+  .plan-drafted > summary::-webkit-details-marker { display: none; }
+  .plan-drafted > summary::before { content: '▸ '; color: #3f5874; }
+  .plan-drafted[open] > summary::before { content: '▾ '; }
   .llc-card h3 { color: #ffffff; font-size: 15px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #1e2d42; }
   .llc-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; }
   .llc-row .k { color: #4e6d8c; }
@@ -1890,8 +1895,10 @@ function effectiveIns(llc, sheetIns) {
 }
 // --- Cash cushion / distribution planner (bank-verified Mar–May 2026) -------------
 // Recurring monthly cash that leaves each LLC's operating account. Used to compute the
-// cushion to LEAVE before distributing. SBA + mortgage are excluded from the cushion in
-// "after bills paid" mode (they clear mid-month, before you distribute ~22nd–25th).
+// cushion to LEAVE before distributing. The cushion uses a ROLLING window (planUpcoming):
+// it reserves whichever of these bills draft between today and the next income deposit
+// (~the 21st), so your balance covers them until the next paycheck. A bill that already
+// drafted this month is gone from the balance, so it is NOT reserved again.
 // Distributions: Divando/Yale/Donald split ÷2 (Ron/Nir); Dorado ÷3 (Ron/Nir/Simon).
 const CASHPLAN_CONFIG = {
   divando: { label: 'Divando', match: 'divando', mortgage: 12199.86, sba: 2334, insurance: 2909.98, accountant: 0, utilities: 685, software: 288.98, buffer: 2000, split: 2, utilTip: 'Google + Xcel + Aurora Water + Denver Compost — varies every month, ~$685 total' },
@@ -1938,9 +1945,39 @@ function planExpenseItems(key, c, monthIdx) {
     .sort((a, b) => a.day - b.day);
 }
 function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
-// Distribution timing: 'late' = ~22nd–25th, after the mortgage clears (small cushion,
-// avoids the overdrafts we saw); 'early' = 1st week, must reserve the upcoming mortgage.
-let CASHPLAN_MODE = localStorage.getItem('niron_cashplan_mode') || 'late';
+// The next calendar date a recurring bill on day-of-month `day` will draft, on/after `fromDate`
+// (start of today). Rolls into next month if this month's draft day already passed.
+function nextDraftDate(fromDate, day) {
+  let dt = new Date(fromDate.getFullYear(), fromDate.getMonth(), day);
+  if (dt < fromDate) dt = new Date(fromDate.getFullYear(), fromDate.getMonth() + 1, day);
+  return dt;
+}
+// Rolling-window upcoming bills: every recurring cost whose NEXT draft falls between `fromDate`
+// (today) and `untilDate` (your next income deposit) — i.e. the bills your current balance must
+// still cover before the next paycheck lands. Handles the month rollover (so at month-end it
+// automatically shows next month's mortgage/SBA/etc.) and seasonal utilities (utilMonths) by the
+// real draft month. Each item is tagged with its actual draft `date` + day-of-month.
+function planUpcoming(key, c, fromDate, untilDate) {
+  const days = CASHPLAN_DAYS[key] || {};
+  const defs = [
+    { f: 'sba', label: 'SBA loans' },
+    { f: 'mortgage', label: 'Mortgage' },
+    { f: 'utilities', label: 'Utilities' },
+    { f: 'software', label: 'ACE Cloud Hosting' },
+    { f: 'insurance', label: 'Insurance' }
+  ];
+  return defs.filter(d => days[d.f] && c[d.f]).map(d => {
+    const dt = nextDraftDate(fromDate, days[d.f]);
+    return { date: dt, day: days[d.f], label: d.label, amt: c[d.f], tip: (d.f === 'utilities' ? c.utilTip : undefined) };
+  }).filter(it => {
+    if (it.date > untilDate) return false;                                       // drafts after next deposit -> covered by it
+    if (it.label === 'Utilities' && Array.isArray(c.utilMonths) && c.utilMonths.indexOf(it.date.getMonth()) < 0) return false; // seasonal: not a billing month
+    return true;
+  }).sort((a, b) => a.date - b.date);
+}
+// Income deposit day-of-month — Laureate owner funds land ~the 18th–22nd; we use the 21st as the
+// cutoff the rolling cushion holds bills until (user choice, Jun 30 2026).
+const CASHPLAN_INCOME_DAY = 21;
 function cashBalances() { try { return JSON.parse(localStorage.getItem('niron_cash_balances') || '{}'); } catch (e) { return {}; } }
 
 // (which only holds the $2,334 SBA line), so add them to the Loan Balances display.
@@ -2368,28 +2405,30 @@ function renderDistributionPlanner(data) {
   // not a recurring monthly bill, so reserving it every month was wrong (user, Jun 16 2026).
   const bals = cashBalances();
   const cashTs = cashBalanceTs();
-  const mode = CASHPLAN_MODE;
   const planNow = new Date();
   const todayDay = planNow.getDate();
+  const startToday = new Date(planNow.getFullYear(), planNow.getMonth(), planNow.getDate());
   const monAbbr = planNow.toLocaleString('en-US', { month: 'short' });
+  // Rolling window: hold every bill that drafts between today and the NEXT income deposit (~21st).
+  // Once today passes the 21st, the cutoff — and the whole upcoming list — roll into next month
+  // automatically, so at month-end you see next month's mortgage / SBA / utilities, not a dead list.
+  let incomeDate = new Date(planNow.getFullYear(), planNow.getMonth(), CASHPLAN_INCOME_DAY);
+  if (startToday > incomeDate) incomeDate = new Date(planNow.getFullYear(), planNow.getMonth() + 1, CASHPLAN_INCOME_DAY);
+  const incomeLabel = incomeDate.toLocaleString('en-US', { month: 'short', day: 'numeric' });
   let h = '<div class="section"><h2><span class="dot"></span><span>💵 Distribution Planner — how much to take this month</span></h2>';
-  h += '<div style="color:#4e6d8c;font-size:12px;margin:-4px 0 12px">Type each account\'s current bank balance. The planner leaves a cushion for the bills still coming, then shows what\'s safe to distribute (split per LLC). Best done ' + (mode === 'late' ? '<b>~the 22nd–25th</b>, after the mortgage clears.' : '<b>in the 1st week</b> — note the cushion then has to hold the upcoming mortgage.') + '</div>';
-  h += '<div style="margin-bottom:14px"><span style="color:#8aa6c4;font-size:12px;margin-right:8px">Distribution timing:</span>'
-    + '<button class="' + (mode === 'late' ? 'primary' : 'secondary') + '" style="padding:5px 10px;font-size:12px;margin-right:6px" onclick="setCashplanMode(\'late\')">After bills (~22nd–25th)</button>'
-    + '<button class="' + (mode === 'early' ? 'primary' : 'secondary') + '" style="padding:5px 10px;font-size:12px" onclick="setCashplanMode(\'early\')">Early (1st week)</button>'
-    + '<button class="secondary" style="padding:5px 10px;font-size:12px;margin-left:16px" onclick="markBalancesChecked()" title="Stamp today\'s date on all entered balances without changing the amounts">✓ Mark balances checked today</button></div>';
+  h += '<div style="color:#4e6d8c;font-size:12px;margin:-4px 0 12px">Type each account\'s current bank balance. The planner reserves the bills still coming <b>before your next income deposit (~' + incomeLabel + ')</b>, then shows what\'s safe to distribute (split per LLC). It rolls forward on its own — once a bill drafts it drops into <b>✓ Drafted this month</b> and next month\'s bills take its place.</div>';
+  h += '<div style="margin-bottom:14px"><button class="secondary" style="padding:5px 10px;font-size:12px" onclick="markBalancesChecked()" title="Stamp today\'s date on all entered balances without changing the amounts">✓ Mark balances checked today</button></div>';
   h += '<div class="llc-grid">';
-  const refDay = (mode === 'late') ? 22 : 1;  // distribution window: late ~22nd–25th, early ~1st week
   Object.keys(CASHPLAN_CONFIG).forEach(key => {
     const c = CASHPLAN_CONFIG[key];
     const maintList = upcomingMaintenance(data, c.match);        // pending repair invoices for this LLC
     const maintSum = maintList.reduce((s, m) => s + (Number(m.amount) || 0), 0);
-    const items = planExpenseItems(key, c, planNow.getMonth());
-    // Date-aware cushion: reserve only the bills that haven't drafted yet by your distribution
-    // date (draft day >= refDay). Bills that already drafted are gone from the balance you typed,
-    // so reserving them would double-count and understate what's safe to distribute. Upcoming
-    // maintenance is ALWAYS reserved (it's money still owed, not tied to a draft day).
-    const reserved = items.filter(it => it.day >= refDay);
+    // Rolling cushion: reserve every bill that drafts between today and the next income deposit —
+    // your current balance must carry those until the next paycheck. Bills that already drafted
+    // this month are gone from the typed balance, so they're NOT reserved (shown for reference
+    // only, in the collapsed "Drafted this month" list). Upcoming maintenance is ALWAYS reserved.
+    const reserved = planUpcoming(key, c, startToday, incomeDate);
+    const draftedThisMonth = planExpenseItems(key, c, planNow.getMonth()).filter(it => it.day < todayDay);
     const cushion = reserved.reduce((s, it) => s + it.amt, 0) + maintSum + c.buffer;
     const has = bals[key] != null && bals[key] !== '';
     const bal = Number(bals[key]) || 0;
@@ -2403,7 +2442,8 @@ function renderDistributionPlanner(data) {
     // Cushion breakdown — fixed min-height so the totals line up across all 4 cards.
     h += '<div class="plan-cushion">';
     reserved.forEach(it => {
-      h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− ' + it.label + ' <span style="color:#4e6d8c;font-size:10px">' + monAbbr + ' ' + ordinal(it.day) + '</span></span><span class="v" style="color:#7a93ad">' + fmt(it.amt) + '</span></div>';
+      const dLab = it.date.toLocaleString('en-US', { month: 'short' }) + ' ' + ordinal(it.day);
+      h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− ' + it.label + ' <span style="color:#4e6d8c;font-size:10px">' + dLab + '</span></span><span class="v" style="color:#7a93ad">' + fmt(it.amt) + '</span></div>';
     });
     // Upcoming maintenance — ALWAYS shown (reserved amount, or an explicit "none" so you can
     // tell the planner checked vs. is broken). Paid-by-debit / cleared-check / CPA are excluded.
@@ -2418,7 +2458,7 @@ function renderDistributionPlanner(data) {
       const paidRecent = (data.maintenance || []).filter(m => m.llc && m.llc.toLowerCase().indexOf(c.match) >= 0 && m.paid && (m.paid_by || '') !== 'Sent to CPA' && m.period === SELECTED_MONTH).length;
       h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">Upcoming maintenance: none unpaid' + (paidRecent ? ' <span style="color:#3f5874">(' + paidRecent + ' already paid this month)</span>' : '') + '</span><span class="v" style="color:#4e6d8c">—</span></div>';
     }
-    if (!reserved.length) h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">All fixed bills already drafted this cycle ✓</span><span class="v"></span></div>';
+    if (!reserved.length) h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">No fixed bills due before your next deposit ✓</span><span class="v"></span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Safety buffer</span><span class="v" style="color:#7a93ad">' + fmt(c.buffer) + '</span></div>';
     h += '</div>';
     // Totals block — aligned row-for-row across all 4 cards.
@@ -2427,24 +2467,36 @@ function renderDistributionPlanner(data) {
     h += '<div class="llc-row total"><span class="k">Safe to distribute</span><span class="v ' + (has ? (safe > 0 ? 'green' : 'red') : '') + '">' + (has ? fmt(safe) : '—') + '</span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#00c97a">Each partner</span><span class="v" style="color:#00c97a">' + (has ? fmt(each) : '—') + '</span></div>';
     h += '</div>';
-    // Dated "Coming up this cycle" list — pinned to the bottom so all 4 cards bottom-align.
-    if (items.length) {
-      h += '<div class="plan-upcoming"><div class="plan-upcoming-title">📅 Coming up this cycle</div>';
-      items.forEach(it => {
-        const drafted = it.day < todayDay;
-        const col = drafted ? '#4e6d8c' : '#9fb6cf';
-        const tag = drafted ? ' <span style="color:#3f5874">✓ drafted</span>' : (it.day === todayDay ? ' <span style="color:#f0a500">today</span>' : '');
+    // "Coming up before next deposit" + a collapsed "Drafted this month" reference list —
+    // pinned to the bottom so all 4 cards bottom-align.
+    h += '<div class="plan-upcoming">';
+    h += '<div class="plan-upcoming-title">📅 Coming up before your next deposit (' + incomeLabel + ')</div>';
+    if (reserved.length) {
+      reserved.forEach(it => {
+        const dLab = it.date.toLocaleString('en-US', { month: 'short' }) + ' ' + ordinal(it.day);
+        const isToday = it.date.getTime() === startToday.getTime();
+        const col = isToday ? '#f0a500' : '#9fb6cf';
+        const tag = isToday ? ' <span style="color:#f0a500">today</span>' : '';
         const tipAttr = it.tip ? ' title="' + it.tip.replace(/"/g, '&quot;') + '"' : '';
         const tipMark = it.tip ? ' <span style="color:#5e7da0;cursor:help">ⓘ</span>' : '';
-        h += '<div class="llc-row" style="font-size:11.5px"><span class="k" style="color:' + col + '"' + tipAttr + '>' + monAbbr + ' ' + ordinal(it.day) + ' · ' + it.label + tipMark + tag + '</span><span class="v" style="color:' + col + '">' + fmt(it.amt) + '</span></div>';
+        h += '<div class="llc-row" style="font-size:11.5px"><span class="k" style="color:' + col + '"' + tipAttr + '>' + dLab + ' · ' + it.label + tipMark + tag + '</span><span class="v" style="color:' + col + '">' + fmt(it.amt) + '</span></div>';
       });
       if (maintSum) h += '<div class="llc-row" style="font-size:11.5px"><span class="k" style="color:#e8b04b">soon · Upcoming maintenance (' + maintList.length + ')</span><span class="v" style="color:#e8b04b">' + fmt(maintSum) + '</span></div>';
-      h += '</div>';
+    } else {
+      h += '<div class="llc-row" style="font-size:11.5px"><span class="k" style="color:#4e6d8c">Nothing due before your next deposit ✓</span><span class="v"></span></div>';
     }
+    if (draftedThisMonth.length) {
+      h += '<details class="plan-drafted"><summary>✓ Drafted this month (' + draftedThisMonth.length + ')</summary>';
+      draftedThisMonth.forEach(it => {
+        h += '<div class="llc-row" style="font-size:11px"><span class="k" style="color:#4e6d8c">' + monAbbr + ' ' + ordinal(it.day) + ' · ' + it.label + '</span><span class="v" style="color:#4e6d8c">' + fmt(it.amt) + '</span></div>';
+      });
+      h += '</details>';
+    }
+    h += '</div>';
     h += '</div>';
   });
   h += '</div>';
-  h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">The cushion reserves <b>only the bills that haven\'t drafted yet by your distribution date</b> — <b>After bills (~22nd–25th)</b> assumes anything before the 22nd already cleared; <b>Early (1st week)</b> reserves everything still coming this month. So a bill that already drafted (shown ✓ in the list) is NOT double-counted. The <b>📅 Coming up this cycle</b> list shows every recurring bill on its draft date (✓ = drafted as of today). Dates are bank-verified for Divando + Donald (12-mo CSV) and estimates for Yale/Dorado — tell me to correct any. It also reserves <b>upcoming maintenance</b> — every repair invoice in your Maintenance Log that is still owed from this account (logged but <b>unpaid</b>, or paid by <b>mailed check</b> in the last ~7 days). Debit-card buys (already drawn) and Sent-to-CPA invoices are NOT reserved. So log a repair the moment you know about it and the planner holds the cash for it before you distribute. Balances still save on this browser for now; shared-save comes with the next backend update.</div>';
+  h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">The cushion reserves <b>every bill that drafts before your next income deposit (~the ' + ordinal(CASHPLAN_INCOME_DAY) + ')</b> — your current balance has to carry those until the next paycheck lands, so they\'re held back from what\'s safe to distribute. A bill that <b>already drafted this month is gone</b> from your balance, so it\'s NOT reserved (it shows in the dimmed <b>✓ Drafted this month</b> list for reference). The list <b>rolls forward automatically</b>: near month-end you\'ll see next month\'s mortgage / SBA / utilities. Dates are bank-verified for Divando + Donald (12-mo CSV) and estimates for Yale/Dorado — tell me to correct any. It also reserves <b>upcoming maintenance</b> — every repair invoice still owed from this account (logged but <b>unpaid</b>, or paid by <b>mailed check</b> in the last ~7 days). Debit-card buys (already drawn) and Sent-to-CPA invoices are NOT reserved. So log a repair the moment you know about it and the planner holds the cash for it. Balances still save on this browser for now; shared-save comes with the next backend update.</div>';
   h += '</div>';
   return h;
 }
@@ -2458,7 +2510,6 @@ function setCashBalance(key, val) {
   localStorage.setItem('niron_cash_balances_ts', JSON.stringify(ts));
   renderAll();
 }
-function setCashplanMode(m) { CASHPLAN_MODE = m; localStorage.setItem('niron_cashplan_mode', m); renderAll(); }
 // Stamp today's date/time on every entered balance WITHOUT changing the amounts — so a balance
 // that's still correct (unchanged) can be confirmed as checked today (onchange wouldn't fire).
 function markBalancesChecked() {

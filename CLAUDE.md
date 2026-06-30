@@ -902,6 +902,39 @@ shared. Pure **frontend** (`index.html`), **no Apps Script redeploy** — still 
 
 ## 💵 Distribution Planner v2 — cushion + safe-to-distribute (Jun 13 2026)
 
+> ### 🔁 ROLLING "until next income" cushion + auto roll-forward wording (Jun 30 2026, supersedes the late/early toggle)
+> The user reported that on the 30th the **"Coming up this cycle"** list showed every bill as `✓ drafted`
+> (the calendar-month "cycle" had ended) and the header still said "Coming up" — and that once a month's
+> bills have drafted it should **roll forward to next month's bills**. Also surfaced a real bug: in `late`
+> mode the cushion reserved bills by `day ≥ refDay` (a fixed window-day, NOT today's date), so on Jun 30 it
+> was still reserving Divando's ACE(28th)/Insurance(29th) + Yale's Insurance(25th) that had **already
+> drafted** → overstated cushion, understated safe-to-distribute. (Dorado's "41st end-of-month" worry =
+> the **property tax**, correctly excluded from the cushion — no per-property utility was missing.)
+> **User decisions (all via AskUserQuestion):** rolling **"until next income"** window · **fix the cushion**
+> · income cutoff = **the 21st** · **remove** the After-bills/Early timing toggle · keep a dimmed/collapsed
+> **"✓ Drafted this month"** reference group.
+> **What changed in `index.html` (frontend-only, no redeploy):**
+> - New helpers `nextDraftDate(fromDate, day)` + **`planUpcoming(key, c, fromDate, untilDate)`** (next draft
+>   DATE of each recurring bill, rolling across the month boundary, seasonal `utilMonths` honored by the real
+>   draft month) + const **`CASHPLAN_INCOME_DAY = 21`**.
+> - The cushion now = **`planUpcoming(today → next 21st)`** sum + upcoming maintenance + buffer. So it reserves
+>   exactly the bills that draft **before your next income deposit** (your balance must carry those until the
+>   next paycheck); a bill that already drafted this month is gone → NOT reserved. **This matches the
+>   `/monthly-distribution` skill** ("reserve all outflows before next income incl. next-month mortgage").
+> - ⚠️ **Expected behavior:** at/near month-end the cushions look BIG and safe-to-distribute drops, because
+>   next month's mortgage/SBA are imminent while income is weeks out (e.g. Jun 30: Divando holds Jul 1 SBA +
+>   Jul 15 mortgage+utilities ≈ $17K). This is correct, not a bug — `balance − cushion` (the real surplus)
+>   stays ~stable across the month. The flush window for an LLC is **after its mortgage drafts, before the
+>   21st** (e.g. Donald's cushion = just its buffer ~Jul 10).
+> - Display: header → **"📅 Coming up before your next deposit (Mon D)"** (rolls to next month once past the
+>   21st); a `<details class="plan-drafted">` collapsed **"✓ Drafted this month (N)"** group lists this
+>   calendar month's already-drafted bills (reference only, not reserved). Cushion/upcoming lines show the
+>   bill's **actual draft month** (e.g. "Jul 15"), not always the current month.
+> - **Removed:** `CASHPLAN_MODE`, `setCashplanMode`, `localStorage 'niron_cashplan_mode'`, and the
+>   After-bills/Early toggle UI + `refDay` logic. `planExpenseItems` is kept (now only feeds the
+>   drafted-this-month reference list). `CASHPLAN_CONFIG`/`CASHPLAN_DAYS` unchanged. Self-audit unaffected
+>   (no `#kpi-*` IDs). Added `.plan-drafted` CSS (collapsible ▸/▾). Footer + intro text rewritten.
+
 **REBUILT on a cushion model** (the PR #65 planner below was removed for running on the wrong
 AppFolio net). This one is **frontend-only / localStorage v1** (no redeploy): `renderDistributionPlanner(data)`
 in `index.html`, rendered **just BELOW the Monthly Breakdown section** (user swapped the two on Jun 16 2026
