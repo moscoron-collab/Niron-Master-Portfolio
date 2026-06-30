@@ -165,6 +165,11 @@
   .chat-msg.bot { background: #182030; color: #ccd9ea; align-self: flex-start; border-bottom-left-radius: 4px; }
   .chat-msg.bot.err { color: #ff4455; background: rgba(255, 68, 85, 0.1); }
   .chat-msg.typing { color: #4e6d8c; font-style: italic; }
+  .chat-msg.bot .chat-tbl { white-space: normal; border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 12.5px; }
+  .chat-msg.bot .chat-tbl th, .chat-msg.bot .chat-tbl td { text-align: left; padding: 5px 8px; border-bottom: 1px solid #2a3850; vertical-align: top; }
+  .chat-msg.bot .chat-tbl th { color: #8fb3d9; font-weight: 600; border-bottom: 1px solid #3a4f6e; }
+  .chat-msg.bot .chat-tbl tr:last-child td { border-bottom: none; }
+  .chat-msg.bot strong { color: #e8f0fb; font-weight: 600; }
   .chat-input-row { padding: 12px 14px; border-top: 1px solid #1e2d42; display: flex; gap: 8px; }
   .chat-input { flex: 1; padding: 10px 12px; background: #0a1520; border: 1px solid #1e2d42; border-radius: 8px; color: #ffffff; font-size: 13.5px; outline: none; font-family: inherit; }
   .chat-input:focus { border-color: #00BFFF; }
@@ -1777,7 +1782,7 @@ function loadChatHistory() {
         const kind = m.role === 'user' ? 'user' : 'bot';
         const el = document.createElement('div');
         el.className = 'chat-msg ' + kind;
-        el.textContent = m.content;
+        setChatContent(el, m.content, kind);
         msgs.appendChild(el);
       });
       msgs.scrollTop = msgs.scrollHeight;
@@ -1790,7 +1795,42 @@ function saveChatHistory() {
 
 function toggleChat() { const panel = document.getElementById("chat-panel"); const fab = document.getElementById("chat-fab"); if (panel.classList.contains("open")) { panel.classList.remove("open"); fab.style.display = "flex"; } else { panel.classList.add("open"); fab.style.display = "none"; document.getElementById("chat-input").focus(); } }
 function newChat() { chatHistory = []; saveChatHistory(); document.getElementById("chat-messages").innerHTML = ""; }
-function appendChatMsg(text, kind) { const el = document.createElement("div"); el.className = "chat-msg " + kind; el.textContent = text; const msgs = document.getElementById("chat-messages"); msgs.appendChild(el); msgs.scrollTop = msgs.scrollHeight; return el; }
+
+// Render a bot message with light markdown so the chat panel doesn't show raw
+// pipes/asterisks: converts markdown tables -> clean HTML tables (dropping the
+// |---| separator row), **bold** -> <strong>, and newlines -> <br>. Everything
+// is HTML-escaped first, so it is safe to inject as innerHTML.
+function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+function isTableRow(l) { return /^\s*\|.*\|\s*$/.test(l); }
+function isTableSep(l) { return /^\s*\|?[\s:|-]*-[\s:|-]*\|?\s*$/.test(l) && l.indexOf('-') >= 0; }
+function splitCells(l) { return l.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim()); }
+function formatChatHtml(text) {
+  const lines = String(text).replace(/\r/g, '').split('\n');
+  let out = '', i = 0;
+  while (i < lines.length) {
+    if (isTableRow(lines[i]) && i + 1 < lines.length && isTableSep(lines[i + 1])) {
+      const header = splitCells(lines[i]); i += 2;        // skip the |---| separator
+      const body = [];
+      while (i < lines.length && isTableRow(lines[i]) && !isTableSep(lines[i])) { body.push(splitCells(lines[i])); i++; }
+      let t = '<table class="chat-tbl"><thead><tr>';
+      header.forEach(h => { t += '<th>' + inlineFmt(h) + '</th>'; });
+      t += '</tr></thead><tbody>';
+      body.forEach(row => { t += '<tr>' + header.map((_, c) => '<td>' + inlineFmt(row[c] || '') + '</td>').join('') + '</tr>'; });
+      t += '</tbody></table>';
+      out += t;
+    } else {
+      out += inlineFmt(lines[i]) + (i < lines.length - 1 ? '<br>' : '');
+      i++;
+    }
+  }
+  return out;
+  function inlineFmt(s) { return escapeHtml(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'); }
+}
+function setChatContent(el, text, kind) {
+  if (kind && kind.indexOf('bot') >= 0 && kind.indexOf('typing') < 0) el.innerHTML = formatChatHtml(text);
+  else el.textContent = text;
+}
+function appendChatMsg(text, kind) { const el = document.createElement("div"); el.className = "chat-msg " + kind; setChatContent(el, text, kind); const msgs = document.getElementById("chat-messages"); msgs.appendChild(el); msgs.scrollTop = msgs.scrollHeight; return el; }
 
 function extractNobleContext() {
   // Extract ALL Noble Insurance content (every sub-tab) as text so the chatbot can
