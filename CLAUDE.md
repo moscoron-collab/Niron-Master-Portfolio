@@ -2342,6 +2342,13 @@ newlines → `<br>`. New **`setChatContent(el, text, kind)`** renders **bot** (n
 escaped before formatting). Wired into both `appendChatMsg` and `loadChatHistory`. Added `.chat-tbl` CSS
 (borderless, theme-matched). So both new and history-restored bot messages render cleanly. To support more
 markdown later, extend `formatChatHtml`'s `inlineFmt`.
+- **🐛 Table overflowed the bubble onto the panel background — FIXED (same day):** a 6-column table was
+  wider than the bubble's `max-width:85%`, and `.chat-msg` didn't clip overflow, so the right-hand columns
+  (Description) spilled outside the rounded bubble onto the dark panel — looked like the answer was "written
+  on the background." Fix: `.chat-msg.bot:has(.chat-tbl)` now goes **full width** (`max-width:100%;
+  align-self:stretch; overflow:hidden`), and `.chat-tbl` uses **`table-layout:fixed`** (+ cell
+  `word-break:break-word; overflow-wrap:anywhere`) so the table can never exceed the bubble and long cell
+  text wraps instead of overflowing. Pure CSS, live on merge.
 
 ---
 
