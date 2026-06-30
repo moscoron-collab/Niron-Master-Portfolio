@@ -900,7 +900,7 @@ function handleChatWithHistory(messages, activeTab, nobleContext) {
     + 'Answer using the data and reference knowledge below. Never say data is missing if it appears anywhere below.\n'
     + 'For totals / YTD / annual figures, READ the pre-computed summary tables -- do NOT re-add individual rows. For a specific month or unit, read the detail rows.\n'
     + '\nThe information below has FIVE sections:\n'
-    + '  1. PORTFOLIO -- LLC-level monthly cashflow (History), annual totals, loans, distributions, maintenance.\n'
+    + '  1. PORTFOLIO -- LLC-level monthly cashflow (History), annual totals, loans, distributions, and the MAINTENANCE LOG. The maintenance log lists each repair invoice with its specific Property (unit address), vendor, category, amount and paid status, plus per-property totals -- use it to answer "invoices/repairs for <address>" questions. Some older invoices have a blank Property and only an LLC.\n'
     + '  2. PROPERTY DETAIL -- per-UNIT monthly data for the individual addresses inside Divando LLC, Yale Townhomes LLC, and 5070 Donald LLC '
     + '(e.g. "5101 Crown Blvd Unit A", "2991 W Yale Ave", "5060 E Donald Ave"). Use this for ANY question about a specific address or unit.\n'
     + '  3. DASHBOARD REFERENCE KNOWLEDGE -- authoritative fixed costs (mortgages, SBA loans, taxes), the net-cashflow formula, manual-entry rules, and how the dashboard itself works.\n'
@@ -1425,15 +1425,51 @@ function buildPortfolioContext() {
   }
 
   // ── Maintenance ──────────────────────────────────────────────────────────
+  // Columns A-L: Date, LLC, Property (C), Sub/Vendor (D), Category (E),
+  //   Description (F), Amount (G), Entered By (H), Paid By (I), Paid (J),
+  //   Notes (K), Invoice URL (L). The Property column is what ties an invoice
+  //   to a specific unit (e.g. "4776 Blackhawk Way") — it MUST be sent so the
+  //   chatbot can answer "invoices for <property>" questions.
   var maint = ss.getSheetByName('Maintenance Log');
   if (maint && maint.getLastRow() >= 5) {
-    ctx += '\n=== MAINTENANCE LOG ===\n';
-    maint.getRange(5, 1, maint.getLastRow() - 4, 7).getValues().forEach(function(r) {
+    var mRows = [];
+    maint.getRange(5, 1, maint.getLastRow() - 4, 12).getValues().forEach(function(r) {
       if (!r[0] || !r[1]) return;
       var d = r[0] instanceof Date ? r[0] : new Date(r[0]);
       if (isNaN(d)) return;
-      ctx += dateStr(d) + ' | ' + r[1] + ' | ' + (r[3]||'') + ' | ' + (r[4]||'') + ' | ' + dollar(Number(r[5])||0) + '\n';
+      mRows.push({
+        date: dateStr(d), llc: String(r[1] || ''), prop: String(r[2] || ''),
+        sub: String(r[3] || ''), cat: String(r[4] || ''), desc: String(r[5] || ''),
+        amt: Number(r[6]) || 0, paidBy: String(r[8] || ''),
+        paid: r[9] === true || String(r[9]).toLowerCase() === 'true'
+      });
     });
+    if (mRows.length) {
+      mRows.sort(function(a, b){ return b.date.localeCompare(a.date); });   // newest first
+
+      ctx += '\n=== MAINTENANCE LOG (repair/maintenance invoices, newest first) ===\n';
+      ctx += 'Each invoice has a Property (the specific unit) AND an LLC. Use the Property column to answer questions about a specific address (e.g. "4776 Blackhawk Way"); some older rows have a blank Property and only an LLC.\n';
+
+      // Per-property summary so "invoices for <property>" / totals are reliable.
+      var mByProp = {};
+      mRows.forEach(function(m) {
+        var key = m.prop || '(no property — ' + m.llc + ' only)';
+        if (!mByProp[key]) mByProp[key] = { count: 0, total: 0 };
+        mByProp[key].count++; mByProp[key].total += m.amt;
+      });
+      ctx += '\n--- PER-PROPERTY TOTALS ---\n';
+      Object.keys(mByProp).sort().forEach(function(p) {
+        ctx += p + ': ' + mByProp[p].count + ' invoice(s), total ' + dollar(mByProp[p].total) + '\n';
+      });
+
+      ctx += '\n--- ALL INVOICES (Date | LLC | Property | Vendor | Category | Description | Amount | Paid) ---\n';
+      mRows.forEach(function(m) {
+        ctx += m.date + ' | ' + m.llc + ' | ' + (m.prop || '(no property)') + ' | '
+          + (m.sub || '-') + ' | ' + (m.cat || '-') + ' | ' + (m.desc || '-') + ' | '
+          + dollar(m.amt) + ' | ' + (m.paid ? 'paid' : 'unpaid')
+          + (m.paidBy ? ' (' + m.paidBy + ')' : '') + '\n';
+      });
+    }
   }
 
   // ── Property Detail (per-UNIT monthly: Divando, Yale, Donald) ──────────────
