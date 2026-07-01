@@ -2033,6 +2033,14 @@ sheet/dashboard.
     overdrafted (distribute conservatively).
 - **Step 3 — output:** per-LLC cleared/pending tables + a safe-to-distribute table + a short
   **copyable Nir text** (per-LLC: repairs total, still-to-clear, safe-to-split → each).
+- **Step 4 — email Nir (Jul 1 2026):** after Ron approves the numbers, the skill creates a **Gmail
+  DRAFT** (via `mcp__Gmail__create_draft`) **to `nir.shay@shays.com`, cc `moscoron@gmail.com`**,
+  subject `"<Month> Niron distributions — please execute"`, body = the Step-3 Nir text. **Never
+  auto-sent** — it lands in Ron's Drafts to review + Send. Nir has access to all 4 accounts and
+  manually runs the distributions (Ron/Nir/Simon), so this is his hand-off. If the Gmail connector
+  isn't authorized, the skill just prints the text instead. This is the skill's ONLY write (the
+  sheet/dashboard stay read-only). **Recommended run day: the ~25th** (income has landed ~18th–21st,
+  mid-month mortgages cleared) — the flush, settled window.
 - **Splits (fixed):** Divando/Donald/Yale = Ron 50% / Nir 50%; **Dorado = Ron/Nir/Simon ⅓ each**.
 - **Rounding (user pref, Jun 2026): ALWAYS round per-partner distribution amounts to clean numbers —
   round DOWN to the nearest $50** (never over-distribute). e.g. $1,133→$1,100, $1,053→$1,050, $938→$900.
