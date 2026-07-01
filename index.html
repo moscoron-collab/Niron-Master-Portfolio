@@ -129,6 +129,21 @@
   .dist-fab:hover { transform: scale(1.05); }
   .stmt-fab { position: fixed; bottom: 228px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #7c3aed, #5b21b6); border: none; cursor: pointer; z-index: 1000; box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4); font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
   .stmt-fab:hover { transform: scale(1.05); }
+  .msg-fab { position: fixed; bottom: 296px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #d6336c, #f06595); border: none; cursor: pointer; z-index: 1000; box-shadow: 0 4px 20px rgba(214, 51, 108, 0.45); font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+  .msg-fab:hover { transform: scale(1.05); }
+  /* ✉️ Messages (Ron ↔ Nir) feed + bubbles */
+  .msg-feed { max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px 4px; margin: 8px 0; background: #0a1522; border: 1px solid #182437; border-radius: 8px; }
+  .msg-row { display: flex; flex-direction: column; max-width: 82%; flex-shrink: 0; }
+  .msg-row.mine { align-self: flex-end; align-items: flex-end; }
+  .msg-row.theirs { align-self: flex-start; align-items: flex-start; }
+  .msg-bubble { padding: 8px 11px; border-radius: 13px; font-size: 13px; line-height: 1.45; word-break: break-word; }
+  .msg-row.mine .msg-bubble { background: linear-gradient(135deg, #0080cc, #00a2e8); color: #fff; border-bottom-right-radius: 3px; }
+  .msg-row.theirs .msg-bubble { background: #17293c; color: #dfeaf5; border: 1px solid #24384f; border-bottom-left-radius: 3px; }
+  .msg-meta { font-size: 10.5px; color: #6f8db0; margin: 2px 5px 0; }
+  .msg-bubble img { max-width: 210px; border-radius: 8px; margin-top: 6px; display: block; }
+  .msg-bubble audio { margin-top: 6px; height: 34px; max-width: 220px; display: block; }
+  .msg-empty { color: #4e6d8c; text-align: center; padding: 20px; font-size: 13px; }
+  .msg-compose { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #1c2b3e; padding-top: 10px; margin-top: 2px; }
 
   /* Master Portfolio modals */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center; z-index: 2000; }
@@ -871,12 +886,43 @@
 </div>
 <div class="toast" id="toast" style="position:fixed;bottom:24px;left:24px;display:none;z-index:999;font-family:'IBM Plex Mono',monospace;font-size:12px;padding:10px 18px;border-radius:6px;background:#00c97a22;border:1px solid #00c97a;color:#00c97a"></div>
 
+<!-- ═══════════════════ ✉️ MESSAGES (Ron ↔ Nir) ═══════════════════ -->
+<div class="modal-overlay" id="msg-modal" onclick="if(event.target===this)closeMsgModal()">
+  <div class="modal-box" style="max-width:560px">
+    <h2>✉️ Messages <span style="font-weight:normal;color:#6f8db0;font-size:13px">— Ron &amp; Nir</span>
+      <button class="bug-mini-btn" style="float:right;margin-left:8px" onclick="msgRefresh()" title="Refresh messages">🔄</button>
+      <button class="modal-close" onclick="closeMsgModal()">×</button></h2>
+
+    <label>Signed in as <span style="font-weight:normal;text-transform:none;letter-spacing:normal;color:#4e6d8c;font-size:11px">(required — this is who the message is from)</span></label>
+    <select id="msg-actor" class="actor-pick" onchange="setActor(this.value)"><option value="">— who are you? —</option><option value="R.M">R.M — Ron</option><option value="O.M">O.M — Oshrat</option><option value="N.S">N.S — Nir</option></select>
+
+    <div class="msg-feed" id="msg-feed"><div class="msg-empty">Loading…</div></div>
+
+    <div class="msg-compose">
+      <textarea id="msg-text" placeholder="Write a message…" style="min-height:52px"></textarea>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <label style="font-size:11.5px;color:#7e9cbf;margin:0">📷 Photo</label>
+        <input type="file" id="msg-photo" accept="image/*" style="max-width:190px">
+        <div class="bug-memo" style="margin:0">
+          <button type="button" class="bug-mini-btn" id="msg-memo-btn" onclick="msgToggleMemo()">🎤 Record</button>
+          <span id="msg-memo-status" style="font-size:11.5px;color:#7e9cbf"></span>
+          <audio id="msg-memo-audio" controls style="display:none"></audio>
+          <button type="button" class="bug-mini-btn del" id="msg-memo-clear" style="display:none" onclick="msgClearMemo()">Clear</button>
+        </div>
+      </div>
+      <div class="form-msg" id="msg-msg"></div>
+      <div style="display:flex;justify-content:flex-end"><button class="primary" id="msg-send" onclick="submitMessage()">Send ✉️</button></div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════════════ MAIN APP ═══════════════════ -->
 <div class="container" id="main-container" style="display:none">
   <button class="chat-fab" id="chat-fab" onclick="toggleChat()" title="Ask Claude about your portfolio">💬</button>
   <button class="maint-fab" id="maint-fab" onclick="openMaintModal()" title="Add maintenance invoice">🔧</button>
   <button class="dist-fab" id="dist-fab" onclick="openDistModal()" title="Add distribution">💰</button>
   <button class="stmt-fab" id="stmt-fab" onclick="openStmtModal()" title="Add monthly statement (Suncoast/MidSouth)">📋</button>
+  <button class="msg-fab" id="msg-fab" onclick="openMsgModal()" title="Messages — chat with Nir">✉️</button>
 
   <header class="app-header">
     <div class="header-left">
@@ -1436,8 +1482,22 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "1.0";
+const APP_VERSION = "1.1";
 const CHANGELOG = [
+  {
+    version: "1.1",
+    date: "July 1, 2026",
+    en: [
+      "New ✉️ Messages button (pink, bottom-right, above the 💬 Ask-Claude bubble) — a private chat just for Ron and Nir.",
+      "Send a typed message, attach a photo, or record a 🎤 voice note — it appears in one running conversation.",
+      "Whenever one of you sends a message, the other gets an email with the full text (Ron ↔ Nir), so nothing is missed."
+    ],
+    he: [
+      "כפתור ✉️ הודעות חדש (ורוד, מימין למטה, מעל בועת 💬 שאל את קלוד) — צ'אט פרטי רק לרון וניר.",
+      "אפשר לשלוח הודעת טקסט, לצרף תמונה, או להקליט הודעה קולית 🎤 — הכול מופיע בשיחה רציפה אחת.",
+      "בכל פעם שאחד מכם שולח הודעה, השני מקבל אימייל עם הטקסט המלא (רון ↔ ניר), כדי שכלום לא יתפספס."
+    ]
+  },
   {
     version: "1.0",
     date: "July 1, 2026",
@@ -1548,6 +1608,10 @@ function switchMainTab(tab, skipUrl) {
   const distFab = document.getElementById('dist-fab');
   const stmtFab = document.getElementById('stmt-fab');
   const monthSelect = document.getElementById('header-month-select');
+  // ✉️ Messages FAB is always visible; sit it above the maint/dist/stmt trio on tabs that show them,
+  // else tuck it just above the 💬 chat bubble so there's no big gap.
+  const msgFab = document.getElementById('msg-fab');
+  if (msgFab) msgFab.style.bottom = (tab === 'master' || tab === 'maint') ? '296px' : '92px';
   if (tab === 'master') {
     maintFab.style.display = 'flex';
     distFab.style.display = 'flex';
@@ -4141,6 +4205,156 @@ function bugClearMemo() {
   const clr = document.getElementById('bug-memo-clear'); if (clr) clr.style.display = 'none';
   const st = document.getElementById('bug-memo-status'); if (st) st.textContent = '';
   const btn = document.getElementById('bug-memo-btn'); if (btn) { btn.textContent = '● Record'; btn.classList.remove('del'); }
+}
+
+/* ============================================================
+   ✉️ MESSAGES  (private Ron ↔ Nir chat feed)
+   ============================================================ */
+const MSG_NAMES = { 'R.M': 'Ron', 'O.M': 'Oshrat', 'N.S': 'Nir' };
+let MSG_MEMO_PAYLOAD = null;   // {name,mimeType,data} of a recorded voice memo
+let msgMediaRec = null;        // active MediaRecorder
+let msgMemoChunks = [];
+let msgPollTimer = null;
+
+// The other partner in the chat (used for placeholder + "will get an email" copy).
+function msgOtherName(actor) { return actor === 'N.S' ? 'Ron' : 'Nir'; }
+
+function openMsgModal() {
+  syncActorSelects();
+  renderMessages();
+  document.getElementById('msg-modal').classList.add('open');
+  msgRefresh();
+  // Feel like a live chat while the box is open (email is the real alert when it's closed).
+  if (msgPollTimer) clearInterval(msgPollTimer);
+  msgPollTimer = setInterval(msgRefresh, 25000);
+  const t = document.getElementById('msg-text'); if (t) t.focus();
+}
+function closeMsgModal() {
+  msgStopMemo(true);
+  document.getElementById('msg-modal').classList.remove('open');
+  if (msgPollTimer) { clearInterval(msgPollTimer); msgPollTimer = null; }
+}
+
+// Lightweight refresh: pull just the messages array (no full dashboard re-render).
+async function msgRefresh() {
+  if (!document.getElementById('msg-modal').classList.contains('open')) return;
+  try {
+    const res = await dashGet(); const data = await res.json();
+    if (data && data.messages) { if (PORTFOLIO_DATA) PORTFOLIO_DATA.messages = data.messages; renderMessages(); }
+  } catch (e) { /* offline — keep showing what we already have */ }
+}
+
+function renderMessages() {
+  const feed = document.getElementById('msg-feed'); if (!feed) return;
+  const me = getActor();
+  const ta = document.getElementById('msg-text'); if (ta) ta.placeholder = 'Write a message to ' + msgOtherName(me) + '…';
+  const msgs = (PORTFOLIO_DATA && PORTFOLIO_DATA.messages) || [];
+  if (!msgs.length) { feed.innerHTML = '<div class="msg-empty">No messages yet. Say hi 👋</div>'; return; }
+  feed.innerHTML = msgs.map(m => {
+    const mine = me && m.from === me;
+    const name = MSG_NAMES[m.from] || m.from || '?';
+    const when = m.sent_at ? new Date(m.sent_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+    let inner = '';
+    if (m.text) inner += escapeHtml(m.text).replace(/\n/g, '<br>');
+    if (m.photo_url) inner += '<a href="' + escapeHtml(m.photo_url) + '" target="_blank"><img src="' + escapeHtml(m.photo_url) + '" alt="photo"></a>';
+    if (m.voice_url) inner += '<audio controls src="' + escapeHtml(m.voice_url) + '"></audio>';
+    if (!inner) inner = '<span style="opacity:.6">(no content)</span>';
+    const del = mine ? ' · <a href="#" onclick="msgDelete(' + m.row + ');return false" style="color:#ff6b81">delete</a>' : '';
+    return '<div class="msg-row ' + (mine ? 'mine' : 'theirs') + '">' +
+      '<div class="msg-bubble">' + inner + '</div>' +
+      '<div class="msg-meta">' + escapeHtml(name) + ' · ' + when + del + '</div>' +
+    '</div>';
+  }).join('');
+  feed.scrollTop = feed.scrollHeight;
+}
+
+async function submitMessage() {
+  const msg = document.getElementById('msg-msg'); const btn = document.getElementById('msg-send');
+  const actor = ensureActor(); if (!actor) return;
+  if (actor !== 'R.M' && actor !== 'N.S') { msg.className = 'form-msg err'; msg.textContent = 'This chat is between Ron and Nir — sign in as Ron or Nir to send.'; return; }
+  const text = document.getElementById('msg-text').value.trim();
+  const photoEl = document.getElementById('msg-photo'); const photo = photoEl && photoEl.files && photoEl.files[0];
+  if (!text && !photo && !MSG_MEMO_PAYLOAD) { msg.className = 'form-msg err'; msg.textContent = 'Type a message, attach a photo, or record a voice note first.'; return; }
+  const payload = {
+    action: 'add_message', from: actor, text: text,
+    sent_at: new Date().toISOString(),
+    sent_tz: (Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : '',
+    actor: actor
+  };
+  btn.disabled = true; msg.className = 'form-msg'; msg.textContent = 'Sending…';
+  try {
+    if (photo) {
+      if (photo.size > 25 * 1024 * 1024) { msg.className = 'form-msg err'; msg.textContent = 'Photo too large (max 25 MB).'; btn.disabled = false; return; }
+      msg.textContent = 'Uploading photo…'; payload.photo = await readFileAsPayload(photo);
+    }
+    if (MSG_MEMO_PAYLOAD) { msg.textContent = 'Uploading voice note…'; payload.voice = MSG_MEMO_PAYLOAD; }
+    msg.textContent = 'Sending…';
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+    const result = await res.json();
+    if (result.error) { msg.className = 'form-msg err'; msg.textContent = 'Error: ' + result.error; }
+    else {
+      msg.className = 'form-msg ok'; msg.textContent = '✅ Sent — ' + msgOtherName(actor) + ' will get an email.';
+      document.getElementById('msg-text').value = ''; if (photoEl) photoEl.value = ''; msgClearMemo();
+      await msgRefresh();
+      setTimeout(() => { if (msg) { msg.textContent = ''; msg.className = 'form-msg'; } }, 2600);
+    }
+  } catch (e) { msg.className = 'form-msg err'; msg.textContent = 'Network error: ' + e.message; }
+  finally { btn.disabled = false; }
+}
+
+async function msgDelete(row) {
+  if (!confirm('Delete this message for everyone?')) return;
+  const actor = ensureActor(); if (!actor) return;
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'delete_message', row: row, actor: actor }) });
+    const result = await res.json();
+    if (result.error) { alert('Error: ' + result.error); return; }
+    await msgRefresh();
+  } catch (e) { alert('Network error: ' + e.message); }
+}
+
+/* ---- Voice memo for messages (mirrors the 🐛 reporter's recorder) ---- */
+function msgStopMemo(discard) { if (msgMediaRec && msgMediaRec.state !== 'inactive') { msgMediaRec._discard = !!discard; try { msgMediaRec.stop(); } catch (e) {} } }
+function msgClearMemo() {
+  MSG_MEMO_PAYLOAD = null; msgMemoChunks = [];
+  const a = document.getElementById('msg-memo-audio'); if (a) { a.style.display = 'none'; a.removeAttribute('src'); }
+  const clr = document.getElementById('msg-memo-clear'); if (clr) clr.style.display = 'none';
+  const st = document.getElementById('msg-memo-status'); if (st) st.textContent = '';
+  const btn = document.getElementById('msg-memo-btn'); if (btn) { btn.textContent = '🎤 Record'; btn.classList.remove('del'); }
+}
+async function msgToggleMemo() {
+  const btn = document.getElementById('msg-memo-btn'); const st = document.getElementById('msg-memo-status');
+  if (msgMediaRec && msgMediaRec.state === 'recording') { msgStopMemo(false); return; }
+  if (!navigator.mediaDevices || !window.MediaRecorder) { alert('Audio recording isn\'t supported in this browser. Please type your message, or attach a photo.'); return; }
+  st.textContent = 'Asking for microphone… (click Allow if Chrome prompts).';
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    msgMemoChunks = [];
+    let mime = '';
+    ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'].forEach(t => { if (!mime && window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) mime = t; });
+    const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+    rec.ondataavailable = e => { if (e.data && e.data.size) msgMemoChunks.push(e.data); };
+    rec.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      btn.textContent = '🎤 Record'; btn.classList.remove('del');
+      if (rec._discard) return;
+      const blob = new Blob(msgMemoChunks, { type: rec.mimeType || mime || 'audio/webm' });
+      if (!blob.size) { st.textContent = ''; MSG_MEMO_PAYLOAD = null; alert('No audio was captured — your mic looks muted or blocked.\n\nCheck the mic icon in Chrome\'s address bar (Allow), then record again.'); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.getElementById('msg-memo-audio'); a.src = url; a.style.display = ''; a.load();
+      document.getElementById('msg-memo-clear').style.display = '';
+      st.textContent = '✓ Recorded (' + Math.round(blob.size / 1024) + ' KB) — press play to check it.';
+      const fr = new FileReader();
+      fr.onload = () => { const s = String(fr.result); const i = s.indexOf(','); const bt = blob.type || ''; const ext = (bt.indexOf('ogg') >= 0 ? 'ogg' : bt.indexOf('mp4') >= 0 ? 'm4a' : 'webm'); MSG_MEMO_PAYLOAD = { name: 'voice-msg.' + ext, mimeType: bt || 'audio/webm', data: i >= 0 ? s.slice(i + 1) : s }; };
+      fr.readAsDataURL(blob);
+    };
+    // Timeslice → chunks flush during recording (without this the blob can come back empty).
+    msgMediaRec = rec; rec.start(250);
+    btn.textContent = '■ Stop'; btn.classList.add('del'); st.textContent = '● Recording… tap Stop when done.';
+  } catch (e) {
+    const why = (e && e.name === 'NotAllowedError') ? 'Microphone access was blocked. Click the mic/🔒 icon in Chrome\'s address bar and Allow it, then try again.' : (e && e.name === 'NotFoundError') ? 'No microphone was found on this device.' : ('Could not start recording: ' + (e && e.message || e));
+    alert(why);
+  }
 }
 async function bugToggleMemo() {
   const btn = document.getElementById('bug-memo-btn'); const st = document.getElementById('bug-memo-status');
