@@ -356,6 +356,52 @@
   .audit-chip.ok { background: #00c97a18; color: #00c97a; border: 1px solid #00c97a55; }
   .audit-chip.warn { background: #f0a50018; color: #f0a500; border: 1px solid #f0a50055; }
   .audit-chip.fail { background: #ff445518; color: #ff4455; border: 1px solid #ff445555; }
+  /* 🐛 Bug report button + modal bits */
+  .audit-btn.bug-btn { background: rgba(255,68,85,0.12); border-color: #b3323f; color: #ff8a95; }
+  .audit-btn.bug-btn:hover { background: rgba(255,68,85,0.22); }
+  .bug-toggle { display: flex; gap: 8px; margin: 4px 0 10px; }
+  .bug-toggle button { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #243750; background: rgba(255,255,255,0.02); color: #8aa6c4; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .bug-toggle button.on[data-kind="Bug"] { background: rgba(255,68,85,0.18); border-color: #ff4455; color: #ff8a95; }
+  .bug-toggle button.on[data-kind="Idea"] { background: rgba(240,165,0,0.18); border-color: #f0a500; color: #ffcf6b; }
+  .bug-ctx { font-size: 11px; color: #7e9cbf; background: #0d1825; border: 1px solid #182838; border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; line-height: 1.5; }
+  .bug-ctx b { color: #9fc0e0; }
+  .mic-row { display: flex; align-items: flex-start; gap: 6px; }
+  .mic-row textarea { flex: 1; }
+  .mic-btn { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 8px; border: 1px solid #243750; background: rgba(255,255,255,0.03); color: #9fc0e0; font-size: 16px; cursor: pointer; margin-top: 0; }
+  .mic-btn:hover { background: rgba(0,191,255,0.15); }
+  .mic-btn.rec { background: rgba(255,68,85,0.25); border-color: #ff4455; color: #ff8a95; animation: micpulse 1.2s ease-in-out infinite; }
+  @keyframes micpulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+  .bug-memo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .bug-memo audio { height: 34px; }
+  .bug-chip { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 12px; white-space: nowrap; }
+  .bug-chip.t-bug { background: #ff445522; color: #ff8a95; border: 1px solid #ff445555; }
+  .bug-chip.t-idea { background: #f0a50022; color: #ffcf6b; border: 1px solid #f0a50055; }
+  .bug-chip.sev-Critical { background: #ff2d4022; color: #ff5c6b; border: 1px solid #ff2d4066; }
+  .bug-chip.sev-High { background: #ff7a0022; color: #ffa24d; border: 1px solid #ff7a0055; }
+  .bug-chip.sev-Medium { background: #f0a50022; color: #ffcf6b; border: 1px solid #f0a50055; }
+  .bug-chip.sev-Low { background: #4e6d8c22; color: #9fc0e0; border: 1px solid #4e6d8c55; }
+  .bug-chip.st-New { background: #00BFFF22; color: #6fd3ff; border: 1px solid #00BFFF55; }
+  .bug-chip.st-Acknowledged { background: #8a6dff22; color: #b9a6ff; border: 1px solid #8a6dff55; }
+  .bug-chip.st-Inprogress { background: #f0a50022; color: #ffcf6b; border: 1px solid #f0a50055; }
+  .bug-chip.st-Fixed { background: #00c97a22; color: #4fd7a3; border: 1px solid #00c97a55; }
+  .bug-chip.st-Wontfix { background: #4e6d8c22; color: #9fc0e0; border: 1px solid #4e6d8c55; }
+  .bug-chip.st-Needinfo { background: #ff7a0022; color: #ffa24d; border: 1px solid #ff7a0055; }
+  .bug-filter { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .bug-filter button { padding: 5px 11px; border-radius: 16px; border: 1px solid #243750; background: rgba(255,255,255,0.02); color: #8aa6c4; font-size: 11.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .bug-filter button.on { background: rgba(0,191,255,0.18); border-color: #00BFFF; color: #cfe3f5; }
+  .bug-card { border: 1px solid #182838; border-left: 3px solid #243750; border-radius: 10px; padding: 11px 13px; margin-bottom: 10px; background: #0c1622; }
+  .bug-card.is-bug { border-left-color: #ff4455; }
+  .bug-card.is-idea { border-left-color: #f0a500; }
+  .bug-card .bc-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .bug-card .bc-title { font-weight: 700; color: #e6f0fb; font-size: 13.5px; }
+  .bug-card .bc-meta { font-size: 11px; color: #7e9cbf; margin-top: 4px; }
+  .bug-card .bc-body { font-size: 12.5px; color: #cfe0f2; margin-top: 7px; line-height: 1.5; white-space: pre-wrap; }
+  .bug-card .bc-body .bc-lbl { color: #7e9cbf; font-weight: 600; }
+  .bug-card .bc-triage { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 9px; padding-top: 9px; border-top: 1px solid #182838; }
+  .bug-card .bc-triage select { background: #0a1520; border: 1px solid #1e2d42; color: #ccd9ea; border-radius: 6px; font-size: 11.5px; padding: 4px 8px; font-family: inherit; }
+  .bug-card .bc-att a { color: #6fd3ff; text-decoration: none; font-size: 11.5px; margin-right: 10px; }
+  .bug-mini-btn { background: rgba(255,255,255,0.04); border: 1px solid #243750; color: #9fc0e0; border-radius: 6px; font-size: 11px; padding: 4px 9px; cursor: pointer; font-family: inherit; }
+  .bug-mini-btn.del { color: #ff8a95; border-color: #b3323f; }
   #audit-body table th { padding: 6px 8px; font-weight: 500; border-bottom: 1px solid #1e2d42; position: sticky; top: 0; background: #0d1825; }
   #audit-body table td { padding: 7px 8px; border-bottom: 1px solid #182030; color: #ccd9ea; vertical-align: top; }
   .tax-parcel { display: inline-block; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; color: #cfe3ff; background: #0d1e30; border: 1px solid #21456b; border-radius: 6px; padding: 3px 8px; cursor: pointer; white-space: nowrap; user-select: all; transition: background 0.15s, border-color 0.15s; }
@@ -575,6 +621,79 @@
   </div>
 </div>
 
+<!-- ═══════════════════ 🐛 REPORT BUG / IDEA ═══════════════════ -->
+<div class="modal-overlay" id="bug-modal" onclick="if(event.target===this)closeBugModal()">
+  <div class="modal-box" style="max-width:640px">
+    <h2><span id="bug-title-h">🐛 Report a Bug</span> <button class="modal-close" onclick="closeBugModal()">×</button></h2>
+    <div style="display:flex;justify-content:flex-end;margin:-8px 0 6px"><button class="bug-mini-btn" onclick="openBugsInbox()">🗂 View all reports<span id="bug-count-badge"></span></button></div>
+
+    <div class="bug-toggle" id="bug-toggle">
+      <button data-kind="Bug" class="on" onclick="bugSetKind('Bug')">🐛 Bug — something's wrong</button>
+      <button data-kind="Idea" onclick="bugSetKind('Idea')">💡 Idea — a suggestion</button>
+    </div>
+
+    <div class="bug-ctx" id="bug-ctx">Auto-captured — nothing to fill here.</div>
+
+    <label>Signed in as <span style="font-weight:normal;text-transform:none;letter-spacing:normal;color:#4e6d8c;font-size:11px">(required — stamps who reported it)</span></label>
+    <select id="bug-actor" class="actor-pick" onchange="setActor(this.value)"><option value="">— who are you? —</option><option value="R.M">R.M — Ron</option><option value="O.M">O.M — Oshrat</option><option value="N.S">N.S — Nir</option></select>
+
+    <label>Title <span style="font-weight:normal;text-transform:none;letter-spacing:normal;color:#4e6d8c;font-size:11px">(required — one line)</span></label>
+    <input type="text" id="bug-title" placeholder="e.g. Divando net looks about $2,000 too high">
+
+    <label id="bug-area-lbl">Which section?</label>
+    <select id="bug-area"><option value="">-- choose --</option><option>Master Portfolio</option><option>Noble Insurance</option><option>Property Tax</option><option>Loan Details</option><option>Property Monitor</option><option>Maintenance</option><option>Distribution Planner</option><option>Chatbot (Ask Claude)</option><option>Login / Password</option><option>Whole page / not sure</option><option>Other</option></select>
+
+    <div id="bug-issuetype-wrap">
+      <label>Type of issue</label>
+      <select id="bug-issuetype"><option value="">-- choose --</option><option>🔢 Wrong number / calculation</option><option>❓ Something missing</option><option>🎨 Looks wrong / layout</option><option>🔘 Button or link broken</option><option>🐢 Slow / won't load</option><option>💾 Data won't save</option><option>✍️ Typo / wording</option><option>❔ Other</option></select>
+    </div>
+
+    <label id="bug-sev-lbl">Severity</label>
+    <select id="bug-severity"><option value="">-- choose --</option><option value="Critical">🔴 Critical — can't use it</option><option value="High">🟠 High — wrong data shown</option><option value="Medium">🟡 Medium — annoying but usable</option><option value="Low">⚪ Low — cosmetic / minor</option></select>
+
+    <label id="bug-what-lbl">What happened?</label>
+    <div class="mic-row"><textarea id="bug-what" placeholder="Describe what you saw. Tap the 🎤 to talk instead of type."></textarea><button type="button" class="mic-btn" id="mic-what" title="Dictate — tap and talk" onclick="bugDictate('bug-what', this)">🎤</button></div>
+
+    <div id="bug-expected-wrap">
+      <label>What did you expect instead? <span style="font-weight:normal;text-transform:none;letter-spacing:normal;color:#4e6d8c;font-size:11px">(optional)</span></label>
+      <div class="mic-row"><textarea id="bug-expected" placeholder="e.g. I expected the net to match the bank."></textarea><button type="button" class="mic-btn" id="mic-expected" title="Dictate" onclick="bugDictate('bug-expected', this)">🎤</button></div>
+    </div>
+
+    <div id="bug-steps-wrap">
+      <label>Steps to reproduce <span style="font-weight:normal;text-transform:none;letter-spacing:normal;color:#4e6d8c;font-size:11px">(optional — what did you click?)</span></label>
+      <div class="mic-row"><textarea id="bug-steps" placeholder="1. Open Maintenance  2. Pick June  3. ..."></textarea><button type="button" class="mic-btn" id="mic-steps" title="Dictate" onclick="bugDictate('bug-steps', this)">🎤</button></div>
+    </div>
+
+    <label>Related LLC / property <span style="font-weight:normal;text-transform:none;letter-spacing:normal;color:#4e6d8c;font-size:11px">(optional)</span></label>
+    <select id="bug-related"><option value="">-- none / not specific --</option></select>
+
+    <label>Screenshot <span style="font-weight:normal;text-transform:none;letter-spacing:normal;color:#4e6d8c;font-size:11px">(optional — a picture explains it fastest)</span></label>
+    <input type="file" id="bug-screenshot" accept="image/*,application/pdf,.pdf">
+
+    <label>Voice note <span style="font-weight:normal;text-transform:none;letter-spacing:normal;color:#4e6d8c;font-size:11px">(optional — record instead of writing)</span></label>
+    <div class="bug-memo">
+      <button type="button" class="bug-mini-btn" id="bug-memo-btn" onclick="bugToggleMemo()">● Record</button>
+      <span id="bug-memo-status" style="font-size:11.5px;color:#7e9cbf"></span>
+      <audio id="bug-memo-audio" controls style="display:none"></audio>
+      <button type="button" class="bug-mini-btn del" id="bug-memo-clear" style="display:none" onclick="bugClearMemo()">Clear</button>
+    </div>
+
+    <div class="form-msg" id="bug-msg"></div>
+    <div class="modal-actions"><button class="secondary" onclick="closeBugModal()">Cancel</button><button class="primary" id="bug-submit" onclick="submitBug()">Submit</button></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ 🐛 BUGS INBOX ═══════════════════ -->
+<div class="modal-overlay" id="bugs-modal" onclick="if(event.target===this)closeBugsInbox()">
+  <div class="modal-box" style="max-width:820px">
+    <h2><span>🗂 Bugs &amp; Ideas Inbox</span> <button class="modal-close" onclick="closeBugsInbox()">×</button></h2>
+    <div style="font-size:11px;color:#4e6d8c;margin:-6px 0 10px">Everything reported from the 🐛 Report button. Change <b>Status</b> and add a note as you work each one — Nir sees the status too.</div>
+    <div class="bug-filter" id="bug-filter"></div>
+    <div id="bugs-body" style="max-height:62vh;overflow:auto"></div>
+    <div class="modal-actions"><button class="secondary" onclick="openBugModal()">＋ New report</button><button class="primary" onclick="closeBugsInbox()">Close</button></div>
+  </div>
+</div>
+
 <!-- ═══════════════════ MONTHLY GUIDE ═══════════════════ -->
 <div class="modal-overlay" id="guide-modal" onclick="if(event.target===this)closeGuideModal()">
   <div class="modal-box" style="max-width:820px">
@@ -753,7 +872,7 @@
     <div class="meta">
       <div><span class="label">Last Updated:</span> <span id="last-updated">—</span></div>
       <div><span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span><button class="logout-btn" onclick="logout()">Logout</button></div>
-      <div style="margin-top:6px"><span class="btn-wrap"><button class="audit-btn" id="audit-btn" onclick="runAuditFresh()">🩺 Run Audit</button><span class="btn-tip"><b>Double-checks every number on the dashboard.</b> It re-adds the totals, cards and KPIs straight from the raw data. A green <b>✓ Audit OK</b> means everything reconciles — use it whenever you want to trust the figures.</span></span><span class="btn-wrap"><button class="audit-btn" id="cpa-btn" onclick="openCpaModal()">🧾 CPA Invoices</button><span class="btn-tip"><b>Lists repair invoices marked "Sent to CPA" that aren't paid yet.</b> Use it to hand your accountant exactly what to pay — export or print the list, then tick each one off once paid.</span></span><span class="btn-wrap"><button class="audit-btn" id="activity-btn" onclick="openActivityModal()">📋 Activity</button><span class="btn-tip"><b>A log of every change — who edited what, and when.</b> Use it to see recent activity or check who entered a statement, invoice or distribution.</span></span><span class="btn-wrap"><button class="audit-btn" id="guide-btn" onclick="openGuideModal()">📖 Monthly Guide & Distribution Decider</button><span class="btn-tip right"><b>Your start-to-finish guide for closing out a month.</b> Step-by-step: what to enter and in what order, plus how we decide how much cash is safe to distribute to each partner.</span></span><span class="btn-wrap"><button class="audit-btn" id="planner-btn" onclick="togglePlanner()">👁 Show Planner</button><span class="btn-tip right"><b>Shows or hides the Distribution Planner.</b> Turn it on to estimate how much cash is safe to distribute to each partner this month, after bills and a safety cushion.</span></span><span id="audit-chip" class="audit-chip"></span></div>
+      <div style="margin-top:6px"><span class="btn-wrap"><button class="audit-btn bug-btn" id="bug-btn" onclick="openBugModal()">🐛 Report</button><span class="btn-tip"><b>Found a bug or have an idea? Log it here.</b> Pick 🐛 Bug or 💡 Idea, add a quick note (you can even talk instead of type 🎤) and a screenshot, then submit. Ron sees every report so he can reproduce and fix it.</span></span><span class="btn-wrap"><button class="audit-btn" id="audit-btn" onclick="runAuditFresh()">🩺 Run Audit</button><span class="btn-tip"><b>Double-checks every number on the dashboard.</b> It re-adds the totals, cards and KPIs straight from the raw data. A green <b>✓ Audit OK</b> means everything reconciles — use it whenever you want to trust the figures.</span></span><span class="btn-wrap"><button class="audit-btn" id="cpa-btn" onclick="openCpaModal()">🧾 CPA Invoices</button><span class="btn-tip"><b>Lists repair invoices marked "Sent to CPA" that aren't paid yet.</b> Use it to hand your accountant exactly what to pay — export or print the list, then tick each one off once paid.</span></span><span class="btn-wrap"><button class="audit-btn" id="activity-btn" onclick="openActivityModal()">📋 Activity</button><span class="btn-tip"><b>A log of every change — who edited what, and when.</b> Use it to see recent activity or check who entered a statement, invoice or distribution.</span></span><span class="btn-wrap"><button class="audit-btn" id="guide-btn" onclick="openGuideModal()">📖 Monthly Guide & Distribution Decider</button><span class="btn-tip right"><b>Your start-to-finish guide for closing out a month.</b> Step-by-step: what to enter and in what order, plus how we decide how much cash is safe to distribute to each partner.</span></span><span class="btn-wrap"><button class="audit-btn" id="planner-btn" onclick="togglePlanner()">👁 Show Planner</button><span class="btn-tip right"><b>Shows or hides the Distribution Planner.</b> Turn it on to estimate how much cash is safe to distribute to each partner this month, after bills and a safety cushion.</span></span><span id="audit-chip" class="audit-chip"></span></div>
       <div style="margin-top:6px"><span class="label" style="font-size:11px">Signed in as:</span> <select id="actor-select" class="actor-pick" onchange="setActor(this.value)" title="Who is making changes (stamped on every edit)" style="background:#0a1520;border:1px solid #1e2d42;color:#ccd9ea;border-radius:6px;font-size:11px;padding:4px 8px;outline:none;cursor:pointer"><option value="">— who are you? —</option><option value="R.M">R.M — Ron</option><option value="O.M">O.M — Oshrat</option><option value="N.S">N.S — Nir</option></select></div>
     </div>
   </header>
@@ -3907,6 +4026,250 @@ function renderActivity() {
   });
   h += '</tbody></table>';
   document.getElementById('activity-body').innerHTML = h;
+}
+
+/* ============================================================
+   🐛 BUG / IDEA REPORTS  (report form + inbox)
+   ============================================================ */
+let BUG_KIND = 'Bug';
+let BUG_FILTER = 'all';
+let BUG_MEMO_PAYLOAD = null;      // {name,mimeType,data} of a recorded voice memo
+let bugRecog = null;             // active SpeechRecognition (dictation)
+let bugMediaRec = null;         // active MediaRecorder (voice memo)
+let bugMemoChunks = [];
+
+const BUG_TAB_LABELS = { master: 'Master Portfolio', noble: 'Noble Insurance', tax: 'Property Tax', loans: 'Loan Details', props: 'Property Monitor', maint: 'Maintenance' };
+
+function bugCtxLine() {
+  const tab = BUG_TAB_LABELS[ACTIVE_MAIN_TAB] || ACTIVE_MAIN_TAB;
+  const mon = SELECTED_MONTH ? monthLabel(SELECTED_MONTH) : '—';
+  const ua = navigator.userAgent || '';
+  let dev = /Mobi|Android|iPhone|iPad/i.test(ua) ? 'Mobile' : 'Desktop';
+  let br = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Browser';
+  const screenSz = (window.screen ? window.screen.width + '×' + window.screen.height : '');
+  return { tab, month: SELECTED_MONTH || '', monthLabel: mon, device: dev + ' · ' + br + (screenSz ? ' · ' + screenSz : '') };
+}
+
+function bugSetKind(kind) {
+  BUG_KIND = (kind === 'Idea') ? 'Idea' : 'Bug';
+  document.querySelectorAll('#bug-toggle button').forEach(b => b.classList.toggle('on', b.getAttribute('data-kind') === BUG_KIND));
+  const isIdea = BUG_KIND === 'Idea';
+  document.getElementById('bug-title-h').textContent = isIdea ? '💡 Share an Idea' : '🐛 Report a Bug';
+  // Idea hides bug-only reproduction fields + relabels severity → priority.
+  document.getElementById('bug-issuetype-wrap').style.display = isIdea ? 'none' : '';
+  document.getElementById('bug-expected-wrap').style.display = isIdea ? 'none' : '';
+  document.getElementById('bug-steps-wrap').style.display = isIdea ? 'none' : '';
+  document.getElementById('bug-sev-lbl').textContent = isIdea ? 'Priority' : 'Severity';
+  document.getElementById('bug-what-lbl').textContent = isIdea ? 'Describe your idea' : 'What happened?';
+  document.getElementById('bug-area-lbl').textContent = isIdea ? 'Which section is it about?' : 'Which section?';
+}
+
+function bugFillRelated() {
+  const sel = document.getElementById('bug-related');
+  const llcs = (PORTFOLIO_DATA && PORTFOLIO_DATA.llcs || []).map(l => (typeof l === 'string') ? l : l.name).filter(Boolean);
+  let props = [];
+  try { props = Object.keys(vacancyUnits()).sort(); } catch (e) {}
+  let html = '<option value="">-- none / not specific --</option>';
+  if (llcs.length) html += '<optgroup label="LLC">' + llcs.map(n => '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>').join('') + '</optgroup>';
+  if (props.length) html += '<optgroup label="Property">' + props.map(n => '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>').join('') + '</optgroup>';
+  sel.innerHTML = html;
+}
+
+function openBugModal() {
+  if (document.getElementById('bugs-modal').classList.contains('open')) closeBugsInbox();
+  bugSetKind('Bug');
+  ['bug-title','bug-what','bug-expected','bug-steps'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('bug-area').value = '';
+  document.getElementById('bug-issuetype').value = '';
+  document.getElementById('bug-severity').value = '';
+  const fileEl = document.getElementById('bug-screenshot'); if (fileEl) fileEl.value = '';
+  bugClearMemo();
+  bugFillRelated();
+  const c = bugCtxLine();
+  document.getElementById('bug-ctx').innerHTML = '📍 Auto-captured: <b>' + escapeHtml(c.tab) + '</b> tab · month <b>' + escapeHtml(c.monthLabel) + '</b> · ' + escapeHtml(c.device) + ' · time + your name added on submit.';
+  const msg = document.getElementById('bug-msg'); msg.className = 'form-msg'; msg.textContent = '';
+  bugCountBadge();
+  syncActorSelects();
+  document.getElementById('bug-modal').classList.add('open');
+}
+function closeBugModal() { bugStopDictation(); bugStopMemo(true); document.getElementById('bug-modal').classList.remove('open'); }
+
+function bugCountBadge() {
+  const n = (PORTFOLIO_DATA && PORTFOLIO_DATA.bug_reports || []).length;
+  const b = document.getElementById('bug-count-badge'); if (b) b.textContent = n ? ' (' + n + ')' : '';
+}
+
+/* ---- Dictation (voice-to-text) via the browser Web Speech API ---- */
+function bugSpeechSupported() { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
+function bugStopDictation() { if (bugRecog) { try { bugRecog.stop(); } catch (e) {} bugRecog = null; } document.querySelectorAll('.mic-btn.rec').forEach(b => b.classList.remove('rec')); }
+function bugDictate(targetId, btn) {
+  if (!bugSpeechSupported()) { alert('Voice-to-text isn\'t supported in this browser. Try Chrome, or use the 🎤 Record voice note below instead.'); return; }
+  if (bugRecog) { bugStopDictation(); return; }          // tapping again stops
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const rec = new SR();
+  rec.lang = navigator.language || 'en-US';
+  rec.interimResults = false; rec.continuous = true;
+  const ta = document.getElementById(targetId);
+  rec.onresult = (ev) => {
+    let add = '';
+    for (let i = ev.resultIndex; i < ev.results.length; i++) { if (ev.results[i].isFinal) add += ev.results[i][0].transcript; }
+    if (add) ta.value = (ta.value ? ta.value.replace(/\s*$/, '') + ' ' : '') + add.trim();
+  };
+  rec.onerror = () => bugStopDictation();
+  rec.onend = () => { if (bugRecog === rec) bugStopDictation(); };
+  bugRecog = rec; btn.classList.add('rec');
+  try { rec.start(); } catch (e) { bugStopDictation(); }
+}
+
+/* ---- Voice memo (record an audio clip, attached like a file) ---- */
+function bugStopMemo(discard) { if (bugMediaRec && bugMediaRec.state !== 'inactive') { bugMediaRec._discard = !!discard; try { bugMediaRec.stop(); } catch (e) {} } }
+function bugClearMemo() {
+  BUG_MEMO_PAYLOAD = null; bugMemoChunks = [];
+  const a = document.getElementById('bug-memo-audio'); if (a) { a.style.display = 'none'; a.removeAttribute('src'); }
+  const clr = document.getElementById('bug-memo-clear'); if (clr) clr.style.display = 'none';
+  const st = document.getElementById('bug-memo-status'); if (st) st.textContent = '';
+  const btn = document.getElementById('bug-memo-btn'); if (btn) { btn.textContent = '● Record'; btn.classList.remove('del'); }
+}
+async function bugToggleMemo() {
+  const btn = document.getElementById('bug-memo-btn'); const st = document.getElementById('bug-memo-status');
+  if (bugMediaRec && bugMediaRec.state === 'recording') { bugStopMemo(false); return; }
+  if (!navigator.mediaDevices || !window.MediaRecorder) { alert('Audio recording isn\'t supported in this browser. Try the 🎤 dictation buttons, or attach a screenshot.'); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    bugMemoChunks = [];
+    const rec = new MediaRecorder(stream);
+    rec.ondataavailable = e => { if (e.data && e.data.size) bugMemoChunks.push(e.data); };
+    rec.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      btn.textContent = '● Record'; btn.classList.remove('del');
+      if (rec._discard) return;
+      const blob = new Blob(bugMemoChunks, { type: rec.mimeType || 'audio/webm' });
+      const url = URL.createObjectURL(blob);
+      const a = document.getElementById('bug-memo-audio'); a.src = url; a.style.display = '';
+      document.getElementById('bug-memo-clear').style.display = '';
+      st.textContent = 'Recorded (' + Math.round(blob.size / 1024) + ' KB)';
+      const fr = new FileReader();
+      fr.onload = () => { const s = String(fr.result); const i = s.indexOf(','); const ext = (blob.type.indexOf('ogg') >= 0 ? 'ogg' : blob.type.indexOf('mp4') >= 0 ? 'mp4' : 'webm'); BUG_MEMO_PAYLOAD = { name: 'voice-note.' + ext, mimeType: blob.type, data: i >= 0 ? s.slice(i + 1) : s }; };
+      fr.readAsDataURL(blob);
+    };
+    bugMediaRec = rec; rec.start();
+    btn.textContent = '■ Stop'; btn.classList.add('del'); st.textContent = 'Recording… tap Stop when done.';
+  } catch (e) { alert('Could not start recording: ' + e.message + '\n(Allow microphone access, or use dictation / screenshot.)'); }
+}
+
+async function submitBug() {
+  const msg = document.getElementById('bug-msg'); const btn = document.getElementById('bug-submit');
+  const title = document.getElementById('bug-title').value.trim();
+  if (!title) { msg.className = 'form-msg err'; msg.textContent = 'Please add a short title.'; return; }
+  if (!document.getElementById('bug-area').value) { msg.className = 'form-msg err'; msg.textContent = 'Please choose which section it\'s about.'; return; }
+  const actor = ensureActor(); if (!actor) return;
+  bugStopDictation();
+  const c = bugCtxLine();
+  const payload = {
+    action: 'add_bug_report', type: BUG_KIND, title: title,
+    area: document.getElementById('bug-area').value,
+    issue_type: BUG_KIND === 'Bug' ? document.getElementById('bug-issuetype').value : '',
+    severity: document.getElementById('bug-severity').value,
+    what: document.getElementById('bug-what').value.trim(),
+    expected: BUG_KIND === 'Bug' ? document.getElementById('bug-expected').value.trim() : '',
+    steps: BUG_KIND === 'Bug' ? document.getElementById('bug-steps').value.trim() : '',
+    related: document.getElementById('bug-related').value,
+    tab_open: c.tab, month: c.month, device: c.device,
+    reported_at: new Date().toISOString(),
+    reported_tz: (Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : '',
+    actor: actor
+  };
+  btn.disabled = true; msg.className = 'form-msg'; msg.textContent = 'Submitting…';
+  try {
+    const fileEl = document.getElementById('bug-screenshot'); const file = fileEl && fileEl.files && fileEl.files[0];
+    if (file) {
+      if (file.size > 25 * 1024 * 1024) { msg.className = 'form-msg err'; msg.textContent = 'Screenshot too large (max 25 MB).'; btn.disabled = false; return; }
+      msg.textContent = 'Uploading screenshot…'; payload.screenshot = await readFileAsPayload(file);
+    }
+    if (BUG_MEMO_PAYLOAD) { msg.textContent = 'Uploading voice note…'; payload.voice = BUG_MEMO_PAYLOAD; }
+    msg.textContent = 'Submitting…';
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+    const result = await res.json();
+    if (result.error) { msg.className = 'form-msg err'; msg.textContent = 'Error: ' + result.error; }
+    else { msg.className = 'form-msg ok'; msg.textContent = '✅ Thanks! Sent to Ron. Refreshing…'; setTimeout(() => { closeBugModal(); load(); }, 1100); }
+  } catch (e) { msg.className = 'form-msg err'; msg.textContent = 'Network error: ' + e.message; }
+  finally { btn.disabled = false; }
+}
+
+/* ---- Inbox ---- */
+function openBugsInbox() { if (document.getElementById('bug-modal').classList.contains('open')) closeBugModal(); renderBugsInbox(); document.getElementById('bugs-modal').classList.add('open'); }
+function closeBugsInbox() { document.getElementById('bugs-modal').classList.remove('open'); }
+function bugSetFilter(f) { BUG_FILTER = f; renderBugsInbox(); }
+
+const BUG_STATUSES = ['New', 'Acknowledged', 'In progress', 'Fixed', 'Won\'t fix', 'Need info'];
+function bugStatusClass(s) { return 'st-' + String(s || 'New').replace(/[^A-Za-z]/g, ''); }
+
+function renderBugsInbox() {
+  const all = (PORTFOLIO_DATA && PORTFOLIO_DATA.bug_reports || []).slice();
+  const counts = { all: all.length, Bug: all.filter(b => b.type !== 'Idea').length, Idea: all.filter(b => b.type === 'Idea').length, open: all.filter(b => !/Fixed|Won/i.test(b.status)).length, fixed: all.filter(b => /Fixed/i.test(b.status)).length };
+  const filters = [['all', 'All (' + counts.all + ')'], ['Bug', '🐛 Bugs (' + counts.Bug + ')'], ['Idea', '💡 Ideas (' + counts.Idea + ')'], ['open', 'Open (' + counts.open + ')'], ['fixed', '✅ Fixed (' + counts.fixed + ')']];
+  document.getElementById('bug-filter').innerHTML = filters.map(f => '<button class="' + (BUG_FILTER === f[0] ? 'on' : '') + '" onclick="bugSetFilter(\'' + f[0] + '\')">' + f[1] + '</button>').join('');
+  let rows = all;
+  if (BUG_FILTER === 'Bug') rows = all.filter(b => b.type !== 'Idea');
+  else if (BUG_FILTER === 'Idea') rows = all.filter(b => b.type === 'Idea');
+  else if (BUG_FILTER === 'open') rows = all.filter(b => !/Fixed|Won/i.test(b.status));
+  else if (BUG_FILTER === 'fixed') rows = all.filter(b => /Fixed/i.test(b.status));
+  if (!rows.length) { document.getElementById('bugs-body').innerHTML = '<div style="color:#4e6d8c;padding:16px;text-align:center">Nothing here yet.</div>'; return; }
+  document.getElementById('bugs-body').innerHTML = rows.map(b => {
+    const isIdea = b.type === 'Idea';
+    const when = b.reported_at ? new Date(b.reported_at).toLocaleString() : '';
+    const sevChip = (!isIdea && b.severity) ? '<span class="bug-chip sev-' + escapeHtml(b.severity) + '">' + escapeHtml(b.severity) + '</span>' : '';
+    let body = '';
+    if (b.what) body += '<div><span class="bc-lbl">' + (isIdea ? 'Idea:' : 'What happened:') + '</span> ' + escapeHtml(b.what) + '</div>';
+    if (b.expected) body += '<div><span class="bc-lbl">Expected:</span> ' + escapeHtml(b.expected) + '</div>';
+    if (b.steps) body += '<div><span class="bc-lbl">Steps:</span> ' + escapeHtml(b.steps) + '</div>';
+    let att = '';
+    if (b.screenshot_url) att += '<a href="' + escapeHtml(b.screenshot_url) + '" target="_blank">📎 Screenshot</a>';
+    if (b.voice_url) att += '<a href="' + escapeHtml(b.voice_url) + '" target="_blank">🎤 Voice note</a>';
+    const meta = [b.area, b.issue_type, b.reported_by, when, b.tab_open && ('on ' + b.tab_open), b.month && monthLabel(b.month), b.device, b.related].filter(Boolean).map(escapeHtml).join(' · ');
+    const opts = BUG_STATUSES.map(s => '<option' + (String(b.status) === s ? ' selected' : '') + '>' + s + '</option>').join('');
+    return '<div class="bug-card ' + (isIdea ? 'is-idea' : 'is-bug') + '">' +
+      '<div class="bc-head">' +
+        '<span class="bug-chip ' + (isIdea ? 't-idea' : 't-bug') + '">' + (isIdea ? '💡 Idea' : '🐛 Bug') + '</span>' +
+        sevChip +
+        '<span class="bug-chip ' + bugStatusClass(b.status) + '">' + escapeHtml(b.status || 'New') + '</span>' +
+        '<span class="bc-title">' + escapeHtml(b.title) + '</span>' +
+      '</div>' +
+      '<div class="bc-meta">' + meta + '</div>' +
+      (body ? '<div class="bc-body">' + body + '</div>' : '') +
+      (att ? '<div class="bc-att" style="margin-top:7px">' + att + '</div>' : '') +
+      '<div class="bc-triage">' +
+        '<span style="font-size:11px;color:#7e9cbf">Status:</span>' +
+        '<select onchange="bugSetStatus(' + b.row + ', this.value)">' + opts + '</select>' +
+        '<button class="bug-mini-btn" onclick="bugEditNote(' + b.row + ')">📝 Note' + (b.triage_notes ? ' ✓' : '') + '</button>' +
+        '<button class="bug-mini-btn del" onclick="bugDelete(' + b.row + ')">🗑</button>' +
+        (b.triage_notes ? '<span style="font-size:11px;color:#9fc0e0">— ' + escapeHtml(b.triage_notes) + '</span>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function bugPost(body) {
+  const actor = ensureActor(); if (!actor) return false; body.actor = actor;
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
+    const result = await res.json();
+    if (result.error) { alert('Error: ' + result.error); return false; }
+    return true;
+  } catch (e) { alert('Network error: ' + e.message); return false; }
+}
+async function bugRefreshAfter() { await load(); if (document.getElementById('bugs-modal').classList.contains('open')) renderBugsInbox(); bugCountBadge(); }
+async function bugSetStatus(row, status) { if (await bugPost({ action: 'update_bug_report', row: row, status: status })) bugRefreshAfter(); }
+async function bugEditNote(row) {
+  const b = (PORTFOLIO_DATA && PORTFOLIO_DATA.bug_reports || []).find(x => x.row === row);
+  const cur = b ? (b.triage_notes || '') : '';
+  const val = prompt('Triage note (what you found / did):', cur);
+  if (val === null) return;
+  if (await bugPost({ action: 'update_bug_report', row: row, triage_notes: val })) bugRefreshAfter();
+}
+async function bugDelete(row) {
+  if (!confirm('Delete this report? This cannot be undone.')) return;
+  if (await bugPost({ action: 'delete_bug_report', row: row })) bugRefreshAfter();
 }
 
 document.getElementById('save-modal').addEventListener('click', function(e) { if (e.target === this) closeSaveModal(); });

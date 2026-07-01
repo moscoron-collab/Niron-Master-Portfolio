@@ -1176,6 +1176,15 @@ function doPost(e) {
     if (body.action === 'add_bank_statement') {
       return addBankStatement(body);
     }
+    if (body.action === 'add_bug_report') {
+      return addBugReport(body);
+    }
+    if (body.action === 'update_bug_report') {
+      return updateBugReport(body);
+    }
+    if (body.action === 'delete_bug_report') {
+      return deleteBugReport(body);
+    }
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({error: 'Parse error: ' + err.message}))
       .setMimeType(ContentService.MimeType.JSON);
@@ -1824,7 +1833,7 @@ function logActivity(actor, action, details) {
 // Override: getDashboardJson with properties + new maintenance structure
 function getDashboardJson() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], vacancy: [], subs: [], buffers: {}, statements: [], activity: [], settings: {} };
+  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], vacancy: [], subs: [], buffers: {}, statements: [], bug_reports: [], activity: [], settings: {} };
 
   // Track the most-recent real data-change timestamp (Activity Log + History "Logged At" +
   // Property Detail "Updated"), so the dashboard's "Last Updated" reflects when the data
@@ -2022,6 +2031,24 @@ function getDashboardJson() {
         at: (r[6] instanceof Date ? r[6].toISOString() : String(r[6] || '')), tz: r[7] || ''
       });
     });
+  }
+
+  // Bug reports / ideas submitted from the dashboard (🐛 Report button). 21 cols, data row 5.
+  var bugSh = ensureBugReportsTab(ss);
+  if (bugSh && bugSh.getLastRow() >= 5) {
+    bugSh.getRange(5, 1, bugSh.getLastRow() - 4, 21).getValues().forEach(function(r, i) {
+      if (!r[0] && !r[2]) return; // skip fully-blank rows (no id and no title)
+      data.bug_reports.push({
+        row: 5 + i, id: r[0] || '', type: r[1] || 'Bug', title: r[2] || '', area: r[3] || '',
+        issue_type: r[4] || '', severity: r[5] || '', what: r[6] || '', expected: r[7] || '',
+        steps: r[8] || '', related: r[9] || '', screenshot_url: r[10] || '', voice_url: r[11] || '',
+        reported_by: r[12] || '', reported_at: (r[13] instanceof Date ? r[13].toISOString() : String(r[13] || '')),
+        reported_tz: r[14] || '', tab_open: r[15] || '', month: r[16] || '', device: r[17] || '',
+        status: r[18] || 'New', triage_notes: r[19] || '',
+        updated_at: (r[20] instanceof Date ? r[20].toISOString() : String(r[20] || ''))
+      });
+    });
+    data.bug_reports.sort(function(a, b) { return a.reported_at < b.reported_at ? 1 : (a.reported_at > b.reported_at ? -1 : 0); });
   }
 
   // ----- Activity feed: manual changes (Activity Log tab) + automation pulls -----
@@ -2444,4 +2471,89 @@ function addBankStatement(data) {
   sh.getRange(found, 1, 1, 8).setValues(rowVals);
   logActivity(data.actor, 'Uploaded bank statement', (data.label || key) + ' · ' + month);
   return ContentService.createTextOutput(JSON.stringify({ok: true, row: found, url: url})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ===================================================================
+//  BUG REPORTS / IDEAS  (🐛 Report button + inbox)
+//  Auto-created tab in THIS spreadsheet, seeded empty. 21 cols, data row 5.
+//  A ID · B Type · C Title · D Area · E Issue Type · F Severity · G What Happened ·
+//  H Expected · I Steps · J Related · K Screenshot URL · L Voice URL · M Reported By ·
+//  N Reported At · O Reported TZ · P Tab Open · Q Month · R Device · S Status ·
+//  T Triage Notes · U Updated At
+// ===================================================================
+function ensureBugReportsTab(ss) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('Bug Reports');
+  if (sh) return sh;
+  sh = ss.insertSheet('Bug Reports');
+  sh.getRange(1, 1).setValue('BUG REPORTS & IDEAS — submitted from the dashboard 🐛 Report button (Status/Triage Notes are for Ron to work them)').setFontWeight('bold');
+  var headers = ['ID', 'Type', 'Title', 'Area', 'Issue Type', 'Severity', 'What Happened',
+    'Expected', 'Steps', 'Related', 'Screenshot URL', 'Voice URL', 'Reported By',
+    'Reported At', 'Reported TZ', 'Tab Open', 'Month', 'Device', 'Status', 'Triage Notes', 'Updated At'];
+  sh.getRange(4, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+  sh.setFrozenRows(4);
+  return sh;
+}
+
+// Save an uploaded bug-report file (screenshot or voice memo) to a Drive folder; return its view URL.
+function saveBugFile(file) {
+  var folders = DriveApp.getFoldersByName('Niron Bug Reports');
+  var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder('Niron Bug Reports');
+  var bytes = Utilities.base64Decode(file.data);
+  var blob = Utilities.newBlob(bytes, file.mimeType || 'application/octet-stream', file.name || 'bug-attachment');
+  var f = folder.createFile(blob);
+  try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
+  return f.getUrl();
+}
+
+function addBugReport(data) {
+  var sh = ensureBugReportsTab(SpreadsheetApp.getActiveSpreadsheet());
+  var type = (data.type === 'Idea') ? 'Idea' : 'Bug';
+  var title = (data.title || '').toString().trim();
+  if (!title) return ContentService.createTextOutput(JSON.stringify({error: 'Title is required'})).setMimeType(ContentService.MimeType.JSON);
+  var screenshotUrl = '';
+  if (data.screenshot && data.screenshot.data) {
+    try { screenshotUrl = saveBugFile(data.screenshot); }
+    catch (err) { return ContentService.createTextOutput(JSON.stringify({error: 'Screenshot upload failed: ' + err.message})).setMimeType(ContentService.MimeType.JSON); }
+  }
+  var voiceUrl = '';
+  if (data.voice && data.voice.data) {
+    try { voiceUrl = saveBugFile(data.voice); }
+    catch (err) { return ContentService.createTextOutput(JSON.stringify({error: 'Voice memo upload failed: ' + err.message})).setMimeType(ContentService.MimeType.JSON); }
+  }
+  var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone() || 'America/Denver';
+  var id = (type === 'Idea' ? 'IDEA-' : 'BUG-') + Utilities.formatDate(new Date(), tz, 'yyyyMMdd-HHmmss');
+  var nextRow = Math.max(5, sh.getLastRow() + 1);
+  var reportedAt = data.reported_at || new Date().toISOString();
+  sh.getRange(nextRow, 1, 1, 21).setValues([[
+    id, type, title, data.area || '', data.issue_type || '', data.severity || '',
+    data.what || '', data.expected || '', data.steps || '', data.related || '',
+    screenshotUrl, voiceUrl, data.actor || 'Dashboard', reportedAt, data.reported_tz || '',
+    data.tab_open || '', data.month || '', data.device || '', 'New', '', new Date()
+  ]]);
+  logActivity(data.actor, 'Reported ' + (type === 'Idea' ? 'idea' : 'bug'), title + (data.area ? ' (' + data.area + ')' : ''));
+  return ContentService.createTextOutput(JSON.stringify({ok: true, row: nextRow, id: id})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Ron's triage: change Status (col S=19) and/or Triage Notes (col T=20). Bumps Updated At (U=21).
+function updateBugReport(data) {
+  var sh = ensureBugReportsTab(SpreadsheetApp.getActiveSpreadsheet());
+  var row = Number(data.row);
+  if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error: 'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
+  if (data.status != null) sh.getRange(row, 19).setValue(data.status);
+  if (data.triage_notes != null) sh.getRange(row, 20).setValue(data.triage_notes);
+  sh.getRange(row, 21).setValue(new Date());
+  var title = sh.getRange(row, 3).getValue();
+  logActivity(data.actor, 'Updated bug status', (title || '') + (data.status != null ? ' → ' + data.status : ''));
+  return ContentService.createTextOutput(JSON.stringify({ok: true, row: row})).setMimeType(ContentService.MimeType.JSON);
+}
+
+function deleteBugReport(data) {
+  var sh = ensureBugReportsTab(SpreadsheetApp.getActiveSpreadsheet());
+  var row = Number(data.row);
+  if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error: 'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
+  var title = sh.getRange(row, 3).getValue();
+  sh.deleteRow(row);
+  logActivity(data.actor, 'Deleted bug report', title || '');
+  return ContentService.createTextOutput(JSON.stringify({ok: true, deleted: row})).setMimeType(ContentService.MimeType.JSON);
 }
