@@ -1173,6 +1173,9 @@ function doPost(e) {
     if (body.action === 'set_buffer') {
       return setBufferEntry(body);
     }
+    if (body.action === 'add_bank_statement') {
+      return addBankStatement(body);
+    }
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({error: 'Parse error: ' + err.message}))
       .setMimeType(ContentService.MimeType.JSON);
@@ -1821,7 +1824,7 @@ function logActivity(actor, action, details) {
 // Override: getDashboardJson with properties + new maintenance structure
 function getDashboardJson() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], vacancy: [], subs: [], buffers: {}, activity: [], settings: {} };
+  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], vacancy: [], subs: [], buffers: {}, statements: [], activity: [], settings: {} };
 
   // Track the most-recent real data-change timestamp (Activity Log + History "Logged At" +
   // Property Detail "Updated"), so the dashboard's "Last Updated" reflects when the data
@@ -2005,6 +2008,19 @@ function getDashboardJson() {
     bufSh.getRange(5, 1, bufSh.getLastRow() - 4, 3).getValues().forEach(function(r) {
       var k = String(r[0] || '').trim().toLowerCase();
       if (k && r[2] !== '' && r[2] != null && !isNaN(Number(r[2]))) data.buffers[k] = Number(r[2]);
+    });
+  }
+
+  // Uploaded monthly bank statements (per LLC per month) for the Distribution Planner.
+  var bsSh = ensureBankStatementsTab(ss);
+  if (bsSh && bsSh.getLastRow() >= 5) {
+    bsSh.getRange(5, 1, bsSh.getLastRow() - 4, 8).getValues().forEach(function(r) {
+      if (!r[0] || !r[3]) return;
+      data.statements.push({
+        key: String(r[0]).trim().toLowerCase(), label: r[1] || '', month: String(r[2]).trim(),
+        url: r[3], name: r[4] || '', by: r[5] || '',
+        at: (r[6] instanceof Date ? r[6].toISOString() : String(r[6] || '')), tz: r[7] || ''
+      });
     });
   }
 
@@ -2374,4 +2390,58 @@ function setBufferEntry(data) {
   }
   logActivity(data.actor, 'Set safety buffer', (data.label || key) + ' = ' + amt);
   return ContentService.createTextOutput(JSON.stringify({ok: true, row: found})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// --- Monthly bank statements (per LLC per month, uploaded from the Distribution Planner) ------
+function ensureBankStatementsTab(ss) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('Bank Statements');
+  if (sh) return sh;
+  sh = ss.insertSheet('Bank Statements');
+  sh.getRange(1, 1).setValue('BANK STATEMENTS — monthly statement file per LLC (uploaded from the Distribution Planner)').setFontWeight('bold');
+  var headers = ['LLC Key', 'Label', 'Month', 'File URL', 'File Name', 'Uploaded By', 'Uploaded At', 'Uploaded TZ'];
+  sh.getRange(4, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+  sh.setFrozenRows(4);
+  return sh;
+}
+
+// Save an uploaded statement file to a dedicated Drive folder; return its view URL.
+function saveStatementFile(file) {
+  var folders = DriveApp.getFoldersByName('Niron Bank Statements');
+  var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder('Niron Bank Statements');
+  var bytes = Utilities.base64Decode(file.data);
+  var blob = Utilities.newBlob(bytes, file.mimeType || 'application/octet-stream', file.name || 'statement');
+  var f = folder.createFile(blob);
+  try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
+  return f.getUrl();
+}
+
+// Upsert one LLC's statement for a month (re-upload replaces the same LLC+month row).
+function addBankStatement(data) {
+  var key = (data.key || '').toString().trim().toLowerCase();
+  if (!key) return ContentService.createTextOutput(JSON.stringify({error: 'LLC key required'})).setMimeType(ContentService.MimeType.JSON);
+  var month = (data.month || '').toString().trim();
+  if (!month) return ContentService.createTextOutput(JSON.stringify({error: 'Month required'})).setMimeType(ContentService.MimeType.JSON);
+  var url = '';
+  if (data.file && data.file.data) {
+    try { url = saveStatementFile(data.file); }
+    catch (err) { return ContentService.createTextOutput(JSON.stringify({error: 'File upload failed: ' + err.message})).setMimeType(ContentService.MimeType.JSON); }
+  } else if (data.url) { url = data.url; }
+  if (!url) return ContentService.createTextOutput(JSON.stringify({error: 'No file or link provided'})).setMimeType(ContentService.MimeType.JSON);
+  var sh = ensureBankStatementsTab(SpreadsheetApp.getActiveSpreadsheet());
+  var last = sh.getLastRow();
+  var found = 0;
+  if (last >= 5) {
+    var vals = sh.getRange(5, 1, last - 4, 3).getValues();
+    for (var i = 0; i < vals.length; i++) {
+      if (String(vals[i][0]).trim().toLowerCase() === key && String(vals[i][2]).trim() === month) { found = 5 + i; break; }
+    }
+  }
+  var name = (data.file && data.file.name) || data.name || '';
+  var rowVals = [[key, data.label || key, month, url, name, data.actor || 'Dashboard',
+                  data.uploaded_at || new Date().toISOString(), data.uploaded_tz || '']];
+  if (!found) found = Math.max(5, last + 1);
+  sh.getRange(found, 1, 1, 8).setValues(rowVals);
+  logActivity(data.actor, 'Uploaded bank statement', (data.label || key) + ' · ' + month);
+  return ContentService.createTextOutput(JSON.stringify({ok: true, row: found, url: url})).setMimeType(ContentService.MimeType.JSON);
 }
