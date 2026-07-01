@@ -954,6 +954,27 @@ shared. Pure **frontend** (`index.html`), **no Apps Script redeploy** — still 
 >   Deploy → Manage deployments → Edit → New version → Deploy). The `Buffers` tab auto-creates on first
 >   load after redeploy. Until then, edits apply for the session but won't save to the sheet/share to Nir.
 
+> ### 📄 Monthly bank-statement upload per LLC card (Jul 1 2026, needs redeploy)
+> User wanted to attach each LLC's monthly bank statement on the planner + a timestamp in the uploader's
+> timezone. Decisions (defaults, tool loop — stated + shippable): **per-LLC file · saved to Drive + link in
+> sheet (shared w/ Nir) · timestamp frozen to the uploader's local zone · current month, re-upload replaces**.
+> - **Apps Script (`AppsScript.gs`, needs redeploy):** new **`Bank Statements`** tab (`ensureBankStatementsTab`,
+>   cols A–H = `LLC Key · Label · Month · File URL · File Name · Uploaded By · Uploaded At · Uploaded TZ`,
+>   data row 5). `saveStatementFile()` writes to a **`Niron Bank Statements`** Drive folder (ANYONE_WITH_LINK,
+>   like invoices — Drive scope already granted). `doPost` routes **`add_bank_statement`** → **`addBankStatement()`**
+>   (upsert by key+month, `logActivity`). Live `getDashboardJson` reads it → **`data.statements`** (array). Edit
+>   the **LAST** `getDashboardJson` (~1744) + `doPost` (~1125).
+> - **Frontend (`index.html`, live on merge):** each planner card's `plan-top` shows a **📄 Upload statement**
+>   button (or the file link + "replace" if one exists) via `statementFor(key, month)` / `uploadStatement(key, input)`
+>   (reuses `readFileAsPayload`, posts base64). The upload stamp is **frozen to the uploader's IANA zone**
+>   (`Intl…resolvedOptions().timeZone` saved as `tz`; **`fmtStmtTs(iso, tz)`** renders it with `timeZoneName:'short'`,
+>   e.g. "Jul 1, 2026, 9:02 AM MDT" — everyone sees that same label). Month = `currentPeriod()`. `.plan-stmt`/`.stmt-up`
+>   CSS. Backward-safe: no `data.statements` (pre-redeploy) → shows the Upload button; a save just errors with a
+>   redeploy hint. Note: this is the **only** stamp not fixed to ET (the balance stamp stays ET) — deliberate,
+>   per "the time zone where the person is at the moment."
+> - 🚀 **Going live (REQUIRED):** redeploy `AppsScript.gs`. `Bank Statements` tab auto-creates on first load;
+>   until then uploads show the button but won't save.
+
 **REBUILT on a cushion model** (the PR #65 planner below was removed for running on the wrong
 AppFolio net). This one is **frontend-only / localStorage v1** (no redeploy): `renderDistributionPlanner(data)`
 in `index.html`, rendered **just BELOW the Monthly Breakdown section** (user swapped the two on Jun 16 2026
