@@ -2532,7 +2532,40 @@ function addBugReport(data) {
     data.tab_open || '', data.month || '', data.device || '', 'New', '', new Date()
   ]]);
   logActivity(data.actor, 'Reported ' + (type === 'Idea' ? 'idea' : 'bug'), title + (data.area ? ' (' + data.area + ')' : ''));
+  _notifyNewBugReport(type, title, id, screenshotUrl, voiceUrl, data);
   return ContentService.createTextOutput(JSON.stringify({ok: true, row: nextRow, id: id})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Email Ron the moment a bug/idea is submitted. Wrapped so a mail failure never blocks the save.
+// To change who gets notified, edit BUG_NOTIFY_TO (comma-separated addresses ok).
+var BUG_NOTIFY_TO = 'moscoron@gmail.com';
+var BUG_DASHBOARD_URL = 'https://moscoron-collab.github.io/Niron-Master-Portfolio/';
+function _notifyNewBugReport(type, title, id, screenshotUrl, voiceUrl, data) {
+  try {
+    if (!BUG_NOTIFY_TO) return;
+    var isIdea = (type === 'Idea');
+    var subject = (isIdea ? '💡 New idea' : '🐛 New bug') + ': ' + title;
+    var L = [];
+    L.push((isIdea ? 'A new IDEA' : 'A new BUG') + ' was just submitted on the Niron dashboard.');
+    L.push('');
+    L.push('Title:    ' + title);
+    if (data.area) L.push('Section:  ' + data.area);
+    if (!isIdea && data.issue_type) L.push('Type:     ' + data.issue_type);
+    if (data.severity) L.push((isIdea ? 'Priority: ' : 'Severity: ') + data.severity);
+    L.push('Reported by: ' + (data.actor || 'Unknown'));
+    if (data.related) L.push('Related:  ' + data.related);
+    if (data.what) L.push('\n' + (isIdea ? 'Idea:' : 'What happened:') + '\n' + data.what);
+    if (!isIdea && data.expected) L.push('\nExpected:\n' + data.expected);
+    if (!isIdea && data.steps) L.push('\nSteps:\n' + data.steps);
+    var ctx = [data.tab_open && ('tab ' + data.tab_open), data.month, data.device].filter(function(x){return x;}).join(' · ');
+    if (ctx) L.push('\nContext:  ' + ctx);
+    if (screenshotUrl) L.push('Screenshot: ' + screenshotUrl);
+    if (voiceUrl) L.push('Voice note: ' + voiceUrl);
+    L.push('\nOpen the dashboard → 🐛 Report → 🗂 View all reports to triage it:');
+    L.push(BUG_DASHBOARD_URL);
+    L.push('\n(' + id + ')');
+    MailApp.sendEmail(BUG_NOTIFY_TO, subject, L.join('\n'));
+  } catch (e) { /* never block the save on a mail error */ }
 }
 
 // Ron's triage: change Status (col S=19) and/or Triage Notes (col T=20). Bumps Updated At (U=21).
