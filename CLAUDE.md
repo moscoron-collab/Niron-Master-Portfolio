@@ -1128,6 +1128,70 @@ Guide, Show Planner) use **`.btn-tip.right`** (right-anchored) so they don't ove
 edge. `syncPlannerBtn()` still finds the button by `id="planner-btn"` (wrapping doesn't break it).
 Pure frontend, live on merge — no redeploy. To add a tooltip to another button, wrap it the same way.
 
+## 🐛 Bug / Idea reporter + inbox (Jul 1 2026) — for Nir to log issues while testing
+
+A **🐛 Report** pill is the **first (leftmost) button in the Run Audit bar** (`id="bug-btn"`,
+`class="audit-btn bug-btn"` — red-tinted so it stands out; has a `.btn-wrap` hover tooltip like the
+others). Built so Nir (or anyone) can log a **bug OR an idea** in ~20 seconds while testing, with a
+🎤 voice option so he doesn't have to type. Pure **frontend** (`index.html`) + an **AppsScript.gs**
+backend tab. **Needs the usual AppsScript redeploy** to save/read (backward-safe before it: the
+button + form render, a submit just errors with a redeploy hint; `data.bug_reports` is undefined →
+inbox shows empty).
+
+### The report form (`bug-modal`, `openBugModal()`)
+- **🐛 Bug / 💡 Idea toggle** at top (`bugSetKind`, state `BUG_KIND`). Picking **Idea** hides the
+  bug-only fields (Type-of-issue, Expected, Steps) and relabels **Severity → Priority** + "What
+  happened" → "Describe your idea". The modal title flips too.
+- **Auto-captured context line** (`bugCtxLine()`, grey `.bug-ctx`): the **active tab** (`ACTIVE_MAIN_TAB`
+  → friendly label), **selected month** (`SELECTED_MONTH`), and **device/browser + screen size** (from
+  `navigator.userAgent`/`window.screen`). Plus **reporter** (the "Signed in as" actor) + **timestamp**
+  (`reported_at` ISO + `reported_tz` from `Intl…timeZone`) stamped on submit. Nir fills none of this.
+- **Nir fills:** Title (required) · Area/section dropdown (required) · Type-of-issue (bug only) ·
+  Severity/Priority · What happened · Expected (bug) · Steps (bug) · Related LLC/property dropdown
+  (built from `PORTFOLIO_DATA.llcs` + `vacancyUnits()` via `bugFillRelated()`) · Screenshot upload ·
+  Voice memo.
+- **🎤 Two voice paths (`bugDictate` + `bugToggleMemo`):**
+  - **Dictation** — a `.mic-btn` next to each textarea uses the browser **Web Speech API**
+    (`SpeechRecognition`/`webkitSpeechRecognition`) to type spoken words into that box live. Feature-
+    detected (`bugSpeechSupported()`); Chrome-best. Tapping again stops; button pulses (`.mic-btn.rec`).
+  - **Voice memo** — the "● Record" button uses **MediaRecorder** (`getUserMedia`) to capture an audio
+    clip → base64 → attached as `voice` (like the screenshot). Preview `<audio>` + Clear. Falls back
+    with an alert if unsupported.
+- **Files → Drive:** screenshot + voice memo both go through the existing `readFileAsPayload` → posted
+  as `screenshot`/`voice` → AppsScript `saveBugFile()` writes them to a **`Niron Bug Reports`** Drive
+  folder (ANYONE_WITH_LINK, same pattern as invoices/statements). 25 MB client cap on the screenshot.
+- `submitBug()` POSTs `add_bug_report`; requires `ensureActor()`.
+
+### The inbox (`bugs-modal`, `openBugsInbox()` — reached via "🗂 View all reports" in the form or the
+"＋ New report" ↔ inbox toggle)
+- **Filter chips** (`bug-filter`, `bugSetFilter`): All · 🐛 Bugs · 💡 Ideas · Open · ✅ Fixed, each with
+  a live count. Cards newest-first (`renderBugsInbox()`), red left-border for bugs / gold for ideas,
+  with type + severity + **status** chips (`.bug-chip .sev-* .st-*`), a meta line, labeled
+  What/Expected/Steps body, and 📎 Screenshot / 🎤 Voice-note links.
+- **Ron's triage (per card):** a **Status `<select>`** (New · Acknowledged · In progress · Fixed ·
+  Won't fix · Need info → `bugSetStatus`), a **📝 Note** button (`bugEditNote`, `prompt()` → col T),
+  and a **🗑 delete** (`bugDelete`). All via `bugPost()` → `bugRefreshAfter()` (reloads + re-renders the
+  open inbox). ⚠️ `bugStatusClass()` strips non-alpha keeping case → "In progress" = class
+  **`st-Inprogress`** (matched exactly in CSS — watch the casing if you add a status).
+
+### AppsScript backend (`automation/AppsScript.gs`, edit the **LAST** doPost ~1125 + getDashboardJson ~1825)
+- **`ensureBugReportsTab()`** auto-creates a **`Bug Reports`** tab in the **existing** sheet (not a new
+  spreadsheet), seeded empty, headers row 4, **data row 5**, **21 cols A–U:** `ID · Type · Title · Area
+  · Issue Type · Severity · What Happened · Expected · Steps · Related · Screenshot URL · Voice URL ·
+  Reported By · Reported At · Reported TZ · Tab Open · Month · Device · Status · Triage Notes · Updated
+  At`.
+- `getDashboardJson` (last) reads it → **`data.bug_reports`** (each tagged with absolute `row`, newest-
+  first). Added `bug_reports: []` to the data init.
+- `doPost` (last) routes **`add_bug_report`** → `addBugReport` (validates Title; saves files; auto ID
+  `BUG-`/`IDEA-`+timestamp; Status seeded `New`; `logActivity`), **`update_bug_report`** →
+  `updateBugReport` (Status col 19 + Triage Notes col 20 + Updated At), **`delete_bug_report`** →
+  `deleteBugReport`.
+- 🚀 **Going live (REQUIRED):** redeploy `AppsScript.gs` (Sheet → Extensions → Apps Script → paste →
+  Deploy → Manage deployments → Edit → New version → Deploy — no NEW scope, Drive was already granted).
+  The `Bug Reports` tab + `Niron Bug Reports` Drive folder auto-create on first use. `index.html` is
+  live on merge; reports just won't save/read until the redeploy. **Self-audit unaffected** (no `#kpi-*`
+  IDs).
+
 ## ❌ Distribution Planner DROPPED + 🚨 Net Cashflow is UNDERSTATED (Jun 7 2026, PR #65)
 
 **The Distribution Planner was REMOVED (PR #65).** The user reviewed 3 months (Mar–May 2026)
