@@ -7,9 +7,11 @@ description: >-
   ending balance; reconciles which repair invoices have CLEARED the bank vs are
   still PENDING, computes how much is SAFE TO DISTRIBUTE per LLC (ending balance −
   cushion − pending repairs − upcoming bills − inter-account amounts owed), splits
-  it per partner, and drafts a short per-LLC text to send Nir. READ-ONLY — never
-  writes to the sheet or dashboard. Trigger phrases: "month-end", "distributions",
-  "what's safe to distribute", "reconcile the accounts", "prep the Nir text".
+  it per partner, drafts a short per-LLC text, and (once Ron approves) creates a
+  Gmail DRAFT to Nir (cc Ron) so Nir can execute the distributions. READ-ONLY on the
+  sheet/dashboard — the only write is a Gmail draft, never auto-sent. Trigger phrases:
+  "month-end", "distributions", "what's safe to distribute", "reconcile the accounts",
+  "prep the Nir text".
 ---
 
 # Monthly Distribution Prep (Niron — 4 LLCs)
@@ -167,6 +169,31 @@ Heads up: <any reserved upcoming bill, e.g. Divando insurance ~$2,910 drafts ~th
 
 ---
 
+## Step 4 — Draft the email to Nir (Gmail draft, never auto-sent)
+
+Nir has access to all 4 accounts and **manually executes the distributions** for Ron, Nir, and
+Simon, so after the numbers are settled he needs the summary. Create a **Gmail draft** with
+`mcp__Gmail__create_draft` — it lands in Ron's Drafts for him to review and hit **Send** (never
+auto-send).
+
+**Do this only AFTER Ron has reviewed and approved the Step 2/3 numbers** (confirm cushions +
+any held account first). Then create the draft:
+- `to`: `["nir.shay@shays.com"]`
+- `cc`: `["moscoron@gmail.com"]`  ← Ron keeps a copy
+- `subject`: `"<Month> Niron distributions — please execute"`
+- `body`: a one-line opener + the **Step 3 Nir text** (the per-LLC block), e.g. start with
+  `Hi Nir — here are this month's distributions to run (you handle Ron / Nir / Simon):`
+
+After creating it, tell Ron: **"Draft is in your Gmail Drafts — review and hit Send."** Report the
+draft ID. If the Gmail connector isn't authorized/available, say so and just output the text for
+Ron to send manually — don't block the rest of the analysis on it.
+
+⚠️ The `to`/`cc` fields need **plain email addresses only** (no "Name <email>" form). Do not put
+account numbers, balances of other partners, or anything Nir shouldn't see beyond the distribution
+figures in the email.
+
+---
+
 ## Reference data (bank-verified — from CLAUDE.md / CASHPLAN_CONFIG)
 
 Use these to (a) classify bank lines and (b) detect which recurring bills haven't drafted
@@ -236,7 +263,9 @@ loans to `X5369` ($600 Divando, $100 Yale).
 
 ## Guardrails
 
-- **Read-only.** Never POST to the dashboard / Apps Script, never edit the sheet.
+- **Read-only on the data.** Never POST to the dashboard / Apps Script, never edit the sheet.
+  The ONLY write is the Step 4 Gmail **draft** to Nir (cc Ron) — and only after Ron approves the
+  numbers. Never auto-send it; leave it in Drafts for Ron to send.
 - Reconcile by **exact amounts**; show every match so the user can audit it.
 - Surface, don't hide: missing statements/balances, accounts that overdrafted, invoices
   marked Paid but not cashed, and any unmatched bank line.
