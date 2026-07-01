@@ -1870,6 +1870,28 @@ on BOTH** Master and the Maintenance tab · **visuals identical**.
 
 ---
 
+## 🔍 Maintenance search bar — filter by sub + property (Jul 1 2026)
+
+The **Maintenance** tab header now has a **`🔍 Search sub or property…` box** (left of the month
+dropdown, `id="maint-search"`). **Purpose (user, Jul 1 2026):** when a sub re-sends the same invoice
+and the user isn't sure it was already logged, filter to that sub's latest/all invoices and check —
+instead of emailing the CPA.
+- **Matches Sub OR Property**, tokenized + case-insensitive **AND** across the two fields
+  (`maintMatchesSearch` / `maintSearchTokens`): `Rolando` → all his invoices; `Holly` → that property;
+  `Rolando Holly` → both must match. Hay = `sub + " " + property`.
+- **A non-empty search IGNORES the month dropdown and searches ALL months** (the whole point — see a
+  sub's history without switching months). While searching, the month `<select>` is **disabled** and a
+  caption shows `Searching all months for "…" · N matches · clear`. Empty search → normal month
+  behaviour restored.
+- **Export (⬇) + Print (🖨) follow the filter** — `maintExportRows()` applies `maintMatchesSearch` and,
+  when searching, drops the month filter; `maintScopeLabel()` prefixes `search "…" · `. So you can
+  export/print exactly a sub's filtered invoices.
+- **Focus preserved across keystrokes:** `maintSetSearch(v)` sets `MAINT_SEARCH`, calls `renderAll()`
+  (which rebuilds `#maint-content`), then re-grabs `#maint-search` and restores focus + caret-to-end
+  (the `oninput`→`renderAll` rebuild would otherwise blur the box).
+- **Pure frontend (`index.html`), live on merge — NO Apps Script redeploy.** State is a plain module var
+  `MAINT_SEARCH` (not persisted — resets on reload, intentional). Self-audit unaffected (no `#kpi-*` IDs).
+
 ## 📤 Maintenance Export — CSV + Print, grouped by LLC (Jun 24 2026)
 
 The **Maintenance Invoices** section header now has two buttons next to its month dropdown

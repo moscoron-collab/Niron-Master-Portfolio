@@ -2110,6 +2110,24 @@ let PD_CHART = 'bars';   // chart style: bars (selected month) | lines (trend ov
 let PD_CACHE = null;     // last-built dataset, used by the chart renderer
 let MAINT_MONTH = null;  // maintenance table month filter (null = not yet chosen → defaults to current month; '' = All months)
 function maintSetMonth(v) { MAINT_MONTH = v; renderAll(); }
+let MAINT_SEARCH = '';   // maintenance search text (matches Sub OR Property). When non-empty it searches ALL months.
+function maintSetSearch(v) {
+  MAINT_SEARCH = v;
+  renderAll();
+  // renderAll() rebuilt #maint-content, so re-grab the input and restore focus + caret (end).
+  const el = document.getElementById('maint-search');
+  if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch (e) {} }
+}
+// Tokenized, case-insensitive AND-match against Sub + Property (so "Rolando Holly" needs both).
+function maintSearchTokens() {
+  return (MAINT_SEARCH || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
+}
+function maintMatchesSearch(m) {
+  const toks = maintSearchTokens();
+  if (!toks.length) return true;
+  const hay = ((m.sub || '') + ' ' + (m.property || '')).toLowerCase();
+  return toks.every(t => hay.includes(t));
+}
 let HIST_FILTER = null;  // Monthly Performance by LLC table filter: null = not chosen → defaults to current month; then 'all' | 'ytd' | a month value 'YYYY-MM-DD'
 function histSetFilter(v) { HIST_FILTER = v; renderAll(); }
 let DIST_MONTH = null;   // Partner Distributions section month (own dropdown; null = newest)
@@ -3356,8 +3374,12 @@ function printCpa() {
 function maintExportRows() {
   // Same filter the on-screen table uses, but ordered by LLC then date
   // (newest first within each LLC) so the grouped output is stable.
+  // When a search is active it ignores the month dropdown (searches all months),
+  // matching the on-screen behaviour.
   const all = (PORTFOLIO_DATA && PORTFOLIO_DATA.maintenance) || [];
-  const rows = (MAINT_MONTH ? all.filter(m => m.period === MAINT_MONTH) : all.slice());
+  const searching = maintSearchTokens().length > 0;
+  const base = searching ? all.slice() : (MAINT_MONTH ? all.filter(m => m.period === MAINT_MONTH) : all.slice());
+  const rows = base.filter(maintMatchesSearch);
   return rows.sort((a, b) =>
     (a.llc || '').localeCompare(b.llc || '') || (b.date || '').localeCompare(a.date || ''));
 }
@@ -3368,7 +3390,11 @@ function maintPaidByLabel(m) {
   if (p === 'Debit Card' || p === 'LLC Debit Card') return 'Debit Card';
   return '—';
 }
-function maintScopeLabel() { return MAINT_MONTH ? monthLabel(MAINT_MONTH) : 'All months'; }
+function maintScopeLabel() {
+  const searching = maintSearchTokens().length > 0;
+  const monthPart = searching ? 'All months' : (MAINT_MONTH ? monthLabel(MAINT_MONTH) : 'All months');
+  return (searching ? 'search "' + MAINT_SEARCH.trim() + '" · ' : '') + monthPart;
+}
 // Group the sorted rows into {llc: [rows]} preserving alphabetical LLC order.
 function maintGroupByLlc(rows) {
   const by = {};
@@ -3548,19 +3574,30 @@ function renderMaintenanceSection(maintenance) {
   const maintMonth = (MAINT_MONTH === null)
     ? currentPeriod()
     : ((MAINT_MONTH && maintMonths.includes(MAINT_MONTH)) ? MAINT_MONTH : '');
-  const maintFiltered = (maintMonth
-    ? maintenance.filter(m => m.period === maintMonth)
-    : maintenance.slice()).sort((a, b) => b.date.localeCompare(a.date));
+  // A search (Sub OR Property) ignores the month dropdown so you can find a sub's latest/all invoices
+  // across every month — e.g. to check whether a sub already sent an invoice before emailing the CPA.
+  const searching = maintSearchTokens().length > 0;
+  const effMonth = searching ? '' : maintMonth;
+  const maintFiltered = (effMonth
+    ? maintenance.filter(m => m.period === effMonth)
+    : maintenance.slice())
+    .filter(maintMatchesSearch)
+    .sort((a, b) => b.date.localeCompare(a.date));
   const maintTotal = maintFiltered.reduce((s, m) => s + (m.amount || 0), 0);
   const maintOpts = '<option value=""' + (maintMonth === '' ? ' selected' : '') + '>All months</option>' +
     maintMonths.map(m => '<option value="' + m + '"' + (m === maintMonth ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
-  html += '<select class="header-month-select" onchange="maintSetMonth(this.value)" title="Month">' + maintOpts + '</select>' +
+  html += '<input id="maint-search" type="search" value="' + escapeHtml(MAINT_SEARCH) + '" oninput="maintSetSearch(this.value)" placeholder="🔍 Search sub or property…" title="Filter by sub and/or property across ALL months (e.g. Rolando, Holly, or Rolando Holly)" style="background:#0d1c30;color:#e6eef8;border:1px solid ' + (searching ? '#0080cc' : '#29456a') + ';border-radius:8px;padding:8px 12px;font-size:13px;font-family:inherit;min-width:220px" />' +
+    '<select class="header-month-select" onchange="maintSetMonth(this.value)" title="Month"' + (searching ? ' disabled' : '') + '>' + maintOpts + '</select>' +
     '<button onclick="exportMaintCsv()" title="Download these invoices grouped by LLC (CSV) — send to Nir" style="margin-left:auto;background:#0080cc;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">⬇ Export</button>' +
     '<button onclick="printMaint()" title="Clean printable sheet grouped by LLC (save as PDF / share)" style="background:#13243a;color:#9fc1e0;border:1px solid #29456a;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit">🖨 Print</button>' +
     '</h2>';
+  if (searching) {
+    html += '<div style="color:#8aa6c4;font-size:12.5px;margin:-4px 0 10px">Searching <b style="color:#cfe0f2">all months</b> for <b style="color:#cfe0f2">"' + escapeHtml(MAINT_SEARCH.trim()) + '"</b> · ' + maintFiltered.length + ' match' + (maintFiltered.length === 1 ? '' : 'es') + ' · <a href="#" onclick="maintSetSearch(\'\');return false" style="color:#0aa3e0">clear</a></div>';
+  }
   html += '<table><thead><tr><th>Date</th><th>LLC</th><th>Property</th><th>Sub</th><th>Category</th><th>Description</th><th>Amount</th><th>Pay / File</th><th>Edit</th></tr></thead><tbody>';
   if (!maintFiltered.length) {
-    html += '<tr><td colspan="9" style="color:#7e9cbf;text-align:center;padding:14px">No maintenance invoices for ' + monthLabel(maintMonth) + '.</td></tr>';
+    html += '<tr><td colspan="9" style="color:#7e9cbf;text-align:center;padding:14px">' +
+      (searching ? 'No invoices match "' + escapeHtml(MAINT_SEARCH.trim()) + '" in any month.' : 'No maintenance invoices for ' + monthLabel(maintMonth) + '.') + '</td></tr>';
   } else {
     maintFiltered.forEach(m => {
       const actions = (m.row != null)
@@ -3589,7 +3626,8 @@ function renderMaintenanceSection(maintenance) {
       const fileLink = m.invoice_url ? ' <a href="' + m.invoice_url + '" target="_blank" title="View invoice file" style="text-decoration:none">📎</a>' : '';
       html += '<tr><td style="white-space:nowrap">' + dateLabel(m.date) + '</td><td>' + m.llc + '</td><td style="font-size:12px">' + (m.property || '—') + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td><td style="white-space:nowrap">' + payBadge + fileLink + '</td><td style="white-space:nowrap">' + actions + '</td></tr>';
     });
-    html += '<tr style="font-weight:700;border-top:2px solid #1e2d42;color:#ccd9ea"><td colspan="6">Total' + (maintMonth ? ' (' + monthLabel(maintMonth) + ')' : ' (all months)') + '</td><td class="red">' + fmt(maintTotal) + '</td><td></td><td></td></tr>';
+    const totalScope = searching ? ' (search — all months)' : (maintMonth ? ' (' + monthLabel(maintMonth) + ')' : ' (all months)');
+    html += '<tr style="font-weight:700;border-top:2px solid #1e2d42;color:#ccd9ea"><td colspan="6">Total' + totalScope + '</td><td class="red">' + fmt(maintTotal) + '</td><td></td><td></td></tr>';
   }
   html += '</tbody></table></div>';
   return html;
