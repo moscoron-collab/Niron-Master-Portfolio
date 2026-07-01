@@ -954,7 +954,17 @@ shared. Pure **frontend** (`index.html`), **no Apps Script redeploy** — still 
 >   Deploy → Manage deployments → Edit → New version → Deploy). The `Buffers` tab auto-creates on first
 >   load after redeploy. Until then, edits apply for the session but won't save to the sheet/share to Nir.
 
-> ### 📄 Monthly bank-statement upload per LLC card (Jul 1 2026, needs redeploy)
+> ### 📄 Monthly bank-statement upload per LLC card — ❌ FRONTEND REMOVED (Jul 1 2026)
+> **Removed the same day per user:** after building it, the user decided it's redundant — the real
+> statement analysis happens monthly in the **`/monthly-distribution` skill** (CSVs pasted in chat), and
+> typing the balance is faster for the planner. So the **frontend upload UI was removed** (the 📄 button,
+> `statementFor`/`uploadStatement`/`fmtStmtTs`, `.plan-stmt`/`.stmt-up` CSS, the `plan-stmt` card block).
+> The **Apps Script backend was left dormant** (harmless, no redeploy needed to hide the button):
+> `ensureBankStatementsTab` / `saveStatementFile` / `addBankStatement` / the `add_bank_statement` route /
+> the `data.statements` reader still exist but nothing calls them; the `Bank Statements` tab + any
+> already-uploaded Drive file just sit unused. If ever reviving, re-add the frontend (see git history,
+> PR #175) — no backend change needed. The build details below are kept for reference.
+>
 > User wanted to attach each LLC's monthly bank statement on the planner + a timestamp in the uploader's
 > timezone. Decisions (defaults, tool loop — stated + shippable): **per-LLC file · saved to Drive + link in
 > sheet (shared w/ Nir) · timestamp frozen to the uploader's local zone · current month, re-upload replaces**.

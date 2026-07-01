@@ -84,10 +84,6 @@
   .plan-cushion { min-height: 118px; }
   .plan-upcoming { margin-top: auto; border-top: 1px solid #16263c; padding-top: 8px; }
   .plan-upcoming-title { color: #8aa6c4; font-size: 11px; font-weight: 600; margin-bottom: 4px; }
-  .plan-stmt { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 11px; color: #7a93ad; margin: 0 0 8px; }
-  .stmt-up { display: inline-block; cursor: pointer; color: #00BFFF; border: 1px solid #1e3550; border-radius: 6px; padding: 2px 8px; font-size: 11px; background: #0a1520; }
-  .stmt-up:hover { border-color: #00BFFF; }
-  .stmt-up input { display: none; }
   .plan-drafted { margin-top: 8px; border-top: 1px dashed #16263c; padding-top: 6px; }
   .plan-drafted > summary { color: #4e6d8c; font-size: 11px; cursor: pointer; list-style: none; user-select: none; }
   .plan-drafted > summary::-webkit-details-marker { display: none; }
@@ -2631,7 +2627,6 @@ function renderDistributionPlanner(data) {
   let incomeDate = new Date(planNow.getFullYear(), planNow.getMonth(), CASHPLAN_INCOME_DAY);
   if (startToday > incomeDate) incomeDate = new Date(planNow.getFullYear(), planNow.getMonth() + 1, CASHPLAN_INCOME_DAY);
   const incomeLabel = incomeDate.toLocaleString('en-US', { month: 'short', day: 'numeric' });
-  const stmtMonth = currentPeriod();   // month an uploaded bank statement attaches to
   let h = '<div class="section"><h2><span class="dot"></span><span>💵 Distribution Planner — how much to take this month</span></h2>';
   h += '<div style="color:#4e6d8c;font-size:12px;margin:-4px 0 12px">Type each account\'s current bank balance. The planner reserves the bills still coming <b>before your next income deposit (~' + incomeLabel + ')</b>, then shows what\'s safe to distribute (split per LLC). It rolls forward on its own — once a bill drafts it drops into <b>✓ Drafted this month</b> and next month\'s bills take its place.</div>';
   h += '<div style="margin-bottom:14px"><button class="secondary" style="padding:5px 10px;font-size:12px" onclick="markBalancesChecked()" title="Stamp today\'s date on all entered balances without changing the amounts">✓ Mark balances checked today</button></div>';
@@ -2664,18 +2659,6 @@ function renderDistributionPlanner(data) {
     h += '<div class="plan-top">';
     h += '<div class="llc-row"><span class="k">Bank balance now</span><span class="v" style="display:flex;align-items:center;justify-content:flex-end;gap:4px"><span style="color:#7e9cbf;font-size:13px">$</span><input type="number" value="' + (has ? bals[key] : '') + '" placeholder="enter" onchange="setCashBalance(\'' + key + '\', this.value)" style="width:112px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:6px;color:#fff;padding:4px 8px;font-size:13px"></span></div>';
     if (has) h += '<div style="text-align:right;color:#4e6d8c;font-size:10px;margin-top:-4px;margin-bottom:6px">' + (cashTs[key] ? 'updated ' + fmtDateTime(cashTs[key]) : 're-enter to set the date') + '</div>';
-    // Monthly bank statement: upload/replace + link + uploader-zone timestamp.
-    const stmt = statementFor(key, stmtMonth);
-    h += '<div class="plan-stmt">';
-    if (stmt) {
-      h += '📄 <a href="' + stmt.url + '" target="_blank" style="color:#00BFFF;text-decoration:none" title="' + (stmt.name || 'statement').replace(/"/g, '&quot;') + '">' + (stmt.name || 'Statement') + '</a>';
-      h += '<span style="color:#4e6d8c;font-size:10px">uploaded ' + fmtStmtTs(stmt.at, stmt.tz) + (stmt.by ? ' · ' + stmt.by : '') + '</span>';
-      h += '<label class="stmt-up" title="Replace this month\'s statement">replace<input type="file" accept="application/pdf,.pdf,.csv,text/csv,image/*" onchange="uploadStatement(\'' + key + '\', this)"></label>';
-    } else {
-      h += '<label class="stmt-up" title="Upload ' + c.label + '\'s bank statement for ' + monthLabel(stmtMonth) + '">📄 Upload statement<input type="file" accept="application/pdf,.pdf,.csv,text/csv,image/*" onchange="uploadStatement(\'' + key + '\', this)"></label>';
-      h += '<span style="color:#4e6d8c;font-size:10px">' + monthLabel(stmtMonth) + '</span>';
-    }
-    h += '</div>';
     h += '</div>';
     // Cushion breakdown — fixed min-height so the totals line up across all 4 cards.
     h += '<div class="plan-cushion">';
@@ -2765,36 +2748,6 @@ async function setBuffer(key, val) {
     if (r && r.error) { alert('Buffer applied for this session, but not saved to the sheet yet:\n' + r.error + '\n\nIf this just shipped, the Google Apps Script still needs its redeploy (New version) before buffer edits save for everyone.'); return; }
     load();                                   // success -> refresh shared data
   } catch (e) { alert('Buffer applied for this session, but the save failed (network): ' + e.message); }
-}
-// --- Monthly bank statement upload (per LLC, shared via Drive + the Bank Statements tab) -----
-// The uploaded-at time is frozen to the UPLOADER's local timezone at the moment of upload
-// (data.statements[].tz = IANA zone), so everyone sees "the time zone where the person was."
-function statementFor(key, month) {
-  const arr = (typeof PORTFOLIO_DATA !== 'undefined' && PORTFOLIO_DATA && PORTFOLIO_DATA.statements) || [];
-  return arr.find(s => s.key === key && s.month === month) || null;
-}
-function fmtStmtTs(iso, tz) {
-  const d = new Date(iso); if (isNaN(d.getTime())) return '';
-  const opt = { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' };
-  try { if (tz) opt.timeZone = tz; return d.toLocaleString('en-US', opt); }
-  catch (e) { return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
-}
-async function uploadStatement(key, inputEl) {
-  const actor = ensureActor(); if (!actor) { if (inputEl) inputEl.value = ''; return; }
-  const file = inputEl && inputEl.files && inputEl.files[0]; if (!file) return;
-  if (file.size > 25 * 1024 * 1024) { alert('File too large (max 25 MB).'); inputEl.value = ''; return; }
-  const tz = (function () { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; } })();
-  const at = new Date().toISOString();
-  const month = currentPeriod();
-  try {
-    const payload = await readFileAsPayload(file);
-    const body = { action: 'add_bank_statement', key: key, label: (CASHPLAN_CONFIG[key] || {}).label || key, month: month, file: payload, uploaded_at: at, uploaded_tz: tz, actor: actor };
-    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
-    const r = await res.json();
-    if (r && r.error) { alert('Upload failed: ' + r.error + '\n\nIf this just shipped, the Apps Script needs its redeploy (New version) before statement uploads save.'); return; }
-    load();
-  } catch (e) { alert('Upload error: ' + e.message); }
-  finally { if (inputEl) inputEl.value = ''; }
 }
 // Stamp today's date/time on every entered balance WITHOUT changing the amounts — so a balance
 // that's still correct (unchanged) can be confirmed as checked today (onchange wouldn't fire).
