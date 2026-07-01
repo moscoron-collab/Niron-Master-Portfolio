@@ -1160,13 +1160,13 @@ inbox shows empty).
   Severity/Priority · What happened · Expected (bug) · Steps (bug) · Related LLC/property dropdown
   (built from `PORTFOLIO_DATA.llcs` + `vacancyUnits()` via `bugFillRelated()`) · Screenshot upload ·
   Voice memo.
-- **🎤 Two voice paths (`bugDictate` + `bugToggleMemo`):**
-  - **Dictation** — a `.mic-btn` next to each textarea uses the browser **Web Speech API**
-    (`SpeechRecognition`/`webkitSpeechRecognition`) to type spoken words into that box live. Feature-
-    detected (`bugSpeechSupported()`); Chrome-best. Tapping again stops; button pulses (`.mic-btn.rec`).
-  - **Voice memo** — the "● Record" button uses **MediaRecorder** (`getUserMedia`) to capture an audio
-    clip → base64 → attached as `voice` (like the screenshot). Preview `<audio>` + Clear. Falls back
-    with an alert if unsupported.
+- **🎤 Voice memo (`bugToggleMemo`)** — the "● Record" button uses **MediaRecorder** (`getUserMedia`) to
+  capture an audio clip → base64 → attached as `voice` (like the screenshot). Picks a supported codec
+  (`isTypeSupported`), records with a **timeslice `start(250)`** (without it the blob came back empty),
+  shows "Asking for microphone…" then "✓ Recorded (N KB)", warns clearly on a 0-byte capture or
+  `NotAllowedError`. Preview `<audio>` + Clear. ⚠️ **The old talk-to-type dictation (Web Speech API,
+  `bugDictate`/`.mic-btn`) was REMOVED (Jul 1 2026, user request — it never worked on the user's Chrome
+  and added noise). Voice = the Record memo only now.** Do NOT re-add dictation unless the user asks.
 - **Files → Drive:** screenshot + voice memo both go through the existing `readFileAsPayload` → posted
   as `screenshot`/`voice` → AppsScript `saveBugFile()` writes them to a **`Niron Bug Reports`** Drive
   folder (ANYONE_WITH_LINK, same pattern as invoices/statements). 25 MB client cap on the screenshot.

@@ -361,12 +361,6 @@
   .bug-toggle button.on[data-kind="Idea"] { background: rgba(240,165,0,0.18); border-color: #f0a500; color: #ffcf6b; }
   .bug-ctx { font-size: 11px; color: #7e9cbf; background: #0d1825; border: 1px solid #182838; border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; line-height: 1.5; }
   .bug-ctx b { color: #9fc0e0; }
-  .mic-row { display: flex; align-items: flex-start; gap: 6px; }
-  .mic-row textarea { flex: 1; }
-  .mic-btn { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 8px; border: 1px solid #243750; background: rgba(255,255,255,0.03); color: #9fc0e0; font-size: 16px; cursor: pointer; margin-top: 0; }
-  .mic-btn:hover { background: rgba(0,191,255,0.15); }
-  .mic-btn.rec { background: rgba(255,68,85,0.25); border-color: #ff4455; color: #ff8a95; animation: micpulse 1.2s ease-in-out infinite; }
-  @keyframes micpulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
   .bug-memo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
   .bug-memo audio { height: 34px; }
   .bug-chip { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 12px; white-space: nowrap; }
@@ -648,16 +642,16 @@
     <select id="bug-severity"><option value="">-- choose --</option><option value="Critical">🔴 Critical — can't use it</option><option value="High">🟠 High — wrong data shown</option><option value="Medium">🟡 Medium — annoying but usable</option><option value="Low">⚪ Low — cosmetic / minor</option></select>
 
     <label id="bug-what-lbl">What happened?</label>
-    <div class="mic-row"><textarea id="bug-what" placeholder="Describe what you saw. Tap the 🎤 to talk instead of type."></textarea><button type="button" class="mic-btn" id="mic-what" title="Dictate — tap and talk" onclick="bugDictate('bug-what', this)">🎤</button></div>
+    <textarea id="bug-what" placeholder="Describe what you saw."></textarea>
 
     <div id="bug-expected-wrap">
       <label>What did you expect instead? <span style="font-weight:normal;text-transform:none;letter-spacing:normal;color:#4e6d8c;font-size:11px">(optional)</span></label>
-      <div class="mic-row"><textarea id="bug-expected" placeholder="e.g. I expected the net to match the bank."></textarea><button type="button" class="mic-btn" id="mic-expected" title="Dictate" onclick="bugDictate('bug-expected', this)">🎤</button></div>
+      <textarea id="bug-expected" placeholder="e.g. I expected the net to match the bank."></textarea>
     </div>
 
     <div id="bug-steps-wrap">
       <label>Steps to reproduce <span style="font-weight:normal;text-transform:none;letter-spacing:normal;color:#4e6d8c;font-size:11px">(optional — what did you click?)</span></label>
-      <div class="mic-row"><textarea id="bug-steps" placeholder="1. Open Maintenance  2. Pick June  3. ..."></textarea><button type="button" class="mic-btn" id="mic-steps" title="Dictate" onclick="bugDictate('bug-steps', this)">🎤</button></div>
+      <textarea id="bug-steps" placeholder="1. Open Maintenance  2. Pick June  3. ..."></textarea>
     </div>
 
     <label>Related LLC / property <span style="font-weight:normal;text-transform:none;letter-spacing:normal;color:#4e6d8c;font-size:11px">(optional)</span></label>
@@ -3987,7 +3981,6 @@ function renderActivity() {
 let BUG_KIND = 'Bug';
 let BUG_FILTER = 'all';
 let BUG_MEMO_PAYLOAD = null;      // {name,mimeType,data} of a recorded voice memo
-let bugRecog = null;             // active SpeechRecognition (dictation)
 let bugMediaRec = null;         // active MediaRecorder (voice memo)
 let bugMemoChunks = [];
 
@@ -4045,39 +4038,11 @@ function openBugModal() {
   syncActorSelects();
   document.getElementById('bug-modal').classList.add('open');
 }
-function closeBugModal() { bugStopDictation(); bugStopMemo(true); document.getElementById('bug-modal').classList.remove('open'); }
+function closeBugModal() { bugStopMemo(true); document.getElementById('bug-modal').classList.remove('open'); }
 
 function bugCountBadge() {
   const n = (PORTFOLIO_DATA && PORTFOLIO_DATA.bug_reports || []).length;
   const b = document.getElementById('bug-count-badge'); if (b) b.textContent = n ? ' (' + n + ')' : '';
-}
-
-/* ---- Dictation (voice-to-text) via the browser Web Speech API ---- */
-function bugSpeechSupported() { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
-function bugStopDictation() { if (bugRecog) { try { bugRecog.stop(); } catch (e) {} bugRecog = null; } document.querySelectorAll('.mic-btn.rec').forEach(b => b.classList.remove('rec')); }
-function bugDictateMsg(txt, isErr) { const m = document.getElementById('bug-msg'); if (m) { m.className = 'form-msg' + (isErr ? ' err' : ''); m.textContent = txt; m.style.display = txt ? 'block' : ''; } }
-function bugDictate(targetId, btn) {
-  if (!bugSpeechSupported()) { alert('Voice-to-text isn\'t supported in this browser. Use the 🎤 Record voice note below instead (that works everywhere), or type.'); return; }
-  if (bugRecog) { bugStopDictation(); bugDictateMsg('', false); return; }   // tapping again stops
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const rec = new SR();
-  rec.lang = navigator.language || 'en-US';
-  rec.interimResults = true; rec.continuous = true;
-  const ta = document.getElementById(targetId);
-  let got = false;
-  rec.onresult = (ev) => {
-    let add = '';
-    for (let i = ev.resultIndex; i < ev.results.length; i++) { if (ev.results[i].isFinal) add += ev.results[i][0].transcript; }
-    if (add) { got = true; ta.value = (ta.value ? ta.value.replace(/\s*$/, '') + ' ' : '') + add.trim(); bugDictateMsg('🎤 Heard you — keep talking, or tap the mic to stop.', false); }
-  };
-  rec.onerror = (e) => {
-    const why = { 'not-allowed': 'microphone blocked — click the 🔒/camera icon in Chrome\'s address bar and Allow the mic', 'service-not-allowed': 'your browser blocked its speech service — use the ● Record voice note instead', 'network': 'no network for speech — use the ● Record voice note instead', 'no-speech': 'didn\'t hear anything — try again closer to the mic', 'audio-capture': 'no microphone found' }[e.error] || ('dictation error: ' + e.error);
-    bugDictateMsg('⚠️ ' + why, true); bugStopDictation();
-  };
-  rec.onend = () => { if (bugRecog === rec) { bugStopDictation(); if (!got) bugDictateMsg('Dictation stopped. If nothing appeared, use the ● Record voice note below instead.', false); } };
-  bugRecog = rec; btn.classList.add('rec');
-  bugDictateMsg('🎤 Listening… speak now.', false);
-  try { rec.start(); } catch (e) { bugStopDictation(); bugDictateMsg('⚠️ Could not start dictation: ' + e.message, true); }
 }
 
 /* ---- Voice memo (record an audio clip, attached like a file) ---- */
@@ -4092,7 +4057,8 @@ function bugClearMemo() {
 async function bugToggleMemo() {
   const btn = document.getElementById('bug-memo-btn'); const st = document.getElementById('bug-memo-status');
   if (bugMediaRec && bugMediaRec.state === 'recording') { bugStopMemo(false); return; }
-  if (!navigator.mediaDevices || !window.MediaRecorder) { alert('Audio recording isn\'t supported in this browser. Try the 🎤 dictation buttons, or attach a screenshot.'); return; }
+  if (!navigator.mediaDevices || !window.MediaRecorder) { alert('Audio recording isn\'t supported in this browser. Please type your note, or attach a screenshot.'); return; }
+  st.textContent = 'Asking for microphone… (click Allow if Chrome prompts).';
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     bugMemoChunks = [];
@@ -4130,7 +4096,6 @@ async function submitBug() {
   if (!title) { msg.className = 'form-msg err'; msg.textContent = 'Please add a short title.'; return; }
   if (!document.getElementById('bug-area').value) { msg.className = 'form-msg err'; msg.textContent = 'Please choose which section it\'s about.'; return; }
   const actor = ensureActor(); if (!actor) return;
-  bugStopDictation();
   const c = bugCtxLine();
   const payload = {
     action: 'add_bug_report', type: BUG_KIND, title: title,
