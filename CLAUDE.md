@@ -2342,13 +2342,18 @@ newlines → `<br>`. New **`setChatContent(el, text, kind)`** renders **bot** (n
 escaped before formatting). Wired into both `appendChatMsg` and `loadChatHistory`. Added `.chat-tbl` CSS
 (borderless, theme-matched). So both new and history-restored bot messages render cleanly. To support more
 markdown later, extend `formatChatHtml`'s `inlineFmt`.
-- **🐛 Table overflowed the bubble onto the panel background — FIXED (same day):** a 6-column table was
-  wider than the bubble's `max-width:85%`, and `.chat-msg` didn't clip overflow, so the right-hand columns
-  (Description) spilled outside the rounded bubble onto the dark panel — looked like the answer was "written
-  on the background." Fix: `.chat-msg.bot:has(.chat-tbl)` now goes **full width** (`max-width:100%;
-  align-self:stretch; overflow:hidden`), and `.chat-tbl` uses **`table-layout:fixed`** (+ cell
-  `word-break:break-word; overflow-wrap:anywhere`) so the table can never exceed the bubble and long cell
-  text wraps instead of overflowing. Pure CSS, live on merge.
+- **🐛 Table overflowed the bubble onto the panel background — FIXED (same day, 2 passes):** a 6-column
+  table was wider than the bubble's `max-width:85%`, and `.chat-msg` didn't clip overflow, so the right-hand
+  columns spilled outside the rounded bubble onto the dark panel — looked like the answer was "written on the
+  background." **First pass used `.chat-msg.bot:has(.chat-tbl)` — but `:has()` didn't reliably apply in the
+  user's browser (bubble stayed narrow, still spilled).** **Final fix (reliable): `setChatContent` adds a
+  `has-table` class in JS whenever the rendered HTML contains a `.chat-tbl`** (no `:has()` dependency), and
+  `.chat-msg.bot.has-table` goes **full width** (`max-width:100%; align-self:stretch`). `.chat-msg.bot` now
+  has **`overflow:hidden`** so nothing can ever paint outside the bubble. The table is wrapped in a
+  **`<div class="chat-tbl-wrap">` with `overflow-x:auto`** so wide tables **scroll horizontally inside the
+  bubble** instead of overflowing; headers are `white-space:nowrap` (clean, no "Vendo r" mid-word breaks) and
+  `td` cells wrap at `max-width:150px`. Verified with a headless-Chromium screenshot of the exact CSS/JS. Pure
+  frontend, live on merge.
 
 ---
 
