@@ -2548,11 +2548,25 @@ function updateBugReport(data) {
   return ContentService.createTextOutput(JSON.stringify({ok: true, row: row})).setMimeType(ContentService.MimeType.JSON);
 }
 
+// Trash the Drive file behind a Drive view URL (screenshot / voice memo), so deleting a
+// report also cleans up its attachments instead of leaving orphaned files in the folder.
+// setTrashed (not permanent delete) keeps it recoverable ~30 days; never blocks the row delete.
+function _bugTrashDriveFile(url) {
+  if (!url) return;
+  try {
+    var m = String(url).match(/[-\w]{25,}/);   // the Drive file id in /d/<id>/view
+    if (m && m[0]) DriveApp.getFileById(m[0]).setTrashed(true);
+  } catch (e) { /* file already gone / not a Drive url — ignore */ }
+}
+
 function deleteBugReport(data) {
   var sh = ensureBugReportsTab(SpreadsheetApp.getActiveSpreadsheet());
   var row = Number(data.row);
   if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error: 'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
-  var title = sh.getRange(row, 3).getValue();
+  var vals = sh.getRange(row, 1, 1, 12).getValues()[0];
+  var title = vals[2];
+  _bugTrashDriveFile(vals[10]);  // K = Screenshot URL
+  _bugTrashDriveFile(vals[11]);  // L = Voice URL
   sh.deleteRow(row);
   logActivity(data.actor, 'Deleted bug report', title || '');
   return ContentService.createTextOutput(JSON.stringify({ok: true, deleted: row})).setMimeType(ContentService.MimeType.JSON);
