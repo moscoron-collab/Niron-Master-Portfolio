@@ -1238,6 +1238,58 @@ inbox shows empty).
   live on merge; reports just won't save/read until the redeploy. **Self-audit unaffected** (no `#kpi-*`
   IDs).
 
+## ✉️ Messages — private Ron ↔ Nir chat box (Jul 1 2026, APP_VERSION → 1.1)
+
+A **direct message box so Ron and Nir can chat** on the dashboard (separate from the 🐛 Bug/Idea
+reporter and the 💬 "Ask Claude" chatbot). **One running chat feed** (like texting, newest at the
+bottom), **Ron & Nir only**, supporting **text + 📷 photo + 🎤 voice memo**, and an **email alert to
+the OTHER partner with the full message text** on every send. User decisions (via AskUserQuestion,
+Jul 1 2026): one running feed · voice notes required · email notification w/ full text · just Ron &
+Nir · text+photo+voice · **floating ✉️ button** (no unread badge). Needs the usual **AppsScript
+redeploy** to save/read/email (backward-safe before it: the button + box render, a send just errors
+with "Bad request"; `data.messages` is undefined → empty feed).
+
+### Frontend (`index.html`, pure frontend — live on merge)
+- **Floating ✉️ `msg-fab`** (pink `linear-gradient(#d6336c,#f06595)`), **always visible on every tab**.
+  Position is set in **`switchMainTab`**: `bottom:296px` on **master/maint** (sits above the
+  maint/dist/stmt trio at 92/160/228) and `bottom:92px` on all other tabs (tucks just above the 💬
+  chat bubble at 24 — no big gap). CSS default is 296 so master (the boot tab) is correct even before
+  the first `switchMainTab` call.
+- **`msg-modal`** (reuses `.modal-overlay`/`.modal-box`): a `.msg-feed` bubble list (mine = blue,
+  right-aligned; theirs = grey, left-aligned; sender name + short timestamp under each; my own
+  messages have a `delete` link) + a compose row (textarea, `#msg-photo` file input, 🎤 record button
+  reusing the Bug reporter's MediaRecorder pattern, Send). `openMsgModal()` renders + opens + **polls
+  `msgRefresh()` every 25s while open** (feels live; email is the real alert when closed);
+  `closeMsgModal()` stops the poll + discards any in-progress recording.
+- **JS module** (after `bugClearMemo`): `MSG_NAMES` (R.M→Ron/O.M→Oshrat/N.S→Nir), `msgOtherName`,
+  `openMsgModal`/`closeMsgModal`, **`msgRefresh`** (lightweight `dashGet()` → updates only
+  `PORTFOLIO_DATA.messages` → `renderMessages`, no full dashboard re-render), `renderMessages`,
+  **`submitMessage`** (POSTs `add_message`; requires `ensureActor()`; **gated to actor R.M or N.S** —
+  Oshrat can read but not send), `msgDelete` (POSTs `delete_message`), and the voice-memo set
+  `msgToggleMemo`/`msgStopMemo`/`msgClearMemo` + `MSG_MEMO_PAYLOAD`/`msgMediaRec`/`msgMemoChunks`
+  (mirrors the 🐛 reporter's recorder verbatim). Photo/voice go through the existing
+  `readFileAsPayload`. **Self-audit unaffected** (no `#kpi-*` IDs).
+- **Version bumped `1.0` → `1.1`** with a new top CHANGELOG entry (en+he) per the versioning process.
+
+### AppsScript backend (`automation/AppsScript.gs`, edit the **LAST** doPost ~1189 + getDashboardJson ~1836)
+- **`ensureMessagesTab()`** auto-creates a **`Messages`** tab (title row 1, headers row 4, **data row
+  5**, **7 cols A–G:** `ID · From · Text · Photo URL · Voice URL · Sent At · Sent TZ`). `From` stores
+  the actor code (`R.M`/`N.S`).
+- `getDashboardJson` (last) reads it → **`data.messages`** (each tagged with absolute `row`, sorted
+  **oldest-first** so newest lands at the bottom of the feed). Added `messages: []` to the data init.
+- `doPost` (last) routes **`add_message`** → **`addMessageEntry`** (validates from ∈ {R.M,N.S}; saves
+  photo/voice via **`saveMessageFile`** to a **`Niron Messages`** Drive folder ANYONE_WITH_LINK; auto
+  ID `MSG-<ts>`; `logActivity`; then **`notifyMessage`** in a try/catch so email can never block the
+  send) and **`delete_message`** → **`deleteMessageEntry`** (trashes the photo/voice Drive files via
+  the existing `_bugTrashDriveFile`, then deletes the row).
+- **`notifyMessage(from, text, photoUrl, voiceUrl)`** emails the OTHER partner via `MailApp.sendEmail`
+  (`name:'Niron Dashboard'`) with the **full message text** + links to any photo/voice. Recipients in
+  **`MSG_PEOPLE`**: `R.M → moscoron@gmail.com` (Ron), `N.S → nir.shay@shays.com` (Nir). Ron sends →
+  Nir gets the email; Nir sends → Ron gets it. (MailApp consumer quota ~100/day — ample for two people.)
+- 🚀 **Going live (REQUIRED):** redeploy `AppsScript.gs` (Sheet → Extensions → Apps Script → paste →
+  Deploy → Manage deployments → Edit → New version → Deploy — Drive + Mail scopes were already
+  granted, no new scope). The `Messages` tab + `Niron Messages` Drive folder auto-create on first use.
+
 ## ❌ Distribution Planner DROPPED + 🚨 Net Cashflow is UNDERSTATED (Jun 7 2026, PR #65)
 
 **The Distribution Planner was REMOVED (PR #65).** The user reviewed 3 months (Mar–May 2026)

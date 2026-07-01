@@ -1185,6 +1185,12 @@ function doPost(e) {
     if (body.action === 'delete_bug_report') {
       return deleteBugReport(body);
     }
+    if (body.action === 'add_message') {
+      return addMessageEntry(body);
+    }
+    if (body.action === 'delete_message') {
+      return deleteMessageEntry(body);
+    }
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({error: 'Parse error: ' + err.message}))
       .setMimeType(ContentService.MimeType.JSON);
@@ -1833,7 +1839,7 @@ function logActivity(actor, action, details) {
 // Override: getDashboardJson with properties + new maintenance structure
 function getDashboardJson() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], vacancy: [], subs: [], buffers: {}, statements: [], bug_reports: [], activity: [], settings: {} };
+  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], vacancy: [], subs: [], buffers: {}, statements: [], bug_reports: [], messages: [], activity: [], settings: {} };
 
   // Track the most-recent real data-change timestamp (Activity Log + History "Logged At" +
   // Property Detail "Updated"), so the dashboard's "Last Updated" reflects when the data
@@ -2049,6 +2055,20 @@ function getDashboardJson() {
       });
     });
     data.bug_reports.sort(function(a, b) { return a.reported_at < b.reported_at ? 1 : (a.reported_at > b.reported_at ? -1 : 0); });
+  }
+
+  // Private Ron↔Nir messages (✉️ Messages button). 7 cols A–G, data row 5. Oldest first (newest at bottom).
+  var msgSh = ensureMessagesTab(ss);
+  if (msgSh && msgSh.getLastRow() >= 5) {
+    msgSh.getRange(5, 1, msgSh.getLastRow() - 4, 7).getValues().forEach(function(r, i) {
+      if (!r[0] && !r[2] && !r[3] && !r[4]) return; // skip fully-blank rows (no id/text/photo/voice)
+      data.messages.push({
+        row: 5 + i, id: r[0] || '', from: r[1] || '', text: r[2] || '',
+        photo_url: r[3] || '', voice_url: r[4] || '',
+        sent_at: (r[5] instanceof Date ? r[5].toISOString() : String(r[5] || '')), sent_tz: r[6] || ''
+      });
+    });
+    data.messages.sort(function(a, b) { return a.sent_at < b.sent_at ? -1 : (a.sent_at > b.sent_at ? 1 : 0); });
   }
 
   // ----- Activity feed: manual changes (Activity Log tab) + automation pulls -----
@@ -2569,5 +2589,99 @@ function deleteBugReport(data) {
   _bugTrashDriveFile(vals[11]);  // L = Voice URL
   sh.deleteRow(row);
   logActivity(data.actor, 'Deleted bug report', title || '');
+  return ContentService.createTextOutput(JSON.stringify({ok: true, deleted: row})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── ✉️ MESSAGES (private Ron ↔ Nir chat) ─────────────────────────
+// Chat between the two partners. Every new message emails the OTHER partner the full text.
+var MSG_PEOPLE = {
+  'R.M': { name: 'Ron', email: 'moscoron@gmail.com' },
+  'N.S': { name: 'Nir', email: 'nir.shay@shays.com' }
+};
+
+function ensureMessagesTab(ss) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('Messages');
+  if (sh) return sh;
+  sh = ss.insertSheet('Messages');
+  sh.getRange(1, 1).setValue('MESSAGES — private chat between Ron & Nir (from the dashboard ✉️ Messages button). Each new message emails the other partner the full text.').setFontWeight('bold');
+  var headers = ['ID', 'From', 'Text', 'Photo URL', 'Voice URL', 'Sent At', 'Sent TZ'];
+  sh.getRange(4, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+  sh.setFrozenRows(4);
+  return sh;
+}
+
+// Save an uploaded message attachment (photo or voice) to a Drive folder; return its view URL.
+function saveMessageFile(file) {
+  var folders = DriveApp.getFoldersByName('Niron Messages');
+  var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder('Niron Messages');
+  var bytes = Utilities.base64Decode(file.data);
+  var blob = Utilities.newBlob(bytes, file.mimeType || 'application/octet-stream', file.name || 'message-attachment');
+  var f = folder.createFile(blob);
+  try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
+  return f.getUrl();
+}
+
+function addMessageEntry(data) {
+  var sh = ensureMessagesTab(SpreadsheetApp.getActiveSpreadsheet());
+  var from = (data.from || data.actor || '').toString().trim();
+  if (from !== 'R.M' && from !== 'N.S') return ContentService.createTextOutput(JSON.stringify({error: 'Messages are between Ron and Nir only — sign in as Ron or Nir.'})).setMimeType(ContentService.MimeType.JSON);
+  var text = (data.text || '').toString();
+  var photoUrl = '';
+  if (data.photo && data.photo.data) {
+    try { photoUrl = saveMessageFile(data.photo); }
+    catch (err) { return ContentService.createTextOutput(JSON.stringify({error: 'Photo upload failed: ' + err.message})).setMimeType(ContentService.MimeType.JSON); }
+  }
+  var voiceUrl = '';
+  if (data.voice && data.voice.data) {
+    try { voiceUrl = saveMessageFile(data.voice); }
+    catch (err) { return ContentService.createTextOutput(JSON.stringify({error: 'Voice note upload failed: ' + err.message})).setMimeType(ContentService.MimeType.JSON); }
+  }
+  if (!text.trim() && !photoUrl && !voiceUrl) return ContentService.createTextOutput(JSON.stringify({error: 'Empty message'})).setMimeType(ContentService.MimeType.JSON);
+  var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone() || 'America/Denver';
+  var id = 'MSG-' + Utilities.formatDate(new Date(), tz, 'yyyyMMdd-HHmmss');
+  var nextRow = Math.max(5, sh.getLastRow() + 1);
+  var sentAt = data.sent_at || new Date().toISOString();
+  sh.getRange(nextRow, 1, 1, 7).setValues([[ id, from, text, photoUrl, voiceUrl, sentAt, data.sent_tz || '' ]]);
+  logActivity(from, 'Sent a message', text ? (text.length > 60 ? text.slice(0, 60) + '…' : text) : (photoUrl ? '📷 photo' : '🎤 voice note'));
+  try { notifyMessage(from, text, photoUrl, voiceUrl); } catch (e) { /* never block the send if email fails */ }
+  return ContentService.createTextOutput(JSON.stringify({ok: true, row: nextRow, id: id})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Email the OTHER partner the full message text + any attachment links.
+function notifyMessage(from, text, photoUrl, voiceUrl) {
+  var sender = MSG_PEOPLE[from]; if (!sender) return;
+  var to = (from === 'R.M') ? MSG_PEOPLE['N.S'] : MSG_PEOPLE['R.M'];
+  if (!to || !to.email) return;
+  var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone() || 'America/Denver';
+  var safe = (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+  var html = '<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;color:#1a2a3a">' +
+    '<div style="background:#0d1e30;color:#fff;padding:16px 18px;border-radius:8px 8px 0 0">' +
+      '<div style="font-size:15px;font-weight:600">💬 New message from ' + sender.name + '</div>' +
+      '<div style="font-size:12px;color:#9fc0e0;margin-top:2px">Niron dashboard · ' + Utilities.formatDate(new Date(), tz, 'MMM d, yyyy h:mm a') + '</div>' +
+    '</div>' +
+    '<div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;padding:18px">' +
+      (safe ? '<div style="font-size:14px;line-height:1.5">' + safe + '</div>' : '<div style="font-size:14px;color:#667">(no text — see attachment below)</div>') +
+      (photoUrl ? '<p style="margin:12px 0 0"><a href="' + photoUrl + '" style="color:#0080cc">📷 View photo</a></p>' : '') +
+      (voiceUrl ? '<p style="margin:8px 0 0"><a href="' + voiceUrl + '" style="color:#0080cc">🎤 Play voice note</a></p>' : '') +
+      '<p style="margin:16px 0 0;font-size:12.5px;color:#667">Open the Niron dashboard → ✉️ Messages to reply.</p>' +
+    '</div></div>';
+  MailApp.sendEmail({
+    to: to.email,
+    subject: '💬 New message from ' + sender.name + ' — Niron dashboard',
+    htmlBody: html,
+    name: 'Niron Dashboard'
+  });
+}
+
+function deleteMessageEntry(data) {
+  var sh = ensureMessagesTab(SpreadsheetApp.getActiveSpreadsheet());
+  var row = Number(data.row);
+  if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error: 'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
+  var vals = sh.getRange(row, 1, 1, 5).getValues()[0];
+  _bugTrashDriveFile(vals[3]);  // D = Photo URL
+  _bugTrashDriveFile(vals[4]);  // E = Voice URL
+  sh.deleteRow(row);
+  logActivity(data.actor, 'Deleted a message', vals[0] || '');
   return ContentService.createTextOutput(JSON.stringify({ok: true, deleted: row})).setMimeType(ContentService.MimeType.JSON);
 }
