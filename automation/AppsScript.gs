@@ -2568,6 +2568,34 @@ function _notifyNewBugReport(type, title, id, screenshotUrl, voiceUrl, data) {
   } catch (e) { /* never block the save on a mail error */ }
 }
 
+// Who gets emailed back when THEIR report's status changes (reporter code → email).
+// Add / correct addresses here. Blank = that person won't be emailed status updates.
+var BUG_ACTOR_EMAILS = { 'R.M': 'moscoron@gmail.com', 'N.S': 'nir.shay@shays.com', 'O.M': '' };
+
+// Email the ORIGINAL reporter when Ron changes the status of their bug/idea (fixed / pending / etc.).
+function _notifyReporterStatus(reporterCode, actorCode, type, title, status, note, id) {
+  try {
+    if (status == null || status === '') return;
+    var rc = String(reporterCode || '').trim();
+    if (rc && actorCode && rc === String(actorCode).trim()) return; // don't email someone about their own change
+    var to = BUG_ACTOR_EMAILS[rc] || '';
+    if (!to) return;                                                // no email on file for this reporter → skip
+    var isIdea = (type === 'Idea');
+    var line = { 'Fixed': 'Good news — this has been fixed. ✅', 'In progress': 'Ron is working on this now. 🛠', 'Acknowledged': 'Ron has seen this and will look into it. 👀', 'Need info': 'Ron needs a bit more info from you to move forward — please reply or add detail. ❔', "Won't fix": 'Ron reviewed this and decided not to change it (reason below).', 'New': 'This was reopened / set back to New.' }[status] || ('Status is now: ' + status);
+    var body = [];
+    body.push('The ' + (isIdea ? 'idea' : 'bug') + ' you reported has a new status.');
+    body.push('');
+    body.push('"' + title + '"');
+    body.push('Status: ' + status);
+    body.push(line);
+    if (note) body.push('\nRon\'s note: ' + note);
+    body.push('\nSee it on the dashboard → 🐛 Report → 🗂 View all reports:');
+    body.push(BUG_DASHBOARD_URL);
+    if (id) body.push('\n(' + id + ')');
+    MailApp.sendEmail(to, (isIdea ? '💡 Your idea' : '🐛 Your bug') + ' — ' + status + ': ' + title, body.join('\n'));
+  } catch (e) { /* never block the save on a mail error */ }
+}
+
 // Ron's triage: change Status (col S=19) and/or Triage Notes (col T=20). Bumps Updated At (U=21).
 function updateBugReport(data) {
   var sh = ensureBugReportsTab(SpreadsheetApp.getActiveSpreadsheet());
@@ -2576,7 +2604,10 @@ function updateBugReport(data) {
   if (data.status != null) sh.getRange(row, 19).setValue(data.status);
   if (data.triage_notes != null) sh.getRange(row, 20).setValue(data.triage_notes);
   sh.getRange(row, 21).setValue(new Date());
-  var title = sh.getRange(row, 3).getValue();
+  var rowVals = sh.getRange(row, 1, 1, 20).getValues()[0];  // id..triage_notes
+  var title = rowVals[2];
+  // If the status changed, email the original reporter (col M = index 12) that it's fixed/pending/etc.
+  if (data.status != null) _notifyReporterStatus(rowVals[12], data.actor, rowVals[1], title, data.status, (data.triage_notes != null ? data.triage_notes : rowVals[19]), rowVals[0]);
   logActivity(data.actor, 'Updated bug status', (title || '') + (data.status != null ? ' → ' + data.status : ''));
   return ContentService.createTextOutput(JSON.stringify({ok: true, row: row})).setMimeType(ContentService.MimeType.JSON);
 }

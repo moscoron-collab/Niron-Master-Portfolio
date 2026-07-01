@@ -1238,7 +1238,16 @@ inbox shows empty).
   title, reporter, section, severity, what/expected/steps, context, attachment links + the dashboard
   URL. Wrapped in try/catch so a mail failure never blocks the save. ⚠️ **Adds a `MailApp` send-email
   scope** → the redeploy will prompt for a new email permission — approve it. Lands in Ron's Gmail (so
-  he gets a phone push too). To also notify Nir, add his address to `BUG_NOTIFY_TO` (comma-separated).
+  he gets a phone push too). To also notify Nir on NEW reports, add his address to `BUG_NOTIFY_TO`
+  (comma-separated).
+- **📧 Two-way: reporter emailed on status change (Jul 1 2026):** `updateBugReport` calls
+  **`_notifyReporterStatus()`** whenever the Status changes → emails the **original reporter** (mapped
+  via **`BUG_ACTOR_EMAILS`** = `{R.M: moscoron@gmail.com, N.S: nir.shay@shays.com, O.M: ''}`) that their
+  bug/idea is now Fixed / In progress / Need info / etc., with a friendly per-status line + Ron's triage
+  note + dashboard link. So Nir logs a bug → Ron gets emailed; Ron marks it Fixed → Nir gets emailed.
+  Skips if the reporter has no email on file or is the same person making the change. **Edit
+  `BUG_ACTOR_EMAILS` to add Oshrat's address or correct Nir's.** Same `MailApp` scope (no extra
+  redeploy beyond the email-permission one).
 - 🚀 **Going live (REQUIRED):** redeploy `AppsScript.gs` (Sheet → Extensions → Apps Script → paste →
   Deploy → Manage deployments → Edit → New version → Deploy — no NEW scope, Drive was already granted).
   The `Bug Reports` tab + `Niron Bug Reports` Drive folder auto-create on first use. `index.html` is
