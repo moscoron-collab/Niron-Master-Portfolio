@@ -4040,7 +4040,7 @@ function openBugModal() {
   bugFillRelated();
   const c = bugCtxLine();
   document.getElementById('bug-ctx').innerHTML = '📍 Auto-captured: <b>' + escapeHtml(c.tab) + '</b> tab · month <b>' + escapeHtml(c.monthLabel) + '</b> · ' + escapeHtml(c.device) + ' · time + your name added on submit.';
-  const msg = document.getElementById('bug-msg'); msg.className = 'form-msg'; msg.textContent = '';
+  const msg = document.getElementById('bug-msg'); msg.className = 'form-msg'; msg.textContent = ''; msg.style.display = '';
   bugCountBadge();
   syncActorSelects();
   document.getElementById('bug-modal').classList.add('open');
@@ -4055,23 +4055,29 @@ function bugCountBadge() {
 /* ---- Dictation (voice-to-text) via the browser Web Speech API ---- */
 function bugSpeechSupported() { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
 function bugStopDictation() { if (bugRecog) { try { bugRecog.stop(); } catch (e) {} bugRecog = null; } document.querySelectorAll('.mic-btn.rec').forEach(b => b.classList.remove('rec')); }
+function bugDictateMsg(txt, isErr) { const m = document.getElementById('bug-msg'); if (m) { m.className = 'form-msg' + (isErr ? ' err' : ''); m.textContent = txt; m.style.display = txt ? 'block' : ''; } }
 function bugDictate(targetId, btn) {
-  if (!bugSpeechSupported()) { alert('Voice-to-text isn\'t supported in this browser. Try Chrome, or use the 🎤 Record voice note below instead.'); return; }
-  if (bugRecog) { bugStopDictation(); return; }          // tapping again stops
+  if (!bugSpeechSupported()) { alert('Voice-to-text isn\'t supported in this browser. Use the 🎤 Record voice note below instead (that works everywhere), or type.'); return; }
+  if (bugRecog) { bugStopDictation(); bugDictateMsg('', false); return; }   // tapping again stops
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const rec = new SR();
   rec.lang = navigator.language || 'en-US';
-  rec.interimResults = false; rec.continuous = true;
+  rec.interimResults = true; rec.continuous = true;
   const ta = document.getElementById(targetId);
+  let got = false;
   rec.onresult = (ev) => {
     let add = '';
     for (let i = ev.resultIndex; i < ev.results.length; i++) { if (ev.results[i].isFinal) add += ev.results[i][0].transcript; }
-    if (add) ta.value = (ta.value ? ta.value.replace(/\s*$/, '') + ' ' : '') + add.trim();
+    if (add) { got = true; ta.value = (ta.value ? ta.value.replace(/\s*$/, '') + ' ' : '') + add.trim(); bugDictateMsg('🎤 Heard you — keep talking, or tap the mic to stop.', false); }
   };
-  rec.onerror = () => bugStopDictation();
-  rec.onend = () => { if (bugRecog === rec) bugStopDictation(); };
+  rec.onerror = (e) => {
+    const why = { 'not-allowed': 'microphone blocked — click the 🔒/camera icon in Chrome\'s address bar and Allow the mic', 'service-not-allowed': 'your browser blocked its speech service — use the ● Record voice note instead', 'network': 'no network for speech — use the ● Record voice note instead', 'no-speech': 'didn\'t hear anything — try again closer to the mic', 'audio-capture': 'no microphone found' }[e.error] || ('dictation error: ' + e.error);
+    bugDictateMsg('⚠️ ' + why, true); bugStopDictation();
+  };
+  rec.onend = () => { if (bugRecog === rec) { bugStopDictation(); if (!got) bugDictateMsg('Dictation stopped. If nothing appeared, use the ● Record voice note below instead.', false); } };
   bugRecog = rec; btn.classList.add('rec');
-  try { rec.start(); } catch (e) { bugStopDictation(); }
+  bugDictateMsg('🎤 Listening… speak now.', false);
+  try { rec.start(); } catch (e) { bugStopDictation(); bugDictateMsg('⚠️ Could not start dictation: ' + e.message, true); }
 }
 
 /* ---- Voice memo (record an audio clip, attached like a file) ---- */
@@ -4090,24 +4096,32 @@ async function bugToggleMemo() {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     bugMemoChunks = [];
-    const rec = new MediaRecorder(stream);
+    // Pick a codec this browser actually supports so the blob is playable.
+    let mime = '';
+    ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4'].forEach(t => { if (!mime && window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) mime = t; });
+    const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
     rec.ondataavailable = e => { if (e.data && e.data.size) bugMemoChunks.push(e.data); };
     rec.onstop = () => {
       stream.getTracks().forEach(t => t.stop());
       btn.textContent = '● Record'; btn.classList.remove('del');
       if (rec._discard) return;
-      const blob = new Blob(bugMemoChunks, { type: rec.mimeType || 'audio/webm' });
+      const blob = new Blob(bugMemoChunks, { type: rec.mimeType || mime || 'audio/webm' });
+      if (!blob.size) { st.textContent = ''; BUG_MEMO_PAYLOAD = null; alert('No audio was captured — your mic looks muted or blocked.\n\nCheck the mic icon in Chrome\'s address bar (Allow), make sure the right mic is selected, then record again.'); return; }
       const url = URL.createObjectURL(blob);
-      const a = document.getElementById('bug-memo-audio'); a.src = url; a.style.display = '';
+      const a = document.getElementById('bug-memo-audio'); a.src = url; a.style.display = ''; a.load();
       document.getElementById('bug-memo-clear').style.display = '';
-      st.textContent = 'Recorded (' + Math.round(blob.size / 1024) + ' KB)';
+      st.textContent = '✓ Recorded (' + Math.round(blob.size / 1024) + ' KB) — press play to check it.';
       const fr = new FileReader();
-      fr.onload = () => { const s = String(fr.result); const i = s.indexOf(','); const ext = (blob.type.indexOf('ogg') >= 0 ? 'ogg' : blob.type.indexOf('mp4') >= 0 ? 'mp4' : 'webm'); BUG_MEMO_PAYLOAD = { name: 'voice-note.' + ext, mimeType: blob.type, data: i >= 0 ? s.slice(i + 1) : s }; };
+      fr.onload = () => { const s = String(fr.result); const i = s.indexOf(','); const bt = blob.type || ''; const ext = (bt.indexOf('ogg') >= 0 ? 'ogg' : bt.indexOf('mp4') >= 0 ? 'm4a' : 'webm'); BUG_MEMO_PAYLOAD = { name: 'voice-note.' + ext, mimeType: bt || 'audio/webm', data: i >= 0 ? s.slice(i + 1) : s }; };
       fr.readAsDataURL(blob);
     };
-    bugMediaRec = rec; rec.start();
-    btn.textContent = '■ Stop'; btn.classList.add('del'); st.textContent = 'Recording… tap Stop when done.';
-  } catch (e) { alert('Could not start recording: ' + e.message + '\n(Allow microphone access, or use dictation / screenshot.)'); }
+    // Timeslice → data chunks flush during recording (without this the blob can come back empty).
+    bugMediaRec = rec; rec.start(250);
+    btn.textContent = '■ Stop'; btn.classList.add('del'); st.textContent = '● Recording… tap Stop when done.';
+  } catch (e) {
+    const why = (e && e.name === 'NotAllowedError') ? 'Microphone access was blocked. Click the mic/🔒 icon in Chrome\'s address bar and Allow it, then try again.' : (e && e.name === 'NotFoundError') ? 'No microphone was found on this device.' : ('Could not start recording: ' + (e && e.message || e));
+    alert(why);
+  }
 }
 
 async function submitBug() {
