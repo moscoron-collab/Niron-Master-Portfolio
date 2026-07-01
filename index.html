@@ -162,13 +162,15 @@
   .chat-messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
   .chat-msg { padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; max-width: 85%; white-space: pre-wrap; word-wrap: break-word; }
   .chat-msg.user { background: #0080cc; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-  .chat-msg.bot { background: #182030; color: #ccd9ea; align-self: flex-start; border-bottom-left-radius: 4px; }
+  .chat-msg.bot { background: #182030; color: #ccd9ea; align-self: flex-start; border-bottom-left-radius: 4px; overflow: hidden; }
   .chat-msg.bot.err { color: #ff4455; background: rgba(255, 68, 85, 0.1); }
   .chat-msg.typing { color: #4e6d8c; font-style: italic; }
-  .chat-msg.bot:has(.chat-tbl) { max-width: 100%; align-self: stretch; overflow: hidden; }
-  .chat-msg.bot .chat-tbl { white-space: normal; border-collapse: collapse; width: 100%; table-layout: fixed; margin: 6px 0; font-size: 12px; }
-  .chat-msg.bot .chat-tbl th, .chat-msg.bot .chat-tbl td { text-align: left; padding: 5px 7px; border-bottom: 1px solid #2a3850; vertical-align: top; word-break: break-word; overflow-wrap: anywhere; }
-  .chat-msg.bot .chat-tbl th { color: #8fb3d9; font-weight: 600; border-bottom: 1px solid #3a4f6e; }
+  .chat-msg.bot.has-table { max-width: 100%; align-self: stretch; }
+  .chat-tbl-wrap { overflow-x: auto; margin: 6px 0; }
+  .chat-msg.bot .chat-tbl { white-space: normal; border-collapse: collapse; font-size: 12px; }
+  .chat-msg.bot .chat-tbl th, .chat-msg.bot .chat-tbl td { text-align: left; padding: 5px 9px; border-bottom: 1px solid #2a3850; vertical-align: top; }
+  .chat-msg.bot .chat-tbl th { color: #8fb3d9; font-weight: 600; border-bottom: 1px solid #3a4f6e; white-space: nowrap; }
+  .chat-msg.bot .chat-tbl td { max-width: 150px; overflow-wrap: break-word; }
   .chat-msg.bot .chat-tbl tr:last-child td { border-bottom: none; }
   .chat-msg.bot strong { color: #e8f0fb; font-weight: 600; }
   .chat-input-row { padding: 12px 14px; border-top: 1px solid #1e2d42; display: flex; gap: 8px; }
@@ -1813,11 +1815,11 @@ function formatChatHtml(text) {
       const header = splitCells(lines[i]); i += 2;        // skip the |---| separator
       const body = [];
       while (i < lines.length && isTableRow(lines[i]) && !isTableSep(lines[i])) { body.push(splitCells(lines[i])); i++; }
-      let t = '<table class="chat-tbl"><thead><tr>';
+      let t = '<div class="chat-tbl-wrap"><table class="chat-tbl"><thead><tr>';
       header.forEach(h => { t += '<th>' + inlineFmt(h) + '</th>'; });
       t += '</tr></thead><tbody>';
       body.forEach(row => { t += '<tr>' + header.map((_, c) => '<td>' + inlineFmt(row[c] || '') + '</td>').join('') + '</tr>'; });
-      t += '</tbody></table>';
+      t += '</tbody></table></div>';
       out += t;
     } else {
       out += inlineFmt(lines[i]) + (i < lines.length - 1 ? '<br>' : '');
@@ -1828,8 +1830,15 @@ function formatChatHtml(text) {
   function inlineFmt(s) { return escapeHtml(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'); }
 }
 function setChatContent(el, text, kind) {
-  if (kind && kind.indexOf('bot') >= 0 && kind.indexOf('typing') < 0) el.innerHTML = formatChatHtml(text);
-  else el.textContent = text;
+  if (kind && kind.indexOf('bot') >= 0 && kind.indexOf('typing') < 0) {
+    el.innerHTML = formatChatHtml(text);
+    // Widen + clip the bubble when it holds a table. Done via a class (not the
+    // CSS :has() selector, which isn't reliable across browsers) so the table
+    // can never spill outside the bubble onto the panel background.
+    if (el.querySelector('.chat-tbl')) el.classList.add('has-table');
+  } else {
+    el.textContent = text;
+  }
 }
 function appendChatMsg(text, kind) { const el = document.createElement("div"); el.className = "chat-msg " + kind; setChatContent(el, text, kind); const msgs = document.getElementById("chat-messages"); msgs.appendChild(el); msgs.scrollTop = msgs.scrollHeight; return el; }
 
