@@ -13,6 +13,35 @@
 
 ---
 
+## 🆕 Dashboard version number + "What's New" changelog (Jul 1 2026, START v1.0)
+
+The Niron dashboard (`index.html`) shows a **version chip top-right** (in the header `.meta`,
+above "Last Updated"): a small pill `● v1.0` (`id="version-chip"`, `onclick="openVersionModal()"`).
+Each release explains what changed **in English AND Hebrew**. **Started at v1.0.**
+
+- **Where it lives (all in `index.html`, top of the `<script>` before the AUTH block):**
+  - **`const APP_VERSION = "1.0"`** — the single source of truth for the displayed version.
+  - **`const CHANGELOG = [ { version, date, en:[...], he:[...] }, ... ]`** — newest entry FIRST.
+    Each entry has an English bullet list (`en`) and a Hebrew bullet list (`he`).
+  - `renderChangelog()` builds the modal body (English section + Hebrew section, Hebrew rendered
+    RTL via `.cl-list.cl-he`). `openVersionModal()` / `closeVersionModal()` open/close
+    **`#version-modal`** (mirrors the guide-modal `.modal-overlay`/`.modal-box` pattern).
+  - **Auto-popup ONCE per browser after a bump:** `checkVersionPopup()` (called at the end of
+    `showDashboard()`) compares `localStorage 'niron_seen_version'` to `APP_VERSION`; if different
+    it shows a `NEW` badge + auto-opens the modal, then `markVersionSeen()` stores the version so
+    it won't pop again until the NEXT bump. Clicking the chip re-opens it anytime.
+- **🔑 PROCESS — bump the version on every future dashboard change (user request Jul 1 2026):**
+  when you ship a new feature/fix to `index.html`, **(1)** bump `APP_VERSION` (e.g. `1.0` → `1.1`),
+  and **(2)** add a NEW `CHANGELOG` entry at the TOP with a plain-English `en` list + a Hebrew `he`
+  translation of the same points + the date. Keep it short and business-facing (the user is
+  non-technical; Nir/Oshrat read it too). Versioning convention: small changes bump the minor
+  (1.0→1.1→1.2…), a big overhaul bumps the major (→2.0) — use judgement.
+- Pure frontend, **no Apps Script redeploy** — goes live on merge. Self-audit unaffected (no
+  `#kpi-*` IDs). CSS: `.version-chip` / `.cl-entry` / `.cl-ver` / `.cl-lang` / `.cl-list(.cl-he)`
+  near the `.modal-box .form-msg` block.
+
+---
+
 ## 🔒 CRITICAL SECURITY CONSTRAINT
 
 This repo holds **both** Niron LLC and Moss Investments automation code.

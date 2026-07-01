@@ -150,6 +150,20 @@
   .modal-box .form-msg.ok { background: rgba(0, 201, 122, 0.15); color: #00c97a; display: block; }
   .modal-box .form-msg.err { background: rgba(255, 68, 85, 0.15); color: #ff4455; display: block; }
 
+  /* Version chip (top-right) + What's-New changelog */
+  .version-chip { display: inline-flex; align-items: center; gap: 5px; background: #0d1e30; border: 1px solid #1e3550; color: #9db6d2; border-radius: 20px; padding: 3px 11px; font-size: 11px; font-weight: 700; letter-spacing: 0.4px; cursor: pointer; user-select: none; transition: border-color 0.15s, color 0.15s; }
+  .version-chip:hover { border-color: #00BFFF; color: #ffffff; }
+  .version-chip .vdot { color: #f0a500; font-size: 9px; }
+  .version-chip.has-new { border-color: #f0a500; color: #ffd479; box-shadow: 0 0 0 2px rgba(240,165,0,0.15); }
+  .version-chip .vnew { background: #f0a500; color: #0a1520; border-radius: 8px; padding: 0 5px; font-size: 9px; font-weight: 800; margin-left: 2px; }
+  .cl-entry { border-left: 3px solid #f0a500; padding: 2px 0 2px 14px; margin-bottom: 22px; }
+  .cl-entry.old { border-left-color: #1e3550; }
+  .cl-ver { font-weight: 700; color: #ffffff; font-size: 15px; }
+  .cl-date { color: #7e9cbf; font-size: 12px; margin-left: 8px; font-weight: 400; }
+  .cl-lang { color: #00BFFF; font-size: 10.5px; text-transform: uppercase; letter-spacing: 1.2px; font-weight: 700; margin: 12px 0 5px; }
+  .cl-list { margin: 0 0 0 18px; padding: 0; color: #cfe0f2; font-size: 13.5px; line-height: 1.65; }
+  .cl-list.cl-he { direction: rtl; text-align: right; margin: 0 18px 0 0; }
+
   /* Chat panel */
   .chat-panel { position: fixed; bottom: 24px; right: 24px; width: 380px; height: 540px; max-height: 80vh; background: rgba(14, 22, 38, 0.98); border: 1px solid #1e2d42; border-radius: 16px; display: none; flex-direction: column; z-index: 1001; box-shadow: 0 20px 60px rgba(0,0,0,0.6); overflow: hidden; }
   .chat-panel.open { display: flex; }
@@ -801,6 +815,16 @@
   </div>
 </div>
 
+<!-- ═══════════════════ WHAT'S NEW / VERSION HISTORY ═══════════════════ -->
+<div class="modal-overlay" id="version-modal" onclick="if(event.target===this)closeVersionModal()">
+  <div class="modal-box" style="max-width:640px">
+    <h2><span>🆕 What's New — <span id="version-modal-title">v1.0</span></span> <button class="modal-close" onclick="closeVersionModal()">×</button></h2>
+    <div style="color:#7e9cbf;font-size:12.5px;margin-bottom:16px">Every update to the dashboard is listed here, newest first — described in both English and Hebrew. &nbsp;|&nbsp; כל עדכון של הדשבורד מופיע כאן, מהחדש לישן — באנגלית ובעברית.</div>
+    <div id="changelog-body" style="max-height:64vh;overflow:auto"></div>
+    <div class="modal-actions"><button class="primary" onclick="closeVersionModal()">Got it</button></div>
+  </div>
+</div>
+
 <!-- ═══════════════════ CHAT PANEL ═══════════════════ -->
 <div class="chat-panel" id="chat-panel">
   <div class="chat-header">
@@ -860,6 +884,7 @@
       <select id="header-month-select" class="header-month-select" onchange="onMonthChange(this.value)"><option>Loading…</option></select>
     </div>
     <div class="meta">
+      <div style="text-align:right;margin-bottom:2px"><span class="version-chip" id="version-chip" onclick="openVersionModal()" title="What's new — click to see version history"><span class="vdot">●</span><span>v<span id="version-num">1.0</span></span></span></div>
       <div><span class="label">Last Updated:</span> <span id="last-updated">—</span></div>
       <div><span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span><button class="logout-btn" onclick="logout()">Logout</button></div>
       <div style="margin-top:6px"><span class="btn-wrap"><button class="audit-btn bug-btn" id="bug-btn" onclick="openBugModal()">🐛 Report</button><span class="btn-tip"><b>Found a bug or have an idea? Log it here.</b> Pick 🐛 Bug or 💡 Idea, add a quick note (you can even talk instead of type 🎤) and a screenshot, then submit. Ron sees every report so he can reproduce and fix it.</span></span><span class="btn-wrap"><button class="audit-btn" id="audit-btn" onclick="runAuditFresh()">🩺 Run Audit</button><span class="btn-tip"><b>Double-checks every number on the dashboard.</b> It re-adds the totals, cards and KPIs straight from the raw data. A green <b>✓ Audit OK</b> means everything reconciles — use it whenever you want to trust the figures.</span></span><span class="btn-wrap"><button class="audit-btn" id="cpa-btn" onclick="openCpaModal()">🧾 CPA Invoices</button><span class="btn-tip"><b>Lists repair invoices marked "Sent to CPA" that aren't paid yet.</b> Use it to hand your accountant exactly what to pay — export or print the list, then tick each one off once paid.</span></span><span class="btn-wrap"><button class="audit-btn" id="activity-btn" onclick="openActivityModal()">📋 Activity</button><span class="btn-tip"><b>A log of every change — who edited what, and when.</b> Use it to see recent activity or check who entered a statement, invoice or distribution.</span></span><span class="btn-wrap"><button class="audit-btn" id="guide-btn" onclick="openGuideModal()">📖 Monthly Guide & Distribution Decider</button><span class="btn-tip right"><b>Your start-to-finish guide for closing out a month.</b> Step-by-step: what to enter and in what order, plus how we decide how much cash is safe to distribute to each partner.</span></span><span class="btn-wrap"><button class="audit-btn" id="planner-btn" onclick="togglePlanner()">👁 Show Planner</button><span class="btn-tip right"><b>Shows or hides the Distribution Planner.</b> Turn it on to estimate how much cash is safe to distribute to each partner this month, after bills and a safety cushion.</span></span><span id="audit-chip" class="audit-chip"></span></div>
@@ -1404,6 +1429,68 @@
 
 <script>
 /* ============================================================
+   VERSION + CHANGELOG ("What's New", English + Hebrew)
+   ------------------------------------------------------------
+   The version shows top-right. To ship a new version: bump
+   APP_VERSION and add a new entry at the TOP of CHANGELOG with
+   both `en` and `he` bullet lists. The "What's New" popup auto-
+   opens once per browser after a version bump (then on click).
+   ============================================================ */
+const APP_VERSION = "1.0";
+const CHANGELOG = [
+  {
+    version: "1.0",
+    date: "July 1, 2026",
+    en: [
+      "Introducing version numbers! The dashboard now shows its version in the top-right corner.",
+      "From now on, every new version opens a \"What's New\" note explaining exactly what changed — in both English and Hebrew.",
+      "Click the version number (v1.0, top-right) anytime to re-read the full history of updates."
+    ],
+    he: [
+      "השקנו מספרי גרסה! הדשבורד מציג מעכשיו את מספר הגרסה בפינה הימנית העליונה.",
+      "מעכשיו, כל גרסה חדשה תפתח חלון \"מה חדש\" שמסביר בדיוק מה השתנה — גם באנגלית וגם בעברית.",
+      "אפשר ללחוץ על מספר הגרסה (v1.0, מימין למעלה) בכל רגע כדי לקרוא שוב את כל היסטוריית העדכונים."
+    ]
+  }
+];
+
+function renderChangelog() {
+  const body = document.getElementById("changelog-body");
+  if (!body) return;
+  body.innerHTML = CHANGELOG.map(function (c, i) {
+    const en = (c.en || []).map(function (t) { return "<li>" + t + "</li>"; }).join("");
+    const he = (c.he || []).map(function (t) { return "<li>" + t + "</li>"; }).join("");
+    return '<div class="cl-entry' + (i === 0 ? "" : " old") + '">' +
+             '<div><span class="cl-ver">v' + c.version + '</span><span class="cl-date">' + (c.date || "") + '</span></div>' +
+             (en ? '<div class="cl-lang">English</div><ul class="cl-list">' + en + '</ul>' : "") +
+             (he ? '<div class="cl-lang">עברית</div><ul class="cl-list cl-he">' + he + '</ul>' : "") +
+           '</div>';
+  }).join("");
+}
+function openVersionModal() {
+  renderChangelog();
+  const t = document.getElementById("version-modal-title"); if (t) t.textContent = "v" + APP_VERSION;
+  document.getElementById("version-modal").classList.add("open");
+  markVersionSeen();
+}
+function closeVersionModal() { document.getElementById("version-modal").classList.remove("open"); }
+function markVersionSeen() {
+  try { localStorage.setItem("niron_seen_version", APP_VERSION); } catch (e) {}
+  const chip = document.getElementById("version-chip");
+  if (chip) { chip.classList.remove("has-new"); const b = chip.querySelector(".vnew"); if (b) b.remove(); }
+}
+// Auto-open the "What's New" popup once per browser after a version bump.
+function checkVersionPopup() {
+  const num = document.getElementById("version-num"); if (num) num.textContent = APP_VERSION;
+  let seen = null; try { seen = localStorage.getItem("niron_seen_version"); } catch (e) {}
+  if (seen !== APP_VERSION) {
+    const chip = document.getElementById("version-chip");
+    if (chip && !chip.querySelector(".vnew")) { chip.classList.add("has-new"); chip.insertAdjacentHTML("beforeend", '<span class="vnew">NEW</span>'); }
+    openVersionModal();   // openVersionModal marks it seen + clears the NEW badge
+  }
+}
+
+/* ============================================================
    AUTH
    ============================================================ */
 const PASSWORD_HASH = "76818309665bee769203a5117621375d41ef7f7aa9cee390dc8ec586e2dd664c";
@@ -1428,6 +1515,7 @@ function showDashboard() {
   restoreActor();
   load();
   initNoble();
+  checkVersionPopup();   // auto-open "What's New" once per browser after a version bump
 }
 function logout() { localStorage.removeItem("niron_auth"); location.reload(); }
 
