@@ -151,7 +151,7 @@
   .modal-box .form-msg.err { background: rgba(255, 68, 85, 0.15); color: #ff4455; display: block; }
 
   /* Chat panel */
-  .chat-panel { position: fixed; bottom: 24px; right: 24px; width: 380px; height: 540px; max-height: 80vh; background: rgba(14, 22, 38, 0.98); border: 1px solid #1e2d42; border-radius: 16px; display: none; flex-direction: column; z-index: 1001; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+  .chat-panel { position: fixed; bottom: 24px; right: 24px; width: 380px; height: 540px; max-height: 80vh; background: rgba(14, 22, 38, 0.98); border: 1px solid #1e2d42; border-radius: 16px; display: none; flex-direction: column; z-index: 1001; box-shadow: 0 20px 60px rgba(0,0,0,0.6); overflow: hidden; }
   .chat-panel.open { display: flex; }
   .chat-header { padding: 16px 20px; border-bottom: 1px solid #1e2d42; display: flex; justify-content: space-between; align-items: center; }
   .chat-header h3 { color: #ffffff; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
@@ -159,8 +159,12 @@
   .chat-context-tag { font-size: 10px; padding: 3px 8px; border-radius: 4px; background: rgba(0, 191, 255, 0.15); color: #00BFFF; letter-spacing: 0.5px; text-transform: uppercase; margin-left: 6px; font-weight: 600; }
   .chat-close { background: none; border: none; color: #4e6d8c; cursor: pointer; font-size: 22px; line-height: 1; }
   .chat-close:hover { color: #ff4455; }
-  .chat-messages { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
-  .chat-msg { padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; max-width: 85%; white-space: pre-wrap; word-wrap: break-word; }
+  .chat-messages { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+  /* flex-shrink:0 stops the column flex from compressing tall messages (a tall
+     table would otherwise be squeezed + clipped by the bubble's overflow:hidden,
+     which killed vertical scrolling). Keeps each bubble its natural height so
+     .chat-messages overflows and scrolls normally. */
+  .chat-msg { flex-shrink: 0; padding: 10px 14px; border-radius: 12px; font-size: 13.5px; line-height: 1.5; max-width: 85%; white-space: pre-wrap; word-wrap: break-word; }
   .chat-msg.user { background: #0080cc; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
   .chat-msg.bot { background: #182030; color: #ccd9ea; align-self: flex-start; border-bottom-left-radius: 4px; overflow: hidden; }
   .chat-msg.bot.err { color: #ff4455; background: rgba(255, 68, 85, 0.1); }

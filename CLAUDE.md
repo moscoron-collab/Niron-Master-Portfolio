@@ -2354,6 +2354,17 @@ markdown later, extend `formatChatHtml`'s `inlineFmt`.
   bubble** instead of overflowing; headers are `white-space:nowrap` (clean, no "Vendo r" mid-word breaks) and
   `td` cells wrap at `max-width:150px`. Verified with a headless-Chromium screenshot of the exact CSS/JS. Pure
   frontend, live on merge.
+- **🐛 Chat panel could not scroll — answer + input row cut off — FIXED (same day):** adding `overflow:hidden`
+  to the bot bubble exposed a latent flexbox bug: `.chat-messages` is a **column flex container**, and its
+  children (`.chat-msg`) had default `flex-shrink:1`, so when the panel was shorter than the content a **tall
+  table got compressed and clipped** (bubble `overflow:hidden` hid the squeezed content) — `scrollHeight`
+  equalled `clientHeight`, so `overflow-y:auto` never engaged and the user couldn't scroll up OR down. Fix (3
+  CSS lines, verified via a headless-Chromium scroll test — `scrollHeight` 531 > `clientHeight` 333,
+  `canScrollDown:true`): **`.chat-msg { flex-shrink: 0 }`** (bubbles keep their natural height → the list
+  overflows and scrolls), **`.chat-messages { min-height: 0 }`** (lets the flex child shrink so its scroll
+  activates), and **`.chat-panel { overflow: hidden }`** (clip to the rounded box). Pure frontend, live on
+  merge. **Lesson: a `display:flex; flex-direction:column` scroll region needs `min-height:0` on the scroller
+  AND `flex-shrink:0` on its items, or tall items get squeezed instead of scrolled.**
 
 ---
 
