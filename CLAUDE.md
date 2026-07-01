@@ -1232,6 +1232,13 @@ inbox shows empty).
   `BUG-`/`IDEA-`+timestamp; Status seeded `New`; `logActivity`), **`update_bug_report`** →
   `updateBugReport` (Status col 19 + Triage Notes col 20 + Updated At), **`delete_bug_report`** →
   `deleteBugReport`.
+- **📧 Email notification (Jul 1 2026):** `addBugReport` calls **`_notifyNewBugReport()`** which
+  `MailApp.sendEmail`s **`BUG_NOTIFY_TO`** (= `moscoron@gmail.com`, editable const near the function)
+  the moment a report lands — subject `🐛 New bug: <title>` / `💡 New idea: <title>`, body = type,
+  title, reporter, section, severity, what/expected/steps, context, attachment links + the dashboard
+  URL. Wrapped in try/catch so a mail failure never blocks the save. ⚠️ **Adds a `MailApp` send-email
+  scope** → the redeploy will prompt for a new email permission — approve it. Lands in Ron's Gmail (so
+  he gets a phone push too). To also notify Nir, add his address to `BUG_NOTIFY_TO` (comma-separated).
 - 🚀 **Going live (REQUIRED):** redeploy `AppsScript.gs` (Sheet → Extensions → Apps Script → paste →
   Deploy → Manage deployments → Edit → New version → Deploy — no NEW scope, Drive was already granted).
   The `Bug Reports` tab + `Niron Bug Reports` Drive folder auto-create on first use. `index.html` is
