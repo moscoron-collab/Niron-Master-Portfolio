@@ -1183,6 +1183,13 @@ inbox shows empty).
   and a **🗑 delete** (`bugDelete`). All via `bugPost()` → `bugRefreshAfter()` (reloads + re-renders the
   open inbox). ⚠️ `bugStatusClass()` strips non-alpha keeping case → "In progress" = class
   **`st-Inprogress`** (matched exactly in CSS — watch the casing if you add a status).
+- **Voice-memo lifecycle (user decisions Jul 1 2026):** a voice memo is stored **only on Submit**
+  (there's no draft — recording then leaving without submitting discards it). Once submitted it lives
+  in Drive and is playable any time from the card's 🎤 link. The user chose to **keep the removal UI
+  as-is** (the only removal is the whole-report 🗑 — NO per-recording delete button, NO auto-delete on
+  "Fixed"), **but** deleting a report must also clean up its Drive files. So **`deleteBugReport` now
+  trashes the screenshot + voice files** (`_bugTrashDriveFile` extracts the Drive id from the view URL
+  → `setTrashed(true)`, recoverable ~30 days) before deleting the row — no more orphaned attachments.
 
 ### AppsScript backend (`automation/AppsScript.gs`, edit the **LAST** doPost ~1125 + getDashboardJson ~1825)
 - **`ensureBugReportsTab()`** auto-creates a **`Bug Reports`** tab in the **existing** sheet (not a new
