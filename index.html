@@ -1482,8 +1482,20 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "1.3";
+const APP_VERSION = "1.4";
 const CHANGELOG = [
+  {
+    version: "1.4",
+    date: "July 2, 2026",
+    en: [
+      "Distribution Planner: \"Utilities\" is now an editable box on each LLC card (like the safety buffer) — utilities change every month, so type the real total from the bank and it's saved for both of you.",
+      "Starting values are last month's actuals (Divando $626, Dorado $268, Donald $0, Yale $0 — Donald & Yale have no ongoing monthly utility, only an occasional quarterly compost bill)."
+    ],
+    he: [
+      "מתכנן החלוקה: \"Utilities\" (חשמל/מים/וכו') הפך לתיבה שניתן לערוך בכל כרטיס LLC (כמו כרית הביטחון) — ההוצאות משתנות כל חודש, אז מזינים את הסכום האמיתי מהבנק והוא נשמר לשניכם.",
+      "ערכי ההתחלה הם הנתונים בפועל מהחודש הקודם (Divando ‏$626, ‏Dorado ‏$268, ‏Donald ‏$0, ‏Yale ‏$0 — ל-Donald ול-Yale אין הוצאת utilities חודשית קבועה, רק חשבון קומפוסט רבעוני מדי פעם)."
+    ]
+  },
   {
     version: "1.3",
     date: "July 2, 2026",
@@ -2251,47 +2263,49 @@ function effectiveIns(llc, sheetIns) {
 // drafted this month is gone from the balance, so it is NOT reserved again.
 // Distributions: Divando/Yale/Donald split ÷2 (Ron/Nir); Dorado ÷3 (Ron/Nir/Simon).
 const CASHPLAN_CONFIG = {
-  divando: { label: 'Divando', match: 'divando', mortgage: 12199.86, sba: 2334, insurance: 2909.98, accountant: 0, utilities: 685, software: 288.98, buffer: 2000, split: 2, utilTip: 'Google + Xcel + Aurora Water + Denver Compost — varies every month, ~$685 total' },
+  divando: { label: 'Divando', match: 'divando', mortgage: 12199.86, sba: 2334, insurance: 2909.98, accountant: 0, utilities: 626, software: 288.98, buffer: 2000, split: 2 },
   donald:  { label: 'Donald',  match: 'donald',  mortgage: 13708,    sba: 444,  insurance: 1210.84, accountant: 0, utilities: 0, software: 0, buffer: 1500, split: 2 },
-  yale:    { label: 'Yale',    match: 'yale',    mortgage: 7279.08,  sba: 225,  insurance: 1037.55, accountant: 0, utilities: 315, software: 0, buffer: 1500, split: 2, utilMonths: [0, 3, 6, 9], utilTip: 'Denver Compost — billed ~quarterly (Jan/Apr/Jul/Oct), $315' },
-  dorado:  { label: 'Dorado',  match: 'dorado',  mortgage: 0,        sba: 0,    insurance: 453.31,  accountant: 0, utilities: 454, software: 0, buffer: 1000, split: 3, utilTip: 'Xcel + Denver Water + Denver Compost — varies every month, ~$454 total' }
+  yale:    { label: 'Yale',    match: 'yale',    mortgage: 7279.08,  sba: 225,  insurance: 1037.55, accountant: 0, utilities: 0, software: 0, buffer: 1500, split: 2 },
+  dorado:  { label: 'Dorado',  match: 'dorado',  mortgage: 0,        sba: 0,    insurance: 453.31,  accountant: 0, utilities: 268, software: 0, buffer: 1000, split: 3 }
 };
 // NOTE: accountant (Jeff Bergman) is set to 0 — it is NOT a fixed monthly bill, it's a
 // one-time / occasional charge (user confirmed Jun 16 2026 the $3,255 was a one-time payment).
 // So it is NOT baked into the recurring cushion. If a known accountant bill is coming in a
 // given month, enter it as a maintenance invoice (Paid By = Check) so it's reserved that month.
-// DIVANDO + DONALD REBUILT from 12 months of bank CSV (Jun 2025–May 2026, user-reviewed):
-//   Divando: utilities lumped ~$685/mo; software = ACE CLOUD HOSTING $288.98/mo (~28th via Amex);
-//     mortgage ~15th (6 loan transfers), SBA 1st, State Farm insurance ~29th.
+// UTILITIES is an EDITABLE monthly number per LLC (Jul 2 2026, user request) — because the real
+//   utility spend varies every month (Xcel/water/Compost/Google), and some (Denver Compost) are
+//   only billed quarterly, a single hardcoded figure was always a little wrong. It's now editable
+//   on each planner card (like the safety buffer) and shared via the Utilities sheet tab
+//   (data.utilities, keyed by planner key). The values above are just DEFAULTS = June 2026 actuals
+//   (Divando $626 = Xcel+Aurora+Google+Compost · Dorado $268 = Xcel+Denver Water · Donald/Yale $0
+//   — no monthly utility, their only one is the quarterly Denver Compost). Each month you glance at
+//   the bank and type the real total; utilities are added to the cushion as one flat line (not
+//   date-gated) so it's simple to reason about.
+// DIVANDO + DONALD fixed costs from 12 months of bank CSV (Jun 2025–May 2026, user-reviewed):
+//   Divando: software = ACE CLOUD HOSTING $288.98/mo (~28th via Amex); mortgage ~15th (6 loan
+//     transfers), SBA 1st, State Farm insurance ~29th.
 //   Donald: CBRE mortgage $13,708 + SBA $444 + Westfield insurance $1,210.84 ALL draft in the
-//     first ~4 days (mortgage/SBA 1st, insurance ~4th); utilities = Denver Compost $336 billed
-//     ~quarterly (utilMonths Jan/Apr/Jul/Oct, 0-indexed). No software/Amex on Donald.
-// `utilMonths` (0-indexed) = the months a seasonal/quarterly utility is actually billed; absent
-// => billed every month. `utilTip` = hover text for the Utilities line.
+//     first ~4 days (mortgage/SBA 1st, insurance ~4th). No software/Amex on Donald.
 const CASHPLAN_DAYS = {
-  divando: { sba: 1, mortgage: 15, utilities: 15, software: 28, insurance: 29 },
-  donald:  { sba: 1, mortgage: 1,  utilities: 3,  insurance: 4 },
-  yale:    { sba: 1, mortgage: 6,  utilities: 15, insurance: 25 },
-  dorado:  { utilities: 5, insurance: 7 }
+  divando: { sba: 1, mortgage: 15, software: 28, insurance: 29 },
+  donald:  { sba: 1, mortgage: 1,  insurance: 4 },
+  yale:    { sba: 1, mortgage: 6,  insurance: 25 },
+  dorado:  { insurance: 7 }
 };
 // Build the dated upcoming-expense list for one LLC (sorted by day-of-month), pulling amounts
 // from CASHPLAN_CONFIG and days from CASHPLAN_DAYS. Only includes costs with a known day + a
-// non-zero amount. A seasonal utility (utilMonths) only shows in its billing months. monthIdx
-// is 0-indexed (Jan=0). `tip` adds a hover tooltip (e.g. what's inside Utilities).
+// non-zero amount. monthIdx is 0-indexed (Jan=0).
 function planExpenseItems(key, c, monthIdx) {
   const days = CASHPLAN_DAYS[key] || {};
+  // Utilities is NOT here — it's a flat editable cushion line (utilityFor), not a dated draft.
   const defs = [
     { f: 'sba', label: 'SBA loans' },
     { f: 'mortgage', label: 'Mortgage' },
-    { f: 'utilities', label: 'Utilities' },
     { f: 'software', label: 'ACE Cloud Hosting' },
     { f: 'insurance', label: 'Insurance' }
   ];
-  return defs.filter(d => {
-    if (!days[d.f] || !c[d.f]) return false;
-    if (d.f === 'utilities' && Array.isArray(c.utilMonths) && (monthIdx == null || c.utilMonths.indexOf(monthIdx) < 0)) return false;
-    return true;
-  }).map(d => ({ day: days[d.f], label: d.label, amt: c[d.f], tip: (d.f === 'utilities' ? c.utilTip : undefined) }))
+  return defs.filter(d => days[d.f] && c[d.f])
+    .map(d => ({ day: days[d.f], label: d.label, amt: c[d.f] }))
     .sort((a, b) => a.day - b.day);
 }
 function ordinal(n) { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
@@ -2305,23 +2319,21 @@ function nextDraftDate(fromDate, day) {
 // Rolling-window upcoming bills: every recurring cost whose NEXT draft falls between `fromDate`
 // (today) and `untilDate` (your next income deposit) — i.e. the bills your current balance must
 // still cover before the next paycheck lands. Handles the month rollover (so at month-end it
-// automatically shows next month's mortgage/SBA/etc.) and seasonal utilities (utilMonths) by the
-// real draft month. Each item is tagged with its actual draft `date` + day-of-month.
+// automatically shows next month's mortgage/SBA/etc.). Utilities is NOT here — it's a flat editable
+// cushion line (utilityFor), not a dated draft. Each item is tagged with its actual draft `date`.
 function planUpcoming(key, c, fromDate, untilDate) {
   const days = CASHPLAN_DAYS[key] || {};
   const defs = [
     { f: 'sba', label: 'SBA loans' },
     { f: 'mortgage', label: 'Mortgage' },
-    { f: 'utilities', label: 'Utilities' },
     { f: 'software', label: 'ACE Cloud Hosting' },
     { f: 'insurance', label: 'Insurance' }
   ];
   return defs.filter(d => days[d.f] && c[d.f]).map(d => {
     const dt = nextDraftDate(fromDate, days[d.f]);
-    return { date: dt, day: days[d.f], label: d.label, amt: c[d.f], tip: (d.f === 'utilities' ? c.utilTip : undefined) };
+    return { date: dt, day: days[d.f], label: d.label, amt: c[d.f] };
   }).filter(it => {
     if (it.date > untilDate) return false;                                       // drafts after next deposit -> covered by it
-    if (it.label === 'Utilities' && Array.isArray(c.utilMonths) && c.utilMonths.indexOf(it.date.getMonth()) < 0) return false; // seasonal: not a billing month
     return true;
   }).sort((a, b) => a.date - b.date);
 }
@@ -2334,6 +2346,14 @@ const CASHPLAN_INCOME_DAY = 21;
 function bufferFor(key, c) {
   const ov = (typeof PORTFOLIO_DATA !== 'undefined' && PORTFOLIO_DATA && PORTFOLIO_DATA.buffers) ? PORTFOLIO_DATA.buffers[key] : undefined;
   return (ov != null && ov !== '' && !isNaN(Number(ov))) ? Number(ov) : c.buffer;
+}
+// Per-LLC monthly utilities: editable + shared via the Utilities sheet tab (data.utilities, keyed
+// by planner key). Falls back to the CASHPLAN_CONFIG default (June actuals) if the sheet has no
+// value yet (e.g. before the Apps Script redeploy), so this is backward-safe. Utilities vary every
+// month, so the user types the real total each month; it's added to the cushion as one flat line.
+function utilityFor(key, c) {
+  const ov = (typeof PORTFOLIO_DATA !== 'undefined' && PORTFOLIO_DATA && PORTFOLIO_DATA.utilities) ? PORTFOLIO_DATA.utilities[key] : undefined;
+  return (ov != null && ov !== '' && !isNaN(Number(ov))) ? Number(ov) : (c.utilities || 0);
 }
 function cashBalances() { try { return JSON.parse(localStorage.getItem('niron_cash_balances') || '{}'); } catch (e) { return {}; } }
 
@@ -2824,7 +2844,8 @@ function renderDistributionPlanner(data) {
     const reserved = planUpcoming(key, c, startToday, incomeDate);
     const draftedThisMonth = planExpenseItems(key, c, planNow.getMonth()).filter(it => it.day < todayDay);
     const buffer = bufferFor(key, c);
-    const cushion = reserved.reduce((s, it) => s + it.amt, 0) + maintSum + buffer;
+    const utility = utilityFor(key, c);
+    const cushion = reserved.reduce((s, it) => s + it.amt, 0) + maintSum + utility + buffer;
     const has = bals[key] != null && bals[key] !== '';
     const bal = Number(bals[key]) || 0;
     const safe = Math.max(0, bal - cushion);
@@ -2854,6 +2875,7 @@ function renderDistributionPlanner(data) {
       h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">Upcoming maintenance' + maintTip + ' none unpaid' + (paidRecent ? ' <span style="color:#3f5874">(' + paidRecent + ' already paid this month)</span>' : '') + '</span><span class="v" style="color:#4e6d8c">—</span></div>';
     }
     if (!reserved.length) h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">No fixed bills due before your next deposit ✓</span><span class="v"></span></div>';
+    h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Utilities <span style="color:#4e6d8c;font-size:10px">✏️ editable · this month</span></span><span class="v" style="display:flex;align-items:center;justify-content:flex-end;gap:3px"><span style="color:#7e9cbf;font-size:12px">$</span><input type="number" min="0" step="1" value="' + utility + '" onchange="setUtility(\'' + key + '\', this.value)" title="' + c.label + '\'s utilities for this month (Xcel / water / Compost / etc.) — type the real total from the bank; saved to the sheet so Nir sees it too." style="width:78px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:5px;color:#cfe0f2;padding:2px 6px;font-size:12px"></span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Safety buffer <span style="color:#4e6d8c;font-size:10px">✏️ editable</span></span><span class="v" style="display:flex;align-items:center;justify-content:flex-end;gap:3px"><span style="color:#7e9cbf;font-size:12px">$</span><input type="number" min="0" step="50" value="' + buffer + '" onchange="setBuffer(\'' + key + '\', this.value)" title="Your safety cushion for ' + c.label + ' — saved to the sheet so Nir sees it too." style="width:78px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:5px;color:#cfe0f2;padding:2px 6px;font-size:12px"></span></div>';
     h += '</div>';
     // Totals block — aligned row-for-row across all 4 cards.
@@ -2891,7 +2913,7 @@ function renderDistributionPlanner(data) {
     h += '</div>';
   });
   h += '</div>';
-  h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">The cushion reserves <b>every bill that drafts before your next income deposit (~the ' + ordinal(CASHPLAN_INCOME_DAY) + ')</b> — your current balance has to carry those until the next paycheck lands, so they\'re held back from what\'s safe to distribute. A bill that <b>already drafted this month is gone</b> from your balance, so it\'s NOT reserved (it shows in the dimmed <b>✓ Drafted this month</b> list for reference). The list <b>rolls forward automatically</b>: near month-end you\'ll see next month\'s mortgage / SBA / utilities. Dates are bank-verified for Divando + Donald (12-mo CSV) and estimates for Yale/Dorado — tell me to correct any. It also reserves <b>upcoming maintenance</b> — every repair invoice still owed from this account (logged but <b>unpaid</b>, or paid by <b>mailed check</b> in the last ~7 days). Debit-card buys (already drawn) and Sent-to-CPA invoices are NOT reserved. So log a repair the moment you know about it and the planner holds the cash for it. Balances still save on this browser for now; shared-save comes with the next backend update.</div>';
+  h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">The cushion reserves <b>every bill that drafts before your next income deposit (~the ' + ordinal(CASHPLAN_INCOME_DAY) + ')</b> — your current balance has to carry those until the next paycheck lands, so they\'re held back from what\'s safe to distribute. A bill that <b>already drafted this month is gone</b> from your balance, so it\'s NOT reserved (it shows in the dimmed <b>✓ Drafted this month</b> list for reference). The list <b>rolls forward automatically</b>: near month-end you\'ll see next month\'s mortgage / SBA / insurance. Dates are bank-verified for Divando + Donald (12-mo CSV) and estimates for Yale/Dorado — tell me to correct any. <b>Utilities</b> is a separate <b>editable line</b> (they vary every month) — glance at the bank and type this month\'s real total; it saves to the sheet so Nir sees it too. It also reserves <b>upcoming maintenance</b> — every repair invoice still owed from this account (logged but <b>unpaid</b>, or paid by <b>mailed check</b> in the last ~7 days). Debit-card buys (already drawn) and Sent-to-CPA invoices are NOT reserved. So log a repair the moment you know about it and the planner holds the cash for it. Balances still save on this browser for now; shared-save comes with the next backend update.</div>';
   h += '</div>';
   return h;
 }
@@ -2922,6 +2944,22 @@ async function setBuffer(key, val) {
     if (r && r.error) { alert('Buffer applied for this session, but not saved to the sheet yet:\n' + r.error + '\n\nIf this just shipped, the Google Apps Script still needs its redeploy (New version) before buffer edits save for everyone.'); return; }
     load();                                   // success -> refresh shared data
   } catch (e) { alert('Buffer applied for this session, but the save failed (network): ' + e.message); }
+}
+// Save a per-LLC monthly utilities amount to the shared Utilities sheet tab (so Nir sees it too).
+// Same optimistic + backward-safe pattern as setBuffer.
+async function setUtility(key, val) {
+  const actor = ensureActor(); if (!actor) { renderAll(); return; }
+  const n = Number(val);
+  if (isNaN(n) || n < 0) { alert('Enter a valid utilities amount ($0 or more).'); renderAll(); return; }
+  PORTFOLIO_DATA.utilities = PORTFOLIO_DATA.utilities || {};
+  PORTFOLIO_DATA.utilities[key] = n;          // optimistic — recalc now
+  renderAll();
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'set_utility', key: key, utilities: n, label: (CASHPLAN_CONFIG[key] || {}).label || key, actor: actor }) });
+    const r = await res.json();
+    if (r && r.error) { alert('Utilities applied for this session, but not saved to the sheet yet:\n' + r.error + '\n\nIf this just shipped, the Google Apps Script still needs its redeploy (New version) before utilities edits save for everyone.'); return; }
+    load();                                   // success -> refresh shared data
+  } catch (e) { alert('Utilities applied for this session, but the save failed (network): ' + e.message); }
 }
 // Stamp today's date/time on every entered balance WITHOUT changing the amounts — so a balance
 // that's still correct (unchanged) can be confirmed as checked today (onchange wouldn't fire).
