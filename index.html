@@ -1491,8 +1491,20 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.2";
+const APP_VERSION = "2.3";
 const CHANGELOG = [
+  {
+    version: "2.3",
+    date: "July 2, 2026",
+    en: [
+      "Distribution Planner: each LLC card now has an '📄 Upload statement' button next to the LLC name, so you can attach that account's monthly bank statement right on its card (saved so Nir sees it too).",
+      "New '✓ Confirm & record' button next to 'Safe to distribute'. It opens the distribution form already filled in with that LLC and the per-partner amount (using the buffer you set on the card) — you can edit it, then Save records it into Partner Distributions. No money is moved; it just logs the distribution."
+    ],
+    he: [
+      "מתכנן החלוקות: לכל כרטיס LLC יש עכשיו כפתור '📄 העלה דף חשבון' ליד שם ה-LLC, כדי לצרף את דף הבנק החודשי של אותו חשבון ישירות על הכרטיס (נשמר כך שגם ניר רואה).",
+      "כפתור חדש '✓ אשר ורשום' ליד 'בטוח לחלוקה'. הוא פותח את טופס החלוקה כשהוא כבר ממולא עם אותו LLC והסכום לכל שותף (לפי הבאפר שהגדרת בכרטיס) — אפשר לערוך, ואז 'שמור' רושם אותו בחלוקות השותפים. לא מועבר כסף; זה רק רושם את החלוקה."
+    ]
+  },
   {
     version: "2.2",
     date: "July 2, 2026",
@@ -3013,7 +3025,16 @@ function renderDistributionPlanner(data) {
     const safe = Math.round(Math.max(0, bal - cushion) / 100) * 100;   // round to nearest $100 (no cents)
     const each = safe / c.split;
     const partnerLabel = c.split === 3 ? 'Nir / Ronen / Simon' : 'Nir / Ronen';
-    h += '<div class="llc-card"><h3>' + c.label + (c.split === 3 ? ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(÷3 w/ Simon)</span>' : '') + '</h3>';
+    // Button 1: upload this LLC's monthly bank statement, shown next to the LLC name.
+    // Stored per LLC+month via the (dormant) add_bank_statement backend — no money, just a file.
+    const stmt = planStatement(data, key, currentPeriod());
+    const upInput = '<input type="file" accept="application/pdf,image/*,.csv,.xlsx" style="display:none" onchange="uploadStatement(\'' + key + '\', \'' + c.label + '\', this)">';
+    const upCtrl = stmt
+      ? '<span style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:400">'
+          + '<a href="' + stmt.url + '" target="_blank" title="' + (stmt.name || 'statement').replace(/"/g, '&quot;') + (stmt.at ? ' · uploaded ' + fmtStmtTs(stmt.at, stmt.tz) : '') + '" style="color:#5aa9e6;text-decoration:none">📄 statement</a>'
+          + '<label style="cursor:pointer;color:#5e7da0" title="Replace this month\'s statement">replace' + upInput + '</label></span>'
+      : '<label style="cursor:pointer;font-size:11px;font-weight:400;color:#5aa9e6;border:1px solid #234a68;padding:2px 8px;border-radius:6px;white-space:nowrap" title="Attach ' + c.label + '\'s monthly bank statement (PDF / CSV / image)">📄 Upload statement' + upInput + '</label>';
+    h += '<div class="llc-card"><h3 style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span>' + c.label + (c.split === 3 ? ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(÷3 w/ Simon)</span>' : '') + '</span>' + upCtrl + '</h3>';
     h += '<div class="plan-top">';
     h += '<div class="llc-row"><span class="k">Bank balance now</span><span class="v" style="display:flex;align-items:center;justify-content:flex-end;gap:4px"><span style="color:#7e9cbf;font-size:13px">$</span><input type="number" value="' + (has ? bals[key] : '') + '" placeholder="enter" onchange="setCashBalance(\'' + key + '\', this.value)" style="width:112px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:6px;color:#fff;padding:4px 8px;font-size:13px"></span></div>';
     if (has) h += '<div style="text-align:right;color:#4e6d8c;font-size:10px;margin-top:-4px;margin-bottom:6px">' + (cashTs[key] ? 'updated ' + fmtDateTime(cashTs[key]) : 're-enter to set the date') + '</div>';
@@ -3045,7 +3066,12 @@ function renderDistributionPlanner(data) {
     h += '<div class="plan-totals">';
     h += '<div class="llc-row"><span class="k">Cushion to leave</span><span class="v" style="color:#f0a500">' + fmt(cushion) + '</span></div>';
     const fmt0 = n => '$' + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });   // no cents
-    h += '<div class="llc-row total"><span class="k">Safe to distribute</span><span class="v ' + (has ? (safe > 0 ? 'green' : 'red') : '') + '">' + (has ? fmt0(safe) : '—') + '</span></div>';
+    // Button 2: next to "Safe to distribute". Prefills the Add-Distribution form with this LLC +
+    // the per-partner amount (editable), then Save records it (record only — no money moves).
+    const recBtn = (has && safe > 0)
+      ? ' <button onclick="planRecordDistribution(\'' + key + '\', ' + each + ')" title="Record this distribution (edit the amount first if you want). No money is moved — it just logs it into Partner Distributions." style="cursor:pointer;font-size:10.5px;font-weight:600;color:#00c97a;background:#0c2a1e;border:1px solid #14603f;border-radius:5px;padding:2px 7px;margin-left:6px;white-space:nowrap">✓ Confirm &amp; record</button>'
+      : '';
+    h += '<div class="llc-row total"><span class="k">Safe to distribute</span><span class="v ' + (has ? (safe > 0 ? 'green' : 'red') : '') + '">' + (has ? fmt0(safe) : '—') + recBtn + '</span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#00c97a">' + partnerLabel + '</span><span class="v" style="color:#00c97a">' + (has ? fmt(each) : '—') + '</span></div>';
     h += '</div>';
     // "Coming up before next deposit" + a collapsed "Drafted this month" reference list —
@@ -3080,6 +3106,55 @@ function renderDistributionPlanner(data) {
   h += '<div style="color:#4e6d8c;font-size:11px;margin-top:8px">The cushion reserves <b>every bill that drafts before your next income deposit (~the ' + ordinal(CASHPLAN_INCOME_DAY) + ')</b> — your current balance has to carry those until the next paycheck lands, so they\'re held back from what\'s safe to distribute. A bill that <b>already drafted this month is gone</b> from your balance, so it\'s NOT reserved (it shows in the dimmed <b>✓ Drafted this month</b> list for reference). The list <b>rolls forward automatically</b>: near month-end you\'ll see next month\'s mortgage / SBA / insurance. Dates are bank-verified for Divando + Donald (12-mo CSV) and estimates for Yale/Dorado — tell me to correct any. <b>Utilities</b> is a separate <b>editable line</b> (they vary every month) — glance at the bank and type this month\'s real total; it saves to the sheet so Nir sees it too. It also reserves <b>upcoming maintenance</b> — every repair invoice still owed from this account (logged but <b>unpaid</b>, or paid by <b>mailed check</b> in the last ~7 days). Debit-card buys (already drawn) and Sent-to-CPA invoices are NOT reserved. So log a repair the moment you know about it and the planner holds the cash for it. Balances still save on this browser for now; shared-save comes with the next backend update.</div>';
   h += '</div>';
   return h;
+}
+// ── Distribution Planner buttons — (1) upload statement per LLC, (2) confirm & record ──
+// Find this LLC's uploaded statement for a month (from the Bank Statements sheet tab).
+function planStatement(data, key, month) { return ((data && data.statements) || []).find(s => s.key === key && s.month === month) || null; }
+// Render an upload timestamp in the uploader's own time zone (e.g. "Jul 2, 2026, 9:02 AM MDT").
+function fmtStmtTs(iso, tz) {
+  const d = new Date(iso); if (isNaN(d.getTime())) return '';
+  const opt = { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' };
+  try { if (tz) opt.timeZone = tz; return d.toLocaleString('en-US', opt); }
+  catch (e) { delete opt.timeZone; return d.toLocaleString('en-US', opt); }
+}
+// Button 1 — upload/replace an LLC's monthly bank statement (stored to Drive + the sheet, so Nir
+// sees it too). Reuses the invoice/message upload pattern. No money, just a file next to the LLC.
+async function uploadStatement(key, label, input) {
+  const file = input.files && input.files[0]; if (!file) return;
+  const actor = ensureActor(); if (!actor) { input.value = ''; return; }
+  if (file.size > 25 * 1024 * 1024) { alert('That file is over 25 MB — please attach a smaller PDF/CSV.'); input.value = ''; return; }
+  const tz = (function () { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; } })();
+  input.disabled = true;
+  try {
+    const payload = await readFileAsPayload(file);
+    const body = { action: 'add_bank_statement', key: key, label: label, month: currentPeriod(), file: payload, actor: actor, uploaded_at: new Date().toISOString(), uploaded_tz: tz };
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(body) });
+    const result = await res.json();
+    if (result.error) { alert('Upload error: ' + result.error + '\n\n(If it says the action is unknown, the Apps Script just needs the redeploy — same one the new Simon field needs.)'); }
+    else { load(); }
+  } catch (e) { alert('Network error: ' + e.message); }
+  finally { input.disabled = false; input.value = ''; }
+}
+// Resolve a planner key (divando/donald/yale/dorado) to the canonical LLC name used in the
+// Distributions tab, so a recorded distribution shows on the right per-LLC card.
+function plannerLlcName(key) {
+  const names = ((PORTFOLIO_DATA && PORTFOLIO_DATA.llcs) || []).map(l => (typeof l === 'string') ? l : (l && l.name)).filter(Boolean);
+  const hit = names.find(n => (n || '').toLowerCase().indexOf(key) >= 0);
+  return hit || ({ divando: 'Divando LLC', donald: '5070 Donald, LLC', yale: 'Yale Townhomes, LLC', dorado: 'Dorado LLC' })[key] || key;
+}
+// Button 2 — open the Add-Distribution form prefilled with this LLC + the computed per-partner
+// amount (equal split; Dorado auto-includes Simon). You edit if needed, then Save = record only.
+function planRecordDistribution(key, each) {
+  openDistModal();
+  const llcName = plannerLlcName(key);
+  const sel = document.getElementById('dist-llc');
+  if (sel) sel.value = llcName;
+  document.getElementById('dist-split').value = 'equal';
+  distSetSplit();
+  distSetLlc();
+  document.getElementById('dist-each').value = each ? (Math.round(each * 100) / 100) : '';
+  const msg = document.getElementById('dist-msg');
+  if (msg) { msg.className = 'form-msg'; msg.textContent = 'Prefilled from the planner — edit the amount if you want, then Save to record it. No money is moved.'; }
 }
 function cashBalanceTs() { try { return JSON.parse(localStorage.getItem('niron_cash_balances_ts') || '{}'); } catch (e) { return {}; } }
 function fmtDateTime(iso) { const d = new Date(iso); if (isNaN(d.getTime())) return ''; return d.toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' ET'; }
