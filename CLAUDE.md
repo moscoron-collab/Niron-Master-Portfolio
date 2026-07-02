@@ -65,6 +65,21 @@ unaffected (no `#kpi-*` IDs). Version bumped 1.2 → 1.3 with a new top CHANGELO
 
 ---
 
+## 💵 Distribution Planner — round Safe-to-distribute to $100 + partner names (Jul 2 2026, APP_VERSION → 2.1)
+
+Two user tweaks to each planner card in `renderDistributionPlanner` (`index.html`, ~line 2924):
+- **`safe` is now rounded to the nearest $100** (`Math.round(Math.max(0, bal − cushion) / 100) * 100`)
+  and the **"Safe to distribute"** line renders with **no cents** via a local `fmt0` (`maximumFractionDigits:0`).
+  `each = safe / c.split` derives from the rounded number.
+- The per-partner line label changed from **"Each partner"** → **`partnerLabel`**: **`Nir / Ronen`** for the
+  50/50 LLCs, **`Nir / Ronen / Simon`** on **Dorado** (`c.split === 3`, since it splits 3 ways). The `each`
+  dollar amount still uses `fmt` (cents) — only Safe-to-distribute is cents-free.
+- Pure frontend, live on merge — no Apps Script redeploy. Self-audit unaffected (no `#kpi-*` IDs).
+  Version bumped → **2.1** with a new top CHANGELOG entry (en+he). (Main had already taken 2.0 for the
+  Messages-edit feature during this session, so this landed as 2.1 after rebasing.)
+
+---
+
 ## 💡 Distribution Planner — Utilities is EDITABLE per LLC PER MONTH + shared (Jul 2 2026, APP_VERSION → 1.5, needs redeploy)
 
 The planner's per-LLC **Utilities** was a hardcoded `CASHPLAN_CONFIG` guess (Divando $685, Yale/Donald
