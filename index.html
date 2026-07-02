@@ -930,7 +930,7 @@
       <select id="header-month-select" class="header-month-select" onchange="onMonthChange(this.value)"><option>Loading…</option></select>
     </div>
     <div class="meta">
-      <div style="text-align:right;margin-bottom:2px"><span class="version-chip" id="version-chip" onclick="openVersionModal()" title="What's new — click to see version history"><span class="vdot">●</span><span>v<span id="version-num">1.0</span></span></span></div>
+      <div style="text-align:right;margin-bottom:2px"><button class="version-chip" onclick="hardRefresh()" title="Reload the dashboard — loads the newest version of the page + the latest data (no need for Ctrl-Shift-R)" style="border:none;cursor:pointer;margin-right:6px">🔄 Refresh</button><span class="version-chip" id="version-chip" onclick="openVersionModal()" title="What's new — click to see version history"><span class="vdot">●</span><span>v<span id="version-num">1.0</span></span></span></div>
       <div><span class="label">Last Updated:</span> <span id="last-updated">—</span></div>
       <div><span class="label">Status:</span> <span id="status" style="color:#00c97a">● Live</span><button class="logout-btn" onclick="logout()">Logout</button></div>
       <div style="margin-top:6px"><span class="btn-wrap"><button class="audit-btn bug-btn" id="bug-btn" onclick="openBugModal()">🐛 Report</button><span class="btn-tip"><b>Found a bug or have an idea? Log it here.</b> Pick 🐛 Bug or 💡 Idea, add a quick note (you can even talk instead of type 🎤) and a screenshot, then submit. Ron sees every report so he can reproduce and fix it.</span></span><span class="btn-wrap"><button class="audit-btn" id="audit-btn" onclick="runAuditFresh()">🩺 Run Audit</button><span class="btn-tip"><b>Double-checks every number on the dashboard.</b> It re-adds the totals, cards and KPIs straight from the raw data. A green <b>✓ Audit OK</b> means everything reconciles — use it whenever you want to trust the figures.</span></span><span class="btn-wrap"><button class="audit-btn" id="cpa-btn" onclick="openCpaModal()">🧾 CPA Invoices</button><span class="btn-tip"><b>Lists repair invoices marked "Sent to CPA" that aren't paid yet.</b> Use it to hand your accountant exactly what to pay — export or print the list, then tick each one off once paid.</span></span><span class="btn-wrap"><button class="audit-btn" id="activity-btn" onclick="openActivityModal()">📋 Activity</button><span class="btn-tip"><b>A log of every change — who edited what, and when.</b> Use it to see recent activity or check who entered a statement, invoice or distribution.</span></span><span class="btn-wrap"><button class="audit-btn" id="guide-btn" onclick="openGuideModal()">📖 Monthly Guide & Distribution Decider</button><span class="btn-tip right"><b>Your start-to-finish guide for closing out a month.</b> Step-by-step: what to enter and in what order, plus how we decide how much cash is safe to distribute to each partner.</span></span><span class="btn-wrap"><button class="audit-btn" id="planner-btn" onclick="togglePlanner()">👁 Show Planner</button><span class="btn-tip right"><b>Shows or hides the Distribution Planner.</b> Turn it on to estimate how much cash is safe to distribute to each partner this month, after bills and a safety cushion.</span></span><span id="audit-chip" class="audit-chip"></span></div>
@@ -1482,8 +1482,18 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "1.5";
+const APP_VERSION = "1.6";
 const CHANGELOG = [
+  {
+    version: "1.6",
+    date: "July 2, 2026",
+    en: [
+      "Added a 🔄 Refresh button (top-right, next to the version chip) — one click reloads the dashboard with the newest version of the page and the latest data, so you no longer need Ctrl-Shift-R."
+    ],
+    he: [
+      "נוסף כפתור 🔄 רענון (מימין למעלה, ליד תווית הגרסה) — לחיצה אחת טוענת מחדש את הדשבורד עם הגרסה החדשה ביותר של הדף והנתונים העדכניים, כך שכבר אין צורך ב-Ctrl-Shift-R."
+    ]
+  },
   {
     version: "1.5",
     date: "July 2, 2026",
@@ -1620,6 +1630,17 @@ function showDashboard() {
   checkVersionPopup();   // auto-open "What's New" once per browser after a version bump
 }
 function logout() { localStorage.removeItem("niron_auth"); location.reload(); }
+// Reload the whole dashboard AND bust the browser cache so the NEWEST version of the page (and the
+// latest sheet data) loads — same effect as Ctrl-Shift-R, but one click for Nir/anyone. Adds a
+// changing ?r= param (a new URL → the browser re-fetches the HTML instead of serving the cached
+// copy); the existing ?tab= deep-link + everything else is preserved.
+function hardRefresh() {
+  try {
+    const u = new URL(window.location.href);
+    u.searchParams.set('r', Date.now().toString(36));
+    window.location.replace(u.toString());
+  } catch (e) { window.location.reload(); }
+}
 
 /* ============================================================
    MAIN TAB SWITCHING (Master / Noble)
