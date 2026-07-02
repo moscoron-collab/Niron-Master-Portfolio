@@ -90,6 +90,9 @@ skill's cushions; **(4)** button 1 = upload statement **next to the LLC name**, 
   current deployment.
 - Pure frontend, live on merge. Version bumped 2.2 → **2.3** with a new top CHANGELOG entry (en+he). Self-audit
   unaffected (no `#kpi-*` IDs).
+- **📖 Monthly Guide updated (same feature, no separate version bump):** the Distribution-Decider block in the
+  `guide-modal` (~line 820 of `index.html`) gained a boxed **"🔘 Two buttons on each planner card"** note
+  explaining 📄 Upload statement + ✓ Confirm & record (record only) for Nir. Keep it in sync if the buttons change.
 
 ---
 
