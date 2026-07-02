@@ -54,6 +54,45 @@ field for Dorado · make YTD per-LLC too**.
 
 ---
 
+## 💵 Distribution Planner — two new per-card buttons (Jul 2 2026, APP_VERSION → 2.3)
+
+User asked for two buttons on each Distribution Planner card (`renderDistributionPlanner` in `index.html`).
+Decisions (via numbered chat answers): **(1a)** bank data comes from an uploaded statement/CSV, not a live
+bank connection (live/Plaid/scrape explicitly rejected — every past automated-bank attempt in this repo was
+blocked or removed); **(2a)** the confirm button **records only** (no real money movement); **(3)** the
+computed number = **safe-to-distribute per LLC ÷ split**, and it must use **the buffer from the card's
+editable tile** (`bufferFor(key, c)` — which the planner already does), NOT the `/monthly-distribution`
+skill's cushions; **(4)** button 1 = upload statement **next to the LLC name**, button 2 = confirm **next to
+"Safe to distribute"**.
+
+- **Button 1 — 📄 Upload statement (next to the LLC name, in the card `<h3>`):** REVIVES the statement-upload
+  feature that was frontend-removed Jul 1 2026 (PR #175) — its AppsScript backend was left **dormant and
+  intact**, so this is **frontend-only, works on the current deployment** (no redeploy needed for button 1,
+  assuming the last redeploy included that backend — which it did). New frontend helpers after
+  `renderDistributionPlanner`: `planStatement(data,key,month)` (finds `data.statements` by key+`currentPeriod()`),
+  `fmtStmtTs(iso,tz)` (renders the upload stamp in the uploader's own IANA zone), `uploadStatement(key,label,input)`
+  (25 MB cap, `readFileAsPayload` → POST **`add_bank_statement`** → `saveStatementFile` writes to the
+  `Niron Bank Statements` Drive folder, upsert by key+month → `data.statements`). Shows "📄 Upload statement"
+  or, once uploaded, a "📄 statement" link + "replace". The **backend was NOT re-touched** (`ensureBankStatementsTab`
+  / `saveStatementFile` / `addBankStatement` / the `add_bank_statement` route / the `data.statements` reader
+  all already present).
+- **Button 2 — ✓ Confirm & record (next to "Safe to distribute", only when a balance is entered and safe > 0):**
+  `planRecordDistribution(key, each)` opens the existing **Add-Distribution modal** PREFILLED — LLC set via
+  `plannerLlcName(key)` (resolves the planner key to the canonical Distributions-tab LLC name from
+  `PORTFOLIO_DATA.llcs`, fallback map), split = **equal**, `dist-each` = the per-partner `each` (`safe / c.split`,
+  rounded to cents). User edits if needed, then **Save → `submitDistribution` records it** (record only — no money
+  moves). Reuses the vetted record path, so **Dorado automatically includes Simon** (the equal amount goes to
+  Ron/Nir/Simon via the v2.2 Simon field). A form message notes "Prefilled from the planner — edit… then Save.
+  No money is moved."
+- **Why reuse the modal (not a prompt/new modal):** gives a real editable amount + confirm, and inherits the
+  Simon handling + dedup guard from `addDistributionEntry`. Recording a Dorado distribution's Simon third
+  therefore needs the **v2.2 redeploy** (same one Partner Distributions needs); non-Dorado records fine on the
+  current deployment.
+- Pure frontend, live on merge. Version bumped 2.2 → **2.3** with a new top CHANGELOG entry (en+he). Self-audit
+  unaffected (no `#kpi-*` IDs).
+
+---
+
 ## 🆕 Dashboard version number + "What's New" changelog (Jul 1 2026, START v1.0)
 
 The Niron dashboard (`index.html`) shows a **version chip top-right** (in the header `.meta`,
