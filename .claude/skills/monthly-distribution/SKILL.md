@@ -204,10 +204,15 @@ reference amount only to reserve a bill that is **missing** (still upcoming).
 
 | LLC | Mortgage | SBA | Insurance | Utilities | Other | Cushion |
 |---|---|---|---|---|---|---|
-| Divando | $12,199.86 — 6 `TRANSFER TO LOAN` (~15th) | $2,334.00 (1st) | State Farm **$2,909.98 (~29th)** | ~$685 (Xcel/Aurora Water/Compost/Google, ~15th) | ACE Cloud Hosting software $288.98 (~28th, Amex) | **$2,000** |
-| Donald | CBRE ~$13,708 (1st) | $444.00 (1st) | Westfield $1,210.84 (~4th) | $336 **quarterly** (Jan/Apr/Jul/Oct, ~3rd) | — | **$1,500** |
-| Yale | Lument $7,279.08 (~6th) | $225.00 (1st) | Acuity $1,037.55 (~25th) | $315 **quarterly** (Jan/Apr/Jul/Oct, ~15th) | — | **$1,500** |
-| Dorado | **none (mortgage-free)** | none | National Indemnity $453.31 (~7th) | ~$454 **monthly** (Xcel/Denver Water/Compost, ~5th) | pays Divando $138/mo ins comp (TRANSFER, exclude) | **$1,000** |
+| Divando | $12,199.86 — 6 `TRANSFER TO LOAN` (~15th) | $2,334.00 (1st) | State Farm **$2,909.98 (~29th)** | ~$626/mo (Xcel/Aurora Water/Compost/Google — **varies, editable on dashboard**) | ACE Cloud Hosting software $288.98 (~28th, Amex) | **$2,000** |
+| Donald | CBRE ~$13,708 (1st) | $444.00 (1st) | Westfield $1,210.84 (~4th) | **$0/mo** (only occasional quarterly Denver Compost — editable) | — | **$1,500** |
+| Yale | Lument $7,279.08 (~6th) | $225.00 (1st) | Acuity $1,037.55 (~25th) | **$0/mo** (only occasional quarterly Denver Compost — editable) | — | **$1,500** |
+| Dorado | **none (mortgage-free)** | none | National Indemnity $453.31 (~7th) | ~$268/mo (Xcel/Denver Water — **varies, editable on dashboard**) | pays Divando $138/mo ins comp (TRANSFER, exclude) | **$1,000** |
+
+> **Utilities note (Jul 2 2026):** utilities are now an **editable monthly box on each Distribution Planner
+> card** (saved to the sheet, shared with Nir), because they vary every month. The figures above are June 2026
+> actuals used as defaults — check the actual utility lines in that month's bank CSV and update the dashboard
+> box (and, if you want, these defaults) rather than trusting a fixed number.
 
 ### Bank-line classification
 

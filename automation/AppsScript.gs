@@ -1173,6 +1173,9 @@ function doPost(e) {
     if (body.action === 'set_buffer') {
       return setBufferEntry(body);
     }
+    if (body.action === 'set_utility') {
+      return setUtilityEntry(body);
+    }
     if (body.action === 'add_bank_statement') {
       return addBankStatement(body);
     }
@@ -1839,7 +1842,7 @@ function logActivity(actor, action, details) {
 // Override: getDashboardJson with properties + new maintenance structure
 function getDashboardJson() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], vacancy: [], subs: [], buffers: {}, statements: [], bug_reports: [], messages: [], activity: [], settings: {} };
+  var data = { last_updated: new Date().toISOString(), llcs: [], history: [], loans: [], distributions: [], maintenance: [], properties: [], property_detail: [], property_tax: [], vacancy: [], subs: [], buffers: {}, utilities: {}, statements: [], bug_reports: [], messages: [], activity: [], settings: {} };
 
   // Track the most-recent real data-change timestamp (Activity Log + History "Logged At" +
   // Property Detail "Updated"), so the dashboard's "Last Updated" reflects when the data
@@ -2023,6 +2026,15 @@ function getDashboardJson() {
     bufSh.getRange(5, 1, bufSh.getLastRow() - 4, 3).getValues().forEach(function(r) {
       var k = String(r[0] || '').trim().toLowerCase();
       if (k && r[2] !== '' && r[2] != null && !isNaN(Number(r[2]))) data.buffers[k] = Number(r[2]);
+    });
+  }
+
+  // Per-LLC monthly utilities for the Distribution Planner (editable on the planner cards).
+  var utilSh = ensureUtilitiesTab(ss);
+  if (utilSh && utilSh.getLastRow() >= 5) {
+    utilSh.getRange(5, 1, utilSh.getLastRow() - 4, 3).getValues().forEach(function(r) {
+      var k = String(r[0] || '').trim().toLowerCase();
+      if (k && r[2] !== '' && r[2] != null && !isNaN(Number(r[2]))) data.utilities[k] = Number(r[2]);
     });
   }
 
@@ -2436,6 +2448,50 @@ function setBufferEntry(data) {
     sh.getRange(found, 1, 1, 4).setValues([[key, data.label || key, amt, new Date()]]);
   }
   logActivity(data.actor, 'Set safety buffer', (data.label || key) + ' = ' + amt);
+  return ContentService.createTextOutput(JSON.stringify({ok: true, row: found})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// --- Per-LLC monthly utilities (editable on the Distribution Planner cards) --------------------
+function ensureUtilitiesTab(ss) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  var sh = ss.getSheetByName('Utilities');
+  if (sh) return sh;
+  sh = ss.insertSheet('Utilities');
+  sh.getRange(1, 1).setValue('UTILITIES — per-LLC monthly utilities for the Distribution Planner (edit on the dashboard planner cards; they vary each month)').setFontWeight('bold');
+  var headers = ['LLC Key', 'Label', 'Utilities', 'Updated At'];
+  sh.getRange(4, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+  // Defaults = June 2026 bank actuals (Divando Xcel+Aurora+Google+Compost; Dorado Xcel+Denver
+  // Water; Donald/Yale have no monthly utility, only quarterly Compost).
+  var seed = [['divando', 'Divando', 626], ['donald', 'Donald', 0], ['yale', 'Yale', 0], ['dorado', 'Dorado', 268]];
+  var rows = seed.map(function(s) { return [s[0], s[1], s[2], new Date()]; });
+  sh.getRange(5, 1, rows.length, 4).setValues(rows);
+  sh.setFrozenRows(4);
+  return sh;
+}
+
+// Upsert one LLC's monthly utilities (update the existing row by key, else append). Logs who changed it.
+function setUtilityEntry(data) {
+  var key = (data.key || '').toString().trim().toLowerCase();
+  if (!key) return ContentService.createTextOutput(JSON.stringify({error: 'LLC key is required'})).setMimeType(ContentService.MimeType.JSON);
+  var amt = Number(data.utilities);
+  if (isNaN(amt) || amt < 0) return ContentService.createTextOutput(JSON.stringify({error: 'Utilities must be a number 0 or more'})).setMimeType(ContentService.MimeType.JSON);
+  var sh = ensureUtilitiesTab(SpreadsheetApp.getActiveSpreadsheet());
+  var last = sh.getLastRow();
+  var found = 0;
+  if (last >= 5) {
+    var keys = sh.getRange(5, 1, last - 4, 1).getValues();
+    for (var i = 0; i < keys.length; i++) {
+      if (String(keys[i][0]).trim().toLowerCase() === key) { found = 5 + i; break; }
+    }
+  }
+  if (found) {
+    sh.getRange(found, 3).setValue(amt);
+    sh.getRange(found, 4).setValue(new Date());
+  } else {
+    found = Math.max(5, last + 1);
+    sh.getRange(found, 1, 1, 4).setValues([[key, data.label || key, amt, new Date()]]);
+  }
+  logActivity(data.actor, 'Set monthly utilities', (data.label || key) + ' = ' + amt);
   return ContentService.createTextOutput(JSON.stringify({ok: true, row: found})).setMimeType(ContentService.MimeType.JSON);
 }
 
