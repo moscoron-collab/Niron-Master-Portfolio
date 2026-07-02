@@ -1380,6 +1380,23 @@ with "Bad request"; `data.messages` is undefined → empty feed).
   Deploy → Manage deployments → Edit → New version → Deploy — Drive + Mail scopes were already
   granted, no new scope). The `Messages` tab + `Niron Messages` Drive folder auto-create on first use.
 
+### ✏️ Edit a sent text message (Jul 2 2026, APP_VERSION → 1.10, NEEDS REDEPLOY)
+User wanted an edit option on sent messages (delete already existed). Added **text-only editing** of your
+own messages.
+- **Frontend (`index.html`, live on merge):** `renderMessages` now shows an **`edit`** link (next to
+  `delete`) on your own messages **that have text** (photo/voice-only → delete only). **`msgEdit(row)`**
+  `prompt()`s with the current text, POSTs **`update_message`** (row + new text + actor), optimistically
+  updates + `msgRefresh()`. An **`edited`** italic tag shows in the meta line when `m.edited_at` is set.
+- **Backend (`AppsScript.gs`, NEEDS REDEPLOY):** `ensureMessagesTab` headers gained an **8th col `Edited
+  At`** (backward-safe; old 7-col rows read fine). The messages reader now reads **8 cols** and emits
+  `edited_at`. New **`updateMessageEntry(data)`** validates the row, checks **`actor === row's From`** (you
+  can only edit your OWN message), rewrites col C (Text) + col H (Edited At = now), `logActivity`. **Does
+  NOT re-email** (an edit isn't a new message). `doPost` routes **`update_message`** → `updateMessageEntry`
+  (added just before the `delete_message` route). Edit the **LAST** doPost + reader copies.
+- 🚀 **Going live:** redeploy `AppsScript.gs`. Until then the `edit` link appears but a save errors with
+  "Bad request" (`data.edited_at` is undefined pre-redeploy → no `edited` tag, no breakage). Self-audit
+  unaffected (no `#kpi-*` IDs).
+
 ### 🐛 Two Messages fixes from Nir's first testing session (Jul 2 2026, APP_VERSION → 1.2, PURE FRONTEND)
 Reported after showing Nir the db. Both fixed in `index.html`, **no Apps Script redeploy** (they only
 transform the already-stored data / add a badge):
