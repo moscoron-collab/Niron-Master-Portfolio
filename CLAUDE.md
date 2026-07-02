@@ -42,6 +42,17 @@ Each release explains what changed **in English AND Hebrew**. **Started at v1.0.
 
 ---
 
+## ℹ️ Monthly Breakdown "pulled from AppFolio" tooltip (Jul 2 2026, APP_VERSION → 1.2)
+
+The **Monthly Breakdown** section `<h2>` (in `renderAll`, ~line 2632 of `index.html`) now has an
+**ⓘ info tooltip** right after the title (reuses the `.kpi-info`/`.kpi-tip` bubble) saying the
+numbers are **pulled automatically every month from AppFolio** (the 4 LLCs, 15th–25th, nothing to
+enter by hand). Pure frontend, live on merge — no Apps Script redeploy. Self-audit unaffected (no
+`#kpi-*` IDs; the audit scopes its Monthly-Breakdown card lookup to the section `<h2>`, and the
+added `<span>` is not a `.llc-card`). Version bumped 1.1 → 1.2 with a new top CHANGELOG entry (en+he).
+
+---
+
 ## 🔒 CRITICAL SECURITY CONSTRAINT
 
 This repo holds **both** Niron LLC and Moss Investments automation code.
