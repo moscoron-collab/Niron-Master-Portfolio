@@ -2029,12 +2029,14 @@ function getDashboardJson() {
     });
   }
 
-  // Per-LLC monthly utilities for the Distribution Planner (editable on the planner cards).
+  // Per-LLC PER-MONTH utilities for the Distribution Planner (editable on the planner cards).
+  // Keyed by "<key>|<month>" (month normalized to YYYY-MM-01) so each month is independent.
   var utilSh = ensureUtilitiesTab(ss);
   if (utilSh && utilSh.getLastRow() >= 5) {
-    utilSh.getRange(5, 1, utilSh.getLastRow() - 4, 3).getValues().forEach(function(r) {
+    utilSh.getRange(5, 1, utilSh.getLastRow() - 4, 4).getValues().forEach(function(r) {
       var k = String(r[0] || '').trim().toLowerCase();
-      if (k && r[2] !== '' && r[2] != null && !isNaN(Number(r[2]))) data.utilities[k] = Number(r[2]);
+      var mo = _utilMonthKey(r[2]);
+      if (k && mo && r[3] !== '' && r[3] != null && !isNaN(Number(r[3]))) data.utilities[k + '|' + mo] = Number(r[3]);
     });
   }
 
@@ -2451,47 +2453,62 @@ function setBufferEntry(data) {
   return ContentService.createTextOutput(JSON.stringify({ok: true, row: found})).setMimeType(ContentService.MimeType.JSON);
 }
 
-// --- Per-LLC monthly utilities (editable on the Distribution Planner cards) --------------------
+// --- Per-LLC PER-MONTH utilities (editable on the Distribution Planner cards) ------------------
+// Normalize a month value (a Date or a "YYYY-MM-DD"/"YYYY/M" string) to the "YYYY-MM-01" key the
+// frontend uses (SELECTED_MONTH is always first-of-month). Returns '' if it can't parse one.
+function _utilMonthKey(v) {
+  if (v == null || v === '') return '';
+  if (v instanceof Date) {
+    return v.getFullYear() + '-' + ('0' + (v.getMonth() + 1)).slice(-2) + '-01';
+  }
+  var m = String(v).trim().match(/(\d{4})[-\/](\d{1,2})/);
+  return m ? (m[1] + '-' + ('0' + m[2]).slice(-2) + '-01') : '';
+}
+
 function ensureUtilitiesTab(ss) {
   ss = ss || SpreadsheetApp.getActiveSpreadsheet();
   var sh = ss.getSheetByName('Utilities');
   if (sh) return sh;
   sh = ss.insertSheet('Utilities');
-  sh.getRange(1, 1).setValue('UTILITIES — per-LLC monthly utilities for the Distribution Planner (edit on the dashboard planner cards; they vary each month)').setFontWeight('bold');
-  var headers = ['LLC Key', 'Label', 'Utilities', 'Updated At'];
+  sh.getRange(1, 1).setValue('UTILITIES — per-LLC PER-MONTH utilities for the Distribution Planner (edit on the dashboard planner cards; they vary each month, so each month is its own row)').setFontWeight('bold');
+  var headers = ['LLC Key', 'Label', 'Month', 'Utilities', 'Updated At'];
   sh.getRange(4, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
-  // Defaults = June 2026 bank actuals (Divando Xcel+Aurora+Google+Compost; Dorado Xcel+Denver
-  // Water; Donald/Yale have no monthly utility, only quarterly Compost).
-  var seed = [['divando', 'Divando', 626], ['donald', 'Donald', 0], ['yale', 'Yale', 0], ['dorado', 'Dorado', 268]];
-  var rows = seed.map(function(s) { return [s[0], s[1], s[2], new Date()]; });
-  sh.getRange(5, 1, rows.length, 4).setValues(rows);
+  sh.getRange(5, 3, 500, 1).setNumberFormat('@');  // keep the Month column as literal text (no date coercion)
+  // Seed = June 2026 bank actuals (Divando Xcel+Aurora+Google+Compost; Dorado Xcel+Denver Water).
+  // Donald/Yale had no June utility — unset months read 0, so no need to seed a 0 row.
+  var seed = [['divando', 'Divando', '2026-06-01', 626], ['dorado', 'Dorado', '2026-06-01', 268]];
+  var rows = seed.map(function(s) { return [s[0], s[1], s[2], s[3], new Date()]; });
+  sh.getRange(5, 1, rows.length, 5).setValues(rows);
   sh.setFrozenRows(4);
   return sh;
 }
 
-// Upsert one LLC's monthly utilities (update the existing row by key, else append). Logs who changed it.
+// Upsert one LLC's utilities for ONE month (match by key + month, else append). Logs who changed it.
 function setUtilityEntry(data) {
   var key = (data.key || '').toString().trim().toLowerCase();
   if (!key) return ContentService.createTextOutput(JSON.stringify({error: 'LLC key is required'})).setMimeType(ContentService.MimeType.JSON);
+  var mo = _utilMonthKey(data.month);
+  if (!mo) return ContentService.createTextOutput(JSON.stringify({error: 'Month is required'})).setMimeType(ContentService.MimeType.JSON);
   var amt = Number(data.utilities);
   if (isNaN(amt) || amt < 0) return ContentService.createTextOutput(JSON.stringify({error: 'Utilities must be a number 0 or more'})).setMimeType(ContentService.MimeType.JSON);
   var sh = ensureUtilitiesTab(SpreadsheetApp.getActiveSpreadsheet());
   var last = sh.getLastRow();
   var found = 0;
   if (last >= 5) {
-    var keys = sh.getRange(5, 1, last - 4, 1).getValues();
-    for (var i = 0; i < keys.length; i++) {
-      if (String(keys[i][0]).trim().toLowerCase() === key) { found = 5 + i; break; }
+    var rows = sh.getRange(5, 1, last - 4, 3).getValues();  // key, label, month
+    for (var i = 0; i < rows.length; i++) {
+      if (String(rows[i][0]).trim().toLowerCase() === key && _utilMonthKey(rows[i][2]) === mo) { found = 5 + i; break; }
     }
   }
   if (found) {
-    sh.getRange(found, 3).setValue(amt);
-    sh.getRange(found, 4).setValue(new Date());
+    sh.getRange(found, 4).setValue(amt);
+    sh.getRange(found, 5).setValue(new Date());
   } else {
     found = Math.max(5, last + 1);
-    sh.getRange(found, 1, 1, 4).setValues([[key, data.label || key, amt, new Date()]]);
+    sh.getRange(found, 3).setNumberFormat('@');   // month stays literal text
+    sh.getRange(found, 1, 1, 5).setValues([[key, data.label || key, mo, amt, new Date()]]);
   }
-  logActivity(data.actor, 'Set monthly utilities', (data.label || key) + ' = ' + amt);
+  logActivity(data.actor, 'Set monthly utilities', (data.label || key) + ' ' + mo + ' = ' + amt);
   return ContentService.createTextOutput(JSON.stringify({ok: true, row: found})).setMimeType(ContentService.MimeType.JSON);
 }
 

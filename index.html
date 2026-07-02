@@ -1482,8 +1482,18 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "1.4";
+const APP_VERSION = "1.5";
 const CHANGELOG = [
+  {
+    version: "1.5",
+    date: "July 2, 2026",
+    en: [
+      "Distribution Planner: the editable Utilities box is now saved per month — when you switch the month, it shows that month's own number (and reads $0 for a fresh month until you enter it), instead of carrying over the previous month's figure."
+    ],
+    he: [
+      "מתכנן החלוקה: תיבת ה-Utilities הניתנת לעריכה נשמרת כעת לכל חודש בנפרד — כשמחליפים חודש, מוצג המספר של אותו חודש (וחודש חדש מתחיל ב-$0 עד שמזינים אותו), במקום לשמור את הסכום מהחודש הקודם."
+    ]
+  },
   {
     version: "1.4",
     date: "July 2, 2026",
@@ -2347,13 +2357,15 @@ function bufferFor(key, c) {
   const ov = (typeof PORTFOLIO_DATA !== 'undefined' && PORTFOLIO_DATA && PORTFOLIO_DATA.buffers) ? PORTFOLIO_DATA.buffers[key] : undefined;
   return (ov != null && ov !== '' && !isNaN(Number(ov))) ? Number(ov) : c.buffer;
 }
-// Per-LLC monthly utilities: editable + shared via the Utilities sheet tab (data.utilities, keyed
-// by planner key). Falls back to the CASHPLAN_CONFIG default (June actuals) if the sheet has no
-// value yet (e.g. before the Apps Script redeploy), so this is backward-safe. Utilities vary every
-// month, so the user types the real total each month; it's added to the cushion as one flat line.
-function utilityFor(key, c) {
-  const ov = (typeof PORTFOLIO_DATA !== 'undefined' && PORTFOLIO_DATA && PORTFOLIO_DATA.utilities) ? PORTFOLIO_DATA.utilities[key] : undefined;
-  return (ov != null && ov !== '' && !isNaN(Number(ov))) ? Number(ov) : (c.utilities || 0);
+// Per-LLC monthly utilities: editable + shared via the Utilities sheet tab, keyed by
+// "<plannerKey>|<month>" (month = the selected month, e.g. "2026-07-01"). Utilities vary every
+// month, so each month is stored separately — switching the month dropdown shows THAT month's
+// value, and a month with nothing entered yet reads 0 (the user types the real total each month;
+// the /monthly-distribution skill hands them the number). Returns 0 when unset for that month.
+function utilityFor(key, month) {
+  const map = (typeof PORTFOLIO_DATA !== 'undefined' && PORTFOLIO_DATA && PORTFOLIO_DATA.utilities) ? PORTFOLIO_DATA.utilities : null;
+  const ov = map ? map[key + '|' + month] : undefined;
+  return (ov != null && ov !== '' && !isNaN(Number(ov))) ? Number(ov) : 0;
 }
 function cashBalances() { try { return JSON.parse(localStorage.getItem('niron_cash_balances') || '{}'); } catch (e) { return {}; } }
 
@@ -2844,7 +2856,7 @@ function renderDistributionPlanner(data) {
     const reserved = planUpcoming(key, c, startToday, incomeDate);
     const draftedThisMonth = planExpenseItems(key, c, planNow.getMonth()).filter(it => it.day < todayDay);
     const buffer = bufferFor(key, c);
-    const utility = utilityFor(key, c);
+    const utility = utilityFor(key, SELECTED_MONTH);
     const cushion = reserved.reduce((s, it) => s + it.amt, 0) + maintSum + utility + buffer;
     const has = bals[key] != null && bals[key] !== '';
     const bal = Number(bals[key]) || 0;
@@ -2875,7 +2887,7 @@ function renderDistributionPlanner(data) {
       h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">Upcoming maintenance' + maintTip + ' none unpaid' + (paidRecent ? ' <span style="color:#3f5874">(' + paidRecent + ' already paid this month)</span>' : '') + '</span><span class="v" style="color:#4e6d8c">—</span></div>';
     }
     if (!reserved.length) h += '<div class="llc-row"><span class="k" style="color:#4e6d8c;font-size:11px">No fixed bills due before your next deposit ✓</span><span class="v"></span></div>';
-    h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Utilities <span style="color:#4e6d8c;font-size:10px">✏️ editable · this month</span></span><span class="v" style="display:flex;align-items:center;justify-content:flex-end;gap:3px"><span style="color:#7e9cbf;font-size:12px">$</span><input type="number" min="0" step="1" value="' + utility + '" onchange="setUtility(\'' + key + '\', this.value)" title="' + c.label + '\'s utilities for this month (Xcel / water / Compost / etc.) — type the real total from the bank; saved to the sheet so Nir sees it too." style="width:78px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:5px;color:#cfe0f2;padding:2px 6px;font-size:12px"></span></div>';
+    h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Utilities <span style="color:#4e6d8c;font-size:10px">✏️ editable · ' + monthLabel(SELECTED_MONTH) + '</span></span><span class="v" style="display:flex;align-items:center;justify-content:flex-end;gap:3px"><span style="color:#7e9cbf;font-size:12px">$</span><input type="number" min="0" step="1" value="' + (utility || '') + '" placeholder="0" onchange="setUtility(\'' + key + '\', \'' + SELECTED_MONTH + '\', this.value)" title="' + c.label + '\'s utilities for ' + monthLabel(SELECTED_MONTH) + ' (Xcel / water / Compost / etc.) — type the real total from the bank for THIS month; each month is stored separately and shared so Nir sees it too." style="width:78px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:5px;color:#cfe0f2;padding:2px 6px;font-size:12px"></span></div>';
     h += '<div class="llc-row"><span class="k" style="color:#7a93ad">− Safety buffer <span style="color:#4e6d8c;font-size:10px">✏️ editable</span></span><span class="v" style="display:flex;align-items:center;justify-content:flex-end;gap:3px"><span style="color:#7e9cbf;font-size:12px">$</span><input type="number" min="0" step="50" value="' + buffer + '" onchange="setBuffer(\'' + key + '\', this.value)" title="Your safety cushion for ' + c.label + ' — saved to the sheet so Nir sees it too." style="width:78px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:5px;color:#cfe0f2;padding:2px 6px;font-size:12px"></span></div>';
     h += '</div>';
     // Totals block — aligned row-for-row across all 4 cards.
@@ -2945,17 +2957,18 @@ async function setBuffer(key, val) {
     load();                                   // success -> refresh shared data
   } catch (e) { alert('Buffer applied for this session, but the save failed (network): ' + e.message); }
 }
-// Save a per-LLC monthly utilities amount to the shared Utilities sheet tab (so Nir sees it too).
-// Same optimistic + backward-safe pattern as setBuffer.
-async function setUtility(key, val) {
+// Save a per-LLC PER-MONTH utilities amount to the shared Utilities sheet tab (so Nir sees it too).
+// Keyed by "<key>|<month>" so each month is independent. Same optimistic + backward-safe pattern
+// as setBuffer.
+async function setUtility(key, month, val) {
   const actor = ensureActor(); if (!actor) { renderAll(); return; }
   const n = Number(val);
   if (isNaN(n) || n < 0) { alert('Enter a valid utilities amount ($0 or more).'); renderAll(); return; }
   PORTFOLIO_DATA.utilities = PORTFOLIO_DATA.utilities || {};
-  PORTFOLIO_DATA.utilities[key] = n;          // optimistic — recalc now
+  PORTFOLIO_DATA.utilities[key + '|' + month] = n;   // optimistic — recalc now
   renderAll();
   try {
-    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'set_utility', key: key, utilities: n, label: (CASHPLAN_CONFIG[key] || {}).label || key, actor: actor }) });
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'set_utility', key: key, month: month, utilities: n, label: (CASHPLAN_CONFIG[key] || {}).label || key, actor: actor }) });
     const r = await res.json();
     if (r && r.error) { alert('Utilities applied for this session, but not saved to the sheet yet:\n' + r.error + '\n\nIf this just shipped, the Google Apps Script still needs its redeploy (New version) before utilities edits save for everyone.'); return; }
     load();                                   // success -> refresh shared data
