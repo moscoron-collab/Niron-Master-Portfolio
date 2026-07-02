@@ -65,35 +65,42 @@ unaffected (no `#kpi-*` IDs). Version bumped 1.2 → 1.3 with a new top CHANGELO
 
 ---
 
-## 💡 Distribution Planner — Utilities is now EDITABLE per LLC + shared (Jul 2 2026, APP_VERSION → 1.4, needs redeploy)
+## 💡 Distribution Planner — Utilities is EDITABLE per LLC PER MONTH + shared (Jul 2 2026, APP_VERSION → 1.5, needs redeploy)
 
 The planner's per-LLC **Utilities** was a hardcoded `CASHPLAN_CONFIG` guess (Divando $685, Yale/Donald
 quarterly Compost, Dorado $454). User's point: utilities **vary every month** (Xcel/water/Compost/Google)
 and some are quarterly, so one fixed number is always wrong. Decision (via AskUserQuestion): **make it
-editable monthly, saved to the sheet** — same pattern as the safety buffer.
+editable monthly, saved to the sheet** — same pattern as the safety buffer. Then (v1.5) the user hit the
+follow-up bug: it was stored **per-LLC only**, so switching the month dropdown kept the previous month's
+number — so it's now stored **per-LLC PER-MONTH**.
 
 - **How it works now:** Utilities is a **flat editable cushion line** on each planner card (an input like the
   buffer), added to the cushion once. It's **no longer** in the dated "Coming up"/planUpcoming/planExpenseItems
   lists (removed `utilities` from `CASHPLAN_DAYS` + those defs + the `utilMonths`/`utilTip` seasonal logic) — so
-  no double-count and no confusing quarterly gating. `utilityFor(key, c)` = `data.utilities[key]` ?? the
-  `CASHPLAN_CONFIG` default; `setUtility(key, val)` mirrors `setBuffer` (optimistic + backward-safe, POSTs
-  `set_utility`).
-- **Defaults = June 2026 bank actuals** (the CSVs the user sent): **Divando $626** (Xcel $141.39 + City of
-  Aurora $256.84 + Google $164.34 + Denver Compost $63.00), **Dorado $268** (Xcel $110.22 + Denver Water
-  $157.90), **Donald $0**, **Yale $0** (Donald & Yale had NO monthly utility in June — their only one is the
-  quarterly Denver Compost, so $0 is correct for non-Compost months; user confirmed Donald's isn't ongoing).
-- **Backend (`AppsScript.gs`, needs redeploy):** new **`Utilities`** tab (`ensureUtilitiesTab`, cols A–D =
-  `LLC Key · Label · Utilities · Updated At`, seeded with the 4 defaults, data row 5). Live `getDashboardJson`
-  reads it → **`data.utilities`** (map key→amount). `doPost` routes **`set_utility`** → **`setUtilityEntry`**
-  (upsert by key, `logActivity`). Added `utilities: {}` to the data init. Mirrors the Buffers tab exactly.
+  no double-count and no confusing quarterly gating. **Keyed by `"<key>|<month>"`** where month = `SELECTED_MONTH`
+  (the dropdown, always `YYYY-MM-01`). `utilityFor(key, month)` returns `data.utilities[key+'|'+month]` or **0**
+  when that month has nothing entered yet (so a fresh month reads $0, not the prior month). `setUtility(key,
+  month, val)` mirrors `setBuffer` (optimistic + backward-safe, POSTs `set_utility` with `month`). The card's
+  Utilities label shows the selected month (`✏️ editable · <Mon YYYY>`) so it's clear which month you're editing.
+- **Defaults / seed = June 2026 bank actuals** (the CSVs the user sent), stored under month `2026-06-01`:
+  **Divando $626** (Xcel $141.39 + City of Aurora $256.84 + Google $164.34 + Denver Compost $63.00), **Dorado
+  $268** (Xcel $110.22 + Denver Water $157.90). **Donald & Yale had NO June utility** (their only one is the
+  quarterly Denver Compost) → not seeded → they read $0 until entered. Going forward every month starts at $0
+  and the user enters the real total (the `/monthly-distribution` skill computes + hands them the 4 numbers).
+- **Backend (`AppsScript.gs`, needs redeploy):** **`Utilities`** tab (`ensureUtilitiesTab`, cols A–E =
+  `LLC Key · Label · Month · Utilities · Updated At`; Month col forced to text; data row 5). Live
+  `getDashboardJson` reads it → **`data.utilities`** keyed `"<key>|<month>"` (month normalized via
+  **`_utilMonthKey`** → `YYYY-MM-01`, handles Date or string). `doPost` routes **`set_utility`** →
+  **`setUtilityEntry`** (upsert by key+month, `logActivity`). Added `utilities: {}` to the data init.
 - 🚀 **Going live (REQUIRED):** redeploy `AppsScript.gs` (Sheet → Extensions → Apps Script → paste → Deploy →
   Manage deployments → Edit → New version → Deploy). The `Utilities` tab auto-creates on first load after
   redeploy. `index.html` is live on merge; until the redeploy, edits apply for the session but won't save/share
   (the frontend keeps the value + alerts that the redeploy is needed — no silent revert). Self-audit unaffected
   (no `#kpi-*` IDs). ⚠️ Keep the `/monthly-distribution` skill's recurring-cost table in sync when utility
-  defaults change (the skill table was updated Jul 2 2026 to $626/$268/$0/$0).
+  defaults change (the skill table was updated Jul 2 2026 to $626/$268/$0/$0, + a Step 1b computes utilities
+  from the CSVs each month).
 - **Also (same session):** Donald utilities was first set to `$0` in `CASHPLAN_CONFIG` (PR #189) — now
-  the editable default. Version bumped 1.3 → 1.4 with a new top CHANGELOG entry (en+he).
+  the editable default. Version bumped 1.3 → 1.4 (editable) → 1.5 (per-month) with new top CHANGELOG entries.
 
 ---
 
