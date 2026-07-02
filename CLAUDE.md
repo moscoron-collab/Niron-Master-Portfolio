@@ -104,6 +104,18 @@ number — so it's now stored **per-LLC PER-MONTH**.
 
 ---
 
+## 🔄 Header "Refresh" button (Jul 2 2026, APP_VERSION → 1.6)
+
+A **🔄 Refresh** button in the header top-right (next to the version chip, `onclick="hardRefresh()"`,
+styled as a `.version-chip` button) so Nir/anyone can get the newest page + data in one click instead of
+Ctrl-Shift-R. **`hardRefresh()`** reloads with a cache-busting `?r=<ts>` param (a new URL → the browser
+re-fetches the HTML instead of the cached copy; `?tab=` and other params preserved via `URL`/`searchParams`,
+falls back to `location.reload()` on error). Why it matters: `index.html` is browser-cached, so a freshly
+merged version (e.g. the v1.4→v1.5 gap the user saw) wasn't visible without a hard refresh. Pure frontend,
+live on merge — no redeploy. Self-audit unaffected (no `#kpi-*` IDs). Version bumped 1.5 → 1.6 (en+he).
+
+---
+
 ## 🔒 CRITICAL SECURITY CONSTRAINT
 
 This repo holds **both** Niron LLC and Moss Investments automation code.
