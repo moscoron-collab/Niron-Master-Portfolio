@@ -5,7 +5,9 @@ description: >-
   (Divando, Donald, Yale, Dorado). Use at the end of each month. Takes the 4 LLC
   bank-statement CSVs + the dashboard's Maintenance export CSV + each account's
   ending balance; reconciles which repair invoices have CLEARED the bank vs are
-  still PENDING, computes how much is SAFE TO DISTRIBUTE per LLC (ending balance −
+  still PENDING, computes each LLC's monthly UTILITIES from the CSVs (the numbers to
+  type into the dashboard planner's editable Utilities boxes), computes how much is
+  SAFE TO DISTRIBUTE per LLC (ending balance −
   cushion − pending repairs − upcoming bills − inter-account amounts owed), splits
   it per partner, drafts a short per-LLC text, and (once Ron approves) creates a
   Gmail DRAFT to Nir (cc Ron) so Nir can execute the distributions. READ-ONLY on the
@@ -68,6 +70,38 @@ and 🟡 still-to-clear invoices, plus the two subtotals. **Flag loudly** any in
 sheet marks `Paid = Yes` that has **not** actually cleared the bank — that's the gap the
 user cares about. (Exception: a `Debit Card` invoice dated in the last ~2 days of the
 window may just not have posted yet — call it "posting, treat as paid" if the user says so.)
+
+---
+
+## Step 1b — Compute this month's UTILITIES per LLC (the numbers to type into the dashboard)
+
+The Distribution Planner's **Utilities** figure is now an **editable box on each LLC card** (saved to
+the sheet, shared with Nir). It's no longer a fixed guess — **each month you set it from the bank.** So
+every run, compute the real utilities total per LLC from the CSVs and hand the user the 4 numbers to type.
+
+**How:** for each LLC's CSV, sum every **Debit** line whose description matches a utility vendor:
+`XCEL` / `DNVRWTR` / `DENVER WATER` / `… COMPOST` (City of Denver Compost) / `CITY OF AURORA` /
+`AURORA WATER` / `GOOGLE`. **Exclude** everything else (mortgage/SBA/insurance/taxes/checks/transfers/
+distributions). List each matched line so the user can see the make-up, then give the rounded total.
+
+**June 2026 worked example (from the CSVs the user sent):**
+- **Divando** = Xcel $141.39 + City of Aurora $256.84 + Google $164.34 + Denver Compost $63.00 = **$625.57 → enter `626`**
+- **Dorado** = Xcel $110.22 + Denver Water $157.90 = **$268.12 → enter `268`** (no Compost that month)
+- **Donald** = *(no utility lines)* → **enter `0`**
+- **Yale** = *(no utility lines)* → **enter `0`**
+
+⚠️ **Donald & Yale have NO ongoing monthly utility** — their only one is **Denver Compost, billed
+quarterly (Jan/Apr/Jul/Oct)**. So most months they're `$0`; in a Compost month enter that one charge.
+Divando & Dorado are genuinely monthly and vary — always recompute, don't assume last month's number.
+
+**Output:** a short "**Utilities to enter on the dashboard this month**" block (per-LLC line-item +
+rounded total) so the user can copy the 4 numbers into the planner boxes (Planner card → − Utilities).
+Round to the nearest whole dollar. This is READ-ONLY guidance — the user (or Nir) types it in; the
+skill never writes the sheet.
+
+> **Consistency:** whatever utilities total you compute here for a given LLC is the same number that
+> should go in that LLC's planner box AND that you reserve as its utilities outflow in Step 2. Keep
+> them equal within a run.
 
 ---
 
@@ -144,9 +178,11 @@ per_partner = safe / (3 if Dorado else 2)
 
 1. **Maintenance reconciliation** — per-LLC ✅ cleared / 🟡 pending tables + the
    "marked Paid but not cashed" flag list.
-2. **Safe-to-distribute table** — `LLC | ending balance | − cushion | − pending repairs |
+2. **Utilities to enter on the dashboard** (Step 1b) — the 4 per-LLC numbers to type into the
+   planner's editable Utilities boxes (line-item make-up + rounded total).
+3. **Safe-to-distribute table** — `LLC | ending balance | − cushion | − pending repairs |
    − upcoming bills | − owed to sibling | Safe | Ron | Nir | Simon`.
-3. **The Nir text** — in a copyable code block, short and per-LLC (template below).
+4. **The Nir text** — in a copyable code block, short and per-LLC (template below).
 
 ### Nir text template (keep it SMS-short)
 
