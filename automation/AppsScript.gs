@@ -1896,7 +1896,9 @@ function getDashboardJson() {
 
   var dist = ss.getSheetByName('Distributions');
   if (dist && dist.getLastRow() >= 5) {
-    dist.getRange(5, 1, dist.getLastRow() - 4, 5).getValues().forEach(function(r) {
+    // Cols: A Date · B LLC · C Ron · D Nir · E Notes · F Simon (Dorado 3-way). Simon (col F)
+    // was added later — old 5-col rows read it as "" -> 0, so this is backward-safe.
+    dist.getRange(5, 1, dist.getLastRow() - 4, 6).getValues().forEach(function(r) {
       if (r[0]) {
         var d = r[0] instanceof Date ? r[0] : new Date(r[0]);
         if (isNaN(d)) return;
@@ -1905,7 +1907,7 @@ function getDashboardJson() {
           date_sent: d.toISOString().slice(0,10),
           period: yyyy + '-' + mm + '-01', llc: r[1] || "",
           your_amount: Number(r[2])||0, partner_amount: Number(r[3])||0,
-          notes: r[4] || ""
+          notes: r[4] || "", simon_amount: Number(r[5])||0
         });
       }
     });
@@ -2125,32 +2127,37 @@ function addDistributionEntry(data) {
   var dateObj = new Date(data.date + 'T12:00:00');
   var yourA = Number(data.your_amount) || 0;
   var partA = Number(data.partner_amount) || 0;
+  var simonA = Number(data.simon_amount) || 0;  // Dorado 3-way; 0 for the 2-partner LLCs
   // Duplicate guard: same LLC + same month + same amounts already recorded.
-  // Prevents a double-click or re-entry from inflating Your Distribution / YTD.
+  // Prevents a double-click or re-entry from inflating a partner's distribution / YTD.
   function distPeriod(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2); }
   var newPeriod = distPeriod(dateObj);
   var lastRow = sh.getLastRow();
   if (lastRow >= 5) {
-    var existing = sh.getRange(5, 1, lastRow - 4, 4).getValues();
+    var existing = sh.getRange(5, 1, lastRow - 4, 6).getValues();
     for (var i = 0; i < existing.length; i++) {
       var ed = existing[i][0] instanceof Date ? existing[i][0] : new Date(existing[i][0]);
       if (isNaN(ed)) continue;
       if (distPeriod(ed) === newPeriod && String(existing[i][1]) === String(data.llc) &&
-          (Number(existing[i][2]) || 0) === yourA && (Number(existing[i][3]) || 0) === partA) {
+          (Number(existing[i][2]) || 0) === yourA && (Number(existing[i][3]) || 0) === partA &&
+          (Number(existing[i][5]) || 0) === simonA) {
         return ContentService.createTextOutput(JSON.stringify({error: 'Already recorded a ' + data.llc + ' distribution for ' + newPeriod + ' with the same amounts.'})).setMimeType(ContentService.MimeType.JSON);
       }
     }
   }
   var nextRow = Math.max(5, lastRow + 1);
-  sh.getRange(nextRow, 1, 1, 5).setValues([[
+  // A Date · B LLC · C Ron · D Nir · E Notes · F Simon (Dorado 3-way).
+  sh.getRange(nextRow, 1, 1, 6).setValues([[
     dateObj,
     data.llc,
-    Number(data.your_amount) || 0,
-    Number(data.partner_amount) || 0,
-    data.notes || ''
+    yourA,
+    partA,
+    data.notes || '',
+    simonA
   ]]);
   sh.getRange(nextRow, 3, 1, 2).setNumberFormat('$#,##0.00');
-  logActivity(data.actor, 'Added distribution', data.llc + ' · You $' + yourA + ' / Nir $' + partA);
+  sh.getRange(nextRow, 6, 1, 1).setNumberFormat('$#,##0.00');
+  logActivity(data.actor, 'Added distribution', data.llc + ' · Ron $' + yourA + ' / Nir $' + partA + (simonA ? ' / Simon $' + simonA : ''));
   return ContentService.createTextOutput(JSON.stringify({ok: true, row: nextRow})).setMimeType(ContentService.MimeType.JSON);
 }
 

@@ -558,19 +558,20 @@
     <h2>💰 Add Distribution <button class="modal-close" onclick="closeDistModal()">×</button></h2>
     <label>Date Sent</label><input type="date" id="dist-date">
     <label>LLC</label>
-    <select id="dist-llc"><option value="">-- Select LLC --</option></select>
+    <select id="dist-llc" onchange="distSetLlc()"><option value="">-- Select LLC --</option></select>
     <label>Split</label>
     <select id="dist-split" onchange="distSetSplit()">
-      <option value="equal">Equal — 50/50 (same to each)</option>
+      <option value="equal">Equal — same to each</option>
       <option value="custom">Custom — enter each (unequal)</option>
     </select>
     <div id="dist-each-wrap">
       <label>Amount each ($)</label><input type="number" id="dist-each" step="0.01" placeholder="0.00">
-      <div style="color:#4e6d8c;font-size:11px;margin:-4px 0 8px">Ron and Nir each receive this amount (the usual case).</div>
+      <div id="dist-each-help" style="color:#4e6d8c;font-size:11px;margin:-4px 0 8px">Ron and Nir each receive this amount (the usual case).</div>
     </div>
     <div id="dist-custom-wrap" style="display:none">
       <label>Ron's Amount ($)</label><input type="number" id="dist-your-amount" step="0.01" placeholder="0.00">
       <label>Nir's Amount ($)</label><input type="number" id="dist-partner-amount" step="0.01" placeholder="0.00">
+      <div id="dist-simon-row" style="display:none"><label>Simon's Amount ($)</label><input type="number" id="dist-simon" step="0.01" placeholder="0.00"></div>
     </div>
     <label>Notes (optional)</label><textarea id="dist-notes" placeholder="e.g. Q1 distribution"></textarea>
     <div class="form-msg" id="dist-msg"></div>
@@ -1490,8 +1491,22 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.1";
+const APP_VERSION = "2.2";
 const CHANGELOG = [
+  {
+    version: "2.2",
+    date: "July 2, 2026",
+    en: [
+      "Partner Distributions is now shown PER LLC. Pick a month and you get one card for each LLC (Divando, Donald, Yale, Dorado) showing what Ron and Nir each took from that LLC — this month and year-to-date.",
+      "All four LLCs always appear, so a $0 clearly means \"nothing was taken from that account this month\" instead of looking like missing data.",
+      "Dorado now shows Simon too (it splits 3 ways). The Add-Distribution form has a Simon amount box that appears only when you pick Dorado, and Simon is saved with the distribution."
+    ],
+    he: [
+      "חלוקות השותפים מוצגות עכשיו לפי כל LLC בנפרד. בוחרים חודש ומקבלים כרטיס לכל LLC (Divando, Donald, Yale, Dorado) שמראה כמה רון וניר משכו מאותו LLC — החודש ומתחילת השנה.",
+      "כל ארבעת ה-LLC מופיעים תמיד, כך ש-$0 אומר בבירור \"לא נמשך כלום מהחשבון הזה החודש\" ולא נראה כמו נתון חסר.",
+      "Dorado מציג עכשיו גם את סיימון (מתחלק לשלושה). בטופס הוספת חלוקה יש תיבת סכום לסיימון שמופיעה רק כשבוחרים Dorado, וסיימון נשמר יחד עם החלוקה."
+    ]
+  },
   {
     version: "2.1",
     date: "July 2, 2026",
@@ -1927,10 +1942,23 @@ function openDistModal() {
   sel.innerHTML = '<option value="">-- Select LLC --</option>' + names.map(n => '<option value="' + n + '">' + n + '</option>').join('');
   document.getElementById("dist-split").value = "equal";
   distSetSplit();
+  distSetLlc();
 }
-// Split toggle: "equal" shows one "Amount each" box (50/50 default); "custom" shows
-// separate Ron / Nir boxes for the rare unequal/true-up month. Switching to custom
-// seeds both boxes from the "amount each" value so nothing is lost.
+// Dorado splits 3 ways (Ron / Nir / Simon), the other LLCs only 2. When Dorado is
+// picked we reveal the Simon box (custom mode) and update the "Amount each" hint so
+// the equal-split amount goes to all three. Simon is only stored for Dorado.
+function distIsDorado() { return /dorado/i.test(document.getElementById("dist-llc").value || ""); }
+function distSetLlc() {
+  const dorado = distIsDorado();
+  document.getElementById("dist-simon-row").style.display = dorado ? "" : "none";
+  const help = document.getElementById("dist-each-help");
+  if (help) help.textContent = dorado
+    ? "Ron, Nir and Simon each receive this amount (Dorado splits 3 ways)."
+    : "Ron and Nir each receive this amount (the usual case).";
+}
+// Split toggle: "equal" shows one "Amount each" box (same to each); "custom" shows
+// separate Ron / Nir (+ Simon for Dorado) boxes for the rare unequal/true-up month.
+// Switching to custom seeds the boxes from the "amount each" value so nothing is lost.
 function distSetSplit() {
   const mode = document.getElementById("dist-split").value;
   const eachWrap = document.getElementById("dist-each-wrap");
@@ -1940,6 +1968,7 @@ function distSetSplit() {
     if (each) {
       document.getElementById("dist-your-amount").value = each;
       document.getElementById("dist-partner-amount").value = each;
+      if (distIsDorado()) document.getElementById("dist-simon").value = each;
     }
     eachWrap.style.display = "none";
     customWrap.style.display = "";
@@ -1950,20 +1979,25 @@ function distSetSplit() {
 }
 function closeDistModal() {
   document.getElementById("dist-modal").classList.remove("open");
-  ["dist-llc", "dist-each", "dist-your-amount", "dist-partner-amount", "dist-notes"].forEach(id => { document.getElementById(id).value = ""; });
+  ["dist-llc", "dist-each", "dist-your-amount", "dist-partner-amount", "dist-simon", "dist-notes"].forEach(id => { document.getElementById(id).value = ""; });
   document.getElementById("dist-split").value = "equal";
   distSetSplit();
+  distSetLlc();
 }
 async function submitDistribution() {
   const msgEl = document.getElementById("dist-msg");
   const btn = document.getElementById("dist-submit");
   // Equal mode: one "amount each" fills both partners. Custom mode: read each box.
-  let yourAmt, partnerAmt;
+  const dorado = distIsDorado();
+  let yourAmt, partnerAmt, simonAmt;
   if (document.getElementById("dist-split").value === "equal") {
-    yourAmt = partnerAmt = parseFloat(document.getElementById("dist-each").value) || 0;
+    const each = parseFloat(document.getElementById("dist-each").value) || 0;
+    yourAmt = partnerAmt = each;
+    simonAmt = dorado ? each : 0;
   } else {
     yourAmt = parseFloat(document.getElementById("dist-your-amount").value) || 0;
     partnerAmt = parseFloat(document.getElementById("dist-partner-amount").value) || 0;
+    simonAmt = dorado ? (parseFloat(document.getElementById("dist-simon").value) || 0) : 0;
   }
   const data = {
     action: "add_distribution",
@@ -1971,9 +2005,10 @@ async function submitDistribution() {
     llc: document.getElementById("dist-llc").value,
     your_amount: yourAmt,
     partner_amount: partnerAmt,
+    simon_amount: simonAmt,
     notes: document.getElementById("dist-notes").value
   };
-  if (!data.date || !data.llc || (!data.your_amount && !data.partner_amount)) {
+  if (!data.date || !data.llc || (!data.your_amount && !data.partner_amount && !data.simon_amount)) {
     msgEl.className = "form-msg err";
     msgEl.textContent = "Please fill in Date, LLC, and at least one amount.";
     return;
@@ -2769,36 +2804,68 @@ function renderAll() {
   if (!groupedSelected.length) html += '<div style="color:#4e6d8c">No data for this month.</div>';
   html += '</div></div>';
   if (plannerVisible()) html += renderDistributionPlanner(data);
-  // ── Partner Distributions (You vs Nir): per-month + YTD + per-year breakdown ──
-  // Pure read of the Distributions tab. Simple: pick a month → see You/Nir for that
-  // month and YTD (Jan→that month). No "lifetime" tiles (not realistic). The per-year
-  // table (incl. an All-time row) stays below for the tax-time picture.
-  const lifeYou = distributions.reduce((s, d) => s + (d.your_amount || 0), 0);
-  const lifeNir = distributions.reduce((s, d) => s + (d.partner_amount || 0), 0);
-  const byYear = {};
-  distributions.forEach(d => { const y = (d.period || '').slice(0, 4) || '—'; if (!byYear[y]) byYear[y] = { you: 0, nir: 0 }; byYear[y].you += (d.your_amount || 0); byYear[y].nir += (d.partner_amount || 0); });
+  // ── Partner Distributions — now PER LLC (each LLC pays different amounts each month,
+  //    many months $0). Pure read of the Distributions tab. Pick a month → one card per
+  //    LLC (all 4 ALWAYS shown, even at $0) with This-Month AND YTD per partner. Dorado
+  //    also shows Simon (3-way split; simon_amount is a real stored field). The per-year
+  //    table (incl. All-time) stays below for the tax-time picture, with a Simon column.
+  const PDIST_LLCS = [
+    { label: 'Divando', match: /divando/i, simon: false },
+    { label: 'Donald', match: /donald/i, simon: false },
+    { label: 'Yale', match: /yale/i, simon: false },
+    { label: 'Dorado', match: /dorado/i, simon: true }
+  ];
+  const distSimon = d => (d.simon_amount || 0);
   // Own month dropdown: list every month with a distribution (newest first); default newest.
   const distMonthsAvail = [...new Set(distributions.map(d => d.period))].filter(Boolean).sort().reverse();
   const distMonth = (DIST_MONTH && distMonthsAvail.includes(DIST_MONTH)) ? DIST_MONTH : (distMonthsAvail[0] || SELECTED_MONTH);
   const distYear = (distMonth || '').slice(0, 4);
-  const distRowsMo = distributions.filter(d => d.period === distMonth);
-  const moYou = distRowsMo.reduce((s, d) => s + (d.your_amount || 0), 0);
-  const moNir = distRowsMo.reduce((s, d) => s + (d.partner_amount || 0), 0);
-  const distYtdYou = distributions.filter(d => d.period && d.period.slice(0, 4) === distYear && d.period <= distMonth).reduce((s, d) => s + (d.your_amount || 0), 0);
-  const distYtdNir = distributions.filter(d => d.period && d.period.slice(0, 4) === distYear && d.period <= distMonth).reduce((s, d) => s + (d.partner_amount || 0), 0);
   const distYtdSub = distMonth ? ('Jan – ' + (monthLabel(distMonth).split(' ')[0]) + ' ' + distYear) : '';
   const distMonthOpts = distMonthsAvail.map(m => '<option value="' + m + '"' + (m === distMonth ? ' selected' : '') + '>' + monthLabel(m) + '</option>').join('');
-  html += '<div class="section"><h2><span class="dot"></span><span>Partner Distributions (You vs Nir)</span>' +
+  html += '<div class="section"><h2><span class="dot"></span><span>Partner Distributions — per LLC</span>' +
     (distMonthsAvail.length ? '<select class="header-month-select" onchange="distSetMonth(this.value)" title="Month">' + distMonthOpts + '</select>' : '') + '</h2>';
-  html += '<div class="summary-grid" style="margin-bottom:18px">';
-  html += '<div class="summary-card dual"><div class="card-cell"><div class="label">This Month - You</div><div class="value" id="kpi-dist-mo-you" style="color:#00c97a">' + fmtShort(moYou) + '</div><div class="sublabel">' + (monthLabel(distMonth) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label">This Month - Nir</div><div class="value" id="kpi-dist-mo-nir" style="color:#00c97a">' + fmtShort(moNir) + '</div><div class="sublabel">' + (monthLabel(distMonth) || 'No data') + '</div></div></div>';
-  html += '<div class="summary-card dual blue"><div class="card-cell"><div class="label">YTD - You</div><div class="value" id="kpi-dist-ytd-you" style="color:#00c97a">' + fmtShort(distYtdYou) + '</div><div class="sublabel">' + distYtdSub + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">YTD - Nir</div><div class="value" id="kpi-dist-ytd-nir" style="color:#00c97a">' + fmtShort(distYtdNir) + '</div><div class="sublabel">' + distYtdSub + '</div></div></div>';
+  html += '<div style="color:#7e9cbf;font-size:13px;margin:-6px 0 14px">Each LLC pays out separately — many months an LLC is <b>$0</b>. All four are shown every month so a $0 means "nothing taken", not missing data.' +
+    (distMonth ? ' Showing <b>' + monthLabel(distMonth) + '</b> and YTD (' + distYtdSub + ').' : '') + '</div>';
+  const pdLabel = 'font-size:11px;color:#5a7ba0;text-transform:uppercase;letter-spacing:.6px;font-weight:600;margin:12px 0 4px';
+  html += '<div class="llc-grid">';
+  PDIST_LLCS.forEach(L => {
+    const moRows = distributions.filter(d => d.period === distMonth && L.match.test(d.llc || ''));
+    const ytdRows = distributions.filter(d => d.period && d.period.slice(0, 4) === distYear && d.period <= distMonth && L.match.test(d.llc || ''));
+    const sum = (rows, f) => rows.reduce((s, d) => s + (f(d) || 0), 0);
+    const moYou = sum(moRows, d => d.your_amount), moNir = sum(moRows, d => d.partner_amount), moSim = sum(moRows, distSimon);
+    const yYou = sum(ytdRows, d => d.your_amount), yNir = sum(ytdRows, d => d.partner_amount), ySim = sum(ytdRows, distSimon);
+    const moTot = moYou + moNir + moSim, yTot = yYou + yNir + ySim;
+    const row = (k, v, cls) => '<div class="llc-row"><span class="k">' + k + '</span><span class="v ' + (cls || '') + '">' + fmt(v) + '</span></div>';
+    const totRow = (v) => '<div class="llc-row total"><span class="k">Total</span><span class="v">' + fmt(v) + '</span></div>';
+    let card = '<div class="llc-card"><h3>' + L.label + '</h3>';
+    card += '<div style="' + pdLabel + '">This month · ' + (monthLabel(distMonth) || '—') + '</div>';
+    if (moTot === 0) {
+      card += '<div style="color:#4e6d8c;font-size:13px;padding:4px 0">$0 — nothing taken this month</div>';
+    } else {
+      card += row('Ron', moYou, 'green') + row('Nir', moNir, 'green') + (L.simon ? row('Simon', moSim, 'green') : '') + totRow(moTot);
+    }
+    card += '<div style="' + pdLabel + '">YTD · ' + distYtdSub + '</div>';
+    if (yTot === 0) {
+      card += '<div style="color:#4e6d8c;font-size:13px;padding:4px 0">$0 so far this year</div>';
+    } else {
+      card += row('Ron', yYou) + row('Nir', yNir) + (L.simon ? row('Simon', ySim) : '') + totRow(yTot);
+    }
+    card += '</div>';
+    html += card;
+  });
   html += '</div>';
+  // Per-year table (all LLCs combined) — tax-time picture. Simon column included.
+  const byYear = {};
+  distributions.forEach(d => { const y = (d.period || '').slice(0, 4) || '—'; if (!byYear[y]) byYear[y] = { you: 0, nir: 0, simon: 0 }; byYear[y].you += (d.your_amount || 0); byYear[y].nir += (d.partner_amount || 0); byYear[y].simon += distSimon(d); });
+  const lifeYou = distributions.reduce((s, d) => s + (d.your_amount || 0), 0);
+  const lifeNir = distributions.reduce((s, d) => s + (d.partner_amount || 0), 0);
+  const lifeSim = distributions.reduce((s, d) => s + distSimon(d), 0);
   const distYears = Object.keys(byYear).sort().reverse();
   if (distYears.length) {
-    html += '<table><thead><tr><th>Year</th><th>You</th><th>Nir</th><th>Total</th></tr></thead><tbody>';
-    distYears.forEach(y => { const r = byYear[y]; html += '<tr><td>' + y + '</td><td class="green">' + fmt(r.you) + '</td><td class="green">' + fmt(r.nir) + '</td><td>' + fmt(r.you + r.nir) + '</td></tr>'; });
-    html += '<tr style="font-weight:700;border-top:2px solid #1e2d42"><td>All time</td><td class="green">' + fmt(lifeYou) + '</td><td class="green">' + fmt(lifeNir) + '</td><td>' + fmt(lifeYou + lifeNir) + '</td></tr>';
+    html += '<div style="' + pdLabel + ';margin-top:20px">All LLCs combined · by year</div>';
+    html += '<table><thead><tr><th>Year</th><th>Ron</th><th>Nir</th><th>Simon</th><th>Total</th></tr></thead><tbody>';
+    distYears.forEach(y => { const r = byYear[y]; html += '<tr><td>' + y + '</td><td class="green">' + fmt(r.you) + '</td><td class="green">' + fmt(r.nir) + '</td><td class="green">' + fmt(r.simon) + '</td><td>' + fmt(r.you + r.nir + r.simon) + '</td></tr>'; });
+    html += '<tr style="font-weight:700;border-top:2px solid #1e2d42"><td>All time</td><td class="green">' + fmt(lifeYou) + '</td><td class="green">' + fmt(lifeNir) + '</td><td class="green">' + fmt(lifeSim) + '</td><td>' + fmt(lifeYou + lifeNir + lifeSim) + '</td></tr>';
     html += '</tbody></table>';
   } else { html += '<div style="color:#4e6d8c">No distributions recorded yet.</div>'; }
   html += '</div>';
@@ -3506,18 +3573,9 @@ function auditRun(openModal) {
       htile('kpi-rep-month', 'Repairs this month', fmt(repM));
       htile('kpi-rep-ytd', 'Repairs YTD', fmt(repY));
 
-      // ---- Partner distribution tiles (this month + YTD, per the section's own picker) ----
-      const _dMonths = [...new Set(distributions.map(d => d.period))].filter(Boolean).sort().reverse();
-      const _dMonth = (DIST_MONTH && _dMonths.includes(DIST_MONTH)) ? DIST_MONTH : (_dMonths[0] || SELECTED_MONTH);
-      const _dYear = (_dMonth || '').slice(0, 4);
-      const _moY = distributions.filter(d => d.period === _dMonth).reduce((s, d) => s + (d.your_amount || 0), 0);
-      const _moN = distributions.filter(d => d.period === _dMonth).reduce((s, d) => s + (d.partner_amount || 0), 0);
-      const _ytdY = distributions.filter(d => d.period && d.period.slice(0, 4) === _dYear && d.period <= _dMonth).reduce((s, d) => s + (d.your_amount || 0), 0);
-      const _ytdN = distributions.filter(d => d.period && d.period.slice(0, 4) === _dYear && d.period <= _dMonth).reduce((s, d) => s + (d.partner_amount || 0), 0);
-      kpi('kpi-dist-mo-you', 'This Month - You', _moY);
-      kpi('kpi-dist-mo-nir', 'This Month - Nir', _moN);
-      kpi('kpi-dist-ytd-you', 'YTD - You', _ytdY);
-      kpi('kpi-dist-ytd-nir', 'YTD - Nir', _ytdN);
+      // ---- Partner Distributions is now per-LLC cards (no #kpi-dist-* tiles). The
+      //      cards are a pure read of the Distributions tab with no cross-total to
+      //      reconcile, so there is nothing for the audit to recompute here. ----
 
       // ---- Per-LLC cards: rendered net vs recompute; sum == Net tile ----
       // Scope to the Monthly Breakdown section ONLY. The Distribution Planner and the
