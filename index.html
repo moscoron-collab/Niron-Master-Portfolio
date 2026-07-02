@@ -134,8 +134,8 @@
   .msg-fab-badge { position: absolute; top: -2px; right: -2px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #ff3b30; color: #fff; font-size: 12px; font-weight: 700; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.45); border: 2px solid #0a1420; }
   .msg-fab.has-unread { animation: msgPulse 1.6s ease-in-out infinite; }
   @keyframes msgPulse { 0%,100% { box-shadow: 0 4px 20px rgba(214,51,108,0.45); } 50% { box-shadow: 0 4px 26px rgba(255,59,48,0.85); } }
-  .msg-audio { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
-  .msg-audio audio { height: 34px; max-width: 210px; }
+  .msg-audio { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+  .msg-audio-frame { width: 240px; height: 62px; border: 0; border-radius: 8px; background: #0a1420; }
   .msg-audio-link { font-size: 12px; color: #9fc0e0; text-decoration: none; white-space: nowrap; }
   /* ✉️ Messages (Ron ↔ Nir) feed + bubbles */
   .msg-feed { max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px 4px; margin: 8px 0; background: #0a1522; border: 1px solid #182437; border-radius: 8px; }
@@ -1490,8 +1490,18 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "1.8";
+const APP_VERSION = "1.9";
 const CHANGELOG = [
+  {
+    version: "1.9",
+    date: "July 2, 2026",
+    en: [
+      "Voice notes in Messages now play reliably — they use Google Drive's built-in player, which fixes the 'Error' some notes still showed. A '🎤 open' link is always there as a backup."
+    ],
+    he: [
+      "הודעות קוליות בצ'אט מתנגנות עכשיו באופן אמין — הן משתמשות בנגן המובנה של Google Drive, מה שמתקן את ה-'Error' שחלק מההודעות עדיין הציגו. קישור '🎤 open' תמיד זמין כגיבוי."
+    ]
+  },
   {
     version: "1.8",
     date: "July 2, 2026",
@@ -4376,7 +4386,11 @@ function msgOtherName(actor) { return actor === 'N.S' ? 'Ron' : 'Nir'; }
 // played in <audio> or shown in <img>. Convert it to a direct-stream URL so voice notes/photos
 // actually load. Works for already-sent notes too (pure frontend, no re-upload needed).
 function driveFileId(url) { if (!url) return ''; const m = String(url).match(/\/d\/([-\w]{20,})/) || String(url).match(/[?&]id=([-\w]{20,})/); return m ? m[1] : ''; }
-function driveMediaUrl(url) { const id = driveFileId(url); return id ? ('https://drive.google.com/uc?export=download&id=' + id) : url; }
+// Google's embeddable preview player — reliably plays audio/video of any format in an <iframe>
+// (the plain uc?export=download URL redirects and errors inside <audio>).
+function driveEmbedUrl(url) { const id = driveFileId(url); return id ? ('https://drive.google.com/file/d/' + id + '/preview') : url; }
+// A direct image bytes endpoint that works in <img> (the viewer URL does not).
+function driveThumbUrl(url) { const id = driveFileId(url); return id ? ('https://drive.google.com/thumbnail?id=' + id + '&sz=w1000') : url; }
 
 // ✉️ Unread indicator on the pink envelope FAB: a red count badge when the OTHER person has
 // sent a message this browser hasn't seen yet. "Seen" = newest message timestamp at last open.
@@ -4446,8 +4460,8 @@ function renderMessages() {
     const when = m.sent_at ? new Date(m.sent_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
     let inner = '';
     if (m.text) inner += escapeHtml(m.text).replace(/\n/g, '<br>');
-    if (m.photo_url) inner += '<a href="' + escapeHtml(m.photo_url) + '" target="_blank"><img src="' + escapeHtml(driveMediaUrl(m.photo_url)) + '" alt="photo"></a>';
-    if (m.voice_url) inner += '<div class="msg-audio"><audio controls preload="none" src="' + escapeHtml(driveMediaUrl(m.voice_url)) + '"></audio>' +
+    if (m.photo_url) inner += '<a href="' + escapeHtml(m.photo_url) + '" target="_blank"><img src="' + escapeHtml(driveThumbUrl(m.photo_url)) + '" alt="photo"></a>';
+    if (m.voice_url) inner += '<div class="msg-audio"><iframe class="msg-audio-frame" src="' + escapeHtml(driveEmbedUrl(m.voice_url)) + '" allow="autoplay" title="voice note"></iframe>' +
       '<a class="msg-audio-link" href="' + escapeHtml(m.voice_url) + '" target="_blank">🎤 open</a></div>';
     if (!inner) inner = '<span style="opacity:.6">(no content)</span>';
     const del = mine ? ' · <a href="#" onclick="msgDelete(' + m.row + ');return false" style="color:#ff6b81">delete</a>' : '';
