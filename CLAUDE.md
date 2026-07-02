@@ -53,6 +53,18 @@ added `<span>` is not a `.llc-card`). Version bumped 1.1 → 1.2 with a new top 
 
 ---
 
+## 💡 Cashflow Trend chart light-bulb tooltip (Jul 2 2026, APP_VERSION → 1.3)
+
+The **Cashflow Trend (Bars per LLC + Total Line)** section `<h2>` (in `renderAll`, ~line 2680 of
+`index.html`) now has a **💡 hover tooltip** (reuses the `.kpi-info`/`.kpi-tip` bubble) explaining
+what the chart shows: each colored **bar** = one LLC's monthly **Net Cashflow**, the white **TOTAL
+Portfolio line** = all LLCs summed, plus the Net formula (`Disbursement − Mortgage − Insurance −
+Maintenance`), the same field definitions + Divando-includes-Hare/Joest/Stockport note + tax note as
+the Monthly-Performance tooltip. Pure frontend, live on merge — no Apps Script redeploy. Self-audit
+unaffected (no `#kpi-*` IDs). Version bumped 1.2 → 1.3 with a new top CHANGELOG entry (en+he).
+
+---
+
 ## 🔒 CRITICAL SECURITY CONSTRAINT
 
 This repo holds **both** Niron LLC and Moss Investments automation code.
