@@ -1383,17 +1383,20 @@ with "Bad request"; `data.messages` is undefined → empty feed).
 ### 🐛 Two Messages fixes from Nir's first testing session (Jul 2 2026, APP_VERSION → 1.2, PURE FRONTEND)
 Reported after showing Nir the db. Both fixed in `index.html`, **no Apps Script redeploy** (they only
 transform the already-stored data / add a badge):
-1. **🎤 Voice notes played as "Error" → FIXED.** Root cause: `saveMessageFile` (and `saveBugFile`) store
-   a Drive **`f.getUrl()`** which is a **viewer page** (`…/file/d/ID/view`), NOT raw bytes — so
-   `<audio controls src="<view-url>">` (and `<img src>`) always errored. Fix: new frontend helpers
-   **`driveFileId(url)`** + **`driveMediaUrl(url)`** convert any Drive URL → a direct-stream URL
-   (`https://drive.google.com/uc?export=download&id=ID`). `renderMessages` now plays voice from
-   `driveMediaUrl(m.voice_url)` **plus a "🎤 open" fallback link** to the original viewer (guaranteed to
-   play in Drive if inline ever fails), and photos use `driveMediaUrl` for the `<img>`. Works for
-   **already-sent** notes too — it's a display-time transform, nothing re-uploaded. ⚠️ If inline `<audio>`
-   still errors in some browser, the "open" link is the safety net; a deeper fix would be an Apps Script
-   media proxy (ContentService can't stream binary, so not built — the direct-stream URL + link is the
-   practical path).
+1. **🎤 Voice notes played as "Error" → FIXED (final approach: Drive `/preview` iframe, v1.9).** Root
+   cause: `saveMessageFile` (and `saveBugFile`) store a Drive **`f.getUrl()`** which is a **viewer page**
+   (`…/file/d/ID/view`), NOT raw bytes — so `<audio controls src="<view-url>">` (and `<img src>`) always
+   errored. **First attempt (v1.2)** used `driveMediaUrl` → `https://drive.google.com/uc?export=download&id=ID`
+   in an `<audio>` tag; that **still errored** (Drive redirects that URL to a `googleusercontent` host and
+   `<audio>` chokes / it isn't CORS-streamable). **Final fix (v1.9):** render voice via Google's own
+   embeddable player in an **`<iframe class="msg-audio-frame" src="…/file/d/ID/preview">`** (helper
+   **`driveEmbedUrl`**) — Drive's `/preview` is designed to be embedded and plays any format reliably.
+   Photos switched to **`driveThumbUrl`** → `https://drive.google.com/thumbnail?id=ID&sz=w1000` (a real
+   image-bytes endpoint that works in `<img>`; the viewer URL doesn't). A **"🎤 open" link** to the viewer
+   is kept as a guaranteed fallback. All display-time transforms of the stored URL → works for **already-sent**
+   notes, nothing re-uploaded, **no Apps Script redeploy**. (`driveMediaUrl`/`uc?export=download` was the
+   abandoned intermediate — don't reuse it for `<audio>`; use `driveEmbedUrl`/iframe.) A true Apps Script
+   media proxy isn't possible (ContentService can't stream binary), so the iframe player + link is the path.
 2. **✉️ Unread indicator on the pink FAB → ADDED.** New **red count badge** (`#msg-fab-badge`) + a gentle
    `has-unread` pulse on `#msg-fab` when the OTHER person has sent a message this browser hasn't seen.
    Helpers: `msgSeenTs`/`markMsgSeen` (localStorage **`niron_msg_seen_ts`** = newest message ts at last
