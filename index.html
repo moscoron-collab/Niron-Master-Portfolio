@@ -1490,8 +1490,18 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "1.9";
+const APP_VERSION = "1.10";
 const CHANGELOG = [
+  {
+    version: "1.10",
+    date: "July 2, 2026",
+    en: [
+      "You can now edit a text message after sending it in Messages — click 'edit' under your own message, change the text, and it updates for both of you (marked 'edited'). 'Delete' is still there too."
+    ],
+    he: [
+      "אפשר עכשיו לערוך הודעת טקסט אחרי ששלחת אותה בצ'אט — לוחצים על 'edit' מתחת להודעה שלך, משנים את הטקסט, וזה מתעדכן אצל שניכם (מסומן 'edited'). גם 'delete' עדיין קיים."
+    ]
+  },
   {
     version: "1.9",
     date: "July 2, 2026",
@@ -4464,10 +4474,12 @@ function renderMessages() {
     if (m.voice_url) inner += '<div class="msg-audio"><iframe class="msg-audio-frame" src="' + escapeHtml(driveEmbedUrl(m.voice_url)) + '" allow="autoplay" title="voice note"></iframe>' +
       '<a class="msg-audio-link" href="' + escapeHtml(m.voice_url) + '" target="_blank">🎤 open</a></div>';
     if (!inner) inner = '<span style="opacity:.6">(no content)</span>';
+    const editedTag = m.edited_at ? ' · <span style="opacity:.6;font-style:italic">edited</span>' : '';
+    const edit = (mine && m.text) ? ' · <a href="#" onclick="msgEdit(' + m.row + ');return false" style="color:#9fc0e0">edit</a>' : '';
     const del = mine ? ' · <a href="#" onclick="msgDelete(' + m.row + ');return false" style="color:#ff6b81">delete</a>' : '';
     return '<div class="msg-row ' + (mine ? 'mine' : 'theirs') + '">' +
       '<div class="msg-bubble">' + inner + '</div>' +
-      '<div class="msg-meta">' + escapeHtml(name) + ' · ' + when + del + '</div>' +
+      '<div class="msg-meta">' + escapeHtml(name) + ' · ' + when + editedTag + edit + del + '</div>' +
     '</div>';
   }).join('');
   feed.scrollTop = feed.scrollHeight;
@@ -4514,6 +4526,27 @@ async function msgDelete(row) {
     const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'delete_message', row: row, actor: actor }) });
     const result = await res.json();
     if (result.error) { alert('Error: ' + result.error); return; }
+    await msgRefresh();
+  } catch (e) { alert('Network error: ' + e.message); }
+}
+
+// Edit the text of your own message (text only; use delete for photo/voice).
+async function msgEdit(row) {
+  const m = (PORTFOLIO_DATA && PORTFOLIO_DATA.messages || []).find(x => x.row === row);
+  if (!m) return;
+  const actor = ensureActor(); if (!actor) return;
+  if (actor !== m.from) { alert('You can only edit your own messages.'); return; }
+  const next = prompt('Edit your message:', m.text || '');
+  if (next === null) return;                       // cancelled
+  const t = next.trim();
+  if (!t) { alert('Message is empty — use “delete” to remove it.'); return; }
+  if (t === (m.text || '')) return;                // unchanged
+  try {
+    const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ action: 'update_message', row: row, text: t, actor: actor, from: actor }) });
+    const result = await res.json();
+    if (result.error) { alert('Error: ' + result.error); return; }
+    m.text = t; m.edited_at = new Date().toISOString();  // optimistic; refresh confirms
+    renderMessages();
     await msgRefresh();
   } catch (e) { alert('Network error: ' + e.message); }
 }

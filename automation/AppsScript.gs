@@ -1191,6 +1191,9 @@ function doPost(e) {
     if (body.action === 'add_message') {
       return addMessageEntry(body);
     }
+    if (body.action === 'update_message') {
+      return updateMessageEntry(body);
+    }
     if (body.action === 'delete_message') {
       return deleteMessageEntry(body);
     }
@@ -2074,12 +2077,13 @@ function getDashboardJson() {
   // Private Ron↔Nir messages (✉️ Messages button). 7 cols A–G, data row 5. Oldest first (newest at bottom).
   var msgSh = ensureMessagesTab(ss);
   if (msgSh && msgSh.getLastRow() >= 5) {
-    msgSh.getRange(5, 1, msgSh.getLastRow() - 4, 7).getValues().forEach(function(r, i) {
+    msgSh.getRange(5, 1, msgSh.getLastRow() - 4, 8).getValues().forEach(function(r, i) {
       if (!r[0] && !r[2] && !r[3] && !r[4]) return; // skip fully-blank rows (no id/text/photo/voice)
       data.messages.push({
         row: 5 + i, id: r[0] || '', from: r[1] || '', text: r[2] || '',
         photo_url: r[3] || '', voice_url: r[4] || '',
-        sent_at: (r[5] instanceof Date ? r[5].toISOString() : String(r[5] || '')), sent_tz: r[6] || ''
+        sent_at: (r[5] instanceof Date ? r[5].toISOString() : String(r[5] || '')), sent_tz: r[6] || '',
+        edited_at: (r[7] instanceof Date ? r[7].toISOString() : String(r[7] || ''))
       });
     });
     data.messages.sort(function(a, b) { return a.sent_at < b.sent_at ? -1 : (a.sent_at > b.sent_at ? 1 : 0); });
@@ -2742,7 +2746,7 @@ function ensureMessagesTab(ss) {
   if (sh) return sh;
   sh = ss.insertSheet('Messages');
   sh.getRange(1, 1).setValue('MESSAGES — private chat between Ron & Nir (from the dashboard ✉️ Messages button). Each new message emails the other partner the full text.').setFontWeight('bold');
-  var headers = ['ID', 'From', 'Text', 'Photo URL', 'Voice URL', 'Sent At', 'Sent TZ'];
+  var headers = ['ID', 'From', 'Text', 'Photo URL', 'Voice URL', 'Sent At', 'Sent TZ', 'Edited At'];
   sh.getRange(4, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
   sh.setFrozenRows(4);
   return sh;
@@ -2821,4 +2825,22 @@ function deleteMessageEntry(data) {
   sh.deleteRow(row);
   logActivity(data.actor, 'Deleted a message', vals[0] || '');
   return ContentService.createTextOutput(JSON.stringify({ok: true, deleted: row})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Edit the TEXT of an existing message. Only the original sender may edit their own message.
+// Stamps an "Edited At" so the dashboard can show an "edited" marker. Does NOT re-email (an edit
+// isn't a new message).
+function updateMessageEntry(data) {
+  var sh = ensureMessagesTab(SpreadsheetApp.getActiveSpreadsheet());
+  var row = Number(data.row);
+  if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error: 'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
+  var actor = (data.actor || data.from || '').toString().trim();
+  var rowFrom = (sh.getRange(row, 2).getValue() || '').toString().trim();  // B = From
+  if (actor !== rowFrom) return ContentService.createTextOutput(JSON.stringify({error: 'You can only edit your own messages.'})).setMimeType(ContentService.MimeType.JSON);
+  var text = (data.text || '').toString();
+  if (!text.trim()) return ContentService.createTextOutput(JSON.stringify({error: 'Message text cannot be empty — delete it instead.'})).setMimeType(ContentService.MimeType.JSON);
+  sh.getRange(row, 3).setValue(text);        // C = Text
+  sh.getRange(row, 8).setValue(new Date());  // H = Edited At
+  logActivity(actor, 'Edited a message', text.length > 60 ? text.slice(0, 60) + '…' : text);
+  return ContentService.createTextOutput(JSON.stringify({ok: true, row: row})).setMimeType(ContentService.MimeType.JSON);
 }
