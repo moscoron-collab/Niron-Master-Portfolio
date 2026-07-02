@@ -1380,7 +1380,7 @@ with "Bad request"; `data.messages` is undefined → empty feed).
   Deploy → Manage deployments → Edit → New version → Deploy — Drive + Mail scopes were already
   granted, no new scope). The `Messages` tab + `Niron Messages` Drive folder auto-create on first use.
 
-### ✏️ Edit a sent text message (Jul 2 2026, APP_VERSION → 1.10, NEEDS REDEPLOY)
+### ✏️ Edit a sent text message (Jul 2 2026, APP_VERSION → 2.0, NEEDS REDEPLOY)
 User wanted an edit option on sent messages (delete already existed). Added **text-only editing** of your
 own messages.
 - **Frontend (`index.html`, live on merge):** `renderMessages` now shows an **`edit`** link (next to
