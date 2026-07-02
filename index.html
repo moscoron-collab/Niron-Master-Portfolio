@@ -131,6 +131,12 @@
   .stmt-fab:hover { transform: scale(1.05); }
   .msg-fab { position: fixed; bottom: 296px; right: 24px; width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #d6336c, #f06595); border: none; cursor: pointer; z-index: 1000; box-shadow: 0 4px 20px rgba(214, 51, 108, 0.45); font-size: 24px; color: white; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
   .msg-fab:hover { transform: scale(1.05); }
+  .msg-fab-badge { position: absolute; top: -2px; right: -2px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #ff3b30; color: #fff; font-size: 12px; font-weight: 700; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.45); border: 2px solid #0a1420; }
+  .msg-fab.has-unread { animation: msgPulse 1.6s ease-in-out infinite; }
+  @keyframes msgPulse { 0%,100% { box-shadow: 0 4px 20px rgba(214,51,108,0.45); } 50% { box-shadow: 0 4px 26px rgba(255,59,48,0.85); } }
+  .msg-audio { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .msg-audio audio { height: 34px; max-width: 210px; }
+  .msg-audio-link { font-size: 12px; color: #9fc0e0; text-decoration: none; white-space: nowrap; }
   /* ✉️ Messages (Ron ↔ Nir) feed + bubbles */
   .msg-feed { max-height: 46vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 8px 4px; margin: 8px 0; background: #0a1522; border: 1px solid #182437; border-radius: 8px; }
   .msg-row { display: flex; flex-direction: column; max-width: 82%; flex-shrink: 0; }
@@ -922,7 +928,7 @@
   <button class="maint-fab" id="maint-fab" onclick="openMaintModal()" title="Add maintenance invoice">🔧</button>
   <button class="dist-fab" id="dist-fab" onclick="openDistModal()" title="Add distribution">💰</button>
   <button class="stmt-fab" id="stmt-fab" onclick="openStmtModal()" title="Add monthly statement (Suncoast/MidSouth)">📋</button>
-  <button class="msg-fab" id="msg-fab" onclick="openMsgModal()" title="Messages — chat with Nir">✉️</button>
+  <button class="msg-fab" id="msg-fab" onclick="openMsgModal()" title="Messages — chat with Nir">✉️<span class="msg-fab-badge" id="msg-fab-badge" style="display:none">0</span></button>
 
   <header class="app-header">
     <div class="header-left">
@@ -1482,8 +1488,20 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "1.6";
+const APP_VERSION = "1.7";
 const CHANGELOG = [
+  {
+    version: "1.7",
+    date: "July 2, 2026",
+    en: [
+      "Voice notes in Messages now play correctly — before, a sent voice note showed an 'Error' and couldn't be heard.",
+      "The ✉️ Messages button now shows a red number badge (and a gentle pulse) when the other person sends you a new message, so you know to check it. It clears the moment you open the chat."
+    ],
+    he: [
+      "הודעות קוליות בצ'אט מתנגנות עכשיו כמו שצריך — קודם הודעה קולית שנשלחה הציגה 'Error' ולא היה אפשר לשמוע אותה.",
+      "כפתור ✉️ ההודעות מציג עכשיו מספר אדום (עם פעימה עדינה) כשהצד השני שולח לך הודעה חדשה, כדי שתדע להיכנס. הסימון נעלם ברגע שפותחים את הצ'אט."
+    ]
+  },
   {
     version: "1.6",
     date: "July 2, 2026",
@@ -2562,7 +2580,7 @@ function aggregateLlcPeriod(rows, maintenance) {
 }
 
 async function load() { try { const res = await dashGet(); const data = await res.json(); PORTFOLIO_DATA = data; initialRender(data); } catch (e) { document.getElementById("content").innerHTML = '<div class="error">Failed to load: ' + e.message + '</div>'; document.getElementById("status").textContent = "● Offline"; document.getElementById("status").style.color = "#ff4455"; } }
-function initialRender(data) { document.getElementById("last-updated").textContent = new Date(data.last_updated).toLocaleString(); const history = data.history || []; const months = [...new Set(history.map(h => h.period_start))].sort().reverse(); SELECTED_MONTH = months[0] || ""; renderAll(); renderTaxSection(); renderLoansSection(); }
+function initialRender(data) { document.getElementById("last-updated").textContent = new Date(data.last_updated).toLocaleString(); const history = data.history || []; const months = [...new Set(history.map(h => h.period_start))].sort().reverse(); SELECTED_MONTH = months[0] || ""; renderAll(); renderTaxSection(); renderLoansSection(); updateMsgBadge(); }
 // Short LLC label + per-LLC repairs mini-table (vertical, biggest first, only LLCs with repairs).
 function shortLlc(llc) { const n = (llc || '').toLowerCase(); if (n.includes('divando')) return 'Divando'; if (n.includes('donald')) return 'Donald'; if (n.includes('yale')) return 'Yale'; if (n.includes('dorado')) return 'Dorado'; return llc || 'Other'; }
 function repairsMiniTable(records) {
@@ -4193,7 +4211,7 @@ async function reloadTax() {
 function getActor() { return localStorage.getItem('niron_actor') || ''; }
 // Keep every "Signed in as" picker (header + maintenance card) showing the same person.
 function syncActorSelects() { const v = getActor(); document.querySelectorAll('.actor-pick').forEach(s => { s.value = v; }); }
-function setActor(v) { if (v) localStorage.setItem('niron_actor', v); else localStorage.removeItem('niron_actor'); syncActorSelects(); }
+function setActor(v) { if (v) localStorage.setItem('niron_actor', v); else localStorage.removeItem('niron_actor'); syncActorSelects(); if (typeof updateMsgBadge === 'function') updateMsgBadge(); }
 function restoreActor() { syncActorSelects(); }
 // Require a signed-in person before any change, so it can be logged with attribution.
 function ensureActor() {
@@ -4319,11 +4337,48 @@ let msgPollTimer = null;
 // The other partner in the chat (used for placeholder + "will get an email" copy).
 function msgOtherName(actor) { return actor === 'N.S' ? 'Ron' : 'Nir'; }
 
+// A Drive file's getUrl() is a VIEWER page (…/file/d/ID/view), not raw bytes — it can't be
+// played in <audio> or shown in <img>. Convert it to a direct-stream URL so voice notes/photos
+// actually load. Works for already-sent notes too (pure frontend, no re-upload needed).
+function driveFileId(url) { if (!url) return ''; const m = String(url).match(/\/d\/([-\w]{20,})/) || String(url).match(/[?&]id=([-\w]{20,})/); return m ? m[1] : ''; }
+function driveMediaUrl(url) { const id = driveFileId(url); return id ? ('https://drive.google.com/uc?export=download&id=' + id) : url; }
+
+// ✉️ Unread indicator on the pink envelope FAB: a red count badge when the OTHER person has
+// sent a message this browser hasn't seen yet. "Seen" = newest message timestamp at last open.
+function msgSeenTs() { return localStorage.getItem('niron_msg_seen_ts') || ''; }
+function markMsgSeen() {
+  const msgs = (PORTFOLIO_DATA && PORTFOLIO_DATA.messages) || [];
+  let max = ''; msgs.forEach(m => { if (m.sent_at && m.sent_at > max) max = m.sent_at; });
+  if (max) localStorage.setItem('niron_msg_seen_ts', max);
+  updateMsgBadge();
+}
+function msgUnreadCount() {
+  const me = getActor(); if (me !== 'R.M' && me !== 'N.S') return 0;
+  const seenT = msgSeenTs() ? new Date(msgSeenTs()).getTime() : 0;
+  const msgs = (PORTFOLIO_DATA && PORTFOLIO_DATA.messages) || [];
+  return msgs.filter(m => m.from && m.from !== me && m.sent_at && new Date(m.sent_at).getTime() > seenT).length;
+}
+function updateMsgBadge() {
+  const b = document.getElementById('msg-fab-badge'); const fab = document.getElementById('msg-fab'); if (!b) return;
+  const n = msgUnreadCount();
+  if (n > 0) { b.textContent = n > 9 ? '9+' : String(n); b.style.display = 'flex'; if (fab) fab.classList.add('has-unread'); }
+  else { b.style.display = 'none'; if (fab) fab.classList.remove('has-unread'); }
+}
+// Light background poll so the envelope lights up without a manual refresh (email is the backup).
+let msgBadgePollTimer = null;
+async function msgBadgePoll() {
+  const modal = document.getElementById('msg-modal');
+  if (modal && modal.classList.contains('open')) return; // open modal already refreshes + marks seen
+  try { const res = await dashGet(); const data = await res.json(); if (data && data.messages && PORTFOLIO_DATA) PORTFOLIO_DATA.messages = data.messages; updateMsgBadge(); } catch (e) { /* offline */ }
+}
+if (!msgBadgePollTimer) msgBadgePollTimer = setInterval(msgBadgePoll, 45000);
+
 function openMsgModal() {
   syncActorSelects();
   renderMessages();
   document.getElementById('msg-modal').classList.add('open');
   msgRefresh();
+  markMsgSeen();  // opening the chat clears the unread badge
   // Feel like a live chat while the box is open (email is the real alert when it's closed).
   if (msgPollTimer) clearInterval(msgPollTimer);
   msgPollTimer = setInterval(msgRefresh, 25000);
@@ -4340,7 +4395,7 @@ async function msgRefresh() {
   if (!document.getElementById('msg-modal').classList.contains('open')) return;
   try {
     const res = await dashGet(); const data = await res.json();
-    if (data && data.messages) { if (PORTFOLIO_DATA) PORTFOLIO_DATA.messages = data.messages; renderMessages(); }
+    if (data && data.messages) { if (PORTFOLIO_DATA) PORTFOLIO_DATA.messages = data.messages; renderMessages(); markMsgSeen(); }
   } catch (e) { /* offline — keep showing what we already have */ }
 }
 
@@ -4356,8 +4411,9 @@ function renderMessages() {
     const when = m.sent_at ? new Date(m.sent_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
     let inner = '';
     if (m.text) inner += escapeHtml(m.text).replace(/\n/g, '<br>');
-    if (m.photo_url) inner += '<a href="' + escapeHtml(m.photo_url) + '" target="_blank"><img src="' + escapeHtml(m.photo_url) + '" alt="photo"></a>';
-    if (m.voice_url) inner += '<audio controls src="' + escapeHtml(m.voice_url) + '"></audio>';
+    if (m.photo_url) inner += '<a href="' + escapeHtml(m.photo_url) + '" target="_blank"><img src="' + escapeHtml(driveMediaUrl(m.photo_url)) + '" alt="photo"></a>';
+    if (m.voice_url) inner += '<div class="msg-audio"><audio controls preload="none" src="' + escapeHtml(driveMediaUrl(m.voice_url)) + '"></audio>' +
+      '<a class="msg-audio-link" href="' + escapeHtml(m.voice_url) + '" target="_blank">🎤 open</a></div>';
     if (!inner) inner = '<span style="opacity:.6">(no content)</span>';
     const del = mine ? ' · <a href="#" onclick="msgDelete(' + m.row + ');return false" style="color:#ff6b81">delete</a>' : '';
     return '<div class="msg-row ' + (mine ? 'mine' : 'theirs') + '">' +

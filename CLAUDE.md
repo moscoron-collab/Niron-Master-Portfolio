@@ -1380,6 +1380,29 @@ with "Bad request"; `data.messages` is undefined → empty feed).
   Deploy → Manage deployments → Edit → New version → Deploy — Drive + Mail scopes were already
   granted, no new scope). The `Messages` tab + `Niron Messages` Drive folder auto-create on first use.
 
+### 🐛 Two Messages fixes from Nir's first testing session (Jul 2 2026, APP_VERSION → 1.2, PURE FRONTEND)
+Reported after showing Nir the db. Both fixed in `index.html`, **no Apps Script redeploy** (they only
+transform the already-stored data / add a badge):
+1. **🎤 Voice notes played as "Error" → FIXED.** Root cause: `saveMessageFile` (and `saveBugFile`) store
+   a Drive **`f.getUrl()`** which is a **viewer page** (`…/file/d/ID/view`), NOT raw bytes — so
+   `<audio controls src="<view-url>">` (and `<img src>`) always errored. Fix: new frontend helpers
+   **`driveFileId(url)`** + **`driveMediaUrl(url)`** convert any Drive URL → a direct-stream URL
+   (`https://drive.google.com/uc?export=download&id=ID`). `renderMessages` now plays voice from
+   `driveMediaUrl(m.voice_url)` **plus a "🎤 open" fallback link** to the original viewer (guaranteed to
+   play in Drive if inline ever fails), and photos use `driveMediaUrl` for the `<img>`. Works for
+   **already-sent** notes too — it's a display-time transform, nothing re-uploaded. ⚠️ If inline `<audio>`
+   still errors in some browser, the "open" link is the safety net; a deeper fix would be an Apps Script
+   media proxy (ContentService can't stream binary, so not built — the direct-stream URL + link is the
+   practical path).
+2. **✉️ Unread indicator on the pink FAB → ADDED.** New **red count badge** (`#msg-fab-badge`) + a gentle
+   `has-unread` pulse on `#msg-fab` when the OTHER person has sent a message this browser hasn't seen.
+   Helpers: `msgSeenTs`/`markMsgSeen` (localStorage **`niron_msg_seen_ts`** = newest message ts at last
+   open), `msgUnreadCount` (messages `from !== getActor()` newer than seen; 0 unless signed in as R.M/N.S),
+   `updateMsgBadge`. Cleared by **`markMsgSeen()`** on `openMsgModal` + every `msgRefresh`. Updated on
+   `initialRender`, `setActor` (identity change), and a **45s background poll `msgBadgePoll`** (skips while
+   the modal is open) so the envelope lights up without a manual refresh (email stays the real-time alert).
+   Self-audit unaffected (no `#kpi-*` IDs).
+
 ## ❌ Distribution Planner DROPPED + 🚨 Net Cashflow is UNDERSTATED (Jun 7 2026, PR #65)
 
 **The Distribution Planner was REMOVED (PR #65).** The user reviewed 3 months (Mar–May 2026)
