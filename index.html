@@ -1490,8 +1490,20 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.0";
+const APP_VERSION = "2.1";
 const CHANGELOG = [
+  {
+    version: "2.1",
+    date: "July 2, 2026",
+    en: [
+      "Distribution Planner: 'Safe to distribute' is now rounded to the nearest $100 (no cents) so the number is clean and easy to act on.",
+      "The per-partner line now shows the names instead of 'Each partner' — 'Nir / Ronen' on Divando, Donald and Yale, and 'Nir / Ronen / Simon' on Dorado (which splits 3 ways)."
+    ],
+    he: [
+      "מתכנן החלוקות: 'בטוח לחלוקה' מעוגל עכשיו למאה הדולרים הקרובים (בלי סנטים) כך שהמספר נקי וקל לפעולה.",
+      "השורה לכל שותף מציגה עכשיו את השמות במקום 'כל שותף' — 'ניר / רונן' ב-Divando, Donald ו-Yale, ו-'ניר / רונן / סיימון' ב-Dorado (שמתחלק לשלושה)."
+    ]
+  },
   {
     version: "2.0",
     date: "July 2, 2026",
@@ -2931,8 +2943,9 @@ function renderDistributionPlanner(data) {
     const cushion = reserved.reduce((s, it) => s + it.amt, 0) + maintSum + utility + buffer;
     const has = bals[key] != null && bals[key] !== '';
     const bal = Number(bals[key]) || 0;
-    const safe = Math.max(0, bal - cushion);
+    const safe = Math.round(Math.max(0, bal - cushion) / 100) * 100;   // round to nearest $100 (no cents)
     const each = safe / c.split;
+    const partnerLabel = c.split === 3 ? 'Nir / Ronen / Simon' : 'Nir / Ronen';
     h += '<div class="llc-card"><h3>' + c.label + (c.split === 3 ? ' <span style="color:#4e6d8c;font-size:11px;font-weight:400">(÷3 w/ Simon)</span>' : '') + '</h3>';
     h += '<div class="plan-top">';
     h += '<div class="llc-row"><span class="k">Bank balance now</span><span class="v" style="display:flex;align-items:center;justify-content:flex-end;gap:4px"><span style="color:#7e9cbf;font-size:13px">$</span><input type="number" value="' + (has ? bals[key] : '') + '" placeholder="enter" onchange="setCashBalance(\'' + key + '\', this.value)" style="width:112px;text-align:right;background:#0a1520;border:1px solid #1e2d42;border-radius:6px;color:#fff;padding:4px 8px;font-size:13px"></span></div>';
@@ -2964,8 +2977,9 @@ function renderDistributionPlanner(data) {
     // Totals block — aligned row-for-row across all 4 cards.
     h += '<div class="plan-totals">';
     h += '<div class="llc-row"><span class="k">Cushion to leave</span><span class="v" style="color:#f0a500">' + fmt(cushion) + '</span></div>';
-    h += '<div class="llc-row total"><span class="k">Safe to distribute</span><span class="v ' + (has ? (safe > 0 ? 'green' : 'red') : '') + '">' + (has ? fmt(safe) : '—') + '</span></div>';
-    h += '<div class="llc-row"><span class="k" style="color:#00c97a">Each partner</span><span class="v" style="color:#00c97a">' + (has ? fmt(each) : '—') + '</span></div>';
+    const fmt0 = n => '$' + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });   // no cents
+    h += '<div class="llc-row total"><span class="k">Safe to distribute</span><span class="v ' + (has ? (safe > 0 ? 'green' : 'red') : '') + '">' + (has ? fmt0(safe) : '—') + '</span></div>';
+    h += '<div class="llc-row"><span class="k" style="color:#00c97a">' + partnerLabel + '</span><span class="v" style="color:#00c97a">' + (has ? fmt(each) : '—') + '</span></div>';
     h += '</div>';
     // "Coming up before next deposit" + a collapsed "Drafted this month" reference list —
     // pinned to the bottom so all 4 cards bottom-align.
