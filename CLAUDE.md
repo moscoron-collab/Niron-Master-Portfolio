@@ -13,6 +13,47 @@
 
 ---
 
+## 💸 Partner Distributions → PER LLC + Simon field (Jul 2 2026, APP_VERSION → 2.2, NEEDS REDEPLOY)
+
+The **Partner Distributions** section (`renderAll`, was ~line 2772 of `index.html`) was reworked from
+ONE portfolio-total card (This-Month/YTD You-vs-Nir tiles) into **one card per LLC**, because each LLC
+pays out different amounts each month and **many months an LLC is $0**. User decisions (via
+AskUserQuestion, Jul 2 2026): **a card per LLC · always show all 4 (even at $0) · add a real Simon
+field for Dorado · make YTD per-LLC too**.
+
+- **Frontend (`index.html`, live on merge):** `PDIST_LLCS = [{label:'Divando',match:/divando/i},
+  {label:'Donald',…},{label:'Yale',…},{label:'Dorado',…,simon:true}]` drives a `.llc-grid` of **4
+  cards, always rendered**. Each card shows **This month** (Ron / Nir / Total, + **Simon** on Dorado)
+  and **YTD · Jan–<month>** (same). A zero month prints "$0 — nothing taken this month" (YTD zero →
+  "$0 so far this year"). Simon reads a new **`d.simon_amount`** field (0 for non-Dorado). Own month
+  dropdown (`DIST_MONTH`/`distSetMonth`) unchanged — lists months that have any distribution, newest
+  first. **The old `#kpi-dist-mo-you/-nir` + `#kpi-dist-ytd-you/-nir` tiles were REMOVED** (so the
+  audit's 4 `kpi('kpi-dist-*')` recomputes were deleted — the per-LLC cards are a pure read with no
+  cross-total to reconcile). The **per-year table** below stays (all-LLCs-combined, tax-time view) and
+  gained a **Simon column** (Ron / Nir / Simon / Total + All-time).
+- **Add-Distribution modal:** new **`dist-simon`** box inside `dist-custom-wrap`, in a `#dist-simon-row`
+  shown **only for Dorado** via **`distSetLlc()`** (fires on the LLC dropdown `onchange` + in open/close).
+  In **equal** mode Simon = the "Amount each" value when Dorado is picked (helper text updates to "Ron,
+  Nir and Simon each receive this amount"); in **custom** mode Simon comes from its own box. `submitDistribution`
+  computes `simonAmt` (Dorado only, else 0) and POSTs **`simon_amount`**; the "at least one amount"
+  guard now also accepts a Simon-only entry. `closeDistModal` resets `dist-simon`.
+- **Backend (`AppsScript.gs`, NEEDS REDEPLOY):** Simon is stored in **column F** of the Distributions
+  tab (`A Date · B LLC · C Ron · D Nir · E Notes · F Simon`) — **backward-safe**: old 5-col rows read F
+  as "" → 0. The **live** Distributions reader (in the last `getDashboardJson`, ~line 1899) now reads
+  **6 cols** and emits `simon_amount`. **`addDistributionEntry`** writes 6 cols (Simon at F, `$` format),
+  includes Simon in the **dedup key**, and logs it. (The dead one-time `step8_BuildDistributions` header
+  builder was left as-is — it already diverges from the live layout, e.g. notes at runtime live in col E
+  not F; don't rely on it.)
+- 🚀 **Going live (REQUIRED):** redeploy `AppsScript.gs` (Sheet → Extensions → Apps Script → paste →
+  Deploy → Manage deployments → Edit → New version → Deploy — no new scope). Until then the `index.html`
+  cards render (Simon reads 0 for everything, form's Simon box saves nothing) and the per-LLC/You/Nir
+  numbers already work off the existing columns. Version bumped 2.1 → **2.2** with a new top CHANGELOG
+  entry (en+he). Self-audit unaffected (no `#kpi-*` IDs left in this section). ⚠️ The chatbot's live
+  `buildPortfolioContext` distributions reader still reads only Ron/Nir (no Simon) — sync on a future
+  redeploy if the chatbot needs Simon.
+
+---
+
 ## 🆕 Dashboard version number + "What's New" changelog (Jul 1 2026, START v1.0)
 
 The Niron dashboard (`index.html`) shows a **version chip top-right** (in the header `.meta`,
