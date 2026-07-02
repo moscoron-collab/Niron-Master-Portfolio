@@ -1054,9 +1054,9 @@ Distributions). Per LLC: you **type the current bank balance**
     Hosting, ~28th via Amex) · buffer `2000`
   - Donald (**REBUILT from 12-mo CSV, user-reviewed Jun 16 2026**): mort `13708` (CBRE, **1st** — was wrongly
     16th) · SBA `444` (1st) · ins `1210.84` (Westfield, **~4th** — was wrongly 28th; switched from State Farm
-    ~Oct 2025) · acct `0` · util `336` **quarterly** (`utilMonths [0,3,6,9]` = Jan/Apr/Jul/Oct, Denver Compost,
-    ~3rd) · software `0` · buffer `1500`. **All fixed bills draft in the first ~4 days** → in `late` mode the
-    cushion is just the buffer. No Amex/software on Donald.
+    ~Oct 2025) · acct `0` · util `0` (**set to $0 Jul 2 2026 — user: Denver Compost is occasional, not an ongoing
+    monthly/quarterly bill; was `336` quarterly**) · software `0` · buffer `1500`. **All fixed bills draft in
+    the first ~4 days** → in `late` mode the cushion is just the buffer. No Amex/software on Donald.
   - Yale (**REBUILT from 12-mo CSV, Jun 16 2026**): mort `7279.08` (Lument, ~6th — ✓ was right) · SBA `225`
     (1st) · ins `1037.55` (Acuity, **~25th** — was wrongly 28th) · acct `0` · util `315` **quarterly**
     (`utilMonths [0,3,6,9]`, Denver Compost, ~15th — was flat $105/mo) · software `0` · buffer `1500`. Insurance
