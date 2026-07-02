@@ -1403,6 +1403,21 @@ transform the already-stored data / add a badge):
    the modal is open) so the envelope lights up without a manual refresh (email stays the real-time alert).
    Self-audit unaffected (no `#kpi-*` IDs).
 
+### 🐛 Same unread badge on the 🐛 Report button (Jul 2 2026, APP_VERSION → 1.8, PURE FRONTEND)
+User asked to mirror the Messages unread indicator on the bug reporter. Added a **red count badge**
+(`#bug-btn-badge`) + `has-unread` pulse on **`#bug-btn`** (the 🐛 Report button in the Run-Audit bar;
+`.bug-btn` made `position:relative` so the absolute badge anchors to it). Counts `data.bug_reports` newer
+than last-seen that **you didn't file** (`r.reported_by !== getActor()` — `reported_by` stores the actor
+CODE R.M/N.S/O.M, set from `data.actor` in `addBugReport`). Helpers `bugSeenTs`/`markBugSeen` (localStorage
+**`niron_bug_seen_ts`** = newest `reported_at` at last inbox open) / `bugUnreadCount` / `updateBugBadge`,
+next to the existing `bugCountBadge` (which still shows the TOTAL count on the "🗂 View all reports" button —
+left as-is). **Cleared by `markBugSeen()` in `openBugsInbox`** (the real view action; the 🐛 button opens the
+FORM, so the badge clears when you open the inbox, not the form). Updated on `initialRender`, `setActor`,
+`bugRefreshAfter`, and **piggybacked on the existing 45s `msgBadgePoll`** (one fetch now refreshes BOTH the
+messages + bug badges — it also stores `data.bug_reports`). Bug-report voice notes are rendered as Drive
+**links** (not inline `<audio>`), so the v1.2 voice-playback fix didn't apply there — no change needed.
+Self-audit unaffected (no `#kpi-*` IDs). Pure frontend, live on merge — no Apps Script redeploy.
+
 ## ❌ Distribution Planner DROPPED + 🚨 Net Cashflow is UNDERSTATED (Jun 7 2026, PR #65)
 
 **The Distribution Planner was REMOVED (PR #65).** The user reviewed 3 months (Mar–May 2026)
