@@ -1502,8 +1502,20 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.3";
+const APP_VERSION = "2.4";
 const CHANGELOG = [
+  {
+    version: "2.4",
+    date: "July 3, 2026",
+    en: [
+      "Distribution Planner: the per-partner amount is now rounded DOWN to the nearest $100 (so it's a clean number and never over-distributes). Example: Dorado $8,200 ÷ 3 = $2,733.33 now shows and records as $2,700 each.",
+      "The '✓ Confirm & record' button now appears only when the rounded per-partner amount is at least $100 (a tiny leftover like $50 rounds to $0, so there's nothing to record that month)."
+    ],
+    he: [
+      "מתכנן החלוקות: הסכום לכל שותף מעוגל עכשיו כלפי מטה למאה הדולרים הקרובים (מספר נקי ולעולם לא מחלק יותר מדי). דוגמה: Dorado $8,200 ÷ 3 = $2,733.33 מוצג ונרשם עכשיו כ-$2,700 לכל אחד.",
+      "כפתור '✓ אשר ורשום' מופיע עכשיו רק כשהסכום המעוגל לכל שותף הוא לפחות $100 (שארית קטנה כמו $50 מתעגלת ל-$0, אז אין מה לרשום באותו חודש)."
+    ]
+  },
   {
     version: "2.3",
     date: "July 2, 2026",
@@ -3034,7 +3046,9 @@ function renderDistributionPlanner(data) {
     const has = bals[key] != null && bals[key] !== '';
     const bal = Number(bals[key]) || 0;
     const safe = Math.round(Math.max(0, bal - cushion) / 100) * 100;   // round to nearest $100 (no cents)
-    const each = safe / c.split;
+    // Per-partner amount is rounded DOWN to the nearest $100 (never over-distribute), per the
+    // distribution guideline. So an $8,200 Dorado safe ÷ 3 = $2,733.33 shows/records as $2,700.
+    const each = Math.floor((safe / c.split) / 100) * 100;
     const partnerLabel = c.split === 3 ? 'Nir / Ronen / Simon' : 'Nir / Ronen';
     // Button 1: upload this LLC's monthly bank statement, shown next to the LLC name.
     // Stored per LLC+month via the (dormant) add_bank_statement backend — no money, just a file.
@@ -3079,11 +3093,11 @@ function renderDistributionPlanner(data) {
     const fmt0 = n => '$' + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });   // no cents
     // Button 2: next to "Safe to distribute". Prefills the Add-Distribution form with this LLC +
     // the per-partner amount (editable), then Save records it (record only — no money moves).
-    const recBtn = (has && safe > 0)
+    const recBtn = (has && each > 0)
       ? ' <button onclick="planRecordDistribution(\'' + key + '\', ' + each + ')" title="Record this distribution (edit the amount first if you want). No money is moved — it just logs it into Partner Distributions." style="cursor:pointer;font-size:10.5px;font-weight:600;color:#00c97a;background:#0c2a1e;border:1px solid #14603f;border-radius:5px;padding:2px 7px;margin-left:6px;white-space:nowrap">✓ Confirm &amp; record</button>'
       : '';
     h += '<div class="llc-row total"><span class="k">Safe to distribute</span><span class="v ' + (has ? (safe > 0 ? 'green' : 'red') : '') + '">' + (has ? fmt0(safe) : '—') + recBtn + '</span></div>';
-    h += '<div class="llc-row"><span class="k" style="color:#00c97a">' + partnerLabel + '</span><span class="v" style="color:#00c97a">' + (has ? fmt(each) : '—') + '</span></div>';
+    h += '<div class="llc-row"><span class="k" style="color:#00c97a">' + partnerLabel + '</span><span class="v" style="color:#00c97a">' + (has ? fmt0(each) : '—') + '</span></div>';
     h += '</div>';
     // "Coming up before next deposit" + a collapsed "Drafted this month" reference list —
     // pinned to the bottom so all 4 cards bottom-align.

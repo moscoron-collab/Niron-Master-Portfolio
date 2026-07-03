@@ -76,14 +76,20 @@ skill's cushions; **(4)** button 1 = upload statement **next to the LLC name**, 
   or, once uploaded, a "📄 statement" link + "replace". The **backend was NOT re-touched** (`ensureBankStatementsTab`
   / `saveStatementFile` / `addBankStatement` / the `add_bank_statement` route / the `data.statements` reader
   all already present).
-- **Button 2 — ✓ Confirm & record (next to "Safe to distribute", only when a balance is entered and safe > 0):**
-  `planRecordDistribution(key, each)` opens the existing **Add-Distribution modal** PREFILLED — LLC set via
-  `plannerLlcName(key)` (resolves the planner key to the canonical Distributions-tab LLC name from
-  `PORTFOLIO_DATA.llcs`, fallback map), split = **equal**, `dist-each` = the per-partner `each` (`safe / c.split`,
-  rounded to cents). User edits if needed, then **Save → `submitDistribution` records it** (record only — no money
-  moves). Reuses the vetted record path, so **Dorado automatically includes Simon** (the equal amount goes to
-  Ron/Nir/Simon via the v2.2 Simon field). A form message notes "Prefilled from the planner — edit… then Save.
-  No money is moved."
+- **Button 2 — ✓ Confirm & record (next to "Safe to distribute", only when a balance is entered and the rounded
+  per-partner `each > 0`):** `planRecordDistribution(key, each)` opens the existing **Add-Distribution modal**
+  PREFILLED — LLC set via `plannerLlcName(key)` (resolves the planner key to the canonical Distributions-tab LLC
+  name from `PORTFOLIO_DATA.llcs`, fallback map), split = **equal**, `dist-each` = the per-partner `each`. User edits
+  if needed, then **Save → `submitDistribution` records it** (record only — no money moves). Reuses the vetted record
+  path, so **Dorado automatically includes Simon** (the equal amount goes to Ron/Nir/Simon via the v2.2 Simon field).
+  A form message notes "Prefilled from the planner — edit… then Save. No money is moved."
+- **💯 Per-partner rounding (v2.4, Jul 3 2026, user):** `each` is **rounded DOWN to the nearest $100**
+  (`each = Math.floor((safe / c.split) / 100) * 100`) — never over-distribute — and displayed with `fmt0` (no
+  cents). So Dorado safe $8,200 ÷ 3 = $2,733.33 → shows/records **$2,700**. Because `each` can now round to $0
+  (e.g. Donald safe $100 ÷ 2 = $50 → $0), the Confirm-&-record button is gated on **`each > 0`** (not `safe > 0`),
+  so a sub-$100-per-partner month shows no button. ⚠️ Note this is **$100** rounding on the planner; the
+  `/monthly-distribution` SKILL still documents **$50** rounding for the reconcile flow — the user asked for $100
+  here specifically. Keep that distinction in mind (don't "fix" one to match the other without asking).
 - **Why reuse the modal (not a prompt/new modal):** gives a real editable amount + confirm, and inherits the
   Simon handling + dedup guard from `addDistributionEntry`. Recording a Dorado distribution's Simon third
   therefore needs the **v2.2 redeploy** (same one Partner Distributions needs); non-Dorado records fine on the
