@@ -54,20 +54,6 @@ field for Dorado · make YTD per-LLC too**.
 
 ---
 
-## 💵 Distribution Planner — "Safe to distribute" $1,000 floor (Jul 3 2026, APP_VERSION → 2.5)
-
-User rule: on each planner card, if the rounded **`safe`** (Safe to distribute) is **below $1,000, show $0**
-— a leftover that small isn't worth distributing that month. Implemented in `renderDistributionPlanner`
-(`index.html`) right after `safe` is computed: `let safe = Math.round(Math.max(0, bal - cushion)/100)*100;
-if (safe < 1000) safe = 0;`. Because `each` (per-partner) and the **✓ Confirm & record** button both derive
-from `safe`, forcing it to 0 cascades — the per-partner line shows `$0`, "Safe to distribute" renders red,
-and the Confirm button (gated on `each > 0`) disappears. Pure frontend, live on merge — no redeploy. Version
-bumped 2.4 → **2.5** (en+he). Self-audit unaffected (no `#kpi-*` IDs). ✅ The **`/monthly-distribution` skill
-was synced (Jul 3 2026)** — its Step 2 `safe` math now applies the same `if safe < 1000 → safe = 0` floor, so
-the skill and the planner agree.
-
----
-
 ## 💵 Distribution Planner — two new per-card buttons (Jul 2 2026, APP_VERSION → 2.3)
 
 User asked for two buttons on each Distribution Planner card (`renderDistributionPlanner` in `index.html`).
@@ -79,17 +65,13 @@ editable tile** (`bufferFor(key, c)` — which the planner already does), NOT th
 skill's cushions; **(4)** button 1 = upload statement **next to the LLC name**, button 2 = confirm **next to
 "Safe to distribute"**.
 
-- **Button 1 — 📄 Upload statement (next to the LLC name, in the card `<h3>`):** REVIVES the statement-upload
-  feature that was frontend-removed Jul 1 2026 (PR #175) — its AppsScript backend was left **dormant and
-  intact**, so this is **frontend-only, works on the current deployment** (no redeploy needed for button 1,
-  assuming the last redeploy included that backend — which it did). New frontend helpers after
-  `renderDistributionPlanner`: `planStatement(data,key,month)` (finds `data.statements` by key+`currentPeriod()`),
-  `fmtStmtTs(iso,tz)` (renders the upload stamp in the uploader's own IANA zone), `uploadStatement(key,label,input)`
-  (25 MB cap, `readFileAsPayload` → POST **`add_bank_statement`** → `saveStatementFile` writes to the
-  `Niron Bank Statements` Drive folder, upsert by key+month → `data.statements`). Shows "📄 Upload statement"
-  or, once uploaded, a "📄 statement" link + "replace". The **backend was NOT re-touched** (`ensureBankStatementsTab`
-  / `saveStatementFile` / `addBankStatement` / the `add_bank_statement` route / the `data.statements` reader
-  all already present).
+- **Button 1 — 📄 Upload statement — ❌ REMOVED again (Jul 3 2026, v2.5).** It was briefly revived here, but the
+  user decided the month-end statement analysis stays in the **`/monthly-distribution` skill** (they explored an
+  AI-in-the-dashboard analyzer and pulled back to "keep it simple"). The per-card upload button + its frontend
+  helpers (`planStatement` / `fmtStmtTs` / `uploadStatement`) were deleted. The AppsScript backend
+  (`ensureBankStatementsTab` / `saveStatementFile` / `addBankStatement` / the `add_bank_statement` route /
+  `data.statements` reader) was **left dormant again** (harmless, no redeploy needed to hide the button) — same
+  state as after PR #175. If ever reviving, re-add the frontend only.
 - **Button 2 — ✓ Confirm & record (next to "Safe to distribute", only when a balance is entered and the rounded
   per-partner `each > 0`):** `planRecordDistribution(key, each)` opens the existing **Add-Distribution modal**
   PREFILLED — LLC set via `plannerLlcName(key)` (resolves the planner key to the canonical Distributions-tab LLC
@@ -99,20 +81,31 @@ skill's cushions; **(4)** button 1 = upload statement **next to the LLC name**, 
   A form message notes "Prefilled from the planner — edit… then Save. No money is moved."
 - **💯 Per-partner rounding (v2.4, Jul 3 2026, user):** `each` is **rounded DOWN to the nearest $100**
   (`each = Math.floor((safe / c.split) / 100) * 100`) — never over-distribute — and displayed with `fmt0` (no
-  cents). So Dorado safe $8,200 ÷ 3 = $2,733.33 → shows/records **$2,700**. Because `each` can now round to $0
-  (e.g. Donald safe $100 ÷ 2 = $50 → $0), the Confirm-&-record button is gated on **`each > 0`** (not `safe > 0`),
-  so a sub-$100-per-partner month shows no button. ⚠️ Note this is **$100** rounding on the planner; the
-  `/monthly-distribution` SKILL still documents **$50** rounding for the reconcile flow — the user asked for $100
-  here specifically. Keep that distinction in mind (don't "fix" one to match the other without asking).
+  cents). So Dorado safe $8,200 ÷ 3 = $2,733.33 → shows/records **$2,700**. ⚠️ Note this is **$100** rounding on the
+  planner; the `/monthly-distribution` SKILL still documents **$50** rounding for the reconcile flow — the user
+  asked for $100 here specifically. Keep that distinction in mind (don't "fix" one to match the other without asking).
+- **🚫 Below $1,000 per person = NO distribution (v2.5, Jul 3 2026, user):** the Confirm-&-record button is gated on
+  **`each >= 1000`** (`canDistribute = has && each >= 1000`) — if each partner's share is under $1k it's too small to
+  take this month, let the account build. The number **still shows** (2b: don't hide it), with a small grey **· hold**
+  tag next to the per-partner amount when `0 < each < 1000`, and a **💡 tooltip** (`distMinTip`, en+he) on the
+  per-partner label explaining the rule. Only the button is hidden below $1k.
 - **Why reuse the modal (not a prompt/new modal):** gives a real editable amount + confirm, and inherits the
   Simon handling + dedup guard from `addDistributionEntry`. Recording a Dorado distribution's Simon third
   therefore needs the **v2.2 redeploy** (same one Partner Distributions needs); non-Dorado records fine on the
   current deployment.
-- Pure frontend, live on merge. Version bumped 2.2 → **2.3** with a new top CHANGELOG entry (en+he). Self-audit
-  unaffected (no `#kpi-*` IDs).
-- **📖 Monthly Guide updated (same feature, no separate version bump):** the Distribution-Decider block in the
-  `guide-modal` (~line 820 of `index.html`) gained a boxed **"🔘 Two buttons on each planner card"** note
-  explaining 📄 Upload statement + ✓ Confirm & record (record only) for Nir. Keep it in sync if the buttons change.
+- Pure frontend, live on merge. Version bumped through **2.3 → 2.4 → 2.5** (see entries). Self-audit unaffected
+  (no `#kpi-*` IDs).
+- **📖 Monthly Guide note:** the Distribution-Decider block in the `guide-modal` (~line 828 of `index.html`) has a
+  boxed **"🔘 On each planner card"** note explaining ✓ Confirm & record (record only, $100 round-down) + the
+  **below-$1k-per-person = hold** rule. (The 📄 Upload-statement bullet was removed with the button in v2.5.) Keep
+  it in sync if the buttons change.
+
+> ⚠️ **AI-analyzer-in-the-dashboard was explored and dropped (Jul 3 2026).** The user briefly asked for the upload
+> to run the full `/monthly-distribution` skill in the browser (AI-powered, all-4-CSVs, auto-fill utilities +
+> safe-to-distribute + reconcile + Nir text). After scoping it they pulled back to **"keep it simple"** → the
+> month-end analysis stays in the **`/monthly-distribution` chat skill**; the dashboard planner just does the
+> cushion math + Confirm & record + the $1k rule. **Do NOT rebuild an in-browser bank analyzer unless the user
+> explicitly revives it** (this is the 3rd time an in-dashboard bank importer was proposed and dropped).
 
 ---
 
@@ -2389,9 +2382,6 @@ sheet/dashboard.
   sheet/dashboard stay read-only). **Recommended run day: the ~25th** (income has landed ~18th–21st,
   mid-month mortgages cleared) — the flush, settled window.
 - **Splits (fixed):** Divando/Donald/Yale = Ron 50% / Nir 50%; **Dorado = Ron/Nir/Simon ⅓ each**.
-- **$1,000 safe floor (Jul 3 2026, matches the dashboard planner):** in Step 2, after computing each LLC's
-  `safe`, **if `safe < 1000` → `safe = 0`** (HOLD — a leftover that small isn't worth distributing; let it
-  build). Applied to the per-LLC `safe` total, same as the planner card.
 - **Rounding (user pref, Jun 2026): ALWAYS round per-partner distribution amounts to clean numbers —
   round DOWN to the nearest $50** (never over-distribute). e.g. $1,133→$1,100, $1,053→$1,050, $938→$900.
   Note Dorado looks smallest per person not because it earns less (its pot is the largest of the three)
