@@ -54,6 +54,19 @@ field for Dorado · make YTD per-LLC too**.
 
 ---
 
+## 💵 Distribution Planner — "Safe to distribute" $1,000 floor (Jul 3 2026, APP_VERSION → 2.5)
+
+User rule: on each planner card, if the rounded **`safe`** (Safe to distribute) is **below $1,000, show $0**
+— a leftover that small isn't worth distributing that month. Implemented in `renderDistributionPlanner`
+(`index.html`) right after `safe` is computed: `let safe = Math.round(Math.max(0, bal - cushion)/100)*100;
+if (safe < 1000) safe = 0;`. Because `each` (per-partner) and the **✓ Confirm & record** button both derive
+from `safe`, forcing it to 0 cascades — the per-partner line shows `$0`, "Safe to distribute" renders red,
+and the Confirm button (gated on `each > 0`) disappears. Pure frontend, live on merge — no redeploy. Version
+bumped 2.4 → **2.5** (en+he). Self-audit unaffected (no `#kpi-*` IDs). ⚠️ This $1,000 floor is on the planner
+display only; the `/monthly-distribution` skill's own safe-to-distribute math is unchanged.
+
+---
+
 ## 💵 Distribution Planner — two new per-card buttons (Jul 2 2026, APP_VERSION → 2.3)
 
 User asked for two buttons on each Distribution Planner card (`renderDistributionPlanner` in `index.html`).

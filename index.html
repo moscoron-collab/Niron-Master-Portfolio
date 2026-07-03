@@ -1502,8 +1502,18 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.4";
+const APP_VERSION = "2.5";
 const CHANGELOG = [
+  {
+    version: "2.5",
+    date: "July 3, 2026",
+    en: [
+      "Distribution Planner: if an LLC's 'Safe to distribute' works out to less than $1,000, it now shows $0 — a leftover that small isn't worth distributing that month (the per-partner amount and the '✓ Confirm & record' button hide too)."
+    ],
+    he: [
+      "מתכנן החלוקות: אם 'בטוח לחלוקה' של חברה יוצא פחות מ-$1,000, מוצג עכשיו $0 — שארית כה קטנה לא שווה חלוקה באותו חודש (גם הסכום לכל שותף וכפתור '✓ אשר ורשום' מוסתרים)."
+    ]
+  },
   {
     version: "2.4",
     date: "July 3, 2026",
@@ -3045,7 +3055,8 @@ function renderDistributionPlanner(data) {
     const cushion = reserved.reduce((s, it) => s + it.amt, 0) + maintSum + utility + buffer;
     const has = bals[key] != null && bals[key] !== '';
     const bal = Number(bals[key]) || 0;
-    const safe = Math.round(Math.max(0, bal - cushion) / 100) * 100;   // round to nearest $100 (no cents)
+    let safe = Math.round(Math.max(0, bal - cushion) / 100) * 100;   // round to nearest $100 (no cents)
+    if (safe < 1000) safe = 0;   // below $1,000 isn't worth distributing → show $0 (user rule, Jul 3 2026)
     // Per-partner amount is rounded DOWN to the nearest $100 (never over-distribute), per the
     // distribution guideline. So an $8,200 Dorado safe ÷ 3 = $2,733.33 shows/records as $2,700.
     const each = Math.floor((safe / c.split) / 100) * 100;
