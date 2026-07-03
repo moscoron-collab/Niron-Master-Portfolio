@@ -116,6 +116,8 @@ safe(LLC) = ending_balance(LLC)
                                                 # upcoming repair checks. SEE TIMING NOTE.
           − inter_account_amounts_owed(LLC)     # overdraft-cover transfers IN, not repaid
 if safe < 0 → safe = 0   (account is below its working balance → HOLD; may need a bridge)
+if safe < 1000 → safe = 0   ($1,000 floor: a leftover that small isn't worth distributing
+                             this month → HOLD, let it build. Matches the dashboard planner.)
 
 per_partner = safe / (3 if Dorado else 2)
 # THEN round each per-partner amount DOWN to the nearest $50 (user pref: clean

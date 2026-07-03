@@ -62,8 +62,9 @@ User rule: on each planner card, if the rounded **`safe`** (Safe to distribute) 
 if (safe < 1000) safe = 0;`. Because `each` (per-partner) and the **✓ Confirm & record** button both derive
 from `safe`, forcing it to 0 cascades — the per-partner line shows `$0`, "Safe to distribute" renders red,
 and the Confirm button (gated on `each > 0`) disappears. Pure frontend, live on merge — no redeploy. Version
-bumped 2.4 → **2.5** (en+he). Self-audit unaffected (no `#kpi-*` IDs). ⚠️ This $1,000 floor is on the planner
-display only; the `/monthly-distribution` skill's own safe-to-distribute math is unchanged.
+bumped 2.4 → **2.5** (en+he). Self-audit unaffected (no `#kpi-*` IDs). ✅ The **`/monthly-distribution` skill
+was synced (Jul 3 2026)** — its Step 2 `safe` math now applies the same `if safe < 1000 → safe = 0` floor, so
+the skill and the planner agree.
 
 ---
 
@@ -2388,6 +2389,9 @@ sheet/dashboard.
   sheet/dashboard stay read-only). **Recommended run day: the ~25th** (income has landed ~18th–21st,
   mid-month mortgages cleared) — the flush, settled window.
 - **Splits (fixed):** Divando/Donald/Yale = Ron 50% / Nir 50%; **Dorado = Ron/Nir/Simon ⅓ each**.
+- **$1,000 safe floor (Jul 3 2026, matches the dashboard planner):** in Step 2, after computing each LLC's
+  `safe`, **if `safe < 1000` → `safe = 0`** (HOLD — a leftover that small isn't worth distributing; let it
+  build). Applied to the per-LLC `safe` total, same as the planner card.
 - **Rounding (user pref, Jun 2026): ALWAYS round per-partner distribution amounts to clean numbers —
   round DOWN to the nearest $50** (never over-distribute). e.g. $1,133→$1,100, $1,053→$1,050, $938→$900.
   Note Dorado looks smallest per person not because it earns less (its pot is the largest of the three)
