@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Niron Master Portfolio</title>
+<!-- PWA / installable app + tab icon (v2.6). Icons live in icons/, manifest in manifest.json.
+     No service worker on purpose: the app always loads fresh from the network (past stale-cache pain). -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0c1a2e">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Niron Portfolio">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700&family=Barlow:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1502,8 +1512,20 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.5";
+const APP_VERSION = "2.6";
 const CHANGELOG = [
+  {
+    version: "2.6",
+    date: "July 8, 2026",
+    en: [
+      "The dashboard can now be installed as an app: on your phone it gets its own 🏠 icon on the home screen (named 'Niron Portfolio'), and on the PC it installs from Chrome/Edge as its own window. iPhone: open in Safari → Share → 'Add to Home Screen'. Android: Chrome → menu ⋮ → 'Add to Home screen' / 'Install app'. PC: click the install icon at the right end of the address bar.",
+      "The browser tab now shows the 🏠 house icon instead of the generic globe."
+    ],
+    he: [
+      "עכשיו אפשר להתקין את הדשבורד כאפליקציה: בטלפון הוא מקבל אייקון 🏠 משלו במסך הבית (בשם 'Niron Portfolio'), ובמחשב הוא מותקן מ-Chrome/Edge כחלון נפרד. אייפון: לפתוח בספארי ← שיתוף ← 'הוסף למסך הבית'. אנדרואיד: Chrome ← תפריט ⋮ ← 'הוסף למסך הבית' / 'התקן אפליקציה'. מחשב: ללחוץ על אייקון ההתקנה בקצה הימני של שורת הכתובת.",
+      "לשונית הדפדפן מציגה עכשיו אייקון בית 🏠 במקום כדור הארץ הגנרי."
+    ]
+  },
   {
     version: "2.5",
     date: "July 3, 2026",

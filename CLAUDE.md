@@ -13,6 +13,36 @@
 
 ---
 
+## 📱 Installable app (PWA) + 🏠 tab icon (Jul 8 2026, APP_VERSION → 2.6, pure frontend)
+
+The dashboard is now an **installable web app** ("Niron Portfolio") with a **🏠 house icon** on the
+browser tab (replaces the generic globe). User decisions (via AskUserQuestion, Jul 8 2026): icon =
+**🏠 house** · name = **"Niron Portfolio"** · installs on **both iPhone AND Android** (Ron + Nir may
+differ) · **always-fresh loading, NO offline copy** (deliberate — the stale-cache history is why the
+🔄 Refresh button exists).
+
+- **Files:** **`manifest.json`** (repo root: name/short_name `Niron Portfolio`, `display:standalone`,
+  `start_url`/`scope` = `./`, theme+background `#0c1a2e`, icons 192/512 + a maskable 512) and
+  **`icons/`** = `icon-192.png` · `icon-512.png` · `apple-touch-icon.png` (180, for iPhone) ·
+  `favicon-32.png`. Icons were rendered from the Noto Color Emoji 🏠 on the dashboard's navy
+  gradient (`#0c1a2e→#133055`) via headless Chromium + Pillow downscale — regenerate the same way
+  if the icon ever changes.
+- **`index.html` `<head>`** gained the manifest link, `theme-color`, the two PNG favicons,
+  `apple-touch-icon`, and the 3 `apple-mobile-web-app-*` metas (title = `Niron Portfolio`).
+- **⚠️ NO service worker, on purpose.** The app always fetches the live page/data (needs internet to
+  open). Chrome/Edge install fine from manifest+HTTPS alone these days; iPhone A2HS never needed one.
+  **Do NOT add a caching service worker** without the user revisiting the always-fresh decision —
+  a cached SW would resurrect the stale-version problem the 🔄 Refresh button was built to kill.
+- **Install steps (for reference/Nir):** iPhone = Safari → Share → **Add to Home Screen**. Android =
+  Chrome → ⋮ → **Add to Home screen / Install app**. PC = Chrome/Edge → **install icon in the address
+  bar**. An old home-screen shortcut (if any) should be removed and re-added to pick up the new
+  icon/name.
+- Pure frontend, live on merge — **no Apps Script redeploy**. Self-audit unaffected (no `#kpi-*`
+  IDs). Version bumped **2.5 → 2.6** with a new top CHANGELOG entry (en+he) explaining how to
+  install on each device.
+
+---
+
 ## 💸 Partner Distributions → PER LLC + Simon field (Jul 2 2026, APP_VERSION → 2.2, NEEDS REDEPLOY)
 
 The **Partner Distributions** section (`renderAll`, was ~line 2772 of `index.html`) was reworked from
