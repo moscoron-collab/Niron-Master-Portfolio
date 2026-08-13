@@ -2469,6 +2469,27 @@ not a target, and flags any account whose balance < its pre-income bills as a ho
 > 🔭 Open: the deferred **"Cleared by bank" per-invoice checkbox** (auto-track pending vs cashed
 > instead of the manual statement match) was NOT built — it needs an Apps Script column + redeploy.
 
+**✅ July 2026 close (run Aug 13 2026): NO distribution — user's call, too many expenses.** All 4
+statements + the maintenance export were reconciled; ending balances were skipped (moot with no
+distribution). Utilities entered on the dashboard by the user: **Divando $618 · Donald $336 · Yale
+$315 · Dorado $239** (Jul was a quarterly Compost month for Donald $336 + Yale $315). Reconcile:
+**Divando** — all 6 July invoices ($7,459.97) cleared via CHECKs 263–268 (267 = $50.00 vs the $49.97
+invoice, 3¢ over, fine), plus **CHECK 262 $774 = June's pending garage invoice, now cleared** (June's
+furnace $660 also cleared as the 7/1-dated Tamir invoice via CHECK 263). July was ~break-even for
+Divando (double State Farm draft 7/1+7/29, $1,397 City&County tax 7/29, $8.2K checks, one $30 OD fee).
+**Dorado** — Walter $345 cleared (CHECK 3287 7/6, check cleared before the invoice was logged); Tamir
+$220 NOT cleared. ⚠️ June's "Walter $350 pending" never appeared in July's statement (the $345 ≠ $350)
+— unresolved, ask Ron. **Carry into August — marked `Paid=Yes` but NOT cashed ($894.99):** Donald
+Walter $380 · Yale Tamir $294.99 · Dorado Tamir $220 — reserve these in the August run. Donald's
+CHECK 7258 $300 (7/6) matched nothing in the export (unidentified — ask if it recurs). **Yale ended
+July owing $900 to Divando (7/7) + $300 to Donald (7/15)** (overdraft covers for the Lument draft,
+unrepaid at month-end) — subtract from Yale in August if still unrepaid. Donald netted ~+$5.2K and
+Dorado ~+$10.1K in July (both healthy; user chose to skip anyway — offer them first in August).
+**🚩 State Farm watch:** Divando's draft was **$2,633.15 TWICE in July** (7/1 = June's slid draft +
+7/29), not the $2,909.98 the dashboard override carries. User said **wait for the August statement**
+— if Aug also drafts $2,633.15, update `INSURANCE_OVERRIDE.divando` in `index.html` (+ the skill's
+reference table + Noble tab figures) to $2,633.15. No Nir email was drafted (nothing to execute).
+
 ---
 
 ## 📄 Moss Owner Packet PDF structure
