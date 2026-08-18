@@ -296,8 +296,8 @@ Niron-Master-Portfolio/
 │   ├── backfill.py                  ← Manual historical pull for Niron
 │   └── backfill_moss.py             ← Manual historical pull for Moss
 └── .github/workflows/
-    ├── monthly.yml                  ← Niron daily 15-25 at 4pm UTC
-    ├── monthly_moss.yml             ← Moss  daily 15-25 at 4pm UTC
+    ├── monthly.yml                  ← Niron daily 15-25 at 06:00 UTC (9am Israel)
+    ├── monthly_moss.yml             ← Moss  daily 15-25 at 06:15 UTC (9:15am Israel)
     ├── weekly.yml                   ← Keepalive Sundays 8am UTC
     ├── backfill.yml                 ← Manual trigger only
     └── backfill_moss.yml            ← Manual trigger only
@@ -388,15 +388,24 @@ if p != CABO_PROPERTY]` · Divando/Donald `set(PROPERTY_CODE_MAP.values())` = 15
   expected set never fully fills, so that pipeline keeps logging in daily (safe — never a
   false "complete"). Update the expected set / maps when a property is added or removed.
 
-## ⏰ Monthly pull schedule (updated Jun 18 2026)
+## ⏰ Monthly pull schedule — ONE morning block, 9 AM Israel time (updated Aug 18 2026)
 
-Both AppFolio pulls now run **twice daily on the 15th–25th** so a statement that lands
-midday is caught the same day (the duplicate-check skips months already saved):
-- **Niron `monthly.yml`** (4 LLCs): **12pm ET (16:00 UTC)** + **4pm ET (20:00 UTC)**.
-- **Moss `monthly_moss.yml`**: **6am ET (10:00 UTC)** + **5pm ET (21:00 UTC)** — the afternoon
-  run is staggered **one hour after Niron's 4pm** on purpose, because both share the same
-  `APPFOLIO_COOKIES` secret and would otherwise race on the cookie save.
-- Per-property monitors unchanged (Divando 11am / Yale 12pm / Donald 1pm UTC, once daily).
+**User request (Aug 18 2026, after moving to Israel): "make them all the same time, simple
+Israel time."** All 5 AppFolio pulls now run **ONCE daily on the 15th–25th**, in a single
+morning block anchored to **9:00 AM Israel time**, one job every 15 minutes (they share the
+`APPFOLIO_COOKIES` secret and must never race — that's why not literally the same minute):
+- **06:00 UTC** = **9:00 Israel** → Niron `monthly.yml` (4 LLCs)
+- **06:15 UTC** = **9:15 Israel** → Moss `monthly_moss.yml`
+- **06:30 UTC** = **9:30 Israel** → Divando `monthly_divando.yml`
+- **06:45 UTC** = **9:45 Israel** → Yale `monthly_yale.yml`
+- **07:00 UTC** = **10:00 Israel** → Donald `monthly_donald.yml`
+
+GitHub cron is fixed UTC, so in Israeli **winter** (late Oct–late Mar, UTC+2) the block
+runs **8:00–9:00 AM Israel** instead. The old twice-daily runs (Niron 16/20 UTC, Moss 10/21
+UTC) were removed — once a month's data lands, the remaining daily runs skip login anyway
+(`month_already_pulled`), so the second daily run added little; worst case a statement posted
+midday shows up the next morning at 9. Weekly `keepalive.py` unchanged (Sunday 08:00 UTC =
+11:00 Israel summer / 10:00 winter).
 
 ## ⚡ FAST RECOVERY — "the pulls went quiet / data stopped updating" (READ FIRST)
 
@@ -539,7 +548,7 @@ A per-property monitor for Divando's 18 properties (15 AppFolio + 3 manual out-o
   Google Sheet tab (header: Date Range, Month, LLC, Property, Cash In, Rent Collected,
   Mgmt Fee, Disbursement, Mortgage, Insurance/12, Status, Source, Updated). They NEVER touch
   `History` or the existing consolidated Divando row — partner-visible cards stay untouched.
-  Workflows: `monthly_divando.yml` (daily 15–25, 11am UTC) + `backfill_divando.yml` (manual).
+  Workflows: `monthly_divando.yml` (daily 15–25, 06:30 UTC = 9:30am Israel) + `backfill_divando.yml` (manual).
 - **🐛 Bates matching fix (PR — comma-space):** for months the per-property monitor existed,
   **both Bates units were silently missing** (only 13 of 15 AppFolio props wrote rows →
   `234 = 13×18`). Cause: AppFolio prints the Bates page header as **`BATES, 15559 LOWER`** /
@@ -658,8 +667,8 @@ Denver. Built exactly like Divando but adapted to Yale's different PDF structure
 - **Automation**: `automation/run_yale.py` (monthly) + `automation/backfill_yale.py`
   (imports `run_yale` for parsing so they never drift). Both write ONLY to the shared
   **`Property Detail`** tab (LLC = `Yale Townhomes, LLC`) — never touch History or the
-  consolidated Yale card. Workflows: `monthly_yale.yml` (daily 15–25, **12pm UTC** — one
-  hour after Divando's 11am so they don't race on AppFolio cookies) + `backfill_yale.yml`
+  consolidated Yale card. Workflows: `monthly_yale.yml` (daily 15–25, **06:45 UTC = 9:45am
+  Israel** — 15 min after Divando so they don't race on AppFolio cookies) + `backfill_yale.yml`
   (manual, `BACKFILL_MONTHS` default 18).
 
 ### ⚠️ Yale PDF is STRUCTURALLY DIFFERENT from Divando
@@ -729,8 +738,8 @@ Disbursement**. So `run_donald.py` is essentially `run_divando.py` with Donald's
 - **Automation**: `automation/run_donald.py` (monthly) + `automation/backfill_donald.py`
   (imports `run_donald` for parsing + fixed costs so they never drift). Both write ONLY
   to the shared **`Property Detail`** tab (LLC = `5070 Donald, LLC`) — never touch History
-  or the consolidated Donald card. Workflows: `monthly_donald.yml` (daily 15–25, **1pm UTC**
-  — one hour after Yale's 12pm so they don't race on AppFolio cookies) + `backfill_donald.yml`
+  or the consolidated Donald card. Workflows: `monthly_donald.yml` (daily 15–25, **07:00 UTC =
+  10:00am Israel** — 15 min after Yale so they don't race on AppFolio cookies) + `backfill_donald.yml`
   (manual, `BACKFILL_MONTHS` default 18). Page header format: `DONALD, NNNN - NNNN E Donald
   Ave, ...` → `PROPERTY_CODE_MAP` key is `DONALD, NNNN`.
 

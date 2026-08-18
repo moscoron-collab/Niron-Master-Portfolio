@@ -2,9 +2,11 @@ name: Monthly AppFolio Per-Property Pull — Donald
 
 on:
   schedule:
-    # Runs daily at 1pm UTC from the 15th to 25th of each month.
-    # One hour after the Yale job (12pm) so they don't race on AppFolio cookies.
-    - cron: "0 13 15-25 * *"
+    # Runs once daily from the 15th to 25th, in the unified "9 AM Israel time"
+    # morning block (user request, Aug 18 2026). 15 min after the Yale job so
+    # they don't race on the shared AppFolio cookies:
+    # Donald 07:00 UTC = 10:00 Israel (summer) / 9:00 Israel (winter).
+    - cron: "0 7 15-25 * *"
   workflow_dispatch:  # allows manual trigger from GitHub UI
 
 jobs:
