@@ -2,12 +2,11 @@ name: Monthly AppFolio Data Pull
 
 on:
   schedule:
-    # Runs twice daily from the 15th to 25th of each month, so a statement that
-    # lands midday is caught the same day (duplicate-check skips months already saved):
-    #   - 12pm EDT / 16:00 UTC (noon ET)
-    - cron: "0 16 15-25 * *"
-    #   -  4pm EDT / 20:00 UTC (4pm ET)
-    - cron: "0 20 15-25 * *"
+    # Runs once daily from the 15th to 25th of each month, in the unified
+    # "9 AM Israel time" morning block (user request, Aug 18 2026). All 5 AppFolio
+    # pulls run 15 min apart (they share APPFOLIO_COOKIES and must not race):
+    # Niron 06:00 UTC = 9:00 Israel (summer) / 8:00 Israel (winter).
+    - cron: "0 6 15-25 * *"
   workflow_dispatch:  # allows manual trigger from GitHub UI
 
 jobs:
