@@ -1272,20 +1272,7 @@
         <div class="tw">
           <table>
             <thead><tr><th>Due Date</th><th>Amount</th><th>Status</th></tr></thead>
-            <tbody>
-              <tr class="hist"><td class="mn te">10/06/2025</td><td class="mn te">$453.67 (first month)</td><td class="te">Paid</td></tr>
-              <tr class="hist"><td class="mn te">11/06/2025</td><td class="mn te">$453.33</td><td class="te">Paid</td></tr>
-              <tr class="hist"><td class="mn te">12/06/2025</td><td class="mn te">$453.33</td><td class="te">Paid</td></tr>
-              <tr class="hist"><td class="mn te">01/06/2026</td><td class="mn te">$453.33</td><td class="te">Paid</td></tr>
-              <tr class="hist"><td class="mn te">02/06/2026</td><td class="mn te">$453.33</td><td class="te">Paid</td></tr>
-              <tr class="hist"><td class="mn te">03/06/2026</td><td class="mn te">$453.33</td><td class="te">Paid</td></tr>
-              <tr class="hist"><td class="mn te">04/06/2026</td><td class="mn te">$453.33</td><td class="te">Paid</td></tr>
-              <tr><td class="mn ta">05/06/2026</td><td class="mn ta">$453.33</td><td><span class="badge b-a">UPCOMING</span></td></tr>
-              <tr><td class="mn">06/06/2026</td><td class="mn">$453.33</td><td><span class="badge" style="border:1px solid var(--border);color:var(--muted)">FUTURE</span></td></tr>
-              <tr><td class="mn">07/06/2026</td><td class="mn">$453.33</td><td><span class="badge" style="border:1px solid var(--border);color:var(--muted)">FUTURE</span></td></tr>
-              <tr><td class="mn">08/06/2026</td><td class="mn">$453.33</td><td><span class="badge" style="border:1px solid var(--border);color:var(--muted)">FUTURE</span></td></tr>
-              <tr><td class="mn">09/06/2026</td><td class="mn">$453.33</td><td><span class="badge" style="border:1px solid var(--border);color:var(--muted)">FUTURE</span></td></tr>
-            </tbody>
+            <tbody id="fourplex-payment-body"></tbody>
             <tfoot><tr><td>Annual Total</td><td>$5,440</td><td></td></tr></tfoot>
           </table>
         </div>
@@ -3481,6 +3468,49 @@ function renderChart(history, months) {
 function initNoble() {
   const dt = document.getElementById('dt');
   if (dt) dt.textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+  renderFourplexPaymentSchedule();
+}
+
+// 41st fourplex (1460 W. 41st Ave) Berkshire Hathaway policy 02PRM080318-06 — one payment on
+// the 6th of each month, Oct 2025 through Sep 2026 (the current policy year). Paid/Upcoming/
+// Future is computed from today's date on every load instead of being hand-typed, so it never
+// goes stale again on its own — but this list itself still needs updating by hand once the
+// policy renews past Sep 2026 (a new 12-month run starting the next due date).
+const FOURPLEX_PAYMENTS = [
+  { date: '2025-10-06', amount: 453.67, note: ' (first month)' },
+  { date: '2025-11-06', amount: 453.33 },
+  { date: '2025-12-06', amount: 453.33 },
+  { date: '2026-01-06', amount: 453.33 },
+  { date: '2026-02-06', amount: 453.33 },
+  { date: '2026-03-06', amount: 453.33 },
+  { date: '2026-04-06', amount: 453.33 },
+  { date: '2026-05-06', amount: 453.33 },
+  { date: '2026-06-06', amount: 453.33 },
+  { date: '2026-07-06', amount: 453.33 },
+  { date: '2026-08-06', amount: 453.33 },
+  { date: '2026-09-06', amount: 453.33 }
+];
+function renderFourplexPaymentSchedule() {
+  const body = document.getElementById('fourplex-payment-body');
+  if (!body) return;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let upcomingSet = false;
+  let html = '';
+  FOURPLEX_PAYMENTS.forEach(p => {
+    const due = new Date(p.date + 'T00:00:00');
+    const [y, m, d] = p.date.split('-');
+    const label = m + '/' + d + '/' + y;
+    const amtText = '$' + p.amount.toFixed(2) + (p.note || '');
+    if (due < today) {
+      html += `<tr class="hist"><td class="mn te">${label}</td><td class="mn te">${amtText}</td><td class="te">Paid</td></tr>`;
+    } else if (!upcomingSet) {
+      upcomingSet = true;
+      html += `<tr><td class="mn ta">${label}</td><td class="mn ta">${amtText}</td><td><span class="badge b-a">UPCOMING</span></td></tr>`;
+    } else {
+      html += `<tr><td class="mn">${label}</td><td class="mn">${amtText}</td><td><span class="badge" style="border:1px solid var(--border);color:var(--muted)">FUTURE</span></td></tr>`;
+    }
+  });
+  body.innerHTML = html;
 }
 
 function ownerLogin() {
