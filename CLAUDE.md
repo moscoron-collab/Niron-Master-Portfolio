@@ -28,6 +28,11 @@ prorated/settled at closing.
   Property Tax row: **Amount Due → $0 · Amount Paid → $0 · Paid By → "Sold — see closing
   statement" · Comments → append `[SOLD Aug 28, 2026]`**. The `AppsScript.gs` seed array was
   updated to match (only affects a from-scratch re-seed, not the live sheet).
+  **⏸️ PAUSED (Aug 29, 2026, user decision):** user is deliberately NOT zeroing this row yet —
+  next year's tax cycle payment should go to the new buyer, not Dorado, and the exact proration
+  from closing needs to be known first (before zeroing what might still be partly Dorado's
+  responsibility). Revisit once the closing statement arrives (reminder scheduled for Mon Aug
+  31) and it's clear what, if anything, Dorado still owes vs. what shifts to the buyer.
 - **Insurance — REMOVED from the State Farm policy (Aug 28, 2026).** User called agent **Kevin
   Schult (303) 989-3847** the day of the sale and had Enid endorsed off the 13-property
   Divando/Dorado State Farm policy (2025–2026 term, policy #96-E4-G684-9) same-day — it's now a
