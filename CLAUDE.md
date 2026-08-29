@@ -13,6 +13,44 @@
 
 ---
 
+## 🏚️ 4641 Enid Way SOLD (Aug 28, 2026) — Dorado down to 2 properties
+
+**4641 Enid Way, Denver** (Dorado LLC) was **sold Aug 28, 2026.** Dorado now owns only **2397
+Jamaica St** and the **41st fourplex** (both still mortgage-free). Closing statement not yet in
+hand — **user will provide it, expected Mon Aug 31, 2026** (a reminder is scheduled). Once it
+arrives, update the sale date/price here and confirm whether this year's Denver property tax was
+prorated/settled at closing.
+
+- **Property Tax tab (Google Sheet):** user decision — **keep the row live**, mark it **SOLD /
+  $0** (same pattern as the Duval FL `2116 4th Avenue` sold row), **don't fully remove it until
+  end of 2027**. ⚠️ **I (the agent) cannot write the live Google Sheet** (sandbox blocks
+  `script.google.com`) — the user must make this edit via the dashboard's ✏️ Edit on the Enid
+  Property Tax row: **Amount Due → $0 · Amount Paid → $0 · Paid By → "Sold — see closing
+  statement" · Comments → append `[SOLD Aug 28, 2026]`**. The `AppsScript.gs` seed array was
+  updated to match (only affects a from-scratch re-seed, not the live sheet).
+- **Insurance — REMOVED from the State Farm policy (Aug 28, 2026).** User called agent **Kevin
+  Schult (303) 989-3847** the day of the sale and had Enid endorsed off the 13-property
+  Divando/Dorado State Farm policy (2025–2026 term, policy #96-E4-G684-9) same-day — it's now a
+  **12-property policy.** Enid's removed share was **$2,528/yr = $210.67/mo** (quote basis).
+  Jamaica stays on the policy at **$2,425/yr = $202.08/mo**. The dashboard's Noble Insurance
+  tables (both the 13→12-property State Farm detail table and the "All Dorado-Owned Properties"
+  overview) had the Enid row **deleted** and totals recomputed: policy total **~$32,102/yr**
+  (was $34,630/yr), auto-draft **≈$2,699/mo estimate** (was $2,909.98/mo actual — the exact new
+  draft isn't confirmed until State Farm's next bill/declarations page). The expired
+  2024–2025 historical comparison table still lists Enid — left untouched, it's a past record.
+  **✅ Dorado→Divando transfer updated (Aug 29, 2026): `$67.40/mo`, Jamaica-only** (user-provided
+  number, now the live figure — Enid is fully off both the policy and this transfer).
+- **CPB (Colorado Peak Bank) / county-tax auto-draft — user correction:** there is **NO recurring
+  Denver County property-tax autopay/autodraft going forward.** The "direct draw"/confirmation #
+  on the Enid Property Tax row was a one-time ACH pull for that specific bill, not a standing
+  enrollment — so **no county-side cancellation is needed.** (Initial read of the sheet data
+  wrongly assumed a recurring autopay; corrected here per the user, Aug 29 2026.)
+- **Not yet touched:** the abandoned tax-scraper's dead `Properties` seed list in
+  `AppsScript.gs` (~line 1631, unused since the county-scraper build was scrapped) still lists
+  Enid — low priority, left as-is.
+
+---
+
 ## 📱 Installable app (PWA) + 🏠 tab icon (Jul 8 2026, APP_VERSION → 2.6, pure frontend)
 
 The dashboard is now an **installable web app** ("Niron Portfolio") with a **🏠 house icon** on the
@@ -801,6 +839,8 @@ were fixed (user-approved decisions). **The findings reference the audit numberi
     Dorado separately credits Divando **`$138.00`/mo** ("TRANSFER FROM DDA ACCT …2189") for its
     2 units on the policy; this is **NOT netted** into the insurance line (user wanted the real
     drawn figure, not net). If ever wanted, net-of-credit = `$2,909.98 − $138 = $2,771.98`/mo.
+    ⚠️ The `$138/mo` credit is now `$67.40/mo` (Jamaica-only, since Enid sold Aug 28 2026 — see
+    the dated section near the top of this file); this net-of-credit math is stale.
   - **Noble Insurance tab synced to `$2,909.98` (Jun 12 2026).** The user noticed the Noble →
     Divando card still showed the quote figure `$2,885.83/mo` (= `$34,630/yr ÷12`). Updated 4
     spots to the real draft `$2,909.98/mo`: the Divando card **Monthly Payment** field, the
@@ -1631,9 +1671,11 @@ The statements made the partner structure unambiguous (equal-split amounts on th
 ### 🏠 DORADO LLC — corrected ownership & properties (user, Jun 7 2026)
 **Dorado = 3 EQUAL partners: Ronen + Nir + Simon Haviv** (Simon is Dorado-only). So Dorado
 distributions split **in THIRDS**, not halves (the other 3 LLCs are Ron/Nir 50/50).
-**Dorado properties are ALL mortgage-free:** **4641 Enid Way**, **2397 Jamaica St**, and a
-**fourplex on 41st** ("41st 4plex"). (Enid + Jamaica also ride Divando's State Farm policy per
-the insurance note; Dorado credits Divando $138/mo, ends Dec 2026.) Dorado still pays real cash
+**Dorado properties are ALL mortgage-free:** ~~**4641 Enid Way**~~ **SOLD Aug 28, 2026** (see the
+dated section near the top of this file), **2397 Jamaica St**, and a **fourplex on 41st** ("41st
+4plex"). (Jamaica rides Divando's State Farm policy per the insurance note; Dorado credits
+Divando **`$67.40/mo`, Jamaica-only** (updated Aug 29, 2026 — was $138/mo when it also covered
+Enid; Enid was fully removed from the policy Aug 28, 2026).) Dorado still pays real cash
 costs the dashboard ignores: property tax (~$4,281 in May), utilities (~$476/mo), Bergman, and
 its own National Indemnity insurance ($453.31/mo, 5/7).
 
@@ -2600,8 +2642,12 @@ tab) with per-property insurance for ALL properties (Divando, Dorado, Yale, Dona
 - Divando = State Farm, agent **Kevin Schult (303) 989-3847**, Dec 15 2025 → Dec 15 2026.
 - Full policy = **$34,630/yr = $2,885.83/mo** across **13 SFR policies = 11 Divando-owned
   + 2 Dorado-owned**.
-- The 2 Dorado-owned units sit on the Divando policy: **2397 Jamaica St** ($2,425) +
-  **4641 Enid Way** ($2,528). Dorado credits **$138/mo** back to Divando. **Stop Dec 2026.**
+- The Dorado-owned unit(s) sit on the Divando policy: **2397 Jamaica St** ($2,425/yr =
+  $202.08/mo) is the only one left — ~~**4641 Enid Way** ($2,528/yr = $210.67/mo)~~ **SOLD +
+  REMOVED from the policy Aug 28, 2026** (Kevin Schult processed the endorsement same-day).
+  Dorado's credit back to Divando is now **`$67.40/mo`, Jamaica-only** (updated Aug 29, 2026 —
+  was `$138/mo` combined Jamaica+Enid). Original note said "Stop Dec 2026" (policy renewal) —
+  moot for Enid, she left early via endorsement, not at renewal.
 - Two Divando AppFolio units **share one policy each**: 5101 Crown A+B ($2,702) and
   15559 Bates Lower+Upper ($2,507) → split per-unit for per-property net.
 - The **15655 E 13th Pl policy ($3,529/yr) covers 3 units**: 15655 + 15675 E 13th Pl +
