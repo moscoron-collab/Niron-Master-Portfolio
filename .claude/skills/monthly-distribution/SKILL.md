@@ -243,7 +243,7 @@ reference amount only to reserve a bill that is **missing** (still upcoming).
 | LLC | Mortgage | SBA | Insurance | Utilities | Other | Cushion |
 |---|---|---|---|---|---|---|
 | Divando | $12,199.86 — 6 `TRANSFER TO LOAN` (~15th) | $2,334.00 (1st) | State Farm **$2,909.98 (~29th)** | ~$626/mo (Xcel/Aurora Water/Compost/Google — **varies, editable on dashboard**) | ACE Cloud Hosting software $288.98 (~28th, Amex) | **$2,000** |
-| Donald | CBRE ~$13,708 (1st) | $444.00 (1st) | Westfield $1,210.84 (~4th) | **$0/mo** (only occasional quarterly Denver Compost — editable) | — | **$1,500** |
+| Donald | CBRE ~$13,708 (1st) | $444.00 (1st) | Westfield $1,191.58 (~4th; renewed Sep 20 2026 → Sep 20 2027 at $14,299/yr, was $1,210.84) | **$0/mo** (only occasional quarterly Denver Compost — editable) | — | **$1,500** |
 | Yale | Lument $7,279.08 (~6th) | $225.00 (1st) | Acuity $1,037.55 (~25th) | **$0/mo** (only occasional quarterly Denver Compost — editable) | — | **$1,500** |
 | Dorado | **none (mortgage-free)** | none | National Indemnity $453.31 (~7th) | ~$268/mo (Xcel/Denver Water — **varies, editable on dashboard**) | pays Divando $67.40/mo ins comp, Jamaica-only (TRANSFER, exclude) — updated Aug 29 2026, was $138 while Enid was still owned | **$1,000** |
 

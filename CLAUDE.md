@@ -13,6 +13,34 @@
 
 ---
 
+## 🏘️ Donald LLC insurance RENEWED (Sep 3 2026) — Westfield, $14,299/yr, term Sep 20 2026 → Sep 20 2027
+
+User uploaded the **Westfield Superior renewal declarations PDF** (`Donald_Renewal_2627.pdf`,
+issued 08/07/2026) for **5070 E Donald Ave Denver LLC**, policy **499841Y**, agency Arrow
+Insurance Management (Wren Arbuthnot, 970-668-3500). Confirmed renewal terms:
+- **Policy Period:** Sep 20, 2026 → Sep 20, 2027 (one blanket policy, 8 units = 4 duplexes,
+  5060–5082 E Donald Ave, one insured location).
+- **Total Advance Annual Policy Premium = `$14,299.00`** = Commercial Property $13,241.00 +
+  Commercial General Liability $1,056.00 (= Policy Annual Premium $14,297.00) + $2.00 CO
+  Hazard Mitigation Fee. **Down `$231.08/yr`** from the prior term's `$14,530.08/yr`.
+- **Monthly = `$1,191.58`** (`$14,299 ÷ 12`), **down `$19.26/mo`** from the prior bank-verified
+  `$1,210.84/mo`. **÷8 units = `$148.95/unit`** (was `$151.36`). The `$1,210.84` draft keeps
+  running through the Sep 20, 2026 term-end; `$1,191.58` takes over from the Sep 2026 bill —
+  **not yet bank-confirmed** (Westfield bills "Monthly, Paper Invoices," which can carry a
+  small installment fee like Divando's State Farm SFPP plan — verify off the first Sep 2026
+  invoice and correct if it differs).
+- Coverage/deductibles/limits are otherwise unchanged from the prior term (same $10,000
+  standard deductible, $581,320 building limit per building ×4, $2M/$4M liability, etc.).
+- **Updated everywhere the old `$1,210.84`/`$151.36` figures lived:** `index.html` (Noble
+  Insurance summary tile, Donald LLC monthly-cost card, renewal calendar row, the Donald
+  renewal-card fields, and a new Premium History row with the old term moved to history),
+  `CASHPLAN_CONFIG.donald.insurance` (Distribution Planner cushion math), `AppsScript.gs`
+  `dashboardKnowledge()` (chatbot context — **needs the usual redeploy** to go live), the
+  `/monthly-distribution` skill's recurring-cost reference table, and this file's Donald
+  fixed-costs section below.
+
+---
+
 ## 🏚️ 4641 Enid Way SOLD (Aug 28, 2026) — Dorado down to 2 properties
 
 **4641 Enid Way, Denver** (Dorado LLC) was **sold Aug 28, 2026.** Dorado now owns only **2397
@@ -784,8 +812,14 @@ Disbursement**. So `run_donald.py` is essentially `run_divando.py` with Donald's
 ### Donald fixed costs (bank-verified: acct `1 Donald LLC 9364`, Mar/Apr/May 2026, all identical)
 - **Mortgage = CBRE `$13,708.00`/mo** (CBRE LOAN SERV PAYMENT, one blanket loan) → split
   **equally ÷8 = $1,713.50/unit** (per user; units valued equally at $562,750 each).
-- **Insurance = Westfield `$1,210.84`/mo** (OH WESTFIELD BILLPAY, policy 499841Y, one policy
-  for all 8) → **÷8 = $151.36/unit**. ✅ This matches the existing card figure — no correction.
+- **Insurance = Westfield, policy 499841Y, one policy for all 8.** ⚠️ **Renewed for
+  Sep 20, 2026 → Sep 20, 2027 at `$14,299`/yr = `$1,191.58`/mo → ÷8 = `$148.95`/unit**
+  (Sep 3 2026, from the Westfield Superior renewal declarations PDF, issued 08/07/2026 —
+  see the dated section near the top of this file). This is DOWN from the prior bank-verified
+  `$1,210.84`/mo (`$14,530.08`/yr, ÷8 = `$151.36`/unit) for the Sep 2025 → Sep 2026 term. The
+  `$1,210.84` draft continues through Sep 20, 2026; `$1,191.58` is annual÷12 — confirm the exact
+  invoiced installment off the first Sep 2026 paper bill (Westfield may add a small fee, same
+  caveat as Divando's State Farm SFPP plan).
 - **SBA Loan `$444`/mo** = LLC-level business debt (like Divando/Yale SBA) — kept at LLC
   level, **NOT** spread across the per-unit table.
 - **Tax** = escrowed in the mortgage (`isTaxEscrowed` includes Donald) → tax NOT deducted
@@ -1306,7 +1340,7 @@ Distributions). Per LLC: you **type the current bank balance**
     ins `2909.98` (~29th) · **accountant `0`** · util `685` (~15th, lumped+tooltip) · **software `288.98`** (ACE Cloud
     Hosting, ~28th via Amex) · buffer `2000`
   - Donald (**REBUILT from 12-mo CSV, user-reviewed Jun 16 2026**): mort `13708` (CBRE, **1st** — was wrongly
-    16th) · SBA `444` (1st) · ins `1210.84` (Westfield, **~4th** — was wrongly 28th; switched from State Farm
+    16th) · SBA `444` (1st) · ins `1191.58` (Westfield, **~4th** — was wrongly 28th; switched from State Farm
     ~Oct 2025) · acct `0` · util `0` (**set to $0 Jul 2 2026 — user: Denver Compost is occasional, not an ongoing
     monthly/quarterly bill; was `336` quarterly**) · software `0` · buffer `1500`. **All fixed bills draft in
     the first ~4 days** → in `late` mode the cushion is just the buffer. No Amex/software on Donald.
@@ -2854,7 +2888,7 @@ editing chat context, ALWAYS edit the **last** `buildPortfolioContext` + `handle
 3. **DASHBOARD REFERENCE KNOWLEDGE** (`dashboardKnowledge()`) — embedded authoritative facts
    NOT all in the sheet: net-cashflow formula, Divando $14,533.86/mo debt ($12,199.86
    property loans + $2,334 SBA), Yale Lument $7,279.08 + Acuity $1,037.55 + SBA $225,
-   Donald CBRE $13,708 + Westfield $1,210.84 + SBA $444, tax rules, manual-entry rules, and
+   Donald CBRE $13,708 + Westfield $1,191.58 (renewed Sep 2026, was $1,210.84) + SBA $444, tax rules, manual-entry rules, and
    how every dashboard section works. **Keep these numbers in sync with `index.html` +
    CLAUDE.md when they change** (they are hardcoded, not read from a sheet).
 4. **INSURANCE** — Noble Insurance tab content (injected from the frontend).
