@@ -13,6 +13,83 @@
 
 ---
 
+## 🏦 Lender Portals & Contacts on the Loan Details tab (Sep 10 2026, APP_VERSION → 2.7, pure frontend)
+
+User request ("something I wanted for long time"): **portal access for the Donald and Yale loans, kept
+under the Loan Details tab, with contact info for each.** Built from three PDFs the user uploaded + two
+portal screenshots. **Pure frontend (`index.html`), live on merge — NO Apps Script redeploy.**
+
+- **Where:** new `renderLoanServicers()` renders a **"Lender Portals & Contacts"** section appended
+  **below** the existing loan cards on the `🏦 Loan Details` tab (`el.innerHTML = html +
+  renderLoanServicers()` at BOTH exits of `renderLoansSection`, including the no-loan-rows early return).
+- **Data = `const LOAN_SERVICERS`** (declared just above `loanShort`, right after `renderLoansSection`) —
+  **the only place to edit this**. Each entry = `{ llc, lender, portal, portalLabel, facts[], contacts[] }`;
+  a row is `{k, v}` plus optionally `copy` (renders a click-to-copy `.tax-parcel` chip via the existing
+  `copyParcel`), `href` (`tel:`/`mailto:` link), `sub` (small grey second line, HTML allowed), or
+  `missing` (amber ⚠ "not on file yet" line). Adding Divando's 6 property loans / the SBA lines later =
+  just push more entries. CSS is scoped `#loans-content .svc-*` (grid uses `auto-fit` +
+  `minmax(min(380px,100%),1fr)` → 2 wide cards at desktop, 1 column at phone width, no h-overflow;
+  verified with headless Chromium at 1200px and 400px).
+- **Self-audit unaffected** (no `#kpi-*` IDs). Version bumped 2.6 → **2.7** with a new top CHANGELOG entry (en+he).
+
+### 🏢 Donald — CBRE Loan Services (bank/statement-verified)
+Source: CBRE **billing statement dated 08/18/2026** (due 09/01/2026) + the **prior-year 2025 annual
+statement**, both uploaded Sep 10 2026.
+- **Portal:** `https://borrowerportal.cbreloanservices.com/` · **Loan # `010291013`** (printed
+  `01-0291013` on the payment stub) · property **5060–5082 E Donald Ave, Denver, CO 80222**.
+- **Principal balance `$1,755,560.99`** after the Sep 1 2026 payment. (Statement shows `$1,758,474.73`
+  after the 08/03/26 payment; minus the Sep principal `$2,913.74` = the `$1,755,560.99` on the portal
+  screenshot — the two sources reconcile exactly, which validates both.)
+- **Rate 5.72% fixed · originated 09/28/2018 · matures 10/01/2048.**
+- **Payment billed for 09/01/2026 = `$13,494.00`** = interest `$8,661.46` + principal `$2,913.74` + tax
+  escrow `$1,918.80`. ⚠️ **This is NOT the `$13,708` the dashboard/planner still use** — see the flag below.
+- **Tax escrow `$1,918.80`/mo**, escrow balance `$9,618.98`, disbursed `$24,092.88` YTD 2026
+  (`$24,784.70` in 2025). Confirms Donald property tax really is escrowed/lender-paid.
+- 2025 totals: principal paid `$34,431.83` · interest paid `$104,470.57` · 12/31/2025 balance `$1,782,656.36`.
+- **Contact:** `1-800-456-1443` (Customer Service **ext. 3001**, Delinquent accounts **ext. 3004**) ·
+  `CBRELSCustomerService@cbre.com` · 8:00 AM–5:00 PM Central Mon–Fri · 15377 Memorial Drive, Suite 400,
+  Houston, TX 77079. Borrower of record on file: **5070 Donald, LLC, Attn: Nir Shay, 2080 S Holly St
+  #22459, Denver, CO 80222**.
+
+### 🏢 Yale — Lument (LeapOnline)
+Source: the **LeapOnline portal screenshot** (Sep 2026) + a **2017 Hunt Mortgage escrow analysis** (Hunt
+originated it; Lument services it now).
+- **Portal:** `https://www.lument.com/client-login/` (Lument's own client-login page → LeapOnline).
+  ⚠️ The direct servicing URL is likely `https://lcre.leaponline.com/login` but **could not be verified**
+  (the agent sandbox's egress proxy blocks both `lument.com` and the CBRE portal, so neither URL was
+  loaded — both came from web search). **Ask the user to confirm the exact bookmark they use.**
+- **Servicing loan # `010107412`** · **lender loan # `4001110`** · Yale Townhomes Apartments,
+  2991–2999 W Yale Ave, Denver CO · **UPB `$815,897.36`** (portal, Sep 2026) · note date **07/22/2016** ·
+  **ACH drafts on the 5th**, 10-day grace · payment `$7,279.08`/mo (the existing bank-verified figure).
+- **Contact: only `ClientServices@Lument.com`** is on file. **No direct servicing phone / named rep yet** —
+  the card shows an amber ⚠ placeholder until the user supplies it. The 2017 Hunt contact (Patrick
+  Burchard, 913-317-4947, patrickburchard@huntservicing.com) was **deliberately left OUT** — 9 years old,
+  wrong company, would send someone to a dead number.
+- The 2017 escrow figures (ins constant $286.09, tax constant $502.06) are **historical and NOT used** —
+  Yale's live insurance is the separate Acuity draft `$1,037.55`/mo.
+
+### 🚩 OPEN — Donald monthly payment may be stale ($13,708 vs $13,494)
+`CASHPLAN_CONFIG.donald.mortgage`, the Loans sheet row, `dashboardKnowledge()` and this file all carry
+**`$13,708`/mo** (bank-verified Mar–May 2026). The CBRE statements show the escrow re-set it since:
+**Aug 2026 drafted `$13,682.00`** and **Sep 2026 is billed `$13,494.00`**. The 2025 statement shows the
+same drift pattern ($13,645 → $13,637 → $13,708). **NOT changed yet** — it feeds the Distribution
+Planner cushion, so it needs the user's confirmation off the bank first. The new servicer card shows the
+CBRE-billed number with a sub-line explaining escrow re-sets it, so the two figures don't read as a bug.
+**Sync `CASHPLAN_CONFIG` + the Loans sheet + `dashboardKnowledge()` once confirmed.**
+
+### 🔭 Not done / deliberate
+- **No credentials stored.** Usernames/passwords are NOT in the repo and must never be — `index.html` is
+  a public GitHub file behind one shared password. The portal buttons just open the login page.
+- **Wire instructions deliberately omitted.** The CBRE statement prints JPMorgan Chase ABA/account
+  numbers; they were left out (payments are auto-drafted so they're never needed, and published wire
+  details are the classic fraud anchor). Offered to the user if they want them added.
+- **Chatbot doesn't know this yet** — `dashboardKnowledge()` / `buildPortfolioContext` in `AppsScript.gs`
+  were not touched, so this stayed redeploy-free. Add on a future redeploy if the chatbot should answer
+  "what's the Donald loan number / who services Yale".
+- Divando's 6 property loans + the SBA lines have no portal entry yet (no portal/contact info supplied).
+
+---
+
 ## 🏘️ Donald LLC insurance RENEWED (Sep 3 2026) — Westfield, $14,299/yr, term Sep 20 2026 → Sep 20 2027
 
 User uploaded the **Westfield Superior renewal declarations PDF** (`Donald_Renewal_2627.pdf`,
@@ -2081,6 +2158,9 @@ TOTAL monthly-debt row**.
   - **Cards** (`.loan-cards` grid, `repeat(auto-fill, minmax(320px,1fr))`): one `.loan-card` per LLC
     with a header (LLC name + `$X/mo` total, green; grey when $0) and one `.loan-row` per loan
     (lender left, amount right). Dorado (paid off) → `.paid` styling, row reads "No loan (paid off)".
+  - **Sep 10 2026:** a **"Lender Portals & Contacts"** block (`renderLoanServicers()` + `LOAN_SERVICERS`)
+    now renders **below** these cards on the same tab — CBRE (Donald) + Lument (Yale) portal buttons, loan
+    numbers, balances and phone/email. See the dated section near the top of this file.
   - **No type tags** (removed `loanTag`). **Lender shortened** via `loanShort(lender)`: Divando's
     long "Property Mortgage — <addresses> (acct 0210)" becomes **"Property Mortgage · acct 0210"**
     with the **property list on hover** (native `title`, dotted-underline `.has-tip` hint); CBRE /

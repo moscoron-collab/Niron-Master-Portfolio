@@ -480,6 +480,23 @@
   #loans-content .loan-row .ln.has-tip { text-decoration: underline dotted; text-decoration-color: #33506f; text-underline-offset: 3px; cursor: help; }
   #loans-content .loan-row .amt { color: #eaf3fc; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
   #loans-content .loan-row.paid .ln { color: #7e9cbf; }
+  /* ── Loan Details tab — lender portals & contacts (Donald / Yale) ── */
+  #loans-content .svc-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 16px; }
+  #loans-content .svc-card { background: #0d1c2e; border: 1px solid #1e2d42; border-radius: 14px; overflow: hidden; }
+  #loans-content .svc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; padding: 14px 16px; background: linear-gradient(90deg, #11243a, #0c1a2b); border-bottom: 1px solid #21456b; }
+  #loans-content .svc-llc { font-weight: 700; font-size: 14.5px; color: #d4e6fb; letter-spacing: 0.3px; }
+  #loans-content .svc-lender { font-size: 12px; color: #7e9cbf; margin-top: 3px; }
+  #loans-content .svc-portal { background: #0080cc; color: #fff; border: none; border-radius: 8px; padding: 8px 13px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; display: inline-block; }
+  #loans-content .svc-portal:hover { background: #00a0f0; color: #fff; }
+  #loans-content .svc-rows { padding: 6px 0 10px; }
+  #loans-content .svc-row { display: flex; gap: 14px; align-items: baseline; padding: 8px 16px; }
+  #loans-content .svc-row .k { flex: 0 0 104px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px; color: #7e9cbf; }
+  #loans-content .svc-row .v { flex: 1 1 auto; min-width: 0; color: #eaf3fc; font-size: 13px; overflow-wrap: anywhere; }
+  #loans-content .svc-row .v a { color: #6fd3ff; text-decoration: none; }
+  #loans-content .svc-row .v a:hover { text-decoration: underline; }
+  #loans-content .svc-row .sub { display: block; color: #7e9cbf; font-size: 11.5px; margin-top: 3px; line-height: 1.45; }
+  #loans-content .svc-sep { margin: 8px 16px 2px; padding-top: 10px; border-top: 1px solid #13243a; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.7px; color: #9fc1e0; font-weight: 700; }
+  #loans-content .svc-miss { color: #e8b23a; font-size: 12.5px; }
 </style>
 </head>
 <body>
@@ -1498,8 +1515,24 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.6";
+const APP_VERSION = "2.7";
 const CHANGELOG = [
+  {
+    version: "2.7",
+    date: "September 10, 2026",
+    en: [
+      "New on the \ud83c\udfe6 Loan Details tab: a \"Lender Portals & Contacts\" block with a one-click login button for the two loans that have an online portal \u2014 Donald (CBRE Borrower Portal) and Yale (LeapOnline by Lument).",
+      "Each one shows the loan number (click to copy), the property, the current balance with the date it was taken from, the rate, the payment and the term \u2014 plus who to call: phone (tap to dial), email, office hours and the mailing address.",
+      "Donald: balance $1,755,560.99 after the Sep 1 payment, 5.72% fixed, matures Oct 2048. CBRE also holds the tax escrow ($1,918.80/mo) and pays the Denver tax bill for us.",
+      "Yale: balance $815,897.36, drafts on the 5th of each month. We still need Lument\u2019s direct servicing phone number \u2014 it is marked in yellow on the card until we have it."
+    ],
+    he: [
+      "\u05d7\u05d3\u05e9 \u05d1\u05dc\u05e9\u05d5\u05e0\u05d9\u05ea \u05e4\u05e8\u05d8\u05d9 \u05d4\u05dc\u05d5\u05d5\u05d0\u05d5\u05ea \ud83c\udfe6: \u05d1\u05dc\u05d5\u05e7 \"\u05e4\u05d5\u05e8\u05d8\u05dc\u05d9\u05dd \u05d5\u05d0\u05e0\u05e9\u05d9 \u05e7\u05e9\u05e8 \u05e9\u05dc \u05d4\u05de\u05dc\u05d5\u05d5\u05d9\u05dd\" \u05e2\u05dd \u05db\u05e4\u05ea\u05d5\u05e8 \u05db\u05e0\u05d9\u05e1\u05d4 \u05d1\u05dc\u05d7\u05d9\u05e6\u05d4 \u05d0\u05d7\u05ea \u05dc\u05e9\u05e0\u05d9 \u05d4\u05dc\u05d5\u05d5\u05d0\u05d5\u05ea \u05e9\u05d9\u05e9 \u05dc\u05d4\u05dd \u05e4\u05d5\u05e8\u05d8\u05dc \u05d0\u05d5\u05e0\u05dc\u05d9\u05d9\u05df \u2014 \u05d3\u05d5\u05e0\u05dc\u05d3 (CBRE) \u05d5\u05d9\u05d9\u05dc (LeapOnline \u05e9\u05dc Lument).",
+      "\u05e2\u05dc \u05db\u05dc \u05db\u05e8\u05d8\u05d9\u05e1 \u05de\u05d5\u05e4\u05d9\u05e2\u05d9\u05dd \u05de\u05e1\u05e4\u05e8 \u05d4\u05d4\u05dc\u05d5\u05d5\u05d0\u05d4 (\u05dc\u05d7\u05d9\u05e6\u05d4 \u05de\u05e2\u05ea\u05d9\u05e7\u05d4 \u05d0\u05d5\u05ea\u05d5), \u05d4\u05e0\u05db\u05e1, \u05d4\u05d9\u05ea\u05e8\u05d4 \u05d4\u05e0\u05d5\u05db\u05d7\u05d9\u05ea \u05d5\u05dc\u05e4\u05d9 \u05d0\u05d9\u05d6\u05d4 \u05ea\u05d0\u05e8\u05d9\u05da, \u05d4\u05e8\u05d9\u05d1\u05d9\u05ea, \u05d4\u05ea\u05e9\u05dc\u05d5\u05dd \u05d5\u05ea\u05e7\u05d5\u05e4\u05ea \u05d4\u05d4\u05dc\u05d5\u05d5\u05d0\u05d4 \u2014 \u05d5\u05d2\u05dd \u05dc\u05de\u05d9 \u05dc\u05d4\u05ea\u05e7\u05e9\u05e8: \u05d8\u05dc\u05e4\u05d5\u05df (\u05dc\u05d7\u05d9\u05e6\u05d4 \u05de\u05d7\u05d9\u05d9\u05d2\u05ea), \u05d0\u05d9\u05de\u05d9\u05d9\u05dc, \u05e9\u05e2\u05d5\u05ea \u05e4\u05e2\u05d9\u05dc\u05d5\u05ea \u05d5\u05db\u05ea\u05d5\u05d1\u05ea \u05dc\u05de\u05e9\u05dc\u05d5\u05d7 \u05d3\u05d5\u05d0\u05e8.",
+      "\u05d3\u05d5\u05e0\u05dc\u05d3: \u05d9\u05ea\u05e8\u05d4 $1,755,560.99 \u05d0\u05d7\u05e8\u05d9 \u05d4\u05ea\u05e9\u05dc\u05d5\u05dd \u05e9\u05dc 1 \u05d1\u05e1\u05e4\u05d8\u05de\u05d1\u05e8, \u05e8\u05d9\u05d1\u05d9\u05ea \u05e7\u05d1\u05d5\u05e2\u05d4 5.72%, \u05e1\u05d5\u05e3 \u05d4\u05d4\u05dc\u05d5\u05d5\u05d0\u05d4 \u05d0\u05d5\u05e7\u05d8\u05d5\u05d1\u05e8 2048. CBRE \u05d2\u05dd \u05de\u05d7\u05d6\u05d9\u05e7\u05d4 \u05d0\u05ea \u05e4\u05d9\u05e7\u05d3\u05d5\u05df \u05d4\u05de\u05e1 ($1,918.80 \u05dc\u05d7\u05d5\u05d3\u05e9) \u05d5\u05de\u05e9\u05dc\u05de\u05ea \u05e2\u05d1\u05d5\u05e8\u05e0\u05d5 \u05d0\u05ea \u05d0\u05e8\u05e0\u05d5\u05e0\u05ea \u05d3\u05e0\u05d1\u05e8.",
+      "\u05d9\u05d9\u05dc: \u05d9\u05ea\u05e8\u05d4 $815,897.36, \u05d4\u05d5\u05e8\u05d0\u05ea \u05d4\u05e7\u05d1\u05e2 \u05d9\u05d5\u05e8\u05d3\u05ea \u05d1-5 \u05dc\u05db\u05dc \u05d7\u05d5\u05d3\u05e9. \u05e2\u05d3\u05d9\u05d9\u05df \u05d7\u05e1\u05e8 \u05dc\u05e0\u05d5 \u05de\u05e1\u05e4\u05e8 \u05d8\u05dc\u05e4\u05d5\u05df \u05d9\u05e9\u05d9\u05e8 \u05e9\u05dc Lument \u2014 \u05d6\u05d4 \u05de\u05e1\u05d5\u05de\u05df \u05d1\u05e6\u05d4\u05d5\u05d1 \u05e2\u05dc \u05d4\u05db\u05e8\u05d8\u05d9\u05e1 \u05e2\u05d3 \u05e9\u05e0\u05e7\u05d1\u05dc \u05d0\u05d5\u05ea\u05d5."
+    ]
+  },
   {
     version: "2.6",
     date: "July 8, 2026",
@@ -4226,7 +4259,7 @@ function renderLoansSection() {
     'Donald has CBRE + SBA; Yale has Lument + SBA; Dorado is mortgage-free. Hover a shortened loan ' +
     'name to see the properties it covers. This is the recurring monthly loan cost — not balances.</span>' +
     '</span></span></h2>';
-  if (!allLoans.length) { html += '<div style="color:#4e6d8c;padding:14px">No loan rows yet.</div></div>'; el.innerHTML = html; return; }
+  if (!allLoans.length) { html += '<div style="color:#4e6d8c;padding:14px">No loan rows yet.</div></div>'; el.innerHTML = html + renderLoanServicers(); return; }
 
   // Group by LLC (alphabetical) and total each.
   const byLlc = {};
@@ -4263,7 +4296,101 @@ function renderLoansSection() {
     html += '</div></div>';
   });
   html += '</div></div>';
-  el.innerHTML = html;
+  el.innerHTML = html + renderLoanServicers();
+}
+
+/* ============================================================
+   LENDER PORTALS & CONTACTS  (Loan Details tab)
+   ------------------------------------------------------------
+   Everything needed to log in to a lender's borrower portal and
+   reach a human. EDIT HERE — this is the only place these live.
+   Sources: CBRE billing statement 08/18/2026 + prior-year 2025
+   statement (Donald), Lument LeapOnline portal + the 2016 note /
+   2017 Hunt escrow analysis (Yale). Balances carry an as-of date
+   — they are a snapshot, not live.
+   ============================================================ */
+const LOAN_SERVICERS = [
+  {
+    llc: '5070 Donald, LLC',
+    lender: 'CBRE Loan Services, Inc.',
+    portal: 'https://borrowerportal.cbreloanservices.com/',
+    portalLabel: 'CBRE Borrower Portal',
+    facts: [
+      { k: 'Loan #', copy: '010291013', sub: 'written <b>01-0291013</b> on the payment stub' },
+      { k: 'Property', v: '5060–5082 E Donald Ave, Denver, CO 80222' },
+      { k: 'Balance', v: '$1,755,560.99', sub: 'principal, after the Sep 1, 2026 payment' },
+      { k: 'Rate', v: '5.72% fixed' },
+      { k: 'Payment', v: '$13,494.00 · due the 1st', sub: 'auto-drafted. Escrow re-sets it each year — Aug 2026 drafted $13,682.00. Splits into interest $8,661.46 + principal $2,913.74 + tax escrow $1,918.80.' },
+      { k: 'Tax escrow', v: '$1,918.80 / mo', sub: 'CBRE pays the Denver tax bill — escrow balance $9,618.98, paid out $24,092.88 so far in 2026' },
+      { k: 'Term', v: 'Sep 28, 2018 → Oct 1, 2048' }
+    ],
+    contacts: [
+      { k: 'Phone', v: '1-800-456-1443', href: 'tel:+18004561443', sub: 'Customer Service ext. <b>3001</b> · Delinquent accounts ext. <b>3004</b>' },
+      { k: 'Email', v: 'CBRELSCustomerService@cbre.com', href: 'mailto:CBRELSCustomerService@cbre.com' },
+      { k: 'Hours', v: '8:00 AM – 5:00 PM Central, Mon–Fri' },
+      { k: 'Mail', v: '15377 Memorial Drive, Suite 400, Houston, TX 77079', sub: 'Payments (no need — auto-drafted): PO Box 973788, Dallas, TX 75397-3788' },
+      { k: 'On file as', v: '5070 Donald, LLC · Attn: Nir Shay', sub: '2080 S Holly St #22459, Denver, CO 80222' }
+    ]
+  },
+  {
+    llc: 'Yale Townhomes, LLC',
+    lender: 'Lument — LeapOnline servicing',
+    portal: 'https://www.lument.com/client-login/',
+    portalLabel: 'LeapOnline (Lument)',
+    facts: [
+      { k: 'Loan #', copy: '010107412', sub: 'servicing number — the one the portal lists' },
+      { k: 'Lender loan #', copy: '4001110' },
+      { k: 'Property', v: 'Yale Townhomes Apartments — 2991–2999 W Yale Ave, Denver, CO' },
+      { k: 'Balance', v: '$815,897.36', sub: 'unpaid principal (UPB) shown in the portal, Sep 2026' },
+      { k: 'Payment', v: '$7,279.08 / mo', sub: 'ACH drafts on the <b>5th</b> · 10-day grace period' },
+      { k: 'Note date', v: 'Jul 22, 2016', sub: 'originated with Hunt Mortgage Group; Lument services it now' }
+    ],
+    contacts: [
+      { k: 'Email', v: 'ClientServices@Lument.com', href: 'mailto:ClientServices@Lument.com', sub: 'general Lument client services' },
+      { k: 'Phone / rep', missing: 'No direct servicing phone or named rep on file yet — send it to Claude and it gets added here.' }
+    ]
+  }
+];
+
+// Renders the "Lender Portals & Contacts" block under the loan cards.
+function renderLoanServicers() {
+  let html = '<div class="section">';
+  html += '<h2><span class="dot"></span>Lender Portals &amp; Contacts' +
+    '<span class="kpi-info">ⓘ<span class="kpi-tip">' +
+    '<b>One-click access to each lender\'s borrower portal, plus who to call.</b> ' +
+    'Click a loan number to copy it, the phone to dial, or the email to write. ' +
+    '<span class="tax-note">Balances are a dated snapshot typed in from the last statement / portal view — ' +
+    'they do not update on their own. Divando\'s 6 property loans and the SBA lines are not here yet; ' +
+    'ask and they get added.</span>' +
+    '</span></span></h2>';
+  html += '<div style="color:#7e9cbf;font-size:12.5px;margin:-6px 0 14px">Donald (CBRE) and Yale (Lument) are the two loans with an online portal. ' +
+    'Both are <b style="color:#00BFFF">auto-drafted</b> — you never need to send a payment, the portal is for statements, balances and escrow.</div>';
+  html += '<div class="svc-cards">';
+  LOAN_SERVICERS.forEach(s => {
+    html += '<div class="svc-card">' +
+      '<div class="svc-head"><div><div class="svc-llc">' + s.llc + '</div>' +
+      '<div class="svc-lender">' + s.lender + '</div></div>' +
+      '<a class="svc-portal" href="' + s.portal + '" target="_blank" rel="noopener noreferrer">🔗 ' + s.portalLabel + ' ↗</a>' +
+      '</div><div class="svc-rows">';
+    const rowHtml = r => {
+      let v;
+      if (r.missing) v = '<span class="svc-miss">⚠ ' + r.missing + '</span>';
+      else if (r.copy) v = '<span class="tax-parcel" title="Click to copy" onclick="copyParcel(event, ' +
+        JSON.stringify(r.copy).replace(/"/g, '&quot;') + ')">' + r.copy + ' <span style="opacity:.6">📋</span></span>';
+      else if (r.href) v = '<a href="' + r.href + '">' + r.v + '</a>';
+      else v = r.v;
+      return '<div class="svc-row"><span class="k">' + r.k + '</span><span class="v">' + v +
+        (r.sub ? '<span class="sub">' + r.sub + '</span>' : '') + '</span></div>';
+    };
+    (s.facts || []).forEach(r => { html += rowHtml(r); });
+    if ((s.contacts || []).length) {
+      html += '<div class="svc-sep">📞 Contact</div>';
+      s.contacts.forEach(r => { html += rowHtml(r); });
+    }
+    html += '</div></div>';
+  });
+  html += '</div></div>';
+  return html;
 }
 
 // Shorten a lender string for the card row; returns { short, full } where `full` (if any)
