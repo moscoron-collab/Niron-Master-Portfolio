@@ -2481,26 +2481,6 @@ function extraMortgage(llc) { return (llc && llc.toLowerCase().includes('divando
 //           units on the policy - NOT netted here (user wants the real drawn figure).
 // Any LLC NOT listed here uses the insurance amount straight from the sheet.
 const INSURANCE_OVERRIDE = { divando: 2909.98, yale: 1037.55 };
-// Loans-tab monthly payment override (Loan Details tab display only — does NOT touch Net
-// Cashflow, which reads each History row's own mortgage). Keyed by LLC substring + a lender
-// substring. Use when the Loans sheet row is stale and we have the lender's own statement.
-// Donald: CBRE's principal+interest is FIXED at $11,575.20; only the tax escrow moves. The
-// Sep 2026 escrow analysis cut it $2,106.80 -> $1,918.80, so the payment is now $13,494.00
-// (Aug 2026 drafted $13,682.00). The Loans sheet still says $13,708 — override it here.
-const LOAN_MONTHLY_OVERRIDE = [
-  { llc: 'donald', lender: 'cbre', monthly: 13494.00 }
-];
-function effectiveLoanMonthly(l) {
-  const llc = (l.llc || '').toLowerCase(), lender = (l.lender || '').toLowerCase();
-  for (const o of LOAN_MONTHLY_OVERRIDE) {
-    if (llc.includes(o.llc) && lender.includes(o.lender)) return o.monthly;
-  }
-  return l.monthly_payment || 0;
-}
-function effectiveIns(llc, sheetIns) {
-  if (llc) { const n = llc.toLowerCase(); for (const k in INSURANCE_OVERRIDE) { if (n.includes(k)) return INSURANCE_OVERRIDE[k]; } }
-  return sheetIns || 0;
-}
 // --- Cash cushion / distribution planner (bank-verified Mar–May 2026) -------------
 // Recurring monthly cash that leaves each LLC's operating account. Used to compute the
 // cushion to LEAVE before distributing. The cushion uses a ROLLING window (planUpcoming):
@@ -4279,7 +4259,7 @@ function renderLoansSection() {
   if (!el) return;
   const loans = (PORTFOLIO_DATA && PORTFOLIO_DATA.loans) || [];
   const allLoans = loans.concat(DIVANDO_PROPERTY_LOANS).slice()
-    .sort((a, b) => (a.llc.localeCompare(b.llc)) || (effectiveLoanMonthly(b) - effectiveLoanMonthly(a)));
+    .sort((a, b) => (a.llc.localeCompare(b.llc)) || ((b.monthly_payment || 0) - (a.monthly_payment || 0)));
   let html = '<div class="section">';
   html += '<h2><span class="dot"></span>Loan Details per LLC' +
     '<span class="kpi-info">ⓘ<span class="kpi-tip">' +
@@ -4295,7 +4275,7 @@ function renderLoansSection() {
   const byLlc = {};
   allLoans.forEach(l => { (byLlc[l.llc] = byLlc[l.llc] || []).push(l); });
   const llcNames = Object.keys(byLlc).sort();
-  const subOf = name => byLlc[name].reduce((s, l) => s + effectiveLoanMonthly(l), 0);
+  const subOf = name => byLlc[name].reduce((s, l) => s + (l.monthly_payment || 0), 0);
   const grand = llcNames.reduce((s, n) => s + subOf(n), 0);
 
   // --- Summary tiles: Total Monthly Debt + one per LLC ---
@@ -4321,7 +4301,7 @@ function renderLoansSection() {
       const tip = s.full ? ' class="ln has-tip" title="' + s.full.replace(/"/g, '&quot;') + '"' : ' class="ln"';
       html += '<div class="loan-row' + (isPaid ? ' paid' : '') + '">' +
         '<span' + tip + '>' + s.short + '</span>' +
-        '<span class="amt">' + fmt(effectiveLoanMonthly(l)) + '</span></div>';
+        '<span class="amt">' + fmt(l.monthly_payment) + '</span></div>';
     });
     html += '</div></div>';
   });
