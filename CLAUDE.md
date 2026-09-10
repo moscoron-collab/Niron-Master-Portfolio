@@ -35,7 +35,7 @@ portal screenshots. **Pure frontend (`index.html`), live on merge — NO Apps Sc
 ### 🏢 Donald — CBRE Loan Services (bank/statement-verified)
 Source: CBRE **billing statement dated 08/18/2026** (due 09/01/2026) + the **prior-year 2025 annual
 statement**, both uploaded Sep 10 2026.
-- **Portal:** `https://borrowerportal.cbreloanservices.com/` · **Loan # `010291013`** (printed
+- **Portal:** `https://borrowerportal.cbreloanservices.com/dashboard`  (user-confirmed Sep 10 2026) · **Loan # `010291013`** (printed
   `01-0291013` on the payment stub) · property **5060–5082 E Donald Ave, Denver, CO 80222**.
 - **Principal balance `$1,755,560.99`** after the Sep 1 2026 payment. (Statement shows `$1,758,474.73`
   after the 08/03/26 payment; minus the Sep principal `$2,913.74` = the `$1,755,560.99` on the portal
@@ -54,28 +54,45 @@ statement**, both uploaded Sep 10 2026.
 ### 🏢 Yale — Lument (LeapOnline)
 Source: the **LeapOnline portal screenshot** (Sep 2026) + a **2017 Hunt Mortgage escrow analysis** (Hunt
 originated it; Lument services it now).
-- **Portal:** `https://www.lument.com/client-login/` (Lument's own client-login page → LeapOnline).
-  ⚠️ The direct servicing URL is likely `https://lcre.leaponline.com/login` but **could not be verified**
-  (the agent sandbox's egress proxy blocks both `lument.com` and the CBRE portal, so neither URL was
-  loaded — both came from web search). **Ask the user to confirm the exact bookmark they use.**
+- **Portal (user-confirmed Sep 10 2026):** **`https://leaponlineservicing.lument.com`**. (The earlier
+  guesses `lument.com/client-login/` and `lcre.leaponline.com/login` came from web search and were WRONG —
+  the agent's egress proxy blocks these hosts so nothing could be loaded to check. Lesson: ask the user
+  for the bookmark instead of shipping a searched URL.)
 - **Servicing loan # `010107412`** · **lender loan # `4001110`** · Yale Townhomes Apartments,
   2991–2999 W Yale Ave, Denver CO · **UPB `$815,897.36`** (portal, Sep 2026) · note date **07/22/2016** ·
   **ACH drafts on the 5th**, 10-day grace · payment `$7,279.08`/mo (the existing bank-verified figure).
-- **Contact: only `ClientServices@Lument.com`** is on file. **No direct servicing phone / named rep yet** —
-  the card shows an amber ⚠ placeholder until the user supplies it. The 2017 Hunt contact (Patrick
-  Burchard, 913-317-4947, patrickburchard@huntservicing.com) was **deliberately left OUT** — 9 years old,
-  wrong company, would send someone to a dead number.
+- **Contacts (user-supplied Sep 10 2026, now on the card):** **Maki Murphy — our loan manager at Lument,
+  the first call** — `614-857-3282` / `Maki.Murphy@lument.com`. Backup: **Elizabeth Carmody** (assistant) —
+  `214-237-2381` / `Elizabeth.Carmody@lument.com`. The unverified generic `ClientServices@Lument.com`
+  (found by web search) was **removed** in favour of these two real contacts. The 2017 Hunt contact
+  (Patrick Burchard, 913-317-4947) stays **deliberately OUT** — 9 years old, wrong company, dead number.
 - The 2017 escrow figures (ins constant $286.09, tax constant $502.06) are **historical and NOT used** —
   Yale's live insurance is the separate Acuity draft `$1,037.55`/mo.
 
-### 🚩 OPEN — Donald monthly payment may be stale ($13,708 vs $13,494)
-`CASHPLAN_CONFIG.donald.mortgage`, the Loans sheet row, `dashboardKnowledge()` and this file all carry
-**`$13,708`/mo** (bank-verified Mar–May 2026). The CBRE statements show the escrow re-set it since:
-**Aug 2026 drafted `$13,682.00`** and **Sep 2026 is billed `$13,494.00`**. The 2025 statement shows the
-same drift pattern ($13,645 → $13,637 → $13,708). **NOT changed yet** — it feeds the Distribution
-Planner cushion, so it needs the user's confirmation off the bank first. The new servicer card shows the
-CBRE-billed number with a sub-line explaining escrow re-sets it, so the two figures don't read as a bug.
-**Sync `CASHPLAN_CONFIG` + the Loans sheet + `dashboardKnowledge()` once confirmed.**
+### ✅ RESOLVED — Donald CBRE payment is `$13,494.00`/mo, NOT `$13,708` (Sep 10 2026)
+The user asked whether the flagged figure was the `$14,152.00` on the Loan Details Donald tile.
+**It isn't** — `$14,152.00` = CBRE `$13,708` **+ SBA `$444`** (total monthly debt), so it carried the
+stale mortgage. **Proof the correct payment is `$13,494.00`:** CBRE's **principal + interest is FIXED at
+`$11,575.20`** every month — verified across 5 statements (2025: `$13,645 − $2,069.80` = `$13,637 −
+$2,061.80` = `$13,708 − $2,132.80`; 2026: `$13,682 − $2,106.80`; Sep 2026: `$8,661.46 + $2,913.74`) — and
+**only the tax escrow moves.** The Sep 2026 escrow analysis cut the escrow `$2,106.80 → $1,918.80`
+(−$188), so `$11,575.20 + $1,918.80 = $13,494.00`. Aug 2026 actually drafted `$13,682.00` ("PAYMENT
+RECEIVED" on the statement = the real ACH draft), so the statement figure IS the bank figure. **No bank
+check was needed** — do not ask the user to verify this again.
+- **Updated:** `CASHPLAN_CONFIG.donald.mortgage` → **`13494`** (planner cushion, ~$214 more room/mo) ·
+  `AppsScript.gs dashboardKnowledge()` → `$13,494.00/mo` (÷8 = `$1,686.75`/unit) **[needs redeploy]** ·
+  the Loan Details display via the new override below. **Donald total monthly debt now reads `$13,938`.**
+- **🆕 `LOAN_MONTHLY_OVERRIDE` (`index.html`, next to `INSURANCE_OVERRIDE`)** — array of
+  `{llc, lender, monthly}` matched by substring; `effectiveLoanMonthly(l)` returns the override or
+  `l.monthly_payment`. Used by `renderLoansSection` ONLY (sort, per-LLC subtotal, card row), because the
+  agent cannot write the Google Sheet. **It does NOT touch Net Cashflow** — that reads each History row's
+  own `mortgage` from the Settings fixed costs, so **past months stay as actually billed** (deliberate —
+  restating history for a $214 escrow change would be wrong). ⚠️ The **Loans sheet tab still says
+  `$13,708`** and the **Settings fixed-cost row still drives Donald's net** — the user can correct both in
+  the sheet whenever convenient; until then the override keeps the Loan Details tab honest.
+- ⚠️ **Escrow re-sets roughly annually and the payment WILL drift again** (2025 alone: $13,645 → $13,637 →
+  $13,708). When a new CBRE statement arrives, only the escrow line needs re-reading — P&I stays
+  `$11,575.20`.
 
 ### 🔭 Not done / deliberate
 - **No credentials stored.** Usernames/passwords are NOT in the repo and must never be — `index.html` is
@@ -887,8 +904,12 @@ Disbursement**. So `run_donald.py` is essentially `run_divando.py` with Donald's
   Ave, ...` → `PROPERTY_CODE_MAP` key is `DONALD, NNNN`.
 
 ### Donald fixed costs (bank-verified: acct `1 Donald LLC 9364`, Mar/Apr/May 2026, all identical)
-- **Mortgage = CBRE `$13,708.00`/mo** (CBRE LOAN SERV PAYMENT, one blanket loan) → split
-  **equally ÷8 = $1,713.50/unit** (per user; units valued equally at $562,750 each).
+- **Mortgage = CBRE `$13,494.00`/mo** (CBRE LOAN SERV PAYMENT, one blanket loan) → split
+  **equally ÷8 = $1,686.75/unit** (per user; units valued equally at $562,750 each). ⚠️ **Was
+  `$13,708.00` (÷8 = $1,713.50) through Aug 2026** — the Sep 2026 escrow analysis cut the tax-escrow
+  portion; principal+interest is fixed at `$11,575.20` and only the escrow moves. See the
+  "RESOLVED — Donald CBRE payment" section near the top of this file. The **Loans + Settings tabs of the
+  Google Sheet still hold `$13,708`** (agent can't write the sheet).
 - **Insurance = Westfield, policy 499841Y, one policy for all 8.** ⚠️ **Renewed for
   Sep 20, 2026 → Sep 20, 2027 at `$14,299`/yr = `$1,191.58`/mo → ÷8 = `$148.95`/unit**
   (Sep 3 2026, from the Westfield Superior renewal declarations PDF, issued 08/07/2026 —

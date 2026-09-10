@@ -1515,8 +1515,22 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.7";
+const APP_VERSION = "2.8";
 const CHANGELOG = [
+  {
+    version: "2.8",
+    date: "September 10, 2026",
+    en: [
+      "Loan Details: the two portal buttons now point at the real login pages we actually use, and Yale\u2019s card has our Lument contacts \u2014 Maki Murphy (our loan manager, 614-857-3282) and Elizabeth Carmody (214-237-2381).",
+      "Donald\u2019s CBRE payment corrected from $13,708 to $13,494 a month. The loan itself did not change \u2014 principal and interest are fixed at $11,575.20 \u2014 but the September escrow review lowered the tax portion, so Donald\u2019s total monthly debt now reads $13,938 instead of $14,152.",
+      "The distribution planner reserves the new, lower figure, so Donald has about $214 more room each month."
+    ],
+    he: [
+      "\u05e4\u05e8\u05d8\u05d9 \u05d4\u05dc\u05d5\u05d5\u05d0\u05d5\u05ea: \u05e9\u05e0\u05d9 \u05db\u05e4\u05ea\u05d5\u05e8\u05d9 \u05d4\u05e4\u05d5\u05e8\u05d8\u05dc \u05de\u05d5\u05d1\u05d9\u05dc\u05d9\u05dd \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05d3\u05e4\u05d9 \u05d4\u05db\u05e0\u05d9\u05e1\u05d4 \u05d4\u05d0\u05de\u05d9\u05ea\u05d9\u05d9\u05dd \u05e9\u05d0\u05e0\u05d7\u05e0\u05d5 \u05de\u05e9\u05ea\u05de\u05e9\u05d9\u05dd \u05d1\u05d4\u05dd, \u05d5\u05d1\u05db\u05e8\u05d8\u05d9\u05e1 \u05e9\u05dc \u05d9\u05d9\u05dc \u05e0\u05d5\u05e1\u05e4\u05d5 \u05d0\u05e0\u05e9\u05d9 \u05d4\u05e7\u05e9\u05e8 \u05d1-Lument \u2014 \u05de\u05d0\u05e7\u05d9 \u05de\u05e8\u05e4\u05d9 (\u05de\u05e0\u05d4\u05dc\u05ea \u05d4\u05d4\u05dc\u05d5\u05d5\u05d0\u05d4 \u05e9\u05dc\u05e0\u05d5, 614-857-3282) \u05d5\u05d0\u05dc\u05d9\u05d6\u05d1\u05ea \u05e7\u05e8\u05de\u05d5\u05d3\u05d9 (214-237-2381).",
+      "\u05d4\u05ea\u05e9\u05dc\u05d5\u05dd \u05dc-CBRE \u05e2\u05dc \u05d3\u05d5\u05e0\u05dc\u05d3 \u05ea\u05d5\u05e7\u05df \u05de-$13,708 \u05dc-$13,494 \u05dc\u05d7\u05d5\u05d3\u05e9. \u05d4\u05d4\u05dc\u05d5\u05d5\u05d0\u05d4 \u05e2\u05e6\u05de\u05d4 \u05dc\u05d0 \u05d4\u05e9\u05ea\u05e0\u05ea\u05d4 \u2014 \u05e7\u05e8\u05df \u05d5\u05e8\u05d9\u05d1\u05d9\u05ea \u05e7\u05d1\u05d5\u05e2\u05d9\u05dd \u05e2\u05dc $11,575.20 \u2014 \u05d0\u05d1\u05dc \u05d1\u05d3\u05d9\u05e7\u05ea \u05d4\u05e4\u05d9\u05e7\u05d3\u05d5\u05df \u05e9\u05dc \u05e1\u05e4\u05d8\u05de\u05d1\u05e8 \u05d4\u05d5\u05e8\u05d9\u05d3\u05d4 \u05d0\u05ea \u05d7\u05dc\u05e7 \u05d4\u05de\u05e1, \u05d5\u05dc\u05db\u05df \u05e1\u05da \u05d4\u05d7\u05d5\u05d1 \u05d4\u05d7\u05d5\u05d3\u05e9\u05d9 \u05e9\u05dc \u05d3\u05d5\u05e0\u05dc\u05d3 \u05de\u05e8\u05d0\u05d4 \u05e2\u05db\u05e9\u05d9\u05d5 $13,938 \u05d1\u05de\u05e7\u05d5\u05dd $14,152.",
+      "\u05de\u05ea\u05db\u05e0\u05df \u05d4\u05d7\u05dc\u05d5\u05e7\u05d5\u05ea \u05e9\u05d5\u05de\u05e8 \u05e2\u05db\u05e9\u05d9\u05d5 \u05d0\u05ea \u05d4\u05e1\u05db\u05d5\u05dd \u05d4\u05d7\u05d3\u05e9 \u05d5\u05d4\u05e0\u05de\u05d5\u05da \u05d9\u05d5\u05ea\u05e8, \u05db\u05da \u05e9\u05dc\u05d3\u05d5\u05e0\u05dc\u05d3 \u05d9\u05e9 \u05db-$214 \u05d9\u05d5\u05ea\u05e8 \u05de\u05e7\u05d5\u05dd \u05db\u05dc \u05d7\u05d5\u05d3\u05e9."
+    ]
+  },
   {
     version: "2.7",
     date: "September 10, 2026",
@@ -2467,6 +2481,22 @@ function extraMortgage(llc) { return (llc && llc.toLowerCase().includes('divando
 //           units on the policy - NOT netted here (user wants the real drawn figure).
 // Any LLC NOT listed here uses the insurance amount straight from the sheet.
 const INSURANCE_OVERRIDE = { divando: 2909.98, yale: 1037.55 };
+// Loans-tab monthly payment override (Loan Details tab display only — does NOT touch Net
+// Cashflow, which reads each History row's own mortgage). Keyed by LLC substring + a lender
+// substring. Use when the Loans sheet row is stale and we have the lender's own statement.
+// Donald: CBRE's principal+interest is FIXED at $11,575.20; only the tax escrow moves. The
+// Sep 2026 escrow analysis cut it $2,106.80 -> $1,918.80, so the payment is now $13,494.00
+// (Aug 2026 drafted $13,682.00). The Loans sheet still says $13,708 — override it here.
+const LOAN_MONTHLY_OVERRIDE = [
+  { llc: 'donald', lender: 'cbre', monthly: 13494.00 }
+];
+function effectiveLoanMonthly(l) {
+  const llc = (l.llc || '').toLowerCase(), lender = (l.lender || '').toLowerCase();
+  for (const o of LOAN_MONTHLY_OVERRIDE) {
+    if (llc.includes(o.llc) && lender.includes(o.lender)) return o.monthly;
+  }
+  return l.monthly_payment || 0;
+}
 function effectiveIns(llc, sheetIns) {
   if (llc) { const n = llc.toLowerCase(); for (const k in INSURANCE_OVERRIDE) { if (n.includes(k)) return INSURANCE_OVERRIDE[k]; } }
   return sheetIns || 0;
@@ -2480,7 +2510,7 @@ function effectiveIns(llc, sheetIns) {
 // Distributions: Divando/Yale/Donald split ÷2 (Ron/Nir); Dorado ÷3 (Ron/Nir/Simon).
 const CASHPLAN_CONFIG = {
   divando: { label: 'Divando', match: 'divando', mortgage: 12199.86, sba: 2334, insurance: 2909.98, accountant: 0, utilities: 626, software: 288.98, buffer: 2000, split: 2 },
-  donald:  { label: 'Donald',  match: 'donald',  mortgage: 13708,    sba: 444,  insurance: 1191.58, accountant: 0, utilities: 0, software: 0, buffer: 1500, split: 2 },
+  donald:  { label: 'Donald',  match: 'donald',  mortgage: 13494,    sba: 444,  insurance: 1191.58, accountant: 0, utilities: 0, software: 0, buffer: 1500, split: 2 },
   yale:    { label: 'Yale',    match: 'yale',    mortgage: 7279.08,  sba: 225,  insurance: 1037.55, accountant: 0, utilities: 0, software: 0, buffer: 1500, split: 2 },
   dorado:  { label: 'Dorado',  match: 'dorado',  mortgage: 0,        sba: 0,    insurance: 453.31,  accountant: 0, utilities: 268, software: 0, buffer: 1000, split: 3 }
 };
@@ -2500,7 +2530,7 @@ const CASHPLAN_CONFIG = {
 // DIVANDO + DONALD fixed costs from 12 months of bank CSV (Jun 2025–May 2026, user-reviewed):
 //   Divando: software = ACE CLOUD HOSTING $288.98/mo (~28th via Amex); mortgage ~15th (6 loan
 //     transfers), SBA 1st, State Farm insurance ~29th.
-//   Donald: CBRE mortgage $13,708 + SBA $444 + Westfield insurance $1,191.58 (renewed Sep 2026 → Sep 2027, was $1,210.84) ALL draft in the
+//   Donald: CBRE mortgage $13,494 (Sep 2026 escrow re-set; P&I $11,575.20 + tax escrow $1,918.80) + SBA $444 + Westfield insurance $1,191.58 (renewed Sep 2026 → Sep 2027, was $1,210.84) ALL draft in the
 //     first ~4 days (mortgage/SBA 1st, insurance ~4th). No software/Amex on Donald.
 const CASHPLAN_DAYS = {
   divando: { sba: 1, mortgage: 15, software: 28, insurance: 29 },
@@ -4249,7 +4279,7 @@ function renderLoansSection() {
   if (!el) return;
   const loans = (PORTFOLIO_DATA && PORTFOLIO_DATA.loans) || [];
   const allLoans = loans.concat(DIVANDO_PROPERTY_LOANS).slice()
-    .sort((a, b) => (a.llc.localeCompare(b.llc)) || ((b.monthly_payment || 0) - (a.monthly_payment || 0)));
+    .sort((a, b) => (a.llc.localeCompare(b.llc)) || (effectiveLoanMonthly(b) - effectiveLoanMonthly(a)));
   let html = '<div class="section">';
   html += '<h2><span class="dot"></span>Loan Details per LLC' +
     '<span class="kpi-info">ⓘ<span class="kpi-tip">' +
@@ -4265,7 +4295,7 @@ function renderLoansSection() {
   const byLlc = {};
   allLoans.forEach(l => { (byLlc[l.llc] = byLlc[l.llc] || []).push(l); });
   const llcNames = Object.keys(byLlc).sort();
-  const subOf = name => byLlc[name].reduce((s, l) => s + (l.monthly_payment || 0), 0);
+  const subOf = name => byLlc[name].reduce((s, l) => s + effectiveLoanMonthly(l), 0);
   const grand = llcNames.reduce((s, n) => s + subOf(n), 0);
 
   // --- Summary tiles: Total Monthly Debt + one per LLC ---
@@ -4291,7 +4321,7 @@ function renderLoansSection() {
       const tip = s.full ? ' class="ln has-tip" title="' + s.full.replace(/"/g, '&quot;') + '"' : ' class="ln"';
       html += '<div class="loan-row' + (isPaid ? ' paid' : '') + '">' +
         '<span' + tip + '>' + s.short + '</span>' +
-        '<span class="amt">' + fmt(l.monthly_payment) + '</span></div>';
+        '<span class="amt">' + fmt(effectiveLoanMonthly(l)) + '</span></div>';
     });
     html += '</div></div>';
   });
@@ -4313,14 +4343,14 @@ const LOAN_SERVICERS = [
   {
     llc: '5070 Donald, LLC',
     lender: 'CBRE Loan Services, Inc.',
-    portal: 'https://borrowerportal.cbreloanservices.com/',
+    portal: 'https://borrowerportal.cbreloanservices.com/dashboard',
     portalLabel: 'CBRE Borrower Portal',
     facts: [
       { k: 'Loan #', copy: '010291013', sub: 'written <b>01-0291013</b> on the payment stub' },
       { k: 'Property', v: '5060–5082 E Donald Ave, Denver, CO 80222' },
       { k: 'Balance', v: '$1,755,560.99', sub: 'principal, after the Sep 1, 2026 payment' },
       { k: 'Rate', v: '5.72% fixed' },
-      { k: 'Payment', v: '$13,494.00 · due the 1st', sub: 'auto-drafted. Escrow re-sets it each year — Aug 2026 drafted $13,682.00. Splits into interest $8,661.46 + principal $2,913.74 + tax escrow $1,918.80.' },
+      { k: 'Payment', v: '$13,494.00 · due the 1st', sub: 'auto-drafted · interest $8,661.46 + principal $2,913.74 + tax escrow $1,918.80. Principal+interest is fixed at $11,575.20 — only the tax escrow moves, and the Sep 2026 escrow analysis cut it from $2,106.80 (Aug 2026 drafted $13,682.00).' },
       { k: 'Tax escrow', v: '$1,918.80 / mo', sub: 'CBRE pays the Denver tax bill — escrow balance $9,618.98, paid out $24,092.88 so far in 2026' },
       { k: 'Term', v: 'Sep 28, 2018 → Oct 1, 2048' }
     ],
@@ -4335,7 +4365,7 @@ const LOAN_SERVICERS = [
   {
     llc: 'Yale Townhomes, LLC',
     lender: 'Lument — LeapOnline servicing',
-    portal: 'https://www.lument.com/client-login/',
+    portal: 'https://leaponlineservicing.lument.com',
     portalLabel: 'LeapOnline (Lument)',
     facts: [
       { k: 'Loan #', copy: '010107412', sub: 'servicing number — the one the portal lists' },
@@ -4346,8 +4376,12 @@ const LOAN_SERVICERS = [
       { k: 'Note date', v: 'Jul 22, 2016', sub: 'originated with Hunt Mortgage Group; Lument services it now' }
     ],
     contacts: [
-      { k: 'Email', v: 'ClientServices@Lument.com', href: 'mailto:ClientServices@Lument.com', sub: 'general Lument client services' },
-      { k: 'Phone / rep', missing: 'No direct servicing phone or named rep on file yet — send it to Claude and it gets added here.' }
+      { k: 'Loan manager', v: 'Maki Murphy', sub: 'our loan manager at Lument — the first call' },
+      { k: '· phone', v: '614-857-3282', href: 'tel:+16148573282' },
+      { k: '· email', v: 'Maki.Murphy@lument.com', href: 'mailto:Maki.Murphy@lument.com' },
+      { k: 'Assistant', v: 'Elizabeth Carmody', sub: 'backup when Maki is not reachable' },
+      { k: '· phone', v: '214-237-2381', href: 'tel:+12142372381' },
+      { k: '· email', v: 'Elizabeth.Carmody@lument.com', href: 'mailto:Elizabeth.Carmody@lument.com' }
     ]
   }
 ];
