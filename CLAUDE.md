@@ -2642,6 +2642,26 @@ sheet/dashboard.
   `TRANSFER … TO X9562`=Nir) and own-account transfers are excluded from expenses, like the dashboard's
   bank importer. Keep the reference numbers in sync with `CASHPLAN_CONFIG` when fixed costs change.
 
+**🆕 Step 1c — FIXED-COST DRIFT CHECK (added Sep 10 2026, every run, free).** The user asked whether to
+add each lender's loan statement to the monthly skill, since AppFolio lands ~18th–20th but the loan
+statements come later. **Answer: no — the bank CSVs already carry the answer.** The skill was already
+classifying `CBRE LOAN` / `LUMENT` / `TRANSFER TO LOAN` / `SBA LOAN` / insurance lines and already used the
+**actual** statement amount for that month's math, so the monthly numbers were never wrong. The gap was that
+**nothing fed the observation back** — so when Donald's CBRE payment moved $13,708 → $13,494 (annual escrow
+re-analysis), the planner cushion, the `Loans` + `Settings` sheet tabs, `dashboardKnowledge()`, the skill's
+reference table and this file all went stale for months, and it was only caught by accident. Step 1c now
+compares every fixed line to the reference table, reports any delta > $1, and **lists the 5 places to sync.**
+- ⚠️ Built-in caution: **one draft is not a trend** — insurance can slide or double up in a month (Divando
+  State Farm drafted twice in Jul 2026 at $2,633.15 vs the $2,909.98 override). Flag, then wait for a second
+  month unless a statement/declarations page confirms. A **mortgage** change is almost always real.
+- **Loan statements: ~2 a year, not 24.** Take one when the drift check fires (it explains *why* — the
+  interest/principal/escrow split + new escrow balance) and one at year end for the CPA (Interest Paid YTD,
+  Principal Paid YTD, Taxes Paid, closing balance — all on CBRE's prior-year annual statement).
+  **CBRE timing:** statement posts ~the **18th** and bills the payment due the **1st of the next month**, so
+  it is already available when the skill runs ~the 25th. **Lument's timing is NOT known yet — ask the user.**
+- The skill's reference table was also corrected to **CBRE `$13,494`** (it still said $13,708 — that was a
+  miss when `CASHPLAN_CONFIG` was updated; CLAUDE.md's own rule says keep the skill table in sync).
+
 **Cushion is a run-time lever (user request Jun 24 2026):** the skill applies the default per-LLC
 cushions but must **state them and offer to change them every run** (the user explicitly wants to
 adjust the buffer per month). It also shows the $0-cushion numbers as a quick trade-off reference.
