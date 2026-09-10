@@ -82,14 +82,18 @@ check was needed** — do not ask the user to verify this again.
 - **Updated:** `CASHPLAN_CONFIG.donald.mortgage` → **`13494`** (planner cushion, ~$214 more room/mo) ·
   `AppsScript.gs dashboardKnowledge()` → `$13,494.00/mo` (÷8 = `$1,686.75`/unit) **[needs redeploy]** ·
   the Loan Details display via the new override below. **Donald total monthly debt now reads `$13,938`.**
-- **🆕 `LOAN_MONTHLY_OVERRIDE` (`index.html`, next to `INSURANCE_OVERRIDE`)** — array of
-  `{llc, lender, monthly}` matched by substring; `effectiveLoanMonthly(l)` returns the override or
-  `l.monthly_payment`. Used by `renderLoansSection` ONLY (sort, per-LLC subtotal, card row), because the
-  agent cannot write the Google Sheet. **It does NOT touch Net Cashflow** — that reads each History row's
-  own `mortgage` from the Settings fixed costs, so **past months stay as actually billed** (deliberate —
-  restating history for a $214 escrow change would be wrong). ⚠️ The **Loans sheet tab still says
-  `$13,708`** and the **Settings fixed-cost row still drives Donald's net** — the user can correct both in
-  the sheet whenever convenient; until then the override keeps the Loan Details tab honest.
+- ✅ **Google Sheet CORRECTED BY THE USER (Sep 10 2026) — both tabs now hold `13494`.** Screenshot-verified:
+  `Loans` row 6 = `5070 Donald, LLC · CBRE · $13,494.00` (the SBA row 5 `$444.00` untouched), and the user
+  confirmed the `Settings` col-B edit too. **So the sheet is the source of truth again.**
+- **🗑️ `LOAN_MONTHLY_OVERRIDE` / `effectiveLoanMonthly()` were ADDED then REMOVED the same day.** They
+  existed only while the sheet still said `$13,708` (the agent cannot write the sheet). Once the user fixed
+  both tabs the override was **deleted** and `renderLoansSection` reverted to plain `l.monthly_payment` —
+  deliberately, because a lingering override would **silently dominate a future sheet edit** when the escrow
+  moves again. **Do NOT reintroduce a loan override for a number the user can just fix in the sheet.**
+  (`INSURANCE_OVERRIDE` stays — that one is bank-verified data the sheet genuinely lacks.)
+- **No version bump for the removal** (it was 2.8's own cleanup, zero visible change — a "What's New"
+  popup for Nir saying "an internal override was removed" would be noise). Judgement call, per the
+  versioning rule's "use judgement."
 - ⚠️ **Escrow re-sets roughly annually and the payment WILL drift again** (2025 alone: $13,645 → $13,637 →
   $13,708). When a new CBRE statement arrives, only the escrow line needs re-reading — P&I stays
   `$11,575.20`.
@@ -414,6 +418,36 @@ re-fetches the HTML instead of the cached copy; `?tab=` and other params preserv
 falls back to `location.reload()` on error). Why it matters: `index.html` is browser-cached, so a freshly
 merged version (e.g. the v1.4→v1.5 gap the user saw) wasn't visible without a hard refresh. Pure frontend,
 live on merge — no redeploy. Self-audit unaffected (no `#kpi-*` IDs). Version bumped 1.5 → 1.6 (en+he).
+
+---
+
+## 📗 The Niron Google Sheet — name + where things live (Sep 10 2026)
+
+**The spreadsheet is called `Niron Property Portfolio`** — NOT "Niron Master Portfolio" (that is the name of
+the **Apps Script project** bound to it, and the repo). Guessing the sheet shared the script's name cost the
+user two rounds of searching. Find it at [sheets.google.com](https://sheets.google.com) or by searching Drive
+for `Niron Property Portfolio`.
+- **Getting from the Apps Script editor back to the sheet:** browser Back, or Drive search. Guaranteed
+  fallback that was given to the user: paste `function findMySheet(){ Logger.log(
+  SpreadsheetApp.getActiveSpreadsheet().getUrl()); }` at the END of the script, pick it in the function
+  dropdown, Run, read the URL from the Execution log. (Harmless; a full `AppsScript.gs` paste overwrites it.)
+- **Tab order (bottom bar, left→right):** `Subs · Vacancy · Property Tax · Activity Log · History ·
+  Pending Review · Settings · Maintenance Log · Loans · Tax Summary · Distributions` (+ Dashboard). The ☰
+  button bottom-left opens a jump list — tell the user about it, the bar scrolls.
+- **`Settings` tab** (read by `run.py get_fixed_costs`, range `Settings!A:D`, matched by **col A = exact LLC
+  name**): headers row 8, data ~rows 9–12. **A** `LLC Name` · **B** `Monthly Mortgage ($)` · **C** `Annual
+  Property Tax ($)` · **D** `Annual Insurance ($)` · **E** `Est. Property Value ($)`. ⚠️ The mortgage is
+  **snapshotted into each History row at pull time**, so editing col B changes **future months only** —
+  history stays as actually billed. That is why a fixed-cost correction here is safe.
+- **`Loans` tab** (headers row 4, data from row 5): **A** LLC · **B** Lender Name · **C** Loan Number ·
+  **D** Lender Contact · **E** Original Balance · **F** Interest Rate · **G** Term · **H** Start Date ·
+  **I** `Monthly Payment ($)` · **J** Maturity · **K** Balance Override · **L** Calculated Balance.
+  Live rows: 5 Donald/SBA `$444` · **6 Donald/CBRE `$13,494`** · 7 Yale/Lument `$7,279.08` ·
+  8 Yale/SBA `$225` · 9 Divando/SBA `$2,334` · 10 Dorado/PAID OFF `$0`. ⚠️ **Donald has TWO rows** (SBA +
+  CBRE) — always say which one when directing the user. Cols C/D (`Loan Number`, `Lender Contact`) are
+  **empty** — the loan numbers + contacts live in `LOAN_SERVICERS` in `index.html` instead.
+- ⚠️ **The agent still cannot write this sheet** (sandbox blocks `script.google.com`). Every sheet edit goes
+  through the user — so give exact tab · row · column, and name the neighbouring tabs so they can find it.
 
 ---
 
