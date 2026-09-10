@@ -13,6 +13,37 @@
 
 ---
 
+## 🚀 APPS SCRIPT DEPLOYMENT LOG — read this before telling the user "needs redeploy"
+
+**This file is full of `NEEDS REDEPLOY` / `Going live (REQUIRED)` flags. They record what a feature
+needed AT BUILD TIME and were never cleared when a deploy actually happened — so they pile up and
+read as a backlog even when everything is live. Check this log first, and ADD A LINE here after every
+confirmed redeploy.**
+
+| Date | Confirmed how | Covers |
+|---|---|---|
+| **Sep 10 2026** | User redeployed; chatbot then answered Donald mortgage **$13,494 / total $13,938** (it had said $13,708 before) | **Everything in `AppsScript.gs` through Sep 10 2026** — the Donald `$13,494` `dashboardKnowledge()` sync, plus the whole accumulated batch: Messages tab (+ edit, + email), Bug Reports tab (+ email both ways), Utilities per-LLC-per-month tab, Buffers tab, Subs tab, Vacancy tab, Property Tax tab, Activity Log, CPA invoice cols I–L, Paid Date + Cleared cols M–N, Simon `simon_amount` col F, the chatbot per-property maintenance reader, and the Divando/Dorado insurance + tax knowledge fixes. |
+
+**So as of Sep 10 2026 every `NEEDS REDEPLOY` note ABOVE this date in this file is SATISFIED.** Only
+flag a redeploy for `AppsScript.gs` changes made *after* the newest row in this table.
+
+- **The 10-second test** (use it instead of asking the user whether they redeployed): open the 💬 chatbot
+  and ask `מה המשכנתא החודשית של דונלד?` / "what is Donald's monthly mortgage?". The answer reflects the
+  **deployed** `dashboardKnowledge()`, so a stale figure proves a stale deployment. Pick whatever number
+  the newest change touched as the probe.
+- **The steps** (the user has done this many times; give the raw link so they can Ctrl+A / Ctrl+C):
+  [`raw AppsScript.gs`](https://raw.githubusercontent.com/moscoron-collab/Niron-Master-Portfolio/main/automation/AppsScript.gs)
+  → Sheet → Extensions → Apps Script → `<>` → Ctrl+A, Ctrl+V, Ctrl+S →
+  **Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy**. ⚠️ It MUST be
+  *New version* on the EXISTING deployment — a brand-new Deploy changes the `/exec` URL and breaks
+  `API_URL` in `index.html`. Approve the Drive / Mail scope prompt if it appears. Reversible via
+  Manage deployments (Apps Script keeps version history).
+- ⚠️ **New tabs auto-create on the first load after a redeploy** (Messages, Bug Reports, Utilities,
+  Buffers, Subs, Vacancy, Property Tax). Tell the user in advance — otherwise tabs appearing by
+  themselves looks like a bug.
+
+---
+
 ## 🏦 Lender Portals & Contacts on the Loan Details tab (Sep 10 2026, APP_VERSION → 2.7, pure frontend)
 
 User request ("something I wanted for long time"): **portal access for the Donald and Yale loans, kept
