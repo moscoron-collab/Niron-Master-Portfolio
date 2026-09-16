@@ -2481,6 +2481,13 @@ function extraMortgage(llc) { return (llc && llc.toLowerCase().includes('divando
 //           units on the policy - NOT netted here (user wants the real drawn figure).
 // Any LLC NOT listed here uses the insurance amount straight from the sheet.
 const INSURANCE_OVERRIDE = { divando: 2909.98, yale: 1037.55 };
+// Returns the bank-verified monthly insurance for an LLC, or the sheet's own figure when
+// that LLC has no override. Used everywhere net cashflow is computed (cards, History, KPIs,
+// trend) so the displayed insurance and the net always agree.
+function effectiveIns(llc, sheetIns) {
+  if (llc) { const n = llc.toLowerCase(); for (const k in INSURANCE_OVERRIDE) { if (n.includes(k)) return INSURANCE_OVERRIDE[k]; } }
+  return sheetIns || 0;
+}
 // --- Cash cushion / distribution planner (bank-verified Mar–May 2026) -------------
 // Recurring monthly cash that leaves each LLC's operating account. Used to compute the
 // cushion to LEAVE before distributing. The cushion uses a ROLLING window (planUpcoming):

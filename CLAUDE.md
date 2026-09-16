@@ -142,6 +142,33 @@ check was needed** — do not ask the user to verify this again.
 
 ---
 
+## 🐛 DASHBOARD WAS DOWN — `effectiveIns is not defined` (Sep 16 2026, FIXED)
+
+Every tab showed **"Failed to load: effectiveIns is not defined"** (a red box in `#content`, Status
+● Offline). Not a data or Apps Script problem — **`index.html` was broken on `main` since Sep 10**.
+
+- **Cause:** commit `e5c6a96` ("Remove the Donald loan override…") deleted `LOAN_MONTHLY_OVERRIDE` +
+  `effectiveLoanMonthly()` from the MANUAL OVERRIDES block — and the diff hunk **also swallowed
+  `effectiveIns()`**, which sits immediately after them. `INSURANCE_OVERRIDE` survived, but the
+  function that reads it did not. `effectiveIns` is called in 6 places (`aggregateLlcPeriod`, the
+  grouped-card map, the audit's KPI/YTD/trend recomputes, the insurance PASS check), so `load()`
+  threw on the first render and the catch painted the error box. **Nothing else was missing** — a
+  strip-comments/strings scan of the whole script found no other undefined call.
+- **Fix:** restored `effectiveIns(llc, sheetIns)` verbatim, right under `INSURANCE_OVERRIDE`.
+- **Verified in headless Chromium** with stubbed data: error box empty, KPIs render
+  (`kpi-cash $75.3K`, `kpi-net $32.5K`), self-audit chip **✓ Audit OK**, all 6 tabs click through
+  with zero JS errors. (Chart.js had to be stubbed — the sandbox blocks the CDN, not a code issue.)
+- **No version bump / no CHANGELOG entry** — nothing new for the partners to read; v2.8's features
+  simply work again now. Judgement call per the versioning rule.
+- **🔑 LESSON:** when deleting a block from the MANUAL OVERRIDES section (or any dense run of
+  one-line helpers), **diff the exact function boundaries** and then load the page — a stray
+  neighbour going with it takes the WHOLE dashboard down, silently, for everyone. A fast check
+  before any `index.html` merge: extract the `<script>` block and run
+  `node --check`, plus a headless load. `node --check` alone would NOT have caught this (the file
+  parses fine; the symbol only fails at runtime).
+
+---
+
 ## 🏘️ Donald LLC insurance RENEWED (Sep 3 2026) — Westfield, $14,299/yr, term Sep 20 2026 → Sep 20 2027
 
 User uploaded the **Westfield Superior renewal declarations PDF** (`Donald_Renewal_2627.pdf`,
