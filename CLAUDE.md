@@ -130,6 +130,34 @@ uploaded the Yale **Owner Packet, Aug 16 – Sep 15 2026**. **The dashboard is c
   `Tj` / `TJ` text operators in order, breaking lines on `Td`/`TD`/`T*`/`ET`. Reusable for any future
   Owner Packet upload.
 
+### 🔴 Yale AUGUST 2026 too: net −$9,197.85, also verified (Sep 19 2026)
+
+Ron then supplied the **Jul 16 – Aug 15 2026** Yale packet. **The dashboard is correct again**:
+packet `Owner Disbursements -8,924.90` = the card, and `8,924.90 − 7,504.08 − 1,037.55 − 9,581.12
+= −9,197.85` foots exactly. **But the cause is the OPPOSITE of September's.**
+
+- **Collections in August were FINE.** All 5 units paid something: 2991 `$2,750` + `$21`;
+  2995 `$1,275` + `$1,320` + pet/garbage `$56`; 2999 `$2,102` (DHA) + `$609`/`$110`/`$588`/`$131`
+  arrears; 2993 `$850` for July. Cash In `9,863.35`, the account closed exactly ON the $4,000
+  reserve, `Net Owner Funds 0.00`. **Nothing was wrong on Laureate's side.**
+- **The red is 100% the maintenance line: `$9,581.12`.** Laureate deducted only **`$352.25`** all
+  month (water 2997 `$64.19` · supplies 2995 `$190.77` · legal 2993 `$90.00` · advertising `$7.29`),
+  so the `$9,581.12` is **owner-paid invoices from Yale's own account** — almost certainly the 2997
+  turnover work for the tenant who moved in during September.
+- **⚠️ The maintenance figure is the ONE number in both red months the agent could NOT verify** (it
+  is hand-entered in the Maintenance Log; the sandbox cannot read the sheet). Ron to check the 🔧
+  tab for Yale: (a) is the `$9,581.12` real work actually paid, and (b) do `$190.77` / `$64.19`
+  (Aug) or `$350` / `$735.05` (Sep) also appear there — those were ALREADY deducted from the
+  disbursement, so logging them again subtracts them twice.
+- **Two-month damage: Yale burned `$14,808.62`** (disbursements `$14,493.85` − fixed
+  `$17,083.26` − maintenance `$12,219.21`). Given Yale's overdraft history, **check its bank
+  balance before the next distribution — it likely needs a bridge.**
+- **2993 is a chronic non-payer:** a `Legal - Service Fee for Nonpayment - 2993 W Yale Ave` `$90`
+  appears in BOTH packets. Its August money came from **`First Mennonite Church of Denver`** (a
+  charity paying the rent, $850 for July). Watch this unit.
+
+---
+
 ---
 
 ## ✅ Sep 2026 recovery COMPLETE — September data is in (Sep 19 2026)
