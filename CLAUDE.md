@@ -114,12 +114,13 @@ uploaded the Yale **Owner Packet, Aug 16 – Sep 15 2026**. **The dashboard is c
   Move In` ($455 + $579) for the incoming tenant. Owner-held deposit money inflates the disbursement,
   so Yale's true operating month was worse than the headline red. **Watch for this whenever a unit
   turns over**; the pipeline has no rule separating deposits from rent (see below).
-- **⚠️ POSSIBLE DOUBLE-COUNT on maintenance — Ron to check.** Laureate already deducted
-  **`2997 - Repairs` $350** (check 89998, Jordan Strauss) and **`2997 - Supplies` $735.05** from the
-  disbursement BEFORE it reached the bank. If either was also logged in the Maintenance Log, it is
-  subtracted **twice** from net. The card shows Yale maintenance `$2,638.09`; the agent cannot read
-  the sheet, so Ron must eyeball the 🔧 Maintenance tab for those two amounts. This is the same rule
-  already documented for Moss ("supplies are already netted out — do NOT add them as maintenance").
+- **✅ NO double-count — Ron checked the Maintenance Log and confirmed "התחזוקה תקינה" (Sep 19 2026).**
+  The suspicion was that Laureate had ALREADY deducted **`2997 - Repairs` $350** (check 89998, Jordan
+  Strauss) and **`2997 - Supplies` $735.05** from the disbursement before it reached the bank, so
+  logging either again would subtract it twice. Ron verified they are not duplicated: the card's
+  `$2,638.09` is separate owner-paid work. **Do not re-raise this for Aug/Sep 2026.** The underlying
+  rule still stands for future months (same as the Moss one): anything Laureate already netted out of
+  the disbursement must NOT be entered in the Maintenance Log.
 - Laureate holds a **$4,000 Property Reserve**; the account ended at `3,336.00`, i.e.
   `Net Owner Funds -664.00` — $664 BELOW the reserve.
 - **🔭 Not built (deliberate):** no rule separates `Owner Held Security Deposits` from rent in
@@ -144,11 +145,11 @@ packet `Owner Disbursements -8,924.90` = the card, and `8,924.90 − 7,504.08 �
   month (water 2997 `$64.19` · supplies 2995 `$190.77` · legal 2993 `$90.00` · advertising `$7.29`),
   so the `$9,581.12` is **owner-paid invoices from Yale's own account** — almost certainly the 2997
   turnover work for the tenant who moved in during September.
-- **⚠️ The maintenance figure is the ONE number in both red months the agent could NOT verify** (it
-  is hand-entered in the Maintenance Log; the sandbox cannot read the sheet). Ron to check the 🔧
-  tab for Yale: (a) is the `$9,581.12` real work actually paid, and (b) do `$190.77` / `$64.19`
-  (Aug) or `$350` / `$735.05` (Sep) also appear there — those were ALREADY deducted from the
-  disbursement, so logging them again subtracts them twice.
+- **✅ Maintenance CONFIRMED CORRECT by Ron (Sep 19 2026, "התחזוקה תקינה").** It was the one number in
+  both red months the agent could not verify (hand-entered in the Maintenance Log; the sandbox cannot
+  read the sheet). Ron checked: the `$9,581.12` is real work actually paid, and nothing Laureate had
+  already deducted (`$190.77` / `$64.19` Aug, `$350` / `$735.05` Sep) is duplicated there.
+  **Both red months are therefore fully explained and fully correct — nothing to fix.**
 - **Two-month damage: Yale burned `$14,808.62`** (disbursements `$14,493.85` − fixed
   `$17,083.26` − maintenance `$12,219.21`). Given Yale's overdraft history, **check its bank
   balance before the next distribution — it likely needs a bridge.**
