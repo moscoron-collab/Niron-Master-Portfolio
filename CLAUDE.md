@@ -120,10 +120,25 @@ converted it to Playwright base64 (the new device-trust token runs to **Oct 19 2
 - **The cookie secret self-heals again**: Moss + the 3 per-property workflows each wrote a fresh
   full session back to `APPFOLIO_COOKIES` after authenticating. (`run.py` still cannot — its save
   step errors `Resource not accessible by integration`, pre-existing and harmless.)
-- **🔭 STILL OPEN — the green-but-empty hole moved one step later.** PR #220 made these scripts exit
-  RED on a failed login, but **"card found, packet not downloaded" still exits 0**. That is exactly
-  what hid the redesign for days. Fix: exit non-zero when every expected entity errors with
-  "Could not download packet". Offered to Ron; not built.
+- **✅ CLOSED — the green-but-empty hole is gone (Sep 19 2026, Ron said "yes").** PR #220 made these
+  scripts exit RED on a failed login, but **"card found, packet not downloaded" still exited 0** —
+  exactly what hid the redesign for days. All 5 `run_*.py` now end with **`_fail_if_pull_errors(errors)`**:
+  any unresolved pull error prints a `::error::` annotation listing every failure and `sys.exit(1)`,
+  so the job goes **RED**.
+  - **Deliberately gated on `errors`, NOT on "0 rows written".** Every `errors.append` in these
+    scripts is a genuine failure (download failed / `Owner Packet.pdf` not found / disbursement
+    unparseable / exception). The **"statement not posted yet"** and **"already recorded"** paths
+    `continue` **without** appending an error — they download the PREVIOUS packet normally and the
+    dedup drops it — so a legitimately-quiet run still exits **GREEN**. Gating on row count instead
+    would have made those false reds every month.
+  - **Called TWICE per script**: once in the `Nothing to write.` branch, and once at the very END of
+    `main()` **after** the rows are written — so a PARTIAL failure (3 LLCs in, 1 broken) still saves
+    the 3 good rows and *then* goes red. Data is never lost to this guard.
+  - Side effect: on a red run the workflow's later steps (cookie save, "Dashboard Updated" email)
+    are skipped. That is fine and safe — it can never save bad cookies, and the other 4 workflows
+    still refresh the secret.
+  - Verified offline on all 5 scripts × 3 scenarios: clean run → continues; "already recorded" →
+    continues; 2 undownloaded packets → `exit(1)` with the `::error::` annotation naming both.
 
 ---
 

@@ -58,6 +58,25 @@ def _statement_date_text(row):
     return el.inner_text().strip() if el else ""
 
 
+def _fail_if_pull_errors(errors):
+    """Exit non-zero when the run finished with unresolved pull errors.
+
+    A run that authenticated and found its owner cards but could not download or
+    parse a packet still has nothing to show for itself. Without this it exits 0
+    and the job goes GREEN with no data — the hole that hid AppFolio's Sep 2026
+    page redesign for days behind green checkmarks.
+
+    "Statement not posted yet" does NOT trip this: that path downloads the
+    PREVIOUS packet normally and is dropped by the dedup, so `errors` stays empty
+    and the job stays green. A partial failure still writes the rows it did get
+    before failing, so data is never lost to this guard."""
+    if not errors:
+        return
+    print(f"::error::Pull finished with {len(errors)} unresolved error(s): "
+          + "; ".join(str(e) for e in errors))
+    sys.exit(1)
+
+
 def get_sheets_service():
     creds = Credentials.from_service_account_info(json.loads(CREDS_JSON), scopes=SCOPES)
     return build("sheets", "v4", credentials=creds).spreadsheets()
@@ -460,6 +479,7 @@ def main():
     if not results:
         print("Nothing to write.")
         print("::set-output name=wrote_data::false")
+        _fail_if_pull_errors(errors)
         return
 
     approval = require_approval(sheets)
@@ -488,6 +508,9 @@ def main():
     # Send email notification
     if approval:
         trigger_email_notification()
+
+    # Rows are safely written above; only now surface any entity we could not pull.
+    _fail_if_pull_errors(errors)
 
 
 if __name__ == "__main__":
