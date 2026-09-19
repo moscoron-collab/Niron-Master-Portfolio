@@ -44,6 +44,52 @@ flag a redeploy for `AppsScript.gs` changes made *after* the newest row in this 
 
 ---
 
+## 🚨 SEPT 2026 OUTAGE — AppFolio cookies expired AGAIN + the per-property scripts were re-poisoning the secret (Sep 19 2026)
+
+**Symptom Ron reported:** "AppFolio landed on both yesterday but it wasn't executed / nothing went live."
+Correct — Laureate posted the September statements, but **no September data was pulled for the Niron 4
+LLCs or for Moss.** Nothing was un-pushed or un-merged: `index.html` and the combined dashboard are
+current and read the sheets live. **The sheets themselves have no September rows**, because every pull
+has been failing at the AppFolio login since **Sep 15 2026**.
+
+- **Root cause (proved from the run logs, not inferred):** `APPFOLIO_COOKIES` lapsed. The
+  `_oportal_session` died first (the 4-LLC + Moss runs were already failing Sep 15), and the
+  **device-trust `2fa_user_token` expired `2026-09-17T10:02:50Z`** (decoded straight out of the secret
+  blob printed in the Divando job log). So the runner now sits on `/oportal/users/log_in` and can never
+  pass the SMS 2FA. Same class of incident as Jun 18 2026.
+- **What each workflow actually did:**
+  - `monthly.yml` (Niron 4 LLCs) + `monthly_moss.yml` → **RED**, every day Sep 15–19. The Jun 19
+    hardening worked exactly as designed: `LOGIN FAILED — still on the login page`, no cookies saved,
+    `exit 1`. `weekly.yml` keepalive → **RED** Sep 6 + Sep 13.
+  - `monthly_divando.yml` / `monthly_yale.yml` / `monthly_donald.yml` → **GREEN, and wrong.**
+- **🐛 THE REAL BUG (fixed in this PR):** the Jun 19 2026 silent-rot hardening was applied to `run.py`,
+  `run_moss.py` and `keepalive.py` — **but never to `run_divando.py`, `run_yale.py`, `run_donald.py`.**
+  All three still printed a fake `Login complete.`, found `Cards found: 1` (the login box), wrote
+  nothing, **exited 0 (green)** — and then, worst of all, called `save_cookies(context)`
+  **unconditionally**, so the workflow's "Save updated cookies" step wrote the **dead login-page
+  cookies back over the `APPFOLIO_COOKIES` secret**. Verified in the Sep 18 Divando log:
+  `Successfully updated secret 'APPFOLIO_COOKIES'` right after `No card found for 'Divando, LLC'`.
+  **This is the exact loop that kept the Jun 18 outage alive via `keepalive.py`** — it had simply moved
+  into the three per-property scripts.
+- **The fix (Sep 19 2026):** all three now mirror `run.py` exactly — `import sys`; `login()` returns a
+  **bool** and checks the URL is no longer `/log_in` (credential steps wrapped in try/except so a
+  timeout can't mask the verdict); `save_cookies()` is called **only when `login()` returns True**; a
+  failed login prints `::error::` and `sys.exit(1)`; and a post-login **0-owner-cards guard** also exits
+  non-zero. So these three now go **RED** instead of green, and can never overwrite a good secret again.
+  Verified with a stubbed-page harness across all 3 scripts × 3 scenarios (cookies valid → True,
+  expired/2FA wall → False, credentials accepted → True).
+- **⏭️ What Ron must do (the agent CANNOT do any of it — no secret write, no SMS 2FA):** the
+  cookie re-seed in the **FAST RECOVERY** runbook below. Log into `laureatetld.appfolio.com`, clear the
+  SMS 2FA, export cookies with Cookie-Editor → paste the JSON in chat → the agent converts to
+  Playwright base64 → Ron pastes it into the `APPFOLIO_COOKIES` secret → re-run the workflows.
+  **Do this before the 25th**, which is when the 15th–25th pull window closes for September.
+- **🔑 LESSON:** when hardening a shared failure mode, **grep every script that shares the mechanism**
+  (here: every caller of `save_cookies`) — a half-applied fix is worse than none, because the green
+  checkmarks on the unfixed scripts hide the red ones and actively undo the recovery. A useful check:
+  `grep -ln "save_cookies(context)" automation/*.py` must match the set of scripts that verify login.
+
+---
+
 ## 🏦 Lender Portals & Contacts on the Loan Details tab (Sep 10 2026, APP_VERSION → 2.7, pure frontend)
 
 User request ("something I wanted for long time"): **portal access for the Donald and Yale loans, kept
