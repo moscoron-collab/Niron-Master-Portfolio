@@ -90,6 +90,48 @@ has been failing at the AppFolio login since **Sep 15 2026**.
 
 ---
 
+## 🔴 Yale Sept 2026 net is −$5,610.77 and it is REAL — verified against the Owner Packet (Sep 19 2026)
+
+Ron checked the dashboard as asked and Yale showed a red **Net Cashflow −$5,610.77** on the Sep 2026
+Monthly Breakdown, with a disbursement of only **$5,568.95** (roughly half a normal Yale month). He
+uploaded the Yale **Owner Packet, Aug 16 – Sep 15 2026**. **The dashboard is correct.**
+
+- **Packet says `Owner Disbursements -5,568.95`** — identical to the card. The card's math foots
+  exactly: `5,568.95 − 7,504.08 − 1,037.55 − 2,638.09 = −5,610.77` (mortgage = Lument 7,279.08 + SBA
+  225 = 7,504.08 ✓, insurance = the Acuity draft 1,037.55 ✓, tax escrowed so excluded ✓).
+  **This also independently re-confirms the Yale September figure** left open by the "already pulled"
+  skip earlier that day — the LLC-level History row matches the source document to the cent.
+- **Cause: only 2 of 5 units paid rent.** Cash In was `7,780.00`, Cash Out `8,444.00`:
+  | Unit | What happened | In |
+  |---|---|---|
+  | 2991 | paid | $2,750 rent + $21 garbage fee |
+  | 2999 | paid via **DHA** (housing voucher) + August arrears | $2,102 + $498 |
+  | **2995** | **rent eCheck BOUNCED** — `Reversed eCheck receipt` $1,375 in on 09/07, `NSF reversal` $1,375 out on 09/09 | net $0 |
+  | **2993** | **did not pay** — carries a `Legal - Service Fee for Nonpayment - 2993 W Yale Ave` $90 | $0 |
+  | **2997** | **new tenant moved in**, no rent yet; turnover costs instead | $0 rent |
+  **Real rent collected = $5,350.**
+- **⚠️ $1,034 of that disbursement is NOT income** — it is `2997 - Owner Held Security Deposits -
+  Move In` ($455 + $579) for the incoming tenant. Owner-held deposit money inflates the disbursement,
+  so Yale's true operating month was worse than the headline red. **Watch for this whenever a unit
+  turns over**; the pipeline has no rule separating deposits from rent (see below).
+- **⚠️ POSSIBLE DOUBLE-COUNT on maintenance — Ron to check.** Laureate already deducted
+  **`2997 - Repairs` $350** (check 89998, Jordan Strauss) and **`2997 - Supplies` $735.05** from the
+  disbursement BEFORE it reached the bank. If either was also logged in the Maintenance Log, it is
+  subtracted **twice** from net. The card shows Yale maintenance `$2,638.09`; the agent cannot read
+  the sheet, so Ron must eyeball the 🔧 Maintenance tab for those two amounts. This is the same rule
+  already documented for Moss ("supplies are already netted out — do NOT add them as maintenance").
+- Laureate holds a **$4,000 Property Reserve**; the account ended at `3,336.00`, i.e.
+  `Net Owner Funds -664.00` — $664 BELOW the reserve.
+- **🔭 Not built (deliberate):** no rule separates `Owner Held Security Deposits` from rent in
+  `run_yale.py`, so a move-in month will always overstate the disbursement a little. Raised with Ron;
+  do not add such a rule without asking — a deposit IS cash that really landed in the account.
+- 🛠️ **How the packet was read** (the sandbox has no working `pdfplumber` — `cryptography` is broken
+  and `pdftoppm` is missing): decompress the PDF's `stream…endstream` blocks with `zlib` and pull the
+  `Tj` / `TJ` text operators in order, breaking lines on `Td`/`TD`/`T*`/`ET`. Reusable for any future
+  Owner Packet upload.
+
+---
+
 ## ✅ Sep 2026 recovery COMPLETE — September data is in (Sep 19 2026)
 
 Both Sep 2026 outages are closed and **every September pull was re-run and verified from its log**
