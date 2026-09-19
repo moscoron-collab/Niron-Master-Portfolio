@@ -106,14 +106,20 @@ did NOT.** Divando is still on the same `Dec 15 2025 → Dec 15 2026` term.
   card · the 12-property footer · a new premium-history row · `AppsScript.gs dashboardKnowledge()`
   **[needs redeploy]** · the `/monthly-distribution` reference table.
   **Divando saves `$276.83`/mo = `$3,321.96`/yr and its net cashflow rises by exactly that.**
-- **🔎 LEADING HYPOTHESIS — a property came OFF the policy around May 2026, probably 4776 Blackhawk Way.**
-  The drop is `$276.83`/mo = **`$3,321.96`/yr**. The only line in the 13-property table anywhere near that
-  is **4776 Blackhawk Way `$3,320`/yr** — a match to within **$2/yr**. No other property is close (next
-  nearest: 15655 E 13th `$3,529`, Holly `$2,693`, 43rd `$2,642`). The Noble renewal calendar already
-  carries an unexplained **"Blackhawk Dec 4 ⚠️"** flag. **UNCONFIRMED — do not write this into the
-  tables as fact.** Ask Ron / Kevin Schult (303) 989-3847 whether Blackhawk was endorsed off, moved
-  carrier, or re-rated. It is NOT Enid (she came off Aug 28 2026, three months after the drop, and her
-  share was `$210.67`/mo, not `$276.83`).
+- **🔴 CAUSE PARKED UNTIL THE NEXT BANK STATEMENT (Ron's call, Sep 19 2026): "כשאתן לך את חשבון הבנק
+  בסוף החודש אתה תדע."** Do NOT keep debating it — read the `STATE FARM` line on the next Divando CSV.
+  The full decision table (which number means what, and the 5 places to sync for each case) is written
+  into the `/monthly-distribution` skill as **"🔴 OPEN ITEM for the next run"**, so the monthly close
+  resolves it automatically.
+- **Ron's reading is Enid**, and Enid IS in this file (sold Aug 28 2026, endorsed off the policy the same
+  day by Kevin Schult, share `$2,528`/yr = `$210.67`/mo, Dorado credit `$138` → `$67.40`). **Two things
+  still don't line up and that is the only reason it is open:** the drop landed **May 29, three months
+  before the sale**, and it is **`$276.83`**/mo — `$66.16` more than Enid's share. So September may show
+  a SECOND drop to ≈`$2,422` (Enid on top of the May change), which would mean the dashboard is currently
+  `$210.67`/mo too high. That is the thing to check, not to argue about.
+- An earlier note here guessed **4776 Blackhawk Way** (`$3,320`/yr ≈ the `$3,321.96`/yr drop, the closest
+  line in the 13-property table). **It is a coincidence-level match only and Ron does not think it is
+  that** — kept as a note, never written into a table.
 - ⚠️ **The written annual `$34,630`/yr no longer matches the draft**, and the per-property table is the
   as-written policy. Both are labelled as such in the Noble tab. **Ask Ron for the CURRENT declarations
   page** to square them.

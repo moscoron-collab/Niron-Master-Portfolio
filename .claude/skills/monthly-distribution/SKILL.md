@@ -139,6 +139,41 @@ reference table now carries $2,633.15; note it took 4 months to confirm because 
 month** before changing anything — unless a statement or declarations page confirms the new figure outright.
 A mortgage change, by contrast, is almost always real and permanent (escrow re-analysis).
 
+### 🔴 OPEN ITEM for the next run — Divando State Farm: what is the draft now?
+
+**Do this FIRST on the next Divando CSV. Find the `STATE FARM` line and read the amount.** Ron and the
+agent could not settle the cause from the data on hand (Sep 19 2026), and the answer is one line in the
+August/September statement.
+
+What is known:
+
+| Draft | Amount |
+|---|---|
+| Mar 3 · Mar 31 · Apr 29 2026 | `$2,909.98` |
+| **May 29 2026** | **`$2,633.15`** ← dropped here |
+| Jul 1 2026 (June's slid draft) · Jul 29 2026 | `$2,633.15` |
+| Aug 29 · Sep 29 2026 | **unknown — this is what to look for** |
+
+**Ron's reading: it is 4641 Enid Way, which was sold.** That is recorded — Enid sold **Aug 28 2026**,
+Kevin Schult endorsed her off the policy the same day, her share was `$2,528`/yr = **`$210.67`**/mo, and
+the Dorado→Divando credit dropped `$138` → `$67.40`. **Two things don't line up yet:** the drop happened
+**May 29, three months before the sale**, and it is **`$276.83`**/mo, `$66.16` more than Enid's share.
+
+So read the amount and apply whichever case matches — do not assume:
+
+- **`$2,633.15`** → unchanged since May; Enid's removal never showed up in the draft. Keep the current
+  override, and ask Kevin Schult what actually changed in May.
+- **≈`$2,422`** (`2,633.15 − 210.67`) → Enid came off ON TOP of the May change. **The dashboard is then
+  too high** — update `INSURANCE_OVERRIDE.divando` + `CASHPLAN_CONFIG.divando.insurance` in `index.html`,
+  the Noble tab, `dashboardKnowledge()` and the table below, per the 5-place list above.
+- **≈`$2,699`** (`2,909.98 − 210.67`) → the May–July figure was temporary and Enid is the only real
+  change. Same 5-place update, to `$2,699`.
+- **anything else** → report the exact number and stop; do not guess a cause.
+
+⚠️ Whatever it is, the written annual `$34,630`/yr in the Noble tab no longer matches the draft, and the
+12-property per-property table is still the as-written policy. Ask Ron for the **current declarations
+page** to square them.
+
 ### Do we need the lender statements for this? No — see below
 
 **CBRE** posts its statement ~the **18th**, billing the payment due the **1st of the next month**, so it is
