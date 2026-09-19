@@ -90,6 +90,66 @@ has been failing at the AppFolio login since **Sep 15 2026**.
 
 ---
 
+## 🛡️ Divando insurance is `$2,633.15`/mo — the State Farm policy RENEWED (Ron, Sep 19 2026, APP_VERSION → 2.9)
+
+Ron confirmed the July 2026 drop was **not a blip — the policy was renewed**, so `$2,633.15`/mo is the
+standing State Farm draft and `$2,909.98` is dead. **Divando saves `$276.83`/mo = `$3,321.96`/yr, and its
+net cashflow rises by exactly that.**
+
+- **Updated (all in this PR):** `INSURANCE_OVERRIDE.divando` → `2633.15` · `CASHPLAN_CONFIG.divando.insurance`
+  → `2633.15` (planner cushion) · Noble tab **Total Monthly · All Active** `$5,592.44` → **`$5,315.61`**
+  (`2633.15 + 1191.58 + 1037.55 + 453.33`) · the Divando renewal card's Monthly Payment + Annual Premium ·
+  the 12-property table footer · a new Premium-History row (prior term moved to history) ·
+  `AppsScript.gs dashboardKnowledge()` **[needs redeploy]** · the `/monthly-distribution` skill's
+  recurring-cost table + its Step-1c caution.
+- ⚠️ **The annual premium and the per-property split are NOT known** and were deliberately NOT invented.
+  The Noble tab's 12-property table still shows the **prior term's** per-property amounts, labelled as such,
+  and the annual reads "pending the new declarations page." **Ask Ron for the renewal declarations PDF** and
+  fill in: new annual, new term dates, and each property's premium. Only the monthly draft is confirmed.
+- **🔑 LESSON — why this sat stale for two months.** The drop first showed in the **July 2026** bank CSV
+  (two drafts that month: June's slid to Jul 1, plus Jul 29). The `/monthly-distribution` run flagged it and
+  said "wait for a second month" — correct caution — but **nothing ever re-checked it**, and the renewal
+  itself never reached the repo. **Why the agent could not see it:** the Noble tab's renewal cards are
+  `contenteditable` and edited in a **local** `index.html` (Owner Mode workflow), and the separate
+  `moscoron-collab/niron-noble-insurance` repo was last touched **May 17 2026** — so a renewal Ron makes in
+  his browser is invisible here until he pushes the file or tells us. Checked Gmail + Drive too: no Divando
+  renewal declarations page. **Fix going forward:** when Step 1c flags a fixed-cost drift, ASK whether a
+  policy/loan renewed rather than only waiting a month — a renewal is the most common cause and it is a
+  one-question answer.
+- **Enid check:** 4641 Enid Way came off the policy **Aug 28 2026** (`$210.67`/mo share). The drop to
+  `$2,633.15` predates that, so it is the renewal, not Enid. **If a later draft comes in around `$2,422`,
+  that is Enid finally coming off on top of the renewal** — worth a look at the Sep/Oct Divando statement.
+- Dorado's `$67.40`/mo Jamaica credit is unchanged and still **NOT netted** out of the `$2,633.15` (Ron wants
+  the real drawn figure). Net-of-credit, for reference only, is `$2,565.75`/mo.
+
+---
+
+## 🏠 Yale per-unit: owner-held security deposits are no longer counted as income (Sep 19 2026, Ron: "כן תכניס")
+
+The gap flagged in the Yale Sep 2026 section below is now closed in `run_yale.py`. A move-in deposit is the
+tenant's money being held, not rent, but it was landing in the unit's **Cash In** column — Yale Sep 2026 showed
+`$1,034` of "income" on 2997 that was two `Owner Held Security Deposits - Move In` receipts (`$455` + `$579`).
+
+- **`extract_per_unit_from_pdf`** now has a per-unit **`deposits`** bucket. A cash-IN line matching `_SD_RE`
+  (`Security Deposit`) goes there instead of `cash_in`/`rent_collected`, and a cash-OUT reversal or refund of a
+  deposit comes back out of the same bucket. So **a deposit alone can never mark a unit Occupied.**
+- **The disbursement split is deliberately UNCHANGED.** The pooled disbursement really does contain the deposit
+  money, so `build_rows` allocates on **`cash_in + deposits`**. Verified against the real Sep 2026 statement:
+  per-unit disbursements are **identical** before and after (2991 `$2,409.30` · 2997 `$899.03` ·
+  2999 `$2,260.62`) and still foot to the statement's `$5,568.95`. The ONLY change on the sheet is 2997's
+  Cash In: `$1,034` → `$0`.
+- Each run now **prints the deposit total** when one is present, so a turnover month is visible in the Actions
+  log instead of silently inflating the card.
+- `backfill_yale.py` imports both functions (`Y.extract_per_unit_from_pdf` / `Y.build_rows`), so it picks this
+  up with no edit. ⚠️ Existing Yale rows already in `Property Detail` still carry the old inflated Cash In —
+  re-run `backfill_yale.yml` only if that matters; the dedup is on month+property, so **delete the affected
+  rows first** or nothing will be rewritten.
+- **Offline-verified** with a stubbed-pdfplumber harness replaying the real Sep 2026 transaction lines,
+  including AppFolio's wrapped-description case (the deposit text lands on the line ABOVE the date+amount).
+  Both the old and new code were run side by side to prove the allocation did not move.
+
+---
+
 ## 🔴 Yale Sept 2026 net is −$5,610.77 and it is REAL — verified against the Owner Packet (Sep 19 2026)
 
 Ron checked the dashboard as asked and Yale showed a red **Net Cashflow −$5,610.77** on the Sep 2026
@@ -123,9 +183,9 @@ uploaded the Yale **Owner Packet, Aug 16 – Sep 15 2026**. **The dashboard is c
   the disbursement must NOT be entered in the Maintenance Log.
 - Laureate holds a **$4,000 Property Reserve**; the account ended at `3,336.00`, i.e.
   `Net Owner Funds -664.00` — $664 BELOW the reserve.
-- **🔭 Not built (deliberate):** no rule separates `Owner Held Security Deposits` from rent in
-  `run_yale.py`, so a move-in month will always overstate the disbursement a little. Raised with Ron;
-  do not add such a rule without asking — a deposit IS cash that really landed in the account.
+- **✅ BUILT Sep 19 2026 (Ron said "כן תכניס")** — `run_yale.py` now keeps `Owner Held Security Deposits`
+  out of the per-unit **Cash In**/**Rent Collected** while still counting them in the disbursement split
+  (a deposit IS cash that really landed in the account). See the dated section near the top of this file.
 - 🛠️ **How the packet was read** (the sandbox has no working `pdfplumber` — `cryptography` is broken
   and `pdftoppm` is missing): decompress the PDF's `stream…endstream` blocks with `zlib` and pull the
   `Tj` / `TJ` text operators in order, breaking lines on `Td`/`TD`/`T*`/`ET`. Reusable for any future
@@ -1274,6 +1334,8 @@ were fixed (user-approved decisions). **The findings reference the audit numberi
     (cards, History, KPIs, trend) by mutating `g.ins_mo` in `aggregateLlcPeriod` and in the
     grouped-card map. Per-property records (`buildPropertyRecords`) are NOT overridden — they
     already use correct per-unit insurance from the Property Detail tab.
+  - ⚠️ **SUPERSEDED Sep 19 2026 — Divando insurance is now `$2,633.15`/mo** (the State Farm policy renewed;
+    see the dated section near the top of this file). The Jun 12 2026 note below is kept for history.
   - **🏦 Divando insurance corrected to `$2,909.98`/mo (BANK-VERIFIED, Jun 12 2026).** The
     `$2,473.08` above was a calculated guess. The user uploaded the Divando operating-acct
     (`3 Divando LLC 3442`) Mar–May 2026 transactions; the real **STATE FARM** auto-draft =
@@ -3003,10 +3065,11 @@ CHECK 7258 $300 (7/6) matched nothing in the export (unidentified — ask if it 
 July owing $900 to Divando (7/7) + $300 to Donald (7/15)** (overdraft covers for the Lument draft,
 unrepaid at month-end) — subtract from Yale in August if still unrepaid. Donald netted ~+$5.2K and
 Dorado ~+$10.1K in July (both healthy; user chose to skip anyway — offer them first in August).
-**🚩 State Farm watch:** Divando's draft was **$2,633.15 TWICE in July** (7/1 = June's slid draft +
-7/29), not the $2,909.98 the dashboard override carries. User said **wait for the August statement**
-— if Aug also drafts $2,633.15, update `INSURANCE_OVERRIDE.divando` in `index.html` (+ the skill's
-reference table + Noble tab figures) to $2,633.15. No Nir email was drafted (nothing to execute).
+**✅ RESOLVED Sep 19 2026 — State Farm watch closed.** Divando's draft was **$2,633.15 TWICE in July**
+(7/1 = June's slid draft + 7/29), not the $2,909.98 the dashboard override carried. Ron confirmed the
+**policy was renewed**, so $2,633.15 is the new standing figure — `INSURANCE_OVERRIDE.divando`, the planner
+cushion, the Noble tab and the skill's reference table were all updated (see the dated section near the top
+of this file). No Nir email was drafted (nothing to execute).
 
 ---
 
