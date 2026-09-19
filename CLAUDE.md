@@ -90,6 +90,43 @@ has been failing at the AppFolio login since **Sep 15 2026**.
 
 ---
 
+## ✅ Sep 2026 recovery COMPLETE — September data is in (Sep 19 2026)
+
+Both Sep 2026 outages are closed and **every September pull was re-run and verified from its log**
+(not from a green checkmark). Ron re-seeded `APPFOLIO_COOKIES` from a Cookie-Editor export; the agent
+converted it to Playwright base64 (the new device-trust token runs to **Oct 19 2026**).
+
+| Pull | Result, quoted from the run log |
+|---|---|
+| `monthly.yml` (4 Niron LLCs) | `Errors: []` + `Written to History:` ×4 · "Dashboard Updated" email sent |
+| `monthly_moss.yml` | `Done. Wrote 4 rows to History.` |
+| `monthly_divando.yml` | `Done. Wrote 15 rows to 'Property Detail'.` |
+| `monthly_donald.yml` | `Done. Wrote 8 rows to 'Property Detail'.` |
+| `monthly_yale.yml` | **Skipped**: `2026-09-01: all 5 units already pulled — skipping AppFolio login.` |
+
+- **The Yale skip was investigated, not assumed.** The skip looked wrong (no Yale run had
+  authenticated since Sep 15), so `backfill_yale.yml` was run with `months=2` as an independent
+  check: it re-downloaded **both** statements from AppFolio and reported
+  `Rows written: 0 · Rows skipped (dupe): 10 · Errors: 0` — 5 units × 2 months already present.
+  So Yale's September rows really are in `Property Detail` and the skip was correct.
+  ⚠️ Honest limit: dedup matches on **month + property**, so this confirms the rows EXIST; it did not
+  re-compare the dollar amounts. **When the rows were written is still unexplained** — worth a glance
+  at Yale's September numbers on the dashboard. If they ever look wrong, delete those 5 rows and
+  re-run `backfill_yale.yml`.
+- **`month_already_pulled` reads the LIVE sheet** (property in col D + month in col B normalized,
+  disbursement col H non-empty), so a skip is real evidence, not a cached flag. A 4-second run with
+  the "Save updated cookies" step **skipped** is the signature of this early return — the script
+  exits before Playwright, so it emits no `new_cookies`.
+- **The cookie secret self-heals again**: Moss + the 3 per-property workflows each wrote a fresh
+  full session back to `APPFOLIO_COOKIES` after authenticating. (`run.py` still cannot — its save
+  step errors `Resource not accessible by integration`, pre-existing and harmless.)
+- **🔭 STILL OPEN — the green-but-empty hole moved one step later.** PR #220 made these scripts exit
+  RED on a failed login, but **"card found, packet not downloaded" still exits 0**. That is exactly
+  what hid the redesign for days. Fix: exit non-zero when every expected entity errors with
+  "Could not download packet". Offered to Ron; not built.
+
+---
+
 ## 🧩 AppFolio REDESIGNED the Owner Statements page — `ul.list-group li` is gone (Sep 19 2026, FIXED)
 
 Right after the Sep 2026 cookie re-seed fixed the login, **a second, unrelated outage surfaced**:
