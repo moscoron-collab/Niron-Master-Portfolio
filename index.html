@@ -1173,10 +1173,10 @@
             <div class="rz">① Policy</div>
             <div class="rf"><label>Carrier</label><div class="ev hi">State Farm Fire &amp; Casualty Company</div></div>
             <div class="rf"><label>Policy Period</label><div class="ev editable ok" contenteditable="true" spellcheck="false">Dec 15, 2025 → Dec 15, 2026</div></div>
-            <div class="rf"><label>Annual Premium</label><div class="ev editable" contenteditable="true" spellcheck="false">Renewed — annual not yet on file. Prior term was $34,630 (13 props). Send the new declarations page to fill this in.</div></div>
+            <div class="rf"><label>Annual Premium</label><div class="ev editable" contenteditable="true" spellcheck="false">$34,630 as written (13 props). ⚠️ The actual draft is now $2,633.15/mo, $276.83 below the old draft — so the in-force premium is lower than this. Needs the current declarations page.</div></div>
 
             <div class="rz">② Payment</div>
-            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$2,633.15/mo (actual bank draft after renewal; was $2,909.98/mo on the prior term)</div></div>
+            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$2,633.15/mo (actual bank draft since May 29, 2026; was $2,909.98/mo). Policy did NOT renew — the $276.83/mo drop is unexplained, likely a property coming off.</div></div>
             <div class="rf"><label>Payment Source</label><div class="ev editable" contenteditable="true" spellcheck="false">Auto-draft Divando acct · end of month</div></div>
             <div class="rf"><label>Payment Plan</label><div class="ev hi">State Farm Payment Plan (SFPP)</div></div>
 
@@ -1222,7 +1222,7 @@
               <tr><td>15559 E Bates Ave, Aurora CO 80013</td><td class="mn">96-E4-G679-9</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$393,400</td><td class="mn">$39,340</td><td class="mn">$59,010</td><td class="mn">$3,934</td><td class="mn ta">$2,507</td><td class="tn wn">Revised PDF pending from agent</td></tr>
               <tr><td>15655 E 13th Ave, Aurora CO 80011</td><td class="mn">96-E4-G681-3</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$618,900</td><td class="mn">$61,890</td><td class="mn">$92,835</td><td class="mn">$6,189</td><td class="mn ta">$3,529</td><td></td></tr>
             </tbody>
-            <tfoot><tr><td colspan="7">TOTAL — 12 Properties · Kevin Schult (303) 989-3847 (4641 Enid Way removed Aug 28, 2026) · per-property amounts below are the PRIOR term</td><td>auto-draft $2,633.15/mo (actual, post-renewal) · annual pending the new declarations page</td><td></td></tr></tfoot>
+            <tfoot><tr><td colspan="7">TOTAL — 12 Properties · Kevin Schult (303) 989-3847 (4641 Enid Way removed Aug 28, 2026) · per-property amounts below are the PRIOR term</td><td>auto-draft $2,633.15/mo (actual since May 2026) · annual pending the current declarations page</td><td></td></tr></tfoot>
           </table>
         </div>
 
@@ -1231,8 +1231,8 @@
           <table>
             <thead><tr><th>Period</th><th>Carrier</th><th>Annual Premium</th><th>Monthly</th><th>Notes</th></tr></thead>
             <tbody>
-              <tr><td class="mn ta">Renewed · current term</td><td>State Farm (Kevin Schult)</td><td class="mn ta">pending</td><td class="mn ta">$2,633.15</td><td class="tn">SFPP auto-draft (actual, first drafted Jul 2026). Send the declarations page to fill in the annual + per-property split.</td></tr>
-              <tr class="hist"><td class="mn te">Dec 15, 2025 → renewal</td><td class="te">State Farm (Kevin Schult)</td><td class="mn te">$34,630</td><td class="mn te">$2,909.98</td><td class="tn te">SFPP auto-draft (actual) · 13 individual policies. 4641 Enid Way removed Aug 28, 2026.</td></tr>
+              <tr><td class="mn ta">May 29, 2026 → now</td><td>State Farm (Kevin Schult)</td><td class="mn ta">pending</td><td class="mn ta">$2,633.15</td><td class="tn">SFPP auto-draft (actual: May 29, Jul 1, Jul 29). Same Dec 15 2025–Dec 15 2026 term — NOT a renewal. Drop of $276.83/mo unexplained; send the current declarations page.</td></tr>
+              <tr class="hist"><td class="mn te">Dec 15, 2025 → May 2026</td><td class="te">State Farm (Kevin Schult)</td><td class="mn te">$34,630</td><td class="mn te">$2,909.98</td><td class="tn te">SFPP auto-draft (actual) · 13 individual policies. 4641 Enid Way removed Aug 28, 2026.</td></tr>
               <tr class="hist"><td class="mn te">Dec 15, 2024 → Dec 15, 2025</td><td class="te">State Farm (Kevin Schult)</td><td class="mn te">$31,729</td><td class="mn te">$2,644.10</td><td class="tn te">Divando $1,581 + Donald $1,063 split. Ended Sep 20, 2025.</td></tr>
             </tbody>
           </table>
@@ -1522,15 +1522,15 @@ const CHANGELOG = [
     version: "2.9",
     date: "September 19, 2026",
     en: [
-      "Divando insurance corrected to $2,633.15 a month. The State Farm policy was renewed, so the old $2,909.98 draft is gone \u2014 this saves Divando about $277 a month, or $3,321 a year, and its net cashflow rises by the same amount.",
+      "Divando insurance corrected to $2,633.15 a month \u2014 that is what State Farm has actually drafted since late May. Saves about $277 a month, or $3,321 a year, and Divando\u2019s net cashflow rises by the same amount. Why it dropped is still being checked with the agent.",
       "The distribution planner now reserves the lower figure too, so Divando has about $277 more room each month.",
-      "Noble Insurance tab: the Divando card and the monthly total were updated. The renewal\u2019s annual premium and the per-property breakdown are still marked as the prior term \u2014 send the new declarations page and they will be filled in.",
+      "Noble Insurance tab: the Divando card and the monthly total were updated. The annual premium and the per-property breakdown still show the written policy \u2014 the current declarations page will square them with the lower draft.",
       "Yale per-unit: a new tenant\u2019s security deposit no longer shows up as that unit\u2019s income. It is the tenant\u2019s money being held, so a move-in month can no longer look like a strong month."
     ],
     he: [
-      "\u05d4\u05d1\u05d9\u05d8\u05d5\u05d7 \u05e9\u05dc \u05d3\u05d9\u05d1\u05e0\u05d3\u05d5 \u05ea\u05d5\u05e7\u05df \u05dc-$2,633.15 \u05dc\u05d7\u05d5\u05d3\u05e9. \u05d4\u05e4\u05d5\u05dc\u05d9\u05e1\u05d4 \u05d1-State Farm \u05d7\u05d5\u05d3\u05e9\u05d4, \u05d5\u05dc\u05db\u05df \u05d4\u05d7\u05d9\u05d5\u05d1 \u05d4\u05d9\u05e9\u05df \u05e9\u05dc $2,909.98 \u05db\u05d1\u05e8 \u05dc\u05d0 \u05e7\u05d9\u05d9\u05dd \u2014 \u05d7\u05d9\u05e1\u05db\u05d5\u05df \u05e9\u05dc \u05db-$277 \u05d1\u05d7\u05d5\u05d3\u05e9, $3,321 \u05d1\u05e9\u05e0\u05d4, \u05d5\u05d4\u05ea\u05d6\u05e8\u05d9\u05dd \u05d4\u05e0\u05e7\u05d9 \u05e9\u05dc \u05d3\u05d9\u05d1\u05e0\u05d3\u05d5 \u05e2\u05d5\u05dc\u05d4 \u05d1\u05d0\u05d5\u05ea\u05d5 \u05e1\u05db\u05d5\u05dd.",
+      "\u05d4\u05d1\u05d9\u05d8\u05d5\u05d7 \u05e9\u05dc \u05d3\u05d9\u05d1\u05e0\u05d3\u05d5 \u05ea\u05d5\u05e7\u05df \u05dc-$2,633.15 \u05dc\u05d7\u05d5\u05d3\u05e9 \u2014 \u05d6\u05d4 \u05de\u05d4 \u05e9-State Farm \u05d1\u05d0\u05de\u05ea \u05de\u05d5\u05e9\u05db\u05ea \u05de\u05e1\u05d5\u05e3 \u05de\u05d0\u05d9. \u05d7\u05d9\u05e1\u05db\u05d5\u05df \u05e9\u05dc \u05db-$277 \u05d1\u05d7\u05d5\u05d3\u05e9, $3,321 \u05d1\u05e9\u05e0\u05d4, \u05d5\u05d4\u05ea\u05d6\u05e8\u05d9\u05dd \u05d4\u05e0\u05e7\u05d9 \u05e9\u05dc \u05d3\u05d9\u05d1\u05e0\u05d3\u05d5 \u05e2\u05d5\u05dc\u05d4 \u05d1\u05d0\u05d5\u05ea\u05d5 \u05e1\u05db\u05d5\u05dd. \u05dc\u05de\u05d4 \u05d6\u05d4 \u05d9\u05e8\u05d3 \u2014 \u05e2\u05d3\u05d9\u05d9\u05df \u05d1\u05d1\u05d3\u05d9\u05e7\u05d4 \u05de\u05d5\u05dc \u05d4\u05e1\u05d5\u05db\u05df.",
       "\u05de\u05ea\u05db\u05e0\u05df \u05d4\u05d7\u05dc\u05d5\u05e7\u05d5\u05ea \u05e9\u05d5\u05de\u05e8 \u05e2\u05db\u05e9\u05d9\u05d5 \u05d0\u05ea \u05d4\u05e1\u05db\u05d5\u05dd \u05d4\u05e0\u05de\u05d5\u05da \u05d9\u05d5\u05ea\u05e8, \u05db\u05da \u05e9\u05dc\u05d3\u05d9\u05d1\u05e0\u05d3\u05d5 \u05d9\u05e9 \u05db-$277 \u05d9\u05d5\u05ea\u05e8 \u05de\u05e7\u05d5\u05dd \u05db\u05dc \u05d7\u05d5\u05d3\u05e9.",
-      "\u05dc\u05e9\u05d5\u05e0\u05d9\u05ea \u05d4\u05d1\u05d9\u05d8\u05d5\u05d7: \u05db\u05e8\u05d8\u05d9\u05e1 \u05d3\u05d9\u05d1\u05e0\u05d3\u05d5 \u05d5\u05d4\u05e1\u05d4\u05f4\u05db \u05d4\u05d7\u05d5\u05d3\u05e9\u05d9 \u05e2\u05d5\u05d3\u05db\u05e0\u05d5. \u05d4\u05e4\u05e8\u05de\u05d9\u05d4 \u05d4\u05e9\u05e0\u05ea\u05d9\u05ea \u05d5\u05d4\u05e4\u05d9\u05e8\u05d5\u05d8 \u05dc\u05e4\u05d9 \u05e0\u05db\u05e1 \u05e2\u05d3\u05d9\u05d9\u05df \u05de\u05e1\u05d5\u05de\u05e0\u05d9\u05dd \u05db\u05ea\u05e7\u05d5\u05e4\u05d4 \u05d4\u05e7\u05d5\u05d3\u05de\u05ea \u2014 \u05e9\u05dc\u05d7 \u05d0\u05ea \u05d3\u05e3 \u05d4\u05d4\u05e6\u05d4\u05e8\u05d5\u05ea \u05d4\u05d7\u05d3\u05e9 \u05d5\u05d4\u05dd \u05d9\u05ea\u05de\u05dc\u05d0\u05d5.",
+      "\u05dc\u05e9\u05d5\u05e0\u05d9\u05ea \u05d4\u05d1\u05d9\u05d8\u05d5\u05d7: \u05db\u05e8\u05d8\u05d9\u05e1 \u05d3\u05d9\u05d1\u05e0\u05d3\u05d5 \u05d5\u05d4\u05e1\u05d4\u05f4\u05db \u05d4\u05d7\u05d5\u05d3\u05e9\u05d9 \u05e2\u05d5\u05d3\u05db\u05e0\u05d5. \u05d4\u05e4\u05e8\u05de\u05d9\u05d4 \u05d4\u05e9\u05e0\u05ea\u05d9\u05ea \u05d5\u05d4\u05e4\u05d9\u05e8\u05d5\u05d8 \u05dc\u05e4\u05d9 \u05e0\u05db\u05e1 \u05e2\u05d3\u05d9\u05d9\u05df \u05de\u05e6\u05d9\u05d2\u05d9\u05dd \u05d0\u05ea \u05d4\u05e4\u05d5\u05dc\u05d9\u05e1\u05d4 \u05db\u05e4\u05d9 \u05e9\u05e0\u05db\u05ea\u05d1\u05d4 \u2014 \u05d3\u05e3 \u05d4\u05d4\u05e6\u05d4\u05e8\u05d5\u05ea \u05d4\u05e2\u05d3\u05db\u05e0\u05d9 \u05d9\u05e1\u05d2\u05d5\u05e8 \u05d0\u05ea \u05d4\u05e4\u05e2\u05e8.",
       "\u05d9\u05d9\u05dc \u05e4\u05e8 \u05d9\u05d7\u05d9\u05d3\u05d4: \u05e4\u05d9\u05e7\u05d3\u05d5\u05df \u05d1\u05d9\u05d8\u05d7\u05d5\u05df \u05e9\u05dc \u05d3\u05d9\u05d9\u05e8 \u05d7\u05d3\u05e9 \u05dc\u05d0 \u05de\u05d5\u05e6\u05d2 \u05d9\u05d5\u05ea\u05e8 \u05db\u05d4\u05db\u05e0\u05e1\u05d4 \u05e9\u05dc \u05d0\u05d5\u05ea\u05d4 \u05d9\u05d7\u05d9\u05d3\u05d4. \u05d6\u05d4 \u05db\u05e1\u05e3 \u05e9\u05dc \u05d4\u05d3\u05d9\u05d9\u05e8 \u05e9\u05de\u05d5\u05d7\u05d6\u05e7 \u05d0\u05e6\u05dc\u05e0\u05d5, \u05d5\u05dc\u05db\u05df \u05d7\u05d5\u05d3\u05e9 \u05e9\u05dc \u05db\u05e0\u05d9\u05e1\u05ea \u05d3\u05d9\u05d9\u05e8 \u05dc\u05d0 \u05d9\u05d9\u05e8\u05d0\u05d4 \u05d9\u05d5\u05ea\u05e8 \u05db\u05d7\u05d5\u05d3\u05e9 \u05d7\u05d6\u05e7."
     ]
   },
@@ -2491,16 +2491,17 @@ function extraMortgage(llc) { return (llc && llc.toLowerCase().includes('divando
 // The sheet's per-row insurance is stale / over-scoped for these LLCs, so we force
 // the correct whole-LLC monthly figure here:
 //   Yale    $1,037.55/mo - real Acuity bank draft (sheet still had the old $1,024.54).
-//   Divando $2,633.15/mo - the STATE FARM auto-draft on the Divando operating acct
-//           (3442) after the policy RENEWED (Ron confirmed Sep 19 2026 that this is the
-//           new normal, not a one-off). It was $2,909.98/mo on the prior term; the new
-//           figure first drafted in July 2026 (twice that month - June's draft slid into
-//           July 1 - which is why it looked like a blip at the time). This is the GROSS
-//           amount drawn. Dorado separately credits $67.40/mo back ("TRANSFER FROM DDA
-//           ACCT ...2189") for Jamaica St - NOT netted here (the real drawn figure is
-//           what we want). The renewal's annual premium + per-property split are still
-//           pending the new declarations page, so the Noble tab table below is the PRIOR
-//           term until that arrives.
+//   Divando $2,633.15/mo - the STATE FARM auto-draft actually seen on the Divando
+//           operating acct (3442). It has drafted at this figure since May 29 2026 (May 29,
+//           Jul 1 = June's slid draft, Jul 29) - three drafts running, so it is the standing
+//           amount, not the one-off it was first called. It was $2,909.98/mo before that.
+//           ⚠️ The CAUSE is NOT a policy renewal - Ron confirmed Sep 19 2026 that the
+//           Divando State Farm policy did NOT renew (Dorado's did). The drop is exactly
+//           $276.83/mo = $3,321.96/yr, which matches 4776 Blackhawk Way's $3,320/yr line to
+//           within $2/yr, so a property most likely came OFF the policy around May 2026 -
+//           unconfirmed. This is the GROSS amount drawn. Dorado separately credits
+//           $67.40/mo back ("TRANSFER FROM DDA ACCT ...2189") for Jamaica St - NOT netted
+//           here (the real drawn figure is what we want).
 // Any LLC NOT listed here uses the insurance amount straight from the sheet.
 const INSURANCE_OVERRIDE = { divando: 2633.15, yale: 1037.55 };
 // Returns the bank-verified monthly insurance for an LLC, or the sheet's own figure when
