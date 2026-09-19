@@ -267,7 +267,8 @@ def extract_per_unit_from_pdf(pdf_path):
     statement-level Cash In / Management Fees / Owner Disbursements used to
     allocate the pooled disbursement back to each unit.
     """
-    units = {n: {"cash_in": 0.0, "rent_collected": 0.0, "expenses": 0.0, "occupied": False}
+    units = {n: {"cash_in": 0.0, "rent_collected": 0.0, "deposits": 0.0,
+                 "expenses": 0.0, "occupied": False}
              for n in YALE_UNIT_NUMBERS}
 
     all_lines = []
@@ -329,20 +330,34 @@ def extract_per_unit_from_pdf(pdf_path):
 
         if delta > 0:                      # cash IN
             if unit:
-                units[unit]["cash_in"] += delta
-                if _RENT_RE.search(ln):
-                    units[unit]["rent_collected"] += delta
-                    units[unit]["occupied"] = True
+                if _SD_RE.search(ln):
+                    # "2997 - Owner Held Security Deposits - Move In". This is real
+                    # cash that landed in the account (so it still earns the unit a
+                    # share of the pooled disbursement — see build_rows), but it is
+                    # NOT operating income: it is the tenant's money being held.
+                    # Keep it out of Cash In / Rent Collected so a move-in month
+                    # can't read as a strong month. (Yale Sep 2026: $455 + $579 on
+                    # 2997 inflated the headline by $1,034.)
+                    units[unit]["deposits"] += delta
+                else:
+                    units[unit]["cash_in"] += delta
+                    if _RENT_RE.search(ln):
+                        units[unit]["rent_collected"] += delta
+                        units[unit]["occupied"] = True
         else:                              # cash OUT
             amt = -delta
             if _MGMT_RE.search(ln) or _DISB_RE.search(ln):
                 continue                   # pooled — handled via summary totals
             if unit and (_REVENUE_RE.search(ln) or _SD_RE.search(ln)):
-                # NSF / reversal of a prior receipt (rent, fee, or deposit) —
-                # cancel it back out of cash-in rather than booking an expense.
-                units[unit]["cash_in"] -= amt
-                if _RENT_RE.search(ln):
-                    units[unit]["rent_collected"] -= amt
+                # NSF / reversal of a prior receipt (rent, fee, or deposit) — or a
+                # deposit refunded to a departing tenant. Cancel it back out of the
+                # bucket it came in on rather than booking it as an expense.
+                if _SD_RE.search(ln):
+                    units[unit]["deposits"] -= amt
+                else:
+                    units[unit]["cash_in"] -= amt
+                    if _RENT_RE.search(ln):
+                        units[unit]["rent_collected"] -= amt
             elif unit:
                 units[unit]["expenses"] += amt   # repairs / supplies / utilities
 
@@ -350,6 +365,7 @@ def extract_per_unit_from_pdf(pdf_path):
     for n, u in units.items():
         u["cash_in"]        = round(max(u["cash_in"], 0.0), 2)
         u["rent_collected"] = round(max(u["rent_collected"], 0.0), 2)
+        u["deposits"]       = round(max(u["deposits"], 0.0), 2)
         u["expenses"]       = round(u["expenses"], 2)
         u["occupied"]       = u["rent_collected"] > 0
     return units, summary
@@ -494,15 +510,30 @@ def get_pdf_path(file_path, tmp_dir):
 def build_rows(units, summary, date_range, month_label, now_str,
                source="System — Yale per-property"):
     """Allocate the pooled Management Fees + Owner Disbursement to each unit in
-    proportion to its cash-in, and build the Property Detail rows."""
-    total_cash_in = sum(u["cash_in"] for u in units.values()) or 1.0
+    proportion to the cash it actually put into the account, and build the
+    Property Detail rows.
+
+    The allocation basis is cash-in PLUS owner-held security deposits, because the
+    pooled disbursement really does contain the deposit money — a move-in unit did
+    fund part of it. The Cash In column written to the sheet stays deposit-free, so
+    the unit's reported income is operating income only.
+    """
+    total_alloc = sum(u["cash_in"] + u["deposits"] for u in units.values()) or 1.0
     total_mgmt    = summary.get("mgmt_fee", 0.0)
     total_disb    = summary.get("disbursement", 0.0)
+
+    total_deposits = round(sum(u["deposits"] for u in units.values()), 2)
+    if total_deposits:
+        held = ", ".join(f"{YALE_PROPERTY[n]} ${units[n]['deposits']:,.2f}"
+                         for n in YALE_UNIT_NUMBERS if units[n]["deposits"])
+        print(f"NOTE: ${total_deposits:,.2f} of this statement's disbursement is "
+              f"owner-held security deposits, not income ({held}). Excluded from "
+              f"Cash In / Rent Collected; still counted in the disbursement split.")
 
     rows = []
     for n in YALE_UNIT_NUMBERS:
         u = units[n]
-        share = u["cash_in"] / total_cash_in
+        share = (u["cash_in"] + u["deposits"]) / total_alloc
         mgmt_fee     = round(total_mgmt * share, 2)
         disbursement = round(total_disb * share, 2)
         rows.append([
