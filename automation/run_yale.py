@@ -87,6 +87,27 @@ YALE_INS_EACH       = round(YALE_INS_TOTAL / 5, 2)        # 207.51
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
+def _statement_rows(card):
+    """Return an owner card's statement rows, newest first.
+
+    AppFolio redesigned the Owner Statements page (seen Sep 19 2026): the old
+    <ul class="list-group"><li> markup became one <div class="... row"> per
+    statement inside .card-body. The .analytics-statement-download-link
+    container survived the redesign, so anchor on that, and fall back to the
+    legacy <li> so an older layout still works."""
+    rows = [r for r in card.query_selector_all("div.row")
+            if r.query_selector(".analytics-statement-download-link")]
+    return rows or card.query_selector_all("ul.list-group li")
+
+
+def _statement_date_text(row):
+    """The 'Mon D, YYYY to Mon D, YYYY' label for one statement row.
+
+    Now rendered as <a class="fw-bold">; it used to be a <b>."""
+    el = row.query_selector("a.fw-bold") or row.query_selector("b")
+    return el.inner_text().strip() if el else ""
+
+
 # ── Google Sheets ────────────────────────────────────────────────────
 def get_sheets_service():
     creds = Credentials.from_service_account_info(json.loads(CREDS_JSON), scopes=SCOPES)
@@ -404,11 +425,11 @@ def download_packet(page, tmp_dir):
         if not h2 or h2.inner_text().strip() != APPFOLIO_OWNER_NAME:
             continue
         print(f"Found card for: {APPFOLIO_OWNER_NAME}")
-        first_li = card.query_selector("ul.list-group li")
+        _rows = _statement_rows(card)
+        first_li = _rows[0] if _rows else None
         if not first_li:
             return None, None, None
-        date_text = first_li.query_selector("b")
-        date_range = date_text.inner_text().strip() if date_text else ""
+        date_range = _statement_date_text(first_li)
         print(f"Most recent packet: {date_range}")
 
         month_label = None
