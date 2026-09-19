@@ -389,6 +389,19 @@ def download_packet(page, tmp_dir):
         print(f"Found card for: {APPFOLIO_OWNER_NAME}")
         first_li = card.query_selector("ul.list-group li")
         if not first_li:
+            # The card matched but carries no statement <li>. Either AppFolio
+            # changed the markup or the list renders after networkidle. Dump the
+            # card so the real structure is visible in the Actions log instead of
+            # failing silently with "Could not download packet".
+            print("DIAG: no 'ul.list-group li' inside the matched card.")
+            try:
+                for sel in ("ul", "li", "a", "[class*=list]", "[class*=statement]"):
+                    print(f"DIAG: count {sel!r} = {len(card.query_selector_all(sel))}")
+                html = card.inner_html()
+                print(f"DIAG: card inner_html ({len(html)} chars), first 4000:")
+                print(html[:4000])
+            except Exception as e:
+                print(f"DIAG failed: {e}")
             return None, None, None
         date_text = first_li.query_selector("b")
         date_range = date_text.inner_text().strip() if date_text else ""
