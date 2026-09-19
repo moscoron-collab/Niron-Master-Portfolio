@@ -90,37 +90,57 @@ has been failing at the AppFolio login since **Sep 15 2026**.
 
 ---
 
-## 🛡️ Divando insurance is `$2,633.15`/mo — the State Farm policy RENEWED (Ron, Sep 19 2026, APP_VERSION → 2.9)
+## 🛡️ Divando insurance is `$2,633.15`/mo — bank-observed, but the CAUSE is still unknown (Sep 19 2026, APP_VERSION → 2.9)
 
-Ron confirmed the July 2026 drop was **not a blip — the policy was renewed**, so `$2,633.15`/mo is the
-standing State Farm draft and `$2,909.98` is dead. **Divando saves `$276.83`/mo = `$3,321.96`/yr, and its
-net cashflow rises by exactly that.**
+**The number is right; my first explanation was wrong.** I initially wrote that the Divando State Farm
+policy renewed. **Ron corrected that same day: "רק דורדו חודש לא דיוונדו" — only DORADO renewed, Divando
+did NOT.** Divando is still on the same `Dec 15 2025 → Dec 15 2026` term.
 
-- **Updated (all in this PR):** `INSURANCE_OVERRIDE.divando` → `2633.15` · `CASHPLAN_CONFIG.divando.insurance`
-  → `2633.15` (planner cushion) · Noble tab **Total Monthly · All Active** `$5,592.44` → **`$5,315.61`**
-  (`2633.15 + 1191.58 + 1037.55 + 453.33`) · the Divando renewal card's Monthly Payment + Annual Premium ·
-  the 12-property table footer · a new Premium-History row (prior term moved to history) ·
-  `AppsScript.gs dashboardKnowledge()` **[needs redeploy]** · the `/monthly-distribution` skill's
-  recurring-cost table + its Step-1c caution.
-- ⚠️ **The annual premium and the per-property split are NOT known** and were deliberately NOT invented.
-  The Noble tab's 12-property table still shows the **prior term's** per-property amounts, labelled as such,
-  and the annual reads "pending the new declarations page." **Ask Ron for the renewal declarations PDF** and
-  fill in: new annual, new term dates, and each property's premium. Only the monthly draft is confirmed.
-- **🔑 LESSON — why this sat stale for two months.** The drop first showed in the **July 2026** bank CSV
-  (two drafts that month: June's slid to Jul 1, plus Jul 29). The `/monthly-distribution` run flagged it and
-  said "wait for a second month" — correct caution — but **nothing ever re-checked it**, and the renewal
-  itself never reached the repo. **Why the agent could not see it:** the Noble tab's renewal cards are
-  `contenteditable` and edited in a **local** `index.html` (Owner Mode workflow), and the separate
-  `moscoron-collab/niron-noble-insurance` repo was last touched **May 17 2026** — so a renewal Ron makes in
-  his browser is invisible here until he pushes the file or tells us. Checked Gmail + Drive too: no Divando
-  renewal declarations page. **Fix going forward:** when Step 1c flags a fixed-cost drift, ASK whether a
-  policy/loan renewed rather than only waiting a month — a renewal is the most common cause and it is a
-  one-question answer.
-- **Enid check:** 4641 Enid Way came off the policy **Aug 28 2026** (`$210.67`/mo share). The drop to
-  `$2,633.15` predates that, so it is the renewal, not Enid. **If a later draft comes in around `$2,422`,
-  that is Enid finally coming off on top of the renewal** — worth a look at the Sep/Oct Divando statement.
-- Dorado's `$67.40`/mo Jamaica credit is unchanged and still **NOT netted** out of the `$2,633.15` (Ron wants
-  the real drawn figure). Net-of-credit, for reference only, is `$2,565.75`/mo.
+- **What is FACT (bank-observed, not inferred):** the State Farm auto-draft on the Divando operating acct
+  (`3 Divando LLC 3442`) has been **`$2,633.15`** since **May 29 2026** — three drafts running
+  (May 29 · Jul 1, which is June's slid draft · Jul 29). It was `$2,909.98` on Mar 3, Mar 31, Apr 29.
+  **So `$2,633.15` is the standing figure and the June 2026 call of "a one-off, most months were
+  $2,909.98" was wrong** — May 29 was already the new level, it just hadn't been checked again.
+- **Updated to `2633.15`:** `INSURANCE_OVERRIDE.divando` · `CASHPLAN_CONFIG.divando.insurance` (planner
+  cushion) · Noble tab **Total Monthly · All Active** `$5,592.44` → **`$5,315.61`** · the Divando renewal
+  card · the 12-property footer · a new premium-history row · `AppsScript.gs dashboardKnowledge()`
+  **[needs redeploy]** · the `/monthly-distribution` reference table.
+  **Divando saves `$276.83`/mo = `$3,321.96`/yr and its net cashflow rises by exactly that.**
+- **🔎 LEADING HYPOTHESIS — a property came OFF the policy around May 2026, probably 4776 Blackhawk Way.**
+  The drop is `$276.83`/mo = **`$3,321.96`/yr**. The only line in the 13-property table anywhere near that
+  is **4776 Blackhawk Way `$3,320`/yr** — a match to within **$2/yr**. No other property is close (next
+  nearest: 15655 E 13th `$3,529`, Holly `$2,693`, 43rd `$2,642`). The Noble renewal calendar already
+  carries an unexplained **"Blackhawk Dec 4 ⚠️"** flag. **UNCONFIRMED — do not write this into the
+  tables as fact.** Ask Ron / Kevin Schult (303) 989-3847 whether Blackhawk was endorsed off, moved
+  carrier, or re-rated. It is NOT Enid (she came off Aug 28 2026, three months after the drop, and her
+  share was `$210.67`/mo, not `$276.83`).
+- ⚠️ **The written annual `$34,630`/yr no longer matches the draft**, and the per-property table is the
+  as-written policy. Both are labelled as such in the Noble tab. **Ask Ron for the CURRENT declarations
+  page** to square them.
+- **🔑 LESSON — why this sat stale four months.** The drop first appeared in the **May 2026** bank CSV and
+  was dismissed as a one-off; July's `/monthly-distribution` run flagged it again and said "wait for a
+  second month" — correct caution — but **nothing ever re-checked it.** Also: the Noble tab's renewal
+  cards are `contenteditable` and edited in a **local** `index.html` (Owner Mode workflow), and the
+  separate `moscoron-collab/niron-noble-insurance` repo was last touched **May 17 2026**, so anything Ron
+  changes in his browser never reaches this repo. Gmail + Drive were searched too — no Divando
+  declarations page. **Fix going forward: when Step 1c flags a fixed-cost drift, ASK what changed
+  (renewal? endorsement? property off?) instead of only waiting a month, and put a date on the re-check.**
+- Dorado's `$67.40`/mo Jamaica credit is unchanged and still **NOT netted** out of the `$2,633.15` (Ron
+  wants the real drawn figure).
+
+### 🟡 DORADO renewed — new premium NOT on file (Sep 19 2026)
+
+Ron said Dorado's policy renewed. **Nothing was changed for Dorado, deliberately — the new premium is
+unknown and was not invented.** Current figures still in the code/tab:
+- **Berkshire Hathaway, policy `02PRM080318-06`, IMA Select (Hannah Burford 303-615-7840 / office
+  303-534-4567)**, 1460 W 41st Ave fourplex, `Nov 6 2025 → Nov 6 2026`, **`$5,440`/yr = `$453.33`/mo**
+  ($775,000 limit, $2,500 std / $15,500 wind-hail deductible). `CASHPLAN_CONFIG.dorado.insurance` is
+  **`453.31`** (a 2¢ mismatch with the tab's `453.33` — harmless, fix when the renewal number lands).
+- ⚠️ The stored term ends **Nov 6 2026**, which is AFTER today, so this renewal was taken early (the file
+  already carried a "call IMA Select by Oct 2026 for the renewal quote" note). **Ask Ron for: the new
+  annual premium, the new term dates, and the new monthly draft** — then update `CASHPLAN_CONFIG.dorado.insurance`,
+  the Noble Dorado card + premium-history table, the renewal calendar, and the Total Monthly · All Active tile.
+- Dorado's National-Indemnity-era figure is not in play; the live carrier is Berkshire Hathaway via IMA.
 
 ---
 
@@ -1334,8 +1354,10 @@ were fixed (user-approved decisions). **The findings reference the audit numberi
     (cards, History, KPIs, trend) by mutating `g.ins_mo` in `aggregateLlcPeriod` and in the
     grouped-card map. Per-property records (`buildPropertyRecords`) are NOT overridden — they
     already use correct per-unit insurance from the Property Detail tab.
-  - ⚠️ **SUPERSEDED Sep 19 2026 — Divando insurance is now `$2,633.15`/mo** (the State Farm policy renewed;
-    see the dated section near the top of this file). The Jun 12 2026 note below is kept for history.
+  - ⚠️ **SUPERSEDED Sep 19 2026 — Divando insurance is now `$2,633.15`/mo**, bank-observed since May 29
+    2026. NOT a renewal (Ron confirmed only Dorado renewed) — cause unconfirmed, see the dated section near
+    the top of this file. The Jun 12 2026 note below is kept for history, and note its "May 29 dipped once…
+    one-off" call was WRONG — that was the new level.
   - **🏦 Divando insurance corrected to `$2,909.98`/mo (BANK-VERIFIED, Jun 12 2026).** The
     `$2,473.08` above was a calculated guess. The user uploaded the Divando operating-acct
     (`3 Divando LLC 3442`) Mar–May 2026 transactions; the real **STATE FARM** auto-draft =
@@ -3065,11 +3087,11 @@ CHECK 7258 $300 (7/6) matched nothing in the export (unidentified — ask if it 
 July owing $900 to Divando (7/7) + $300 to Donald (7/15)** (overdraft covers for the Lument draft,
 unrepaid at month-end) — subtract from Yale in August if still unrepaid. Donald netted ~+$5.2K and
 Dorado ~+$10.1K in July (both healthy; user chose to skip anyway — offer them first in August).
-**✅ RESOLVED Sep 19 2026 — State Farm watch closed.** Divando's draft was **$2,633.15 TWICE in July**
-(7/1 = June's slid draft + 7/29), not the $2,909.98 the dashboard override carried. Ron confirmed the
-**policy was renewed**, so $2,633.15 is the new standing figure — `INSURANCE_OVERRIDE.divando`, the planner
-cushion, the Noble tab and the skill's reference table were all updated (see the dated section near the top
-of this file). No Nir email was drafted (nothing to execute).
+**✅ RESOLVED Sep 19 2026 — State Farm watch closed (number), cause still open.** Divando's draft was
+**$2,633.15 TWICE in July** (7/1 = June's slid draft + 7/29), and **May 29 too** — three drafts, so it is
+the standing figure, not the $2,909.98 the dashboard override carried. `INSURANCE_OVERRIDE.divando`, the
+planner cushion, the Noble tab and the skill's reference table were all updated. ⚠️ It is **NOT** a renewal
+(Ron: only Dorado renewed) — the cause is unconfirmed, see the dated section near the top of this file. No Nir email was drafted (nothing to execute).
 
 ---
 
