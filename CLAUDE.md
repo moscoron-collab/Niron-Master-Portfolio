@@ -90,6 +90,57 @@ has been failing at the AppFolio login since **Sep 15 2026**.
 
 ---
 
+## 🧩 AppFolio REDESIGNED the Owner Statements page — `ul.list-group li` is gone (Sep 19 2026, FIXED)
+
+Right after the Sep 2026 cookie re-seed fixed the login, **a second, unrelated outage surfaced**:
+every pull authenticated fine and matched its card, then failed to download.
+
+```
+Owner cards on Statements page: 7
+Found card for: Yale Townhomes, LLC      (and Donald / Divando / Dorado / Moss)
+Results: []
+Errors: ['Yale Townhomes, LLC: Could not download packet', ... x4]
+```
+
+- **Diagnosis method (reuse this):** the log stopped between `Found card for:` and
+  `Most recent packet:`, which pins the failure to ONE line. A temporary dump of the matched
+  card's `inner_html()` (PR #221) printed the real markup into the Actions log. **Don't guess at a
+  selector — dump the element.** Niron and Moss failed at the identical line with the identical
+  selector, which already proved it was a page change, not a per-script bug.
+- **What AppFolio changed:** the statement list is no longer
+  `<ul class="list-group"><li>`. Each statement is now its own
+  **`<div class="py-3 border-bottom align-items-start row">`** inside `.card-body`, and the date
+  range moved from a **`<b>`** to an **`<a class="fw-bold">`**. The card header also gained a
+  `Displaying 1–5 of 70` counter and a collapse chevron.
+  **`.analytics-statement-download-link a` SURVIVED unchanged** — that is the stable anchor.
+- **Real captured row (Moss, Sep 19 2026):**
+  `<a class="fw-bold" href="/oportal/statements/24359/details">Aug 16, 2026 to Sep 15, 2026</a>`
+  + `<div class="analytics-statement-download-link"><a href="/oportal/statements/24359/Aug%2016...%20Sep%2015,%202026.zip?owner_id=1539&all=all">`.
+  So the September packet WAS there the whole time — only the wrapper changed.
+- **The fix — two helpers added to ALL 10 scripts** (`run.py`, `run_moss.py`, `run_divando.py`,
+  `run_yale.py`, `run_donald.py` + all 5 `backfill_*.py`):
+  - **`_statement_rows(card)`** — returns `div.row` elements that contain an
+    `.analytics-statement-download-link`, **falling back to the legacy `ul.list-group li`** so an
+    old layout still works. Anchoring on the download link (not on Bootstrap layout classes like
+    `py-3`/`border-bottom`, which are styling and WILL churn) is what makes this durable.
+  - **`_statement_date_text(row)`** — `a.fw-bold` first, then `<b>`.
+  - `download_packet*` now takes `_statement_rows(card)[0]`; the backfills' `parse_packet_li`
+    reads the date through the helper. `month_label`, the `.zip`/`.pdf` choice and the download
+    click are all unchanged.
+- **Verified offline** with a stub DOM built from the captured HTML: all 10 scripts read 3 rows,
+  the newest as `Aug 16, 2026 to Sep 15, 2026` → `month_label 2026-09-01`, `ext .zip`; and all 10
+  still parse a legacy `<li>` card. (A first test run reported a false FAILURE — the stub passed
+  the child elements into the `text` parameter instead of `kids`. The stub was wrong, not the code.)
+- **🔑 LESSON:** the per-property scripts were hardened in PR #220 to fail RED on a bad login, but
+  **"card found, nothing downloaded" still exits 0** — the same green-but-empty hole, one step
+  later. When a run finds its cards and writes nothing, that is a FAILURE, not an empty month.
+  Worth hardening next: exit non-zero when every entity errors with "Could not download packet".
+- ⚠️ **Selector inventory** (grep before assuming): `grep -n "list-group\|analytics-statement" automation/*.py`.
+  Ten files share this markup contract, so a page change breaks all of them at once and a fix must
+  be applied to all ten — the same half-applied-fix trap as PR #220.
+
+---
+
 ## 🏦 Lender Portals & Contacts on the Loan Details tab (Sep 10 2026, APP_VERSION → 2.7, pure frontend)
 
 User request ("something I wanted for long time"): **portal access for the Donald and Yale loans, kept
