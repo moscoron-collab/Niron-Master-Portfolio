@@ -3146,9 +3146,14 @@ planner cushion, the Noble tab and the skill's reference table were all updated.
 - Donald paid Ron `$4,000` + Nir `$4,000` on 9/21 (August's distribution).
 - **Enid proceeds recorded on the dashboard by Ron (Oct 3 2026, his call: "כתוב כחד פעמי")** via the 💰 modal:
   date `2026-08-28` · Dorado · equal `$84,000` each (Ron/Nir/Simon) · Notes `ONE-TIME - Enid sale proceeds (not
-  operating)`. ⚠️ The dashboard does NOT treat ONE-TIME specially yet, so Aug 2026 "Your Distribution", YTD and the
-  "% of net" chip are inflated by it. Offered a frontend change (exclude Notes containing `ONE-TIME` from the monthly
-  tile + payout %, show it separately); not built unless Ron says yes.
+  operating)`.
+- **✅ BUILT (Oct 3 2026, Ron said "כן", APP_VERSION → 2.11, pure frontend):** `isOneTimeDist(d)` in `index.html`
+  (Notes match `/one[\s-]?time/i`) keeps such rows OUT of the "Your Distribution" tile + YTD (`kpi-dist`/
+  `kpi-dist-ytd`), the "% of net" chip, the per-LLC Partner Distributions This-month/YTD totals and the by-year
+  Ron/Nir/Simon columns. They show instead on a gold **"One-time (not operating)"** line in the LLC card and a new
+  **One-time** column in the by-year table. The self-audit's `expDist`/`expDistYtd` apply the same filter (audit
+  stays green). Headless-tested with stub data: KPI $5.0K (one-time excluded), Dorado card shows the $252,000 line,
+  `✓ Audit OK`, zero JS errors. **To mark any future sale/refinance payout, just put ONE-TIME in its Notes.**
 
 ## 📄 Moss Owner Packet PDF structure
 
