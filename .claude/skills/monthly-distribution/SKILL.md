@@ -152,7 +152,21 @@ What is known:
 | Mar 3 · Mar 31 · Apr 29 2026 | `$2,909.98` |
 | **May 29 2026** | **`$2,633.15`** ← dropped here |
 | Jul 1 2026 (June's slid draft) · Jul 29 2026 | `$2,633.15` |
-| Aug 29 · Sep 29 2026 | **unknown — this is what to look for** |
+| Aug 29 2026 | unknown (not in any CSV Ron has sent) |
+| **Sep 30 2026** | **`$2,298.94`** ← first draft after Enid came off (Aug 28) |
+| Oct ~29–31 2026 | **unknown — this is what to look for next** |
+
+**Update (Oct 3 2026): September matched NONE of the cases below.** `$2,298.94` is `$334.21` under
+`$2,633.15` — Enid's `$210.67` plus another `$123.54`, most likely a one-time refund of her unused premium
+(Aug 28 → Dec 15) taken off the draft. **Ron's call: record Sep as an actual, keep `$2,633.15` as the
+standard until the October draft confirms.** So for the October draft:
+- **≈`$2,298.94` again** → that IS the new level. 5-place update to `$2,298.94`.
+- **≈`$2,422`** (`2,633.15 − 210.67`) → September carried a one-time refund; the steady level is
+  `$2,422`. 5-place update to `$2,422`.
+- **lower again / anything else** → the refund may be spread over several drafts. Report the exact
+  number and wait for November (or the declarations page) before changing the standard.
+
+The original cases (written before September was known) are kept below for the record:
 
 **Ron's reading: it is 4641 Enid Way, which was sold.** That is recorded — Enid sold **Aug 28 2026**,
 Kevin Schult endorsed her off the policy the same day, her share was `$2,528`/yr = **`$210.67`**/mo, and
