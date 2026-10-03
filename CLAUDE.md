@@ -3120,6 +3120,31 @@ planner cushion, the Noble tab and the skill's reference table were all updated.
 
 ---
 
+**✅ September 2026 close (run Oct 3 2026): reconcile only, NO distribution calc (Ron: "אין צורך לחשב חלוקה
+כרגע").** No ending balances were taken. Findings, all confirmed with Ron one question at a time:
+- **Enid sale proceeds: Ron, Nir and Simon each got `$84,000` (= `$252,000`).** The Sep Dorado CSV shows only part
+  of it (Ron `$42,000` 9/1 · Simon `$42,000` 9/1 + `$42,000` 9/9 · Nir `$0`), so the rest went out in August or
+  from another account. Not a Simon double-pay. Do not re-flag.
+- **Maintenance:** Divando Rolando `$750` (Blackhawk, sent 9/16) cleared CHECK 272 on 9/28 = the ~10-day CPA lag.
+  Yale Rigo paint `$2,518.09` = the 9/3 Sherwin-Williams debit. **Divando CHECK 271 `$675` + Donald CHECK 7261
+  `$725` (both 9/15) = Rolando's AUGUST invoices** (Ron confirmed). Dorado Walter `$345` (9/28) is **new work, not
+  a duplicate** of July's `$345` (CHECK 3287). **Carry into October:** Donald Walter `$240` + Dorado Walter `$345`
+  (sent 9/28, expect ~Oct 8) and **Yale Samuel `$120` marked Paid but not cashed by 9/30** (sent 9/16). The July
+  carry-overs (Donald Walter $380 · Yale Tamir $294.99 · Dorado Tamir $220) are not in September; no August CSVs,
+  so their status is unknown.
+- **Divando got NO Mid South deposits in September** (Joest + Stockport); only Suncoast/Hare `$1,205.75` on 9/4.
+  A Gmail draft asking Mid South for the payments + statements was saved in Ron's Drafts (no Mid South address
+  exists in his Gmail, so the To field was left for him to fill).
+- **Utilities to enter on the dashboard (Sep 2026):** Divando `567` · Donald `336` (quarterly Compost, landed 9/29)
+  · Yale `0` · Dorado `416`.
+- **Drift check:** every fixed cost matched. Westfield `$1,210.76` on 9/2 was the last old-term draft; the first
+  draft at the renewed `$1,191.58` is due ~Oct 4 (check in the October run). State Farm `$2,298.94` 9/30 as
+  already recorded. Dorado→Divando insurance share came in at `$67.50` (reference `$67.40`, 10¢, ignored).
+- **Inter-account:** Divando covered Yale `$6,000` on 9/8 (`TRANSFER FROM X3442 TO X2321 OVERDRAFT`), **unrepaid at
+  9/30 → Yale owes Divando `$6,000`**. Divando also sent `$500` to X5369 (cover overdraft) on 9/2. Yale's September
+  was short because only 2 of 5 units paid (see the Yale section near the top).
+- Donald paid Ron `$4,000` + Nir `$4,000` on 9/21 (August's distribution).
+
 ## 📄 Moss Owner Packet PDF structure
 
 Pages:
