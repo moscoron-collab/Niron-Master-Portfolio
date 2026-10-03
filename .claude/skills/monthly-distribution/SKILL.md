@@ -23,6 +23,15 @@ Reconcile each LLC's maintenance against its bank statement, work out what's
 **Read-only**: produce analysis + the Nir text. Never edit the Google Sheet or
 dashboard. (Per CLAUDE.md the sandbox can't reach the sheet anyway.)
 
+> 🗣️ **Language + pacing (Ron, Oct 3 2026):** reply in **Hebrew**. When the run raises several
+> questions (balances, flags, unmatched checks, cushions), ask them **ONE at a time** and wait for the
+> answer before the next.
+>
+> ⏱️ **CPA check lag (Ron, Oct 3 2026):** a maintenance invoice sent to the CPA takes **about 10 days**
+> to clear the bank (Sep 2026: Rolando $750 sent 9/16, cleared 9/28). So an invoice sent in the last
+> ~10 days of the statement window is normal "pending" and must be reserved; one older than ~10 days
+> with no bank line is worth asking about.
+
 Splits: **Divando / Donald / Yale = Ron 50% + Nir 50%.** **Dorado = Ron + Nir +
 Simon, ⅓ each** (Simon is Dorado-only).
 

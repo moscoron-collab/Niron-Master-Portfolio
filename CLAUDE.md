@@ -847,7 +847,8 @@ The two pipelines write to **separate Google Sheets** (separate `GOOGLE_SHEET_ID
 ## 👤 User context
 
 - **Name**: Ronen Moscovich (`moscoron@gmail.com`, Denver, CO)
-- **Language**: English; occasional Hebrew. Always reply in English.
+- **Language (UPDATED Oct 3 2026, user request): ALWAYS reply in HEBREW** ("אני קורא מהר יותר"). This replaces the old "always reply in English" rule. Code, commit messages, file contents and copyable values (numbers, URLs, commands) stay as they are; only the chat replies are in Hebrew.
+- **Ask ONE question at a time (Oct 3 2026, user request):** when there are several questions or open items, present ONE, wait for the answer, then move to the next. Do not dump a list of questions in one message.
 - **Technical level**: NOT a developer. Communicates business-side.
 - Step-by-step instructions, copyable commands, explain WHAT each does.
 - Decisive when path is clear — don't over-confirm.
