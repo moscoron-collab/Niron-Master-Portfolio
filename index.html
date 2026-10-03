@@ -1517,8 +1517,18 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.10";
+const APP_VERSION = "2.11";
 const CHANGELOG = [
+  {
+    version: "2.11",
+    date: "October 3, 2026",
+    en: [
+      "One-time distributions are now shown separately. If a distribution's Notes contain ONE-TIME (like the 4641 Enid Way sale proceeds), it no longer counts in the Your Distribution tile, the % of net, or the per-LLC monthly and YTD totals. It appears on its own gold 'One-time (not operating)' line and in a One-time column in the by-year table."
+    ],
+    he: [
+      "חלוקות חד-פעמיות מוצגות עכשיו בנפרד. חלוקה שבהערה שלה כתוב ONE-TIME (כמו הכסף ממכירת 4641 Enid Way) כבר לא נכנסת לכרטיס 'החלוקה שלך', לאחוז 'מהנקי' ולסיכומי החודש ומתחילת השנה של כל חברה. היא מופיעה בשורה נפרדת בזהב 'One-time (not operating)' ובעמודה One-time בטבלה השנתית."
+    ]
+  },
   {
     version: "2.10",
     date: "October 3, 2026",
@@ -2817,6 +2827,11 @@ function plannerVisible() { return localStorage.getItem('niron_show_planner') ==
 function syncPlannerBtn() { const b = document.getElementById('planner-btn'); if (b) b.textContent = plannerVisible() ? '🙈 Hide Planner' : '👁 Show Planner'; }
 function togglePlanner() { localStorage.setItem('niron_show_planner', plannerVisible() ? '0' : '1'); syncPlannerBtn(); renderAll(); }
 
+// A distribution whose Notes contain "ONE-TIME" (e.g. a property sale) is kept out of the
+// monthly/YTD "Your Distribution" tile, the % of net chip and the per-LLC operating totals,
+// and shown on its own line instead, so a sale doesn't look like operating cash.
+function isOneTimeDist(d) { return /one[\s-]?time/i.test((d && d.notes) || ''); }
+
 function renderAll() {
   const data = PORTFOLIO_DATA; if (!data) return;
   const el = document.getElementById("content");
@@ -2846,8 +2861,8 @@ function renderAll() {
   const ytdRows = history.filter(h => h.period_start && h.period_start.slice(0,4) === selectedYear && h.period_start <= SELECTED_MONTH);
   const ytdDisb = ytdRows.reduce((s, r) => s + r.disbursement, 0);
   const ytdNet = aggregateLlcPeriod(ytdRows, maintenance).reduce((s, r) => s + r.net_cashflow, 0);
-  const distThisMonth = distributions.filter(d => d.period === SELECTED_MONTH).reduce((s, d) => s + (d.your_amount || 0), 0);
-  const distYtd = distributions.filter(d => d.period && d.period.slice(0,4) === selectedYear && d.period <= SELECTED_MONTH).reduce((s, d) => s + (d.your_amount || 0), 0);
+  const distThisMonth = distributions.filter(d => d.period === SELECTED_MONTH && !isOneTimeDist(d)).reduce((s, d) => s + (d.your_amount || 0), 0);
+  const distYtd = distributions.filter(d => d.period && d.period.slice(0,4) === selectedYear && d.period <= SELECTED_MONTH && !isOneTimeDist(d)).reduce((s, d) => s + (d.your_amount || 0), 0);
   const ytdSubLabel = "Jan – " + monthLabel(SELECTED_MONTH).split(' ')[0] + " " + selectedYear;
   // Collapsed to one row per (LLC, month) so the History table and trend chart don't
   // double-count maintenance / property mortgage for LLCs with multiple rows in a month.
@@ -2970,9 +2985,13 @@ function renderAll() {
   const pdLabel = 'font-size:11px;color:#5a7ba0;text-transform:uppercase;letter-spacing:.6px;font-weight:600;margin:12px 0 4px';
   html += '<div class="llc-grid">';
   PDIST_LLCS.forEach(L => {
-    const moRows = distributions.filter(d => d.period === distMonth && L.match.test(d.llc || ''));
-    const ytdRows = distributions.filter(d => d.period && d.period.slice(0, 4) === distYear && d.period <= distMonth && L.match.test(d.llc || ''));
+    const moAll = distributions.filter(d => d.period === distMonth && L.match.test(d.llc || ''));
+    const ytdAll = distributions.filter(d => d.period && d.period.slice(0, 4) === distYear && d.period <= distMonth && L.match.test(d.llc || ''));
+    const moRows = moAll.filter(d => !isOneTimeDist(d)), ytdRows = ytdAll.filter(d => !isOneTimeDist(d));
     const sum = (rows, f) => rows.reduce((s, d) => s + (f(d) || 0), 0);
+    const oneTot = rows => sum(rows.filter(isOneTimeDist), d => (d.your_amount || 0) + (d.partner_amount || 0) + distSimon(d));
+    const oneMo = oneTot(moAll), oneYtd = oneTot(ytdAll);
+    const oneLine = (v) => v ? '<div class="llc-row" title="Recorded with ONE-TIME in Notes (e.g. a property sale). Not counted in the operating totals above."><span class="k" style="color:#c9a227">One-time (not operating)</span><span class="v" style="color:#c9a227">' + fmt(v) + '</span></div>' : '';
     const moYou = sum(moRows, d => d.your_amount), moNir = sum(moRows, d => d.partner_amount), moSim = sum(moRows, distSimon);
     const yYou = sum(ytdRows, d => d.your_amount), yNir = sum(ytdRows, d => d.partner_amount), ySim = sum(ytdRows, distSimon);
     const moTot = moYou + moNir + moSim, yTot = yYou + yNir + ySim;
@@ -2985,28 +3004,33 @@ function renderAll() {
     } else {
       card += row('Ron', moYou, 'green') + row('Nir', moNir, 'green') + (L.simon ? row('Simon', moSim, 'green') : '') + totRow(moTot);
     }
+    card += oneLine(oneMo);
     card += '<div style="' + pdLabel + '">YTD · ' + distYtdSub + '</div>';
     if (yTot === 0) {
       card += '<div style="color:#4e6d8c;font-size:13px;padding:4px 0">$0 so far this year</div>';
     } else {
       card += row('Ron', yYou) + row('Nir', yNir) + (L.simon ? row('Simon', ySim) : '') + totRow(yTot);
     }
+    card += oneLine(oneYtd);
     card += '</div>';
     html += card;
   });
   html += '</div>';
   // Per-year table (all LLCs combined) — tax-time picture. Simon column included.
   const byYear = {};
-  distributions.forEach(d => { const y = (d.period || '').slice(0, 4) || '—'; if (!byYear[y]) byYear[y] = { you: 0, nir: 0, simon: 0 }; byYear[y].you += (d.your_amount || 0); byYear[y].nir += (d.partner_amount || 0); byYear[y].simon += distSimon(d); });
-  const lifeYou = distributions.reduce((s, d) => s + (d.your_amount || 0), 0);
-  const lifeNir = distributions.reduce((s, d) => s + (d.partner_amount || 0), 0);
-  const lifeSim = distributions.reduce((s, d) => s + distSimon(d), 0);
+  const opDist = distributions.filter(d => !isOneTimeDist(d));
+  const oneAmt = d => (d.your_amount || 0) + (d.partner_amount || 0) + distSimon(d);
+  distributions.forEach(d => { const y = (d.period || '').slice(0, 4) || '—'; if (!byYear[y]) byYear[y] = { you: 0, nir: 0, simon: 0, one: 0 }; if (isOneTimeDist(d)) { byYear[y].one += oneAmt(d); return; } byYear[y].you += (d.your_amount || 0); byYear[y].nir += (d.partner_amount || 0); byYear[y].simon += distSimon(d); });
+  const lifeYou = opDist.reduce((s, d) => s + (d.your_amount || 0), 0);
+  const lifeNir = opDist.reduce((s, d) => s + (d.partner_amount || 0), 0);
+  const lifeSim = opDist.reduce((s, d) => s + distSimon(d), 0);
+  const lifeOne = distributions.filter(isOneTimeDist).reduce((s, d) => s + oneAmt(d), 0);
   const distYears = Object.keys(byYear).sort().reverse();
   if (distYears.length) {
     html += '<div style="' + pdLabel + ';margin-top:20px">All LLCs combined · by year</div>';
-    html += '<table><thead><tr><th>Year</th><th>Ron</th><th>Nir</th><th>Simon</th><th>Total</th></tr></thead><tbody>';
-    distYears.forEach(y => { const r = byYear[y]; html += '<tr><td>' + y + '</td><td class="green">' + fmt(r.you) + '</td><td class="green">' + fmt(r.nir) + '</td><td class="green">' + fmt(r.simon) + '</td><td>' + fmt(r.you + r.nir + r.simon) + '</td></tr>'; });
-    html += '<tr style="font-weight:700;border-top:2px solid #1e2d42"><td>All time</td><td class="green">' + fmt(lifeYou) + '</td><td class="green">' + fmt(lifeNir) + '</td><td class="green">' + fmt(lifeSim) + '</td><td>' + fmt(lifeYou + lifeNir + lifeSim) + '</td></tr>';
+    html += '<table><thead><tr><th>Year</th><th>Ron</th><th>Nir</th><th>Simon</th><th>Total</th><th title="Recorded with ONE-TIME in Notes (e.g. a property sale). Not in the operating columns.">One-time</th></tr></thead><tbody>';
+    distYears.forEach(y => { const r = byYear[y]; html += '<tr><td>' + y + '</td><td class="green">' + fmt(r.you) + '</td><td class="green">' + fmt(r.nir) + '</td><td class="green">' + fmt(r.simon) + '</td><td>' + fmt(r.you + r.nir + r.simon) + '</td><td style="color:#c9a227">' + (r.one ? fmt(r.one) : '—') + '</td></tr>'; });
+    html += '<tr style="font-weight:700;border-top:2px solid #1e2d42"><td>All time</td><td class="green">' + fmt(lifeYou) + '</td><td class="green">' + fmt(lifeNir) + '</td><td class="green">' + fmt(lifeSim) + '</td><td>' + fmt(lifeYou + lifeNir + lifeSim) + '</td><td style="color:#c9a227">' + (lifeOne ? fmt(lifeOne) : '—') + '</td></tr>';
     html += '</tbody></table>';
   } else { html += '<div style="color:#4e6d8c">No distributions recorded yet.</div>'; }
   html += '</div>';
@@ -3765,8 +3789,8 @@ function auditRun(openModal) {
       const yg = {};
       ytdRows.forEach(r => { const k = r.llc + '|' + r.period_start; if (!yg[k]) yg[k] = { llc: r.llc, period: r.period_start, disbursement: 0, mortgage: 0, ins_mo: 0, tax_mo: 0 }; ['disbursement', 'mortgage', 'ins_mo', 'tax_mo'].forEach(f => yg[k][f] += (r[f] || 0)); });
       const expNetYtd = Object.values(yg).reduce((s, g) => s + (g.disbursement - g.mortgage - extraMortgage(g.llc) - effectiveTax(g) - effectiveIns(g.llc, g.ins_mo) - maintenanceFor(maintenance, g.llc, g.period)), 0);
-      const expDist = distributions.filter(d => d.period === month).reduce((s, d) => s + (d.your_amount || 0), 0);
-      const expDistYtd = distributions.filter(d => d.period && d.period.slice(0, 4) === year && d.period <= month).reduce((s, d) => s + (d.your_amount || 0), 0);
+      const expDist = distributions.filter(d => d.period === month && !isOneTimeDist(d)).reduce((s, d) => s + (d.your_amount || 0), 0);
+      const expDistYtd = distributions.filter(d => d.period && d.period.slice(0, 4) === year && d.period <= month && !isOneTimeDist(d)).reduce((s, d) => s + (d.your_amount || 0), 0);
 
       // ---- KPI tiles: recompute vs rendered (compared at display precision) ----
       const kpi = (id, label, exp) => { const disp = _auditTxt(id); if (disp == null) { add('warn', 'KPI tile', label, fmtShort(exp), '(not on screen)'); return; } add(disp === fmtShort(exp) ? 'pass' : 'fail', 'KPI tile', label, fmtShort(exp), disp); };
