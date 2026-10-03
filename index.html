@@ -1176,7 +1176,7 @@
             <div class="rf"><label>Annual Premium</label><div class="ev editable" contenteditable="true" spellcheck="false">$34,630 as written (13 props). ⚠️ The actual draft is now $2,633.15/mo, $276.83 below the old draft — so the in-force premium is lower than this. Needs the current declarations page.</div></div>
 
             <div class="rz">② Payment</div>
-            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$2,633.15/mo (actual bank draft since May 29, 2026; was $2,909.98/mo). Policy did NOT renew — the $276.83/mo drop is unexplained, likely a property coming off.</div></div>
+            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$2,633.15/mo (actual bank draft since May 29, 2026; was $2,909.98/mo). Policy did NOT renew — the $276.83/mo drop is unexplained, likely a property coming off. Sep 30, 2026 draft: $2,298.94 (first after Enid came off) — not the standard yet, confirming with the October draft.</div></div>
             <div class="rf"><label>Payment Source</label><div class="ev editable" contenteditable="true" spellcheck="false">Auto-draft Divando acct · end of month</div></div>
             <div class="rf"><label>Payment Plan</label><div class="ev hi">State Farm Payment Plan (SFPP)</div></div>
 
@@ -1222,7 +1222,7 @@
               <tr><td>15559 E Bates Ave, Aurora CO 80013</td><td class="mn">96-E4-G679-9</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$393,400</td><td class="mn">$39,340</td><td class="mn">$59,010</td><td class="mn">$3,934</td><td class="mn ta">$2,507</td><td class="tn wn">Revised PDF pending from agent</td></tr>
               <tr><td>15655 E 13th Ave, Aurora CO 80011</td><td class="mn">96-E4-G681-3</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$618,900</td><td class="mn">$61,890</td><td class="mn">$92,835</td><td class="mn">$6,189</td><td class="mn ta">$3,529</td><td></td></tr>
             </tbody>
-            <tfoot><tr><td colspan="7">TOTAL — 12 Properties · Kevin Schult (303) 989-3847 (4641 Enid Way removed Aug 28, 2026) · per-property amounts below are the PRIOR term</td><td>auto-draft $2,633.15/mo (actual since May 2026) · annual pending the current declarations page</td><td></td></tr></tfoot>
+            <tfoot><tr><td colspan="7">TOTAL — 12 Properties · Kevin Schult (303) 989-3847 (4641 Enid Way removed Aug 28, 2026) · per-property amounts below are the PRIOR term</td><td>auto-draft $2,633.15/mo (standard since May 2026) · Sep 30 draft $2,298.94 — not yet the standard, confirming with the October draft · annual pending the current declarations page</td><td></td></tr></tfoot>
           </table>
         </div>
 
@@ -1231,6 +1231,7 @@
           <table>
             <thead><tr><th>Period</th><th>Carrier</th><th>Annual Premium</th><th>Monthly</th><th>Notes</th></tr></thead>
             <tbody>
+              <tr><td class="mn ta">Sep 30, 2026</td><td>State Farm (Kevin Schult)</td><td class="mn ta">pending</td><td class="mn ta">$2,298.94</td><td class="tn wn">Actual draft, first since 4641 Enid Way came off (Aug 28). $334.21 below $2,633.15: Enid's share is $210.67, the other $123.54 is probably a one-time refund of her unused premium. NOT the standard yet — confirm with the October draft.</td></tr>
               <tr><td class="mn ta">May 29, 2026 → now</td><td>State Farm (Kevin Schult)</td><td class="mn ta">pending</td><td class="mn ta">$2,633.15</td><td class="tn">SFPP auto-draft (actual: May 29, Jul 1, Jul 29). Same Dec 15 2025–Dec 15 2026 term — NOT a renewal. Drop of $276.83/mo unexplained; send the current declarations page.</td></tr>
               <tr class="hist"><td class="mn te">Dec 15, 2025 → May 2026</td><td class="te">State Farm (Kevin Schult)</td><td class="mn te">$34,630</td><td class="mn te">$2,909.98</td><td class="tn te">SFPP auto-draft (actual) · 13 individual policies. 4641 Enid Way removed Aug 28, 2026.</td></tr>
               <tr class="hist"><td class="mn te">Dec 15, 2024 → Dec 15, 2025</td><td class="te">State Farm (Kevin Schult)</td><td class="mn te">$31,729</td><td class="mn te">$2,644.10</td><td class="tn te">Divando $1,581 + Donald $1,063 split. Ended Sep 20, 2025.</td></tr>
@@ -1516,8 +1517,20 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.9";
+const APP_VERSION = "2.10";
 const CHANGELOG = [
+  {
+    version: "2.10",
+    date: "October 3, 2026",
+    en: [
+      "Noble Insurance: September’s Divando State Farm draft is recorded — $2,298.94 on Sep 30, the first draft since 4641 Enid Way came off the policy. Net cashflow and the planner still use $2,633.15 until the October draft confirms the new level.",
+      "Dorado fourplex: the payment schedule now marks each month Paid / Upcoming / Future from today’s date on its own, so it no longer goes out of date."
+    ],
+    he: [
+      "ביטוח נובל: נרשם חיוב סטייט פארם של דיוונדו לספטמבר — $2,298.94 ב-30 בספטמבר, החיוב הראשון מאז ש-4641 Enid Way ירד מהפוליסה. התזרים נטו והמתכנן עדיין משתמשים ב-$2,633.15 עד שחיוב אוקטובר יאשר את הסכום החדש.",
+      "הפורפלקס של דורדו: לוח התשלומים מסמן עכשיו כל חודש כשולם / קרוב / עתידי לפי התאריך של היום, באופן אוטומטי, כך שהוא כבר לא מתיישן."
+    ]
+  },
   {
     version: "2.9",
     date: "September 19, 2026",

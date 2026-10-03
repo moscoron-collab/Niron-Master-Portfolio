@@ -117,6 +117,17 @@ did NOT.** Divando is still on the same `Dec 15 2025 → Dec 15 2026` term.
   before the sale**, and it is **`$276.83`**/mo — `$66.16` more than Enid's share. So September may show
   a SECOND drop to ≈`$2,422` (Enid on top of the May change), which would mean the dashboard is currently
   `$210.67`/mo too high. That is the thing to check, not to argue about.
+- **📌 Sep 30 2026 draft = `$2,298.94` (Ron's Divando CSV Sep 20–Oct 1, read Oct 3 2026).** First draft
+  after Enid came off. It is `$334.21` under `$2,633.15` = Enid's `$210.67` + another `$123.54`, most
+  likely a one-time refund of her unused premium (Aug 28 → Dec 15) credited against the draft. It matches
+  none of the skill's 3 cases. **Ron's decision: record it as September's ACTUAL, do NOT change the
+  standard yet** — `INSURANCE_OVERRIDE.divando` + `CASHPLAN_CONFIG.divando.insurance` stay `2633.15`
+  until the **October draft (~Oct 29–31)** confirms. Recorded in the Noble tab (12-property footer, the
+  Divando Monthly Payment field, a new `Sep 30, 2026` premium-history row) + the skill's OPEN ITEM, which
+  now carries the October decision table (`$2,298.94` again → new level · `≈$2,422` → Sep was a one-off
+  refund · else wait for November). A reminder is scheduled for early November to ask Ron for October's
+  draft. `dashboardKnowledge()` in `AppsScript.gs` deliberately NOT touched (standard unchanged, no
+  redeploy needed). APP_VERSION → **2.10**.
 - An earlier note here guessed **4776 Blackhawk Way** (`$3,320`/yr ≈ the `$3,321.96`/yr drop, the closest
   line in the 13-property table). **It is a coincidence-level match only and Ron does not think it is
   that** — kept as a note, never written into a table.
@@ -531,7 +542,9 @@ prorated/settled at closing.
   tables (both the 13→12-property State Farm detail table and the "All Dorado-Owned Properties"
   overview) had the Enid row **deleted** and totals recomputed: policy total **~$32,102/yr**
   (was $34,630/yr), auto-draft **≈$2,699/mo estimate** (was $2,909.98/mo actual — the exact new
-  draft isn't confirmed until State Farm's next bill/declarations page). The expired
+  draft isn't confirmed until State Farm's next bill/declarations page). ⚠️ **Both superseded:** the
+  draft was already `$2,633.15` since May 29 (found Sep 19), and the first post-Enid draft (Sep 30) was
+  `$2,298.94` — see the 🛡️ Divando insurance section near the top. The expired
   2024–2025 historical comparison table still lists Enid — left untouched, it's a past record.
   **✅ Dorado→Divando transfer updated (Aug 29, 2026): `$67.40/mo`, Jamaica-only** (user-provided
   number, now the live figure — Enid is fully off both the policy and this transfer).
