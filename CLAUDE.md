@@ -3144,6 +3144,11 @@ planner cushion, the Noble tab and the skill's reference table were all updated.
   9/30 → Yale owes Divando `$6,000`**. Divando also sent `$500` to X5369 (cover overdraft) on 9/2. Yale's September
   was short because only 2 of 5 units paid (see the Yale section near the top).
 - Donald paid Ron `$4,000` + Nir `$4,000` on 9/21 (August's distribution).
+- **Enid proceeds recorded on the dashboard by Ron (Oct 3 2026, his call: "כתוב כחד פעמי")** via the 💰 modal:
+  date `2026-08-28` · Dorado · equal `$84,000` each (Ron/Nir/Simon) · Notes `ONE-TIME - Enid sale proceeds (not
+  operating)`. ⚠️ The dashboard does NOT treat ONE-TIME specially yet, so Aug 2026 "Your Distribution", YTD and the
+  "% of net" chip are inflated by it. Offered a frontend change (exclude Notes containing `ONE-TIME` from the monthly
+  tile + payout %, show it separately); not built unless Ron says yes.
 
 ## 📄 Moss Owner Packet PDF structure
 
