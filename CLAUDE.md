@@ -13,6 +13,496 @@
 
 ---
 
+## 🚀 APPS SCRIPT DEPLOYMENT LOG — read this before telling the user "needs redeploy"
+
+**This file is full of `NEEDS REDEPLOY` / `Going live (REQUIRED)` flags. They record what a feature
+needed AT BUILD TIME and were never cleared when a deploy actually happened — so they pile up and
+read as a backlog even when everything is live. Check this log first, and ADD A LINE here after every
+confirmed redeploy.**
+
+| Date | Confirmed how | Covers |
+|---|---|---|
+| **Sep 10 2026** | User redeployed; chatbot then answered Donald mortgage **$13,494 / total $13,938** (it had said $13,708 before) | **Everything in `AppsScript.gs` through Sep 10 2026** — the Donald `$13,494` `dashboardKnowledge()` sync, plus the whole accumulated batch: Messages tab (+ edit, + email), Bug Reports tab (+ email both ways), Utilities per-LLC-per-month tab, Buffers tab, Subs tab, Vacancy tab, Property Tax tab, Activity Log, CPA invoice cols I–L, Paid Date + Cleared cols M–N, Simon `simon_amount` col F, the chatbot per-property maintenance reader, and the Divando/Dorado insurance + tax knowledge fixes. |
+
+**So as of Sep 10 2026 every `NEEDS REDEPLOY` note ABOVE this date in this file is SATISFIED.** Only
+flag a redeploy for `AppsScript.gs` changes made *after* the newest row in this table.
+
+- **The 10-second test** (use it instead of asking the user whether they redeployed): open the 💬 chatbot
+  and ask `מה המשכנתא החודשית של דונלד?` / "what is Donald's monthly mortgage?". The answer reflects the
+  **deployed** `dashboardKnowledge()`, so a stale figure proves a stale deployment. Pick whatever number
+  the newest change touched as the probe.
+- **The steps** (the user has done this many times; give the raw link so they can Ctrl+A / Ctrl+C):
+  [`raw AppsScript.gs`](https://raw.githubusercontent.com/moscoron-collab/Niron-Master-Portfolio/main/automation/AppsScript.gs)
+  → Sheet → Extensions → Apps Script → `<>` → Ctrl+A, Ctrl+V, Ctrl+S →
+  **Deploy → Manage deployments → ✏️ Edit → Version: New version → Deploy**. ⚠️ It MUST be
+  *New version* on the EXISTING deployment — a brand-new Deploy changes the `/exec` URL and breaks
+  `API_URL` in `index.html`. Approve the Drive / Mail scope prompt if it appears. Reversible via
+  Manage deployments (Apps Script keeps version history).
+- ⚠️ **New tabs auto-create on the first load after a redeploy** (Messages, Bug Reports, Utilities,
+  Buffers, Subs, Vacancy, Property Tax). Tell the user in advance — otherwise tabs appearing by
+  themselves looks like a bug.
+
+---
+
+## 🚨 SEPT 2026 OUTAGE — AppFolio cookies expired AGAIN + the per-property scripts were re-poisoning the secret (Sep 19 2026)
+
+**Symptom Ron reported:** "AppFolio landed on both yesterday but it wasn't executed / nothing went live."
+Correct — Laureate posted the September statements, but **no September data was pulled for the Niron 4
+LLCs or for Moss.** Nothing was un-pushed or un-merged: `index.html` and the combined dashboard are
+current and read the sheets live. **The sheets themselves have no September rows**, because every pull
+has been failing at the AppFolio login since **Sep 15 2026**.
+
+- **Root cause (proved from the run logs, not inferred):** `APPFOLIO_COOKIES` lapsed. The
+  `_oportal_session` died first (the 4-LLC + Moss runs were already failing Sep 15), and the
+  **device-trust `2fa_user_token` expired `2026-09-17T10:02:50Z`** (decoded straight out of the secret
+  blob printed in the Divando job log). So the runner now sits on `/oportal/users/log_in` and can never
+  pass the SMS 2FA. Same class of incident as Jun 18 2026.
+- **What each workflow actually did:**
+  - `monthly.yml` (Niron 4 LLCs) + `monthly_moss.yml` → **RED**, every day Sep 15–19. The Jun 19
+    hardening worked exactly as designed: `LOGIN FAILED — still on the login page`, no cookies saved,
+    `exit 1`. `weekly.yml` keepalive → **RED** Sep 6 + Sep 13.
+  - `monthly_divando.yml` / `monthly_yale.yml` / `monthly_donald.yml` → **GREEN, and wrong.**
+- **🐛 THE REAL BUG (fixed in this PR):** the Jun 19 2026 silent-rot hardening was applied to `run.py`,
+  `run_moss.py` and `keepalive.py` — **but never to `run_divando.py`, `run_yale.py`, `run_donald.py`.**
+  All three still printed a fake `Login complete.`, found `Cards found: 1` (the login box), wrote
+  nothing, **exited 0 (green)** — and then, worst of all, called `save_cookies(context)`
+  **unconditionally**, so the workflow's "Save updated cookies" step wrote the **dead login-page
+  cookies back over the `APPFOLIO_COOKIES` secret**. Verified in the Sep 18 Divando log:
+  `Successfully updated secret 'APPFOLIO_COOKIES'` right after `No card found for 'Divando, LLC'`.
+  **This is the exact loop that kept the Jun 18 outage alive via `keepalive.py`** — it had simply moved
+  into the three per-property scripts.
+- **The fix (Sep 19 2026):** all three now mirror `run.py` exactly — `import sys`; `login()` returns a
+  **bool** and checks the URL is no longer `/log_in` (credential steps wrapped in try/except so a
+  timeout can't mask the verdict); `save_cookies()` is called **only when `login()` returns True**; a
+  failed login prints `::error::` and `sys.exit(1)`; and a post-login **0-owner-cards guard** also exits
+  non-zero. So these three now go **RED** instead of green, and can never overwrite a good secret again.
+  Verified with a stubbed-page harness across all 3 scripts × 3 scenarios (cookies valid → True,
+  expired/2FA wall → False, credentials accepted → True).
+- **⏭️ What Ron must do (the agent CANNOT do any of it — no secret write, no SMS 2FA):** the
+  cookie re-seed in the **FAST RECOVERY** runbook below. Log into `laureatetld.appfolio.com`, clear the
+  SMS 2FA, export cookies with Cookie-Editor → paste the JSON in chat → the agent converts to
+  Playwright base64 → Ron pastes it into the `APPFOLIO_COOKIES` secret → re-run the workflows.
+  **Do this before the 25th**, which is when the 15th–25th pull window closes for September.
+- **🔑 LESSON:** when hardening a shared failure mode, **grep every script that shares the mechanism**
+  (here: every caller of `save_cookies`) — a half-applied fix is worse than none, because the green
+  checkmarks on the unfixed scripts hide the red ones and actively undo the recovery. A useful check:
+  `grep -ln "save_cookies(context)" automation/*.py` must match the set of scripts that verify login.
+
+---
+
+## 🛡️ Divando insurance is `$2,633.15`/mo — bank-observed, but the CAUSE is still unknown (Sep 19 2026, APP_VERSION → 2.9)
+
+**The number is right; my first explanation was wrong.** I initially wrote that the Divando State Farm
+policy renewed. **Ron corrected that same day: "רק דורדו חודש לא דיוונדו" — only DORADO renewed, Divando
+did NOT.** Divando is still on the same `Dec 15 2025 → Dec 15 2026` term.
+
+- **What is FACT (bank-observed, not inferred):** the State Farm auto-draft on the Divando operating acct
+  (`3 Divando LLC 3442`) has been **`$2,633.15`** since **May 29 2026** — three drafts running
+  (May 29 · Jul 1, which is June's slid draft · Jul 29). It was `$2,909.98` on Mar 3, Mar 31, Apr 29.
+  **So `$2,633.15` is the standing figure and the June 2026 call of "a one-off, most months were
+  $2,909.98" was wrong** — May 29 was already the new level, it just hadn't been checked again.
+- **Updated to `2633.15`:** `INSURANCE_OVERRIDE.divando` · `CASHPLAN_CONFIG.divando.insurance` (planner
+  cushion) · Noble tab **Total Monthly · All Active** `$5,592.44` → **`$5,315.61`** · the Divando renewal
+  card · the 12-property footer · a new premium-history row · `AppsScript.gs dashboardKnowledge()`
+  **[needs redeploy]** · the `/monthly-distribution` reference table.
+  **Divando saves `$276.83`/mo = `$3,321.96`/yr and its net cashflow rises by exactly that.**
+- **🔴 CAUSE PARKED UNTIL THE NEXT BANK STATEMENT (Ron's call, Sep 19 2026): "כשאתן לך את חשבון הבנק
+  בסוף החודש אתה תדע."** Do NOT keep debating it — read the `STATE FARM` line on the next Divando CSV.
+  The full decision table (which number means what, and the 5 places to sync for each case) is written
+  into the `/monthly-distribution` skill as **"🔴 OPEN ITEM for the next run"**, so the monthly close
+  resolves it automatically.
+- **Ron's reading is Enid**, and Enid IS in this file (sold Aug 28 2026, endorsed off the policy the same
+  day by Kevin Schult, share `$2,528`/yr = `$210.67`/mo, Dorado credit `$138` → `$67.40`). **Two things
+  still don't line up and that is the only reason it is open:** the drop landed **May 29, three months
+  before the sale**, and it is **`$276.83`**/mo — `$66.16` more than Enid's share. So September may show
+  a SECOND drop to ≈`$2,422` (Enid on top of the May change), which would mean the dashboard is currently
+  `$210.67`/mo too high. That is the thing to check, not to argue about.
+- An earlier note here guessed **4776 Blackhawk Way** (`$3,320`/yr ≈ the `$3,321.96`/yr drop, the closest
+  line in the 13-property table). **It is a coincidence-level match only and Ron does not think it is
+  that** — kept as a note, never written into a table.
+- ⚠️ **The written annual `$34,630`/yr no longer matches the draft**, and the per-property table is the
+  as-written policy. Both are labelled as such in the Noble tab. **Ask Ron for the CURRENT declarations
+  page** to square them.
+- **🔑 LESSON — why this sat stale four months.** The drop first appeared in the **May 2026** bank CSV and
+  was dismissed as a one-off; July's `/monthly-distribution` run flagged it again and said "wait for a
+  second month" — correct caution — but **nothing ever re-checked it.** Also: the Noble tab's renewal
+  cards are `contenteditable` and edited in a **local** `index.html` (Owner Mode workflow), and the
+  separate `moscoron-collab/niron-noble-insurance` repo was last touched **May 17 2026**, so anything Ron
+  changes in his browser never reaches this repo. Gmail + Drive were searched too — no Divando
+  declarations page. **Fix going forward: when Step 1c flags a fixed-cost drift, ASK what changed
+  (renewal? endorsement? property off?) instead of only waiting a month, and put a date on the re-check.**
+- Dorado's `$67.40`/mo Jamaica credit is unchanged and still **NOT netted** out of the `$2,633.15` (Ron
+  wants the real drawn figure).
+
+### 🟡 DORADO renewed — new premium NOT on file (Sep 19 2026)
+
+Ron said Dorado's policy renewed. **Nothing was changed for Dorado, deliberately — the new premium is
+unknown and was not invented.** Current figures still in the code/tab:
+- **Berkshire Hathaway, policy `02PRM080318-06`, IMA Select (Hannah Burford 303-615-7840 / office
+  303-534-4567)**, 1460 W 41st Ave fourplex, `Nov 6 2025 → Nov 6 2026`, **`$5,440`/yr = `$453.33`/mo**
+  ($775,000 limit, $2,500 std / $15,500 wind-hail deductible). `CASHPLAN_CONFIG.dorado.insurance` is
+  **`453.31`** (a 2¢ mismatch with the tab's `453.33` — harmless, fix when the renewal number lands).
+- ⚠️ The stored term ends **Nov 6 2026**, which is AFTER today, so this renewal was taken early (the file
+  already carried a "call IMA Select by Oct 2026 for the renewal quote" note). **Ask Ron for: the new
+  annual premium, the new term dates, and the new monthly draft** — then update `CASHPLAN_CONFIG.dorado.insurance`,
+  the Noble Dorado card + premium-history table, the renewal calendar, and the Total Monthly · All Active tile.
+- Dorado's National-Indemnity-era figure is not in play; the live carrier is Berkshire Hathaway via IMA.
+
+---
+
+## 🏠 Yale per-unit: owner-held security deposits are no longer counted as income (Sep 19 2026, Ron: "כן תכניס")
+
+The gap flagged in the Yale Sep 2026 section below is now closed in `run_yale.py`. A move-in deposit is the
+tenant's money being held, not rent, but it was landing in the unit's **Cash In** column — Yale Sep 2026 showed
+`$1,034` of "income" on 2997 that was two `Owner Held Security Deposits - Move In` receipts (`$455` + `$579`).
+
+- **`extract_per_unit_from_pdf`** now has a per-unit **`deposits`** bucket. A cash-IN line matching `_SD_RE`
+  (`Security Deposit`) goes there instead of `cash_in`/`rent_collected`, and a cash-OUT reversal or refund of a
+  deposit comes back out of the same bucket. So **a deposit alone can never mark a unit Occupied.**
+- **The disbursement split is deliberately UNCHANGED.** The pooled disbursement really does contain the deposit
+  money, so `build_rows` allocates on **`cash_in + deposits`**. Verified against the real Sep 2026 statement:
+  per-unit disbursements are **identical** before and after (2991 `$2,409.30` · 2997 `$899.03` ·
+  2999 `$2,260.62`) and still foot to the statement's `$5,568.95`. The ONLY change on the sheet is 2997's
+  Cash In: `$1,034` → `$0`.
+- Each run now **prints the deposit total** when one is present, so a turnover month is visible in the Actions
+  log instead of silently inflating the card.
+- `backfill_yale.py` imports both functions (`Y.extract_per_unit_from_pdf` / `Y.build_rows`), so it picks this
+  up with no edit. ⚠️ Existing Yale rows already in `Property Detail` still carry the old inflated Cash In —
+  re-run `backfill_yale.yml` only if that matters; the dedup is on month+property, so **delete the affected
+  rows first** or nothing will be rewritten.
+- **Offline-verified** with a stubbed-pdfplumber harness replaying the real Sep 2026 transaction lines,
+  including AppFolio's wrapped-description case (the deposit text lands on the line ABOVE the date+amount).
+  Both the old and new code were run side by side to prove the allocation did not move.
+
+---
+
+## 🔴 Yale Sept 2026 net is −$5,610.77 and it is REAL — verified against the Owner Packet (Sep 19 2026)
+
+Ron checked the dashboard as asked and Yale showed a red **Net Cashflow −$5,610.77** on the Sep 2026
+Monthly Breakdown, with a disbursement of only **$5,568.95** (roughly half a normal Yale month). He
+uploaded the Yale **Owner Packet, Aug 16 – Sep 15 2026**. **The dashboard is correct.**
+
+- **Packet says `Owner Disbursements -5,568.95`** — identical to the card. The card's math foots
+  exactly: `5,568.95 − 7,504.08 − 1,037.55 − 2,638.09 = −5,610.77` (mortgage = Lument 7,279.08 + SBA
+  225 = 7,504.08 ✓, insurance = the Acuity draft 1,037.55 ✓, tax escrowed so excluded ✓).
+  **This also independently re-confirms the Yale September figure** left open by the "already pulled"
+  skip earlier that day — the LLC-level History row matches the source document to the cent.
+- **Cause: only 2 of 5 units paid rent.** Cash In was `7,780.00`, Cash Out `8,444.00`:
+  | Unit | What happened | In |
+  |---|---|---|
+  | 2991 | paid | $2,750 rent + $21 garbage fee |
+  | 2999 | paid via **DHA** (housing voucher) + August arrears | $2,102 + $498 |
+  | **2995** | **rent eCheck BOUNCED** — `Reversed eCheck receipt` $1,375 in on 09/07, `NSF reversal` $1,375 out on 09/09 | net $0 |
+  | **2993** | **did not pay** — carries a `Legal - Service Fee for Nonpayment - 2993 W Yale Ave` $90 | $0 |
+  | **2997** | **new tenant moved in**, no rent yet; turnover costs instead | $0 rent |
+  **Real rent collected = $5,350.**
+- **⚠️ $1,034 of that disbursement is NOT income** — it is `2997 - Owner Held Security Deposits -
+  Move In` ($455 + $579) for the incoming tenant. Owner-held deposit money inflates the disbursement,
+  so Yale's true operating month was worse than the headline red. **Watch for this whenever a unit
+  turns over**; the pipeline has no rule separating deposits from rent (see below).
+- **✅ NO double-count — Ron checked the Maintenance Log and confirmed "התחזוקה תקינה" (Sep 19 2026).**
+  The suspicion was that Laureate had ALREADY deducted **`2997 - Repairs` $350** (check 89998, Jordan
+  Strauss) and **`2997 - Supplies` $735.05** from the disbursement before it reached the bank, so
+  logging either again would subtract it twice. Ron verified they are not duplicated: the card's
+  `$2,638.09` is separate owner-paid work. **Do not re-raise this for Aug/Sep 2026.** The underlying
+  rule still stands for future months (same as the Moss one): anything Laureate already netted out of
+  the disbursement must NOT be entered in the Maintenance Log.
+- Laureate holds a **$4,000 Property Reserve**; the account ended at `3,336.00`, i.e.
+  `Net Owner Funds -664.00` — $664 BELOW the reserve.
+- **✅ BUILT Sep 19 2026 (Ron said "כן תכניס")** — `run_yale.py` now keeps `Owner Held Security Deposits`
+  out of the per-unit **Cash In**/**Rent Collected** while still counting them in the disbursement split
+  (a deposit IS cash that really landed in the account). See the dated section near the top of this file.
+- 🛠️ **How the packet was read** (the sandbox has no working `pdfplumber` — `cryptography` is broken
+  and `pdftoppm` is missing): decompress the PDF's `stream…endstream` blocks with `zlib` and pull the
+  `Tj` / `TJ` text operators in order, breaking lines on `Td`/`TD`/`T*`/`ET`. Reusable for any future
+  Owner Packet upload.
+
+### 🔴 Yale AUGUST 2026 too: net −$9,197.85, also verified (Sep 19 2026)
+
+Ron then supplied the **Jul 16 – Aug 15 2026** Yale packet. **The dashboard is correct again**:
+packet `Owner Disbursements -8,924.90` = the card, and `8,924.90 − 7,504.08 − 1,037.55 − 9,581.12
+= −9,197.85` foots exactly. **But the cause is the OPPOSITE of September's.**
+
+- **Collections in August were FINE.** All 5 units paid something: 2991 `$2,750` + `$21`;
+  2995 `$1,275` + `$1,320` + pet/garbage `$56`; 2999 `$2,102` (DHA) + `$609`/`$110`/`$588`/`$131`
+  arrears; 2993 `$850` for July. Cash In `9,863.35`, the account closed exactly ON the $4,000
+  reserve, `Net Owner Funds 0.00`. **Nothing was wrong on Laureate's side.**
+- **The red is 100% the maintenance line: `$9,581.12`.** Laureate deducted only **`$352.25`** all
+  month (water 2997 `$64.19` · supplies 2995 `$190.77` · legal 2993 `$90.00` · advertising `$7.29`),
+  so the `$9,581.12` is **owner-paid invoices from Yale's own account** — almost certainly the 2997
+  turnover work for the tenant who moved in during September.
+- **✅ Maintenance CONFIRMED CORRECT by Ron (Sep 19 2026, "התחזוקה תקינה").** It was the one number in
+  both red months the agent could not verify (hand-entered in the Maintenance Log; the sandbox cannot
+  read the sheet). Ron checked: the `$9,581.12` is real work actually paid, and nothing Laureate had
+  already deducted (`$190.77` / `$64.19` Aug, `$350` / `$735.05` Sep) is duplicated there.
+  **Both red months are therefore fully explained and fully correct — nothing to fix.**
+- **Two-month damage: Yale burned `$14,808.62`** (disbursements `$14,493.85` − fixed
+  `$17,083.26` − maintenance `$12,219.21`). Given Yale's overdraft history, **check its bank
+  balance before the next distribution — it likely needs a bridge.**
+- **2993 is a chronic non-payer:** a `Legal - Service Fee for Nonpayment - 2993 W Yale Ave` `$90`
+  appears in BOTH packets. Its August money came from **`First Mennonite Church of Denver`** (a
+  charity paying the rent, $850 for July). Watch this unit.
+
+---
+
+---
+
+## ✅ Sep 2026 recovery COMPLETE — September data is in (Sep 19 2026)
+
+Both Sep 2026 outages are closed and **every September pull was re-run and verified from its log**
+(not from a green checkmark). Ron re-seeded `APPFOLIO_COOKIES` from a Cookie-Editor export; the agent
+converted it to Playwright base64 (the new device-trust token runs to **Oct 19 2026**).
+
+| Pull | Result, quoted from the run log |
+|---|---|
+| `monthly.yml` (4 Niron LLCs) | `Errors: []` + `Written to History:` ×4 · "Dashboard Updated" email sent |
+| `monthly_moss.yml` | `Done. Wrote 4 rows to History.` |
+| `monthly_divando.yml` | `Done. Wrote 15 rows to 'Property Detail'.` |
+| `monthly_donald.yml` | `Done. Wrote 8 rows to 'Property Detail'.` |
+| `monthly_yale.yml` | **Skipped**: `2026-09-01: all 5 units already pulled — skipping AppFolio login.` |
+
+- **The Yale skip was investigated, not assumed.** The skip looked wrong (no Yale run had
+  authenticated since Sep 15), so `backfill_yale.yml` was run with `months=2` as an independent
+  check: it re-downloaded **both** statements from AppFolio and reported
+  `Rows written: 0 · Rows skipped (dupe): 10 · Errors: 0` — 5 units × 2 months already present.
+  So Yale's September rows really are in `Property Detail` and the skip was correct.
+  ⚠️ Honest limit: dedup matches on **month + property**, so this confirms the rows EXIST; it did not
+  re-compare the dollar amounts. **When the rows were written is still unexplained** — worth a glance
+  at Yale's September numbers on the dashboard. If they ever look wrong, delete those 5 rows and
+  re-run `backfill_yale.yml`.
+- **`month_already_pulled` reads the LIVE sheet** (property in col D + month in col B normalized,
+  disbursement col H non-empty), so a skip is real evidence, not a cached flag. A 4-second run with
+  the "Save updated cookies" step **skipped** is the signature of this early return — the script
+  exits before Playwright, so it emits no `new_cookies`.
+- **The cookie secret self-heals again**: Moss + the 3 per-property workflows each wrote a fresh
+  full session back to `APPFOLIO_COOKIES` after authenticating. (`run.py` still cannot — its save
+  step errors `Resource not accessible by integration`, pre-existing and harmless.)
+- **✅ CLOSED — the green-but-empty hole is gone (Sep 19 2026, Ron said "yes").** PR #220 made these
+  scripts exit RED on a failed login, but **"card found, packet not downloaded" still exited 0** —
+  exactly what hid the redesign for days. All 5 `run_*.py` now end with **`_fail_if_pull_errors(errors)`**:
+  any unresolved pull error prints a `::error::` annotation listing every failure and `sys.exit(1)`,
+  so the job goes **RED**.
+  - **Deliberately gated on `errors`, NOT on "0 rows written".** Every `errors.append` in these
+    scripts is a genuine failure (download failed / `Owner Packet.pdf` not found / disbursement
+    unparseable / exception). The **"statement not posted yet"** and **"already recorded"** paths
+    `continue` **without** appending an error — they download the PREVIOUS packet normally and the
+    dedup drops it — so a legitimately-quiet run still exits **GREEN**. Gating on row count instead
+    would have made those false reds every month.
+  - **Called TWICE per script**: once in the `Nothing to write.` branch, and once at the very END of
+    `main()` **after** the rows are written — so a PARTIAL failure (3 LLCs in, 1 broken) still saves
+    the 3 good rows and *then* goes red. Data is never lost to this guard.
+  - Side effect: on a red run the workflow's later steps (cookie save, "Dashboard Updated" email)
+    are skipped. That is fine and safe — it can never save bad cookies, and the other 4 workflows
+    still refresh the secret.
+  - Verified offline on all 5 scripts × 3 scenarios: clean run → continues; "already recorded" →
+    continues; 2 undownloaded packets → `exit(1)` with the `::error::` annotation naming both.
+
+---
+
+## 🧩 AppFolio REDESIGNED the Owner Statements page — `ul.list-group li` is gone (Sep 19 2026, FIXED)
+
+Right after the Sep 2026 cookie re-seed fixed the login, **a second, unrelated outage surfaced**:
+every pull authenticated fine and matched its card, then failed to download.
+
+```
+Owner cards on Statements page: 7
+Found card for: Yale Townhomes, LLC      (and Donald / Divando / Dorado / Moss)
+Results: []
+Errors: ['Yale Townhomes, LLC: Could not download packet', ... x4]
+```
+
+- **Diagnosis method (reuse this):** the log stopped between `Found card for:` and
+  `Most recent packet:`, which pins the failure to ONE line. A temporary dump of the matched
+  card's `inner_html()` (PR #221) printed the real markup into the Actions log. **Don't guess at a
+  selector — dump the element.** Niron and Moss failed at the identical line with the identical
+  selector, which already proved it was a page change, not a per-script bug.
+- **What AppFolio changed:** the statement list is no longer
+  `<ul class="list-group"><li>`. Each statement is now its own
+  **`<div class="py-3 border-bottom align-items-start row">`** inside `.card-body`, and the date
+  range moved from a **`<b>`** to an **`<a class="fw-bold">`**. The card header also gained a
+  `Displaying 1–5 of 70` counter and a collapse chevron.
+  **`.analytics-statement-download-link a` SURVIVED unchanged** — that is the stable anchor.
+- **Real captured row (Moss, Sep 19 2026):**
+  `<a class="fw-bold" href="/oportal/statements/24359/details">Aug 16, 2026 to Sep 15, 2026</a>`
+  + `<div class="analytics-statement-download-link"><a href="/oportal/statements/24359/Aug%2016...%20Sep%2015,%202026.zip?owner_id=1539&all=all">`.
+  So the September packet WAS there the whole time — only the wrapper changed.
+- **The fix — two helpers added to ALL 10 scripts** (`run.py`, `run_moss.py`, `run_divando.py`,
+  `run_yale.py`, `run_donald.py` + all 5 `backfill_*.py`):
+  - **`_statement_rows(card)`** — returns `div.row` elements that contain an
+    `.analytics-statement-download-link`, **falling back to the legacy `ul.list-group li`** so an
+    old layout still works. Anchoring on the download link (not on Bootstrap layout classes like
+    `py-3`/`border-bottom`, which are styling and WILL churn) is what makes this durable.
+  - **`_statement_date_text(row)`** — `a.fw-bold` first, then `<b>`.
+  - `download_packet*` now takes `_statement_rows(card)[0]`; the backfills' `parse_packet_li`
+    reads the date through the helper. `month_label`, the `.zip`/`.pdf` choice and the download
+    click are all unchanged.
+- **Verified offline** with a stub DOM built from the captured HTML: all 10 scripts read 3 rows,
+  the newest as `Aug 16, 2026 to Sep 15, 2026` → `month_label 2026-09-01`, `ext .zip`; and all 10
+  still parse a legacy `<li>` card. (A first test run reported a false FAILURE — the stub passed
+  the child elements into the `text` parameter instead of `kids`. The stub was wrong, not the code.)
+- **🔑 LESSON:** the per-property scripts were hardened in PR #220 to fail RED on a bad login, but
+  **"card found, nothing downloaded" still exits 0** — the same green-but-empty hole, one step
+  later. When a run finds its cards and writes nothing, that is a FAILURE, not an empty month.
+  Worth hardening next: exit non-zero when every entity errors with "Could not download packet".
+- ⚠️ **Selector inventory** (grep before assuming): `grep -n "list-group\|analytics-statement" automation/*.py`.
+  Ten files share this markup contract, so a page change breaks all of them at once and a fix must
+  be applied to all ten — the same half-applied-fix trap as PR #220.
+
+---
+
+## 🏦 Lender Portals & Contacts on the Loan Details tab (Sep 10 2026, APP_VERSION → 2.7, pure frontend)
+
+User request ("something I wanted for long time"): **portal access for the Donald and Yale loans, kept
+under the Loan Details tab, with contact info for each.** Built from three PDFs the user uploaded + two
+portal screenshots. **Pure frontend (`index.html`), live on merge — NO Apps Script redeploy.**
+
+- **Where:** new `renderLoanServicers()` renders a **"Lender Portals & Contacts"** section appended
+  **below** the existing loan cards on the `🏦 Loan Details` tab (`el.innerHTML = html +
+  renderLoanServicers()` at BOTH exits of `renderLoansSection`, including the no-loan-rows early return).
+- **Data = `const LOAN_SERVICERS`** (declared just above `loanShort`, right after `renderLoansSection`) —
+  **the only place to edit this**. Each entry = `{ llc, lender, portal, portalLabel, facts[], contacts[] }`;
+  a row is `{k, v}` plus optionally `copy` (renders a click-to-copy `.tax-parcel` chip via the existing
+  `copyParcel`), `href` (`tel:`/`mailto:` link), `sub` (small grey second line, HTML allowed), or
+  `missing` (amber ⚠ "not on file yet" line). Adding Divando's 6 property loans / the SBA lines later =
+  just push more entries. CSS is scoped `#loans-content .svc-*` (grid uses `auto-fit` +
+  `minmax(min(380px,100%),1fr)` → 2 wide cards at desktop, 1 column at phone width, no h-overflow;
+  verified with headless Chromium at 1200px and 400px).
+- **Self-audit unaffected** (no `#kpi-*` IDs). Version bumped 2.6 → **2.7** with a new top CHANGELOG entry (en+he).
+
+### 🏢 Donald — CBRE Loan Services (bank/statement-verified)
+Source: CBRE **billing statement dated 08/18/2026** (due 09/01/2026) + the **prior-year 2025 annual
+statement**, both uploaded Sep 10 2026.
+- **Portal:** `https://borrowerportal.cbreloanservices.com/dashboard`  (user-confirmed Sep 10 2026) · **Loan # `010291013`** (printed
+  `01-0291013` on the payment stub) · property **5060–5082 E Donald Ave, Denver, CO 80222**.
+- **Principal balance `$1,755,560.99`** after the Sep 1 2026 payment. (Statement shows `$1,758,474.73`
+  after the 08/03/26 payment; minus the Sep principal `$2,913.74` = the `$1,755,560.99` on the portal
+  screenshot — the two sources reconcile exactly, which validates both.)
+- **Rate 5.72% fixed · originated 09/28/2018 · matures 10/01/2048.**
+- **Payment billed for 09/01/2026 = `$13,494.00`** = interest `$8,661.46` + principal `$2,913.74` + tax
+  escrow `$1,918.80`. ⚠️ **This is NOT the `$13,708` the dashboard/planner still use** — see the flag below.
+- **Tax escrow `$1,918.80`/mo**, escrow balance `$9,618.98`, disbursed `$24,092.88` YTD 2026
+  (`$24,784.70` in 2025). Confirms Donald property tax really is escrowed/lender-paid.
+- 2025 totals: principal paid `$34,431.83` · interest paid `$104,470.57` · 12/31/2025 balance `$1,782,656.36`.
+- **Contact:** `1-800-456-1443` (Customer Service **ext. 3001**, Delinquent accounts **ext. 3004**) ·
+  `CBRELSCustomerService@cbre.com` · 8:00 AM–5:00 PM Central Mon–Fri · 15377 Memorial Drive, Suite 400,
+  Houston, TX 77079. Borrower of record on file: **5070 Donald, LLC, Attn: Nir Shay, 2080 S Holly St
+  #22459, Denver, CO 80222**.
+
+### 🏢 Yale — Lument (LeapOnline)
+Source: the **LeapOnline portal screenshot** (Sep 2026) + a **2017 Hunt Mortgage escrow analysis** (Hunt
+originated it; Lument services it now).
+- **Portal (user-confirmed Sep 10 2026):** **`https://leaponlineservicing.lument.com`**. (The earlier
+  guesses `lument.com/client-login/` and `lcre.leaponline.com/login` came from web search and were WRONG —
+  the agent's egress proxy blocks these hosts so nothing could be loaded to check. Lesson: ask the user
+  for the bookmark instead of shipping a searched URL.)
+- **Servicing loan # `010107412`** · **lender loan # `4001110`** · Yale Townhomes Apartments,
+  2991–2999 W Yale Ave, Denver CO · **UPB `$815,897.36`** (portal, Sep 2026) · note date **07/22/2016** ·
+  **ACH drafts on the 5th**, 10-day grace · payment `$7,279.08`/mo (the existing bank-verified figure).
+- **Contacts (user-supplied Sep 10 2026, now on the card):** **Maki Murphy — our loan manager at Lument,
+  the first call** — `614-857-3282` / `Maki.Murphy@lument.com`. Backup: **Elizabeth Carmody** (assistant) —
+  `214-237-2381` / `Elizabeth.Carmody@lument.com`. The unverified generic `ClientServices@Lument.com`
+  (found by web search) was **removed** in favour of these two real contacts. The 2017 Hunt contact
+  (Patrick Burchard, 913-317-4947) stays **deliberately OUT** — 9 years old, wrong company, dead number.
+- The 2017 escrow figures (ins constant $286.09, tax constant $502.06) are **historical and NOT used** —
+  Yale's live insurance is the separate Acuity draft `$1,037.55`/mo.
+
+### ✅ RESOLVED — Donald CBRE payment is `$13,494.00`/mo, NOT `$13,708` (Sep 10 2026)
+The user asked whether the flagged figure was the `$14,152.00` on the Loan Details Donald tile.
+**It isn't** — `$14,152.00` = CBRE `$13,708` **+ SBA `$444`** (total monthly debt), so it carried the
+stale mortgage. **Proof the correct payment is `$13,494.00`:** CBRE's **principal + interest is FIXED at
+`$11,575.20`** every month — verified across 5 statements (2025: `$13,645 − $2,069.80` = `$13,637 −
+$2,061.80` = `$13,708 − $2,132.80`; 2026: `$13,682 − $2,106.80`; Sep 2026: `$8,661.46 + $2,913.74`) — and
+**only the tax escrow moves.** The Sep 2026 escrow analysis cut the escrow `$2,106.80 → $1,918.80`
+(−$188), so `$11,575.20 + $1,918.80 = $13,494.00`. Aug 2026 actually drafted `$13,682.00` ("PAYMENT
+RECEIVED" on the statement = the real ACH draft), so the statement figure IS the bank figure. **No bank
+check was needed** — do not ask the user to verify this again.
+- **Updated:** `CASHPLAN_CONFIG.donald.mortgage` → **`13494`** (planner cushion, ~$214 more room/mo) ·
+  `AppsScript.gs dashboardKnowledge()` → `$13,494.00/mo` (÷8 = `$1,686.75`/unit) **[needs redeploy]** ·
+  the Loan Details display via the new override below. **Donald total monthly debt now reads `$13,938`.**
+- ✅ **Google Sheet CORRECTED BY THE USER (Sep 10 2026) — both tabs now hold `13494`.** Screenshot-verified:
+  `Loans` row 6 = `5070 Donald, LLC · CBRE · $13,494.00` (the SBA row 5 `$444.00` untouched), and the user
+  confirmed the `Settings` col-B edit too. **So the sheet is the source of truth again.**
+- **🗑️ `LOAN_MONTHLY_OVERRIDE` / `effectiveLoanMonthly()` were ADDED then REMOVED the same day.** They
+  existed only while the sheet still said `$13,708` (the agent cannot write the sheet). Once the user fixed
+  both tabs the override was **deleted** and `renderLoansSection` reverted to plain `l.monthly_payment` —
+  deliberately, because a lingering override would **silently dominate a future sheet edit** when the escrow
+  moves again. **Do NOT reintroduce a loan override for a number the user can just fix in the sheet.**
+  (`INSURANCE_OVERRIDE` stays — that one is bank-verified data the sheet genuinely lacks.)
+- **No version bump for the removal** (it was 2.8's own cleanup, zero visible change — a "What's New"
+  popup for Nir saying "an internal override was removed" would be noise). Judgement call, per the
+  versioning rule's "use judgement."
+- ⚠️ **Escrow re-sets roughly annually and the payment WILL drift again** (2025 alone: $13,645 → $13,637 →
+  $13,708). When a new CBRE statement arrives, only the escrow line needs re-reading — P&I stays
+  `$11,575.20`.
+
+### 🔭 Not done / deliberate
+- **No credentials stored.** Usernames/passwords are NOT in the repo and must never be — `index.html` is
+  a public GitHub file behind one shared password. The portal buttons just open the login page.
+- **Wire instructions deliberately omitted.** The CBRE statement prints JPMorgan Chase ABA/account
+  numbers; they were left out (payments are auto-drafted so they're never needed, and published wire
+  details are the classic fraud anchor). Offered to the user if they want them added.
+- **Chatbot doesn't know this yet** — `dashboardKnowledge()` / `buildPortfolioContext` in `AppsScript.gs`
+  were not touched, so this stayed redeploy-free. Add on a future redeploy if the chatbot should answer
+  "what's the Donald loan number / who services Yale".
+- Divando's 6 property loans + the SBA lines have no portal entry yet (no portal/contact info supplied).
+
+---
+
+## 🐛 DASHBOARD WAS DOWN — `effectiveIns is not defined` (Sep 16 2026, FIXED)
+
+Every tab showed **"Failed to load: effectiveIns is not defined"** (a red box in `#content`, Status
+● Offline). Not a data or Apps Script problem — **`index.html` was broken on `main` since Sep 10**.
+
+- **Cause:** commit `e5c6a96` ("Remove the Donald loan override…") deleted `LOAN_MONTHLY_OVERRIDE` +
+  `effectiveLoanMonthly()` from the MANUAL OVERRIDES block — and the diff hunk **also swallowed
+  `effectiveIns()`**, which sits immediately after them. `INSURANCE_OVERRIDE` survived, but the
+  function that reads it did not. `effectiveIns` is called in 6 places (`aggregateLlcPeriod`, the
+  grouped-card map, the audit's KPI/YTD/trend recomputes, the insurance PASS check), so `load()`
+  threw on the first render and the catch painted the error box. **Nothing else was missing** — a
+  strip-comments/strings scan of the whole script found no other undefined call.
+- **Fix:** restored `effectiveIns(llc, sheetIns)` verbatim, right under `INSURANCE_OVERRIDE`.
+- **Verified in headless Chromium** with stubbed data: error box empty, KPIs render
+  (`kpi-cash $75.3K`, `kpi-net $32.5K`), self-audit chip **✓ Audit OK**, all 6 tabs click through
+  with zero JS errors. (Chart.js had to be stubbed — the sandbox blocks the CDN, not a code issue.)
+- **No version bump / no CHANGELOG entry** — nothing new for the partners to read; v2.8's features
+  simply work again now. Judgement call per the versioning rule.
+- **🔑 LESSON:** when deleting a block from the MANUAL OVERRIDES section (or any dense run of
+  one-line helpers), **diff the exact function boundaries** and then load the page — a stray
+  neighbour going with it takes the WHOLE dashboard down, silently, for everyone. A fast check
+  before any `index.html` merge: extract the `<script>` block and run
+  `node --check`, plus a headless load. `node --check` alone would NOT have caught this (the file
+  parses fine; the symbol only fails at runtime).
+
+---
+
+## 🏘️ Donald LLC insurance RENEWED (Sep 3 2026) — Westfield, $14,299/yr, term Sep 20 2026 → Sep 20 2027
+
+User uploaded the **Westfield Superior renewal declarations PDF** (`Donald_Renewal_2627.pdf`,
+issued 08/07/2026) for **5070 E Donald Ave Denver LLC**, policy **499841Y**, agency Arrow
+Insurance Management (Wren Arbuthnot, 970-668-3500). Confirmed renewal terms:
+- **Policy Period:** Sep 20, 2026 → Sep 20, 2027 (one blanket policy, 8 units = 4 duplexes,
+  5060–5082 E Donald Ave, one insured location).
+- **Total Advance Annual Policy Premium = `$14,299.00`** = Commercial Property $13,241.00 +
+  Commercial General Liability $1,056.00 (= Policy Annual Premium $14,297.00) + $2.00 CO
+  Hazard Mitigation Fee. **Down `$231.08/yr`** from the prior term's `$14,530.08/yr`.
+- **Monthly = `$1,191.58`** (`$14,299 ÷ 12`), **down `$19.26/mo`** from the prior bank-verified
+  `$1,210.84/mo`. **÷8 units = `$148.95/unit`** (was `$151.36`). The `$1,210.84` draft keeps
+  running through the Sep 20, 2026 term-end; `$1,191.58` takes over from the Sep 2026 bill —
+  **not yet bank-confirmed** (Westfield bills "Monthly, Paper Invoices," which can carry a
+  small installment fee like Divando's State Farm SFPP plan — verify off the first Sep 2026
+  invoice and correct if it differs).
+- Coverage/deductibles/limits are otherwise unchanged from the prior term (same $10,000
+  standard deductible, $581,320 building limit per building ×4, $2M/$4M liability, etc.).
+- **Updated everywhere the old `$1,210.84`/`$151.36` figures lived:** `index.html` (Noble
+  Insurance summary tile, Donald LLC monthly-cost card, renewal calendar row, the Donald
+  renewal-card fields, and a new Premium History row with the old term moved to history),
+  `CASHPLAN_CONFIG.donald.insurance` (Distribution Planner cushion math), `AppsScript.gs`
+  `dashboardKnowledge()` (chatbot context — **needs the usual redeploy** to go live), the
+  `/monthly-distribution` skill's recurring-cost reference table, and this file's Donald
+  fixed-costs section below.
+
+---
+
 ## 🏚️ 4641 Enid Way SOLD (Aug 28, 2026) — Dorado down to 2 properties
 
 **4641 Enid Way, Denver** (Dorado LLC) was **sold Aug 28, 2026.** Dorado now owns only **2397
@@ -297,6 +787,36 @@ re-fetches the HTML instead of the cached copy; `?tab=` and other params preserv
 falls back to `location.reload()` on error). Why it matters: `index.html` is browser-cached, so a freshly
 merged version (e.g. the v1.4→v1.5 gap the user saw) wasn't visible without a hard refresh. Pure frontend,
 live on merge — no redeploy. Self-audit unaffected (no `#kpi-*` IDs). Version bumped 1.5 → 1.6 (en+he).
+
+---
+
+## 📗 The Niron Google Sheet — name + where things live (Sep 10 2026)
+
+**The spreadsheet is called `Niron Property Portfolio`** — NOT "Niron Master Portfolio" (that is the name of
+the **Apps Script project** bound to it, and the repo). Guessing the sheet shared the script's name cost the
+user two rounds of searching. Find it at [sheets.google.com](https://sheets.google.com) or by searching Drive
+for `Niron Property Portfolio`.
+- **Getting from the Apps Script editor back to the sheet:** browser Back, or Drive search. Guaranteed
+  fallback that was given to the user: paste `function findMySheet(){ Logger.log(
+  SpreadsheetApp.getActiveSpreadsheet().getUrl()); }` at the END of the script, pick it in the function
+  dropdown, Run, read the URL from the Execution log. (Harmless; a full `AppsScript.gs` paste overwrites it.)
+- **Tab order (bottom bar, left→right):** `Subs · Vacancy · Property Tax · Activity Log · History ·
+  Pending Review · Settings · Maintenance Log · Loans · Tax Summary · Distributions` (+ Dashboard). The ☰
+  button bottom-left opens a jump list — tell the user about it, the bar scrolls.
+- **`Settings` tab** (read by `run.py get_fixed_costs`, range `Settings!A:D`, matched by **col A = exact LLC
+  name**): headers row 8, data ~rows 9–12. **A** `LLC Name` · **B** `Monthly Mortgage ($)` · **C** `Annual
+  Property Tax ($)` · **D** `Annual Insurance ($)` · **E** `Est. Property Value ($)`. ⚠️ The mortgage is
+  **snapshotted into each History row at pull time**, so editing col B changes **future months only** —
+  history stays as actually billed. That is why a fixed-cost correction here is safe.
+- **`Loans` tab** (headers row 4, data from row 5): **A** LLC · **B** Lender Name · **C** Loan Number ·
+  **D** Lender Contact · **E** Original Balance · **F** Interest Rate · **G** Term · **H** Start Date ·
+  **I** `Monthly Payment ($)` · **J** Maturity · **K** Balance Override · **L** Calculated Balance.
+  Live rows: 5 Donald/SBA `$444` · **6 Donald/CBRE `$13,494`** · 7 Yale/Lument `$7,279.08` ·
+  8 Yale/SBA `$225` · 9 Divando/SBA `$2,334` · 10 Dorado/PAID OFF `$0`. ⚠️ **Donald has TWO rows** (SBA +
+  CBRE) — always say which one when directing the user. Cols C/D (`Loan Number`, `Lender Contact`) are
+  **empty** — the loan numbers + contacts live in `LOAN_SERVICERS` in `index.html` instead.
+- ⚠️ **The agent still cannot write this sheet** (sandbox blocks `script.google.com`). Every sheet edit goes
+  through the user — so give exact tab · row · column, and name the neighbouring tabs so they can find it.
 
 ---
 
@@ -787,10 +1307,20 @@ Disbursement**. So `run_donald.py` is essentially `run_divando.py` with Donald's
   Ave, ...` → `PROPERTY_CODE_MAP` key is `DONALD, NNNN`.
 
 ### Donald fixed costs (bank-verified: acct `1 Donald LLC 9364`, Mar/Apr/May 2026, all identical)
-- **Mortgage = CBRE `$13,708.00`/mo** (CBRE LOAN SERV PAYMENT, one blanket loan) → split
-  **equally ÷8 = $1,713.50/unit** (per user; units valued equally at $562,750 each).
-- **Insurance = Westfield `$1,210.84`/mo** (OH WESTFIELD BILLPAY, policy 499841Y, one policy
-  for all 8) → **÷8 = $151.36/unit**. ✅ This matches the existing card figure — no correction.
+- **Mortgage = CBRE `$13,494.00`/mo** (CBRE LOAN SERV PAYMENT, one blanket loan) → split
+  **equally ÷8 = $1,686.75/unit** (per user; units valued equally at $562,750 each). ⚠️ **Was
+  `$13,708.00` (÷8 = $1,713.50) through Aug 2026** — the Sep 2026 escrow analysis cut the tax-escrow
+  portion; principal+interest is fixed at `$11,575.20` and only the escrow moves. See the
+  "RESOLVED — Donald CBRE payment" section near the top of this file. The **Loans + Settings tabs of the
+  Google Sheet still hold `$13,708`** (agent can't write the sheet).
+- **Insurance = Westfield, policy 499841Y, one policy for all 8.** ⚠️ **Renewed for
+  Sep 20, 2026 → Sep 20, 2027 at `$14,299`/yr = `$1,191.58`/mo → ÷8 = `$148.95`/unit**
+  (Sep 3 2026, from the Westfield Superior renewal declarations PDF, issued 08/07/2026 —
+  see the dated section near the top of this file). This is DOWN from the prior bank-verified
+  `$1,210.84`/mo (`$14,530.08`/yr, ÷8 = `$151.36`/unit) for the Sep 2025 → Sep 2026 term. The
+  `$1,210.84` draft continues through Sep 20, 2026; `$1,191.58` is annual÷12 — confirm the exact
+  invoiced installment off the first Sep 2026 paper bill (Westfield may add a small fee, same
+  caveat as Divando's State Farm SFPP plan).
 - **SBA Loan `$444`/mo** = LLC-level business debt (like Divando/Yale SBA) — kept at LLC
   level, **NOT** spread across the per-unit table.
 - **Tax** = escrowed in the mortgage (`isTaxEscrowed` includes Donald) → tax NOT deducted
@@ -835,6 +1365,10 @@ were fixed (user-approved decisions). **The findings reference the audit numberi
     (cards, History, KPIs, trend) by mutating `g.ins_mo` in `aggregateLlcPeriod` and in the
     grouped-card map. Per-property records (`buildPropertyRecords`) are NOT overridden — they
     already use correct per-unit insurance from the Property Detail tab.
+  - ⚠️ **SUPERSEDED Sep 19 2026 — Divando insurance is now `$2,633.15`/mo**, bank-observed since May 29
+    2026. NOT a renewal (Ron confirmed only Dorado renewed) — cause unconfirmed, see the dated section near
+    the top of this file. The Jun 12 2026 note below is kept for history, and note its "May 29 dipped once…
+    one-off" call was WRONG — that was the new level.
   - **🏦 Divando insurance corrected to `$2,909.98`/mo (BANK-VERIFIED, Jun 12 2026).** The
     `$2,473.08` above was a calculated guess. The user uploaded the Divando operating-acct
     (`3 Divando LLC 3442`) Mar–May 2026 transactions; the real **STATE FARM** auto-draft =
@@ -1311,7 +1845,7 @@ Distributions). Per LLC: you **type the current bank balance**
     ins `2909.98` (~29th) · **accountant `0`** · util `685` (~15th, lumped+tooltip) · **software `288.98`** (ACE Cloud
     Hosting, ~28th via Amex) · buffer `2000`
   - Donald (**REBUILT from 12-mo CSV, user-reviewed Jun 16 2026**): mort `13708` (CBRE, **1st** — was wrongly
-    16th) · SBA `444` (1st) · ins `1210.84` (Westfield, **~4th** — was wrongly 28th; switched from State Farm
+    16th) · SBA `444` (1st) · ins `1191.58` (Westfield, **~4th** — was wrongly 28th; switched from State Farm
     ~Oct 2025) · acct `0` · util `0` (**set to $0 Jul 2 2026 — user: Denver Compost is occasional, not an ongoing
     monthly/quarterly bill; was `336` quarterly**) · software `0` · buffer `1500`. **All fixed bills draft in
     the first ~4 days** → in `late` mode the cushion is just the buffer. No Amex/software on Donald.
@@ -2052,6 +2586,9 @@ TOTAL monthly-debt row**.
   - **Cards** (`.loan-cards` grid, `repeat(auto-fill, minmax(320px,1fr))`): one `.loan-card` per LLC
     with a header (LLC name + `$X/mo` total, green; grey when $0) and one `.loan-row` per loan
     (lender left, amount right). Dorado (paid off) → `.paid` styling, row reads "No loan (paid off)".
+  - **Sep 10 2026:** a **"Lender Portals & Contacts"** block (`renderLoanServicers()` + `LOAN_SERVICERS`)
+    now renders **below** these cards on the same tab — CBRE (Donald) + Lument (Yale) portal buttons, loan
+    numbers, balances and phone/email. See the dated section near the top of this file.
   - **No type tags** (removed `loanTag`). **Lender shortened** via `loanShort(lender)`: Divando's
     long "Property Mortgage — <addresses> (acct 0210)" becomes **"Property Mortgage · acct 0210"**
     with the **property list on hover** (native `title`, dotted-underline `.has-tip` hint); CBRE /
@@ -2478,6 +3015,26 @@ sheet/dashboard.
   `TRANSFER … TO X9562`=Nir) and own-account transfers are excluded from expenses, like the dashboard's
   bank importer. Keep the reference numbers in sync with `CASHPLAN_CONFIG` when fixed costs change.
 
+**🆕 Step 1c — FIXED-COST DRIFT CHECK (added Sep 10 2026, every run, free).** The user asked whether to
+add each lender's loan statement to the monthly skill, since AppFolio lands ~18th–20th but the loan
+statements come later. **Answer: no — the bank CSVs already carry the answer.** The skill was already
+classifying `CBRE LOAN` / `LUMENT` / `TRANSFER TO LOAN` / `SBA LOAN` / insurance lines and already used the
+**actual** statement amount for that month's math, so the monthly numbers were never wrong. The gap was that
+**nothing fed the observation back** — so when Donald's CBRE payment moved $13,708 → $13,494 (annual escrow
+re-analysis), the planner cushion, the `Loans` + `Settings` sheet tabs, `dashboardKnowledge()`, the skill's
+reference table and this file all went stale for months, and it was only caught by accident. Step 1c now
+compares every fixed line to the reference table, reports any delta > $1, and **lists the 5 places to sync.**
+- ⚠️ Built-in caution: **one draft is not a trend** — insurance can slide or double up in a month (Divando
+  State Farm drafted twice in Jul 2026 at $2,633.15 vs the $2,909.98 override). Flag, then wait for a second
+  month unless a statement/declarations page confirms. A **mortgage** change is almost always real.
+- **Loan statements: ~2 a year, not 24.** Take one when the drift check fires (it explains *why* — the
+  interest/principal/escrow split + new escrow balance) and one at year end for the CPA (Interest Paid YTD,
+  Principal Paid YTD, Taxes Paid, closing balance — all on CBRE's prior-year annual statement).
+  **CBRE timing:** statement posts ~the **18th** and bills the payment due the **1st of the next month**, so
+  it is already available when the skill runs ~the 25th. **Lument's timing is NOT known yet — ask the user.**
+- The skill's reference table was also corrected to **CBRE `$13,494`** (it still said $13,708 — that was a
+  miss when `CASHPLAN_CONFIG` was updated; CLAUDE.md's own rule says keep the skill table in sync).
+
 **Cushion is a run-time lever (user request Jun 24 2026):** the skill applies the default per-LLC
 cushions but must **state them and offer to change them every run** (the user explicitly wants to
 adjust the buffer per month). It also shows the $0-cushion numbers as a quick trade-off reference.
@@ -2541,10 +3098,11 @@ CHECK 7258 $300 (7/6) matched nothing in the export (unidentified — ask if it 
 July owing $900 to Divando (7/7) + $300 to Donald (7/15)** (overdraft covers for the Lument draft,
 unrepaid at month-end) — subtract from Yale in August if still unrepaid. Donald netted ~+$5.2K and
 Dorado ~+$10.1K in July (both healthy; user chose to skip anyway — offer them first in August).
-**🚩 State Farm watch:** Divando's draft was **$2,633.15 TWICE in July** (7/1 = June's slid draft +
-7/29), not the $2,909.98 the dashboard override carries. User said **wait for the August statement**
-— if Aug also drafts $2,633.15, update `INSURANCE_OVERRIDE.divando` in `index.html` (+ the skill's
-reference table + Noble tab figures) to $2,633.15. No Nir email was drafted (nothing to execute).
+**✅ RESOLVED Sep 19 2026 — State Farm watch closed (number), cause still open.** Divando's draft was
+**$2,633.15 TWICE in July** (7/1 = June's slid draft + 7/29), and **May 29 too** — three drafts, so it is
+the standing figure, not the $2,909.98 the dashboard override carried. `INSURANCE_OVERRIDE.divando`, the
+planner cushion, the Noble tab and the skill's reference table were all updated. ⚠️ It is **NOT** a renewal
+(Ron: only Dorado renewed) — the cause is unconfirmed, see the dated section near the top of this file. No Nir email was drafted (nothing to execute).
 
 ---
 
@@ -2859,7 +3417,7 @@ editing chat context, ALWAYS edit the **last** `buildPortfolioContext` + `handle
 3. **DASHBOARD REFERENCE KNOWLEDGE** (`dashboardKnowledge()`) — embedded authoritative facts
    NOT all in the sheet: net-cashflow formula, Divando $14,533.86/mo debt ($12,199.86
    property loans + $2,334 SBA), Yale Lument $7,279.08 + Acuity $1,037.55 + SBA $225,
-   Donald CBRE $13,708 + Westfield $1,210.84 + SBA $444, tax rules, manual-entry rules, and
+   Donald CBRE $13,708 + Westfield $1,191.58 (renewed Sep 2026, was $1,210.84) + SBA $444, tax rules, manual-entry rules, and
    how every dashboard section works. **Keep these numbers in sync with `index.html` +
    CLAUDE.md when they change** (they are hardcoded, not read from a sheet).
 4. **INSURANCE** — Noble Insurance tab content (injected from the frontend).

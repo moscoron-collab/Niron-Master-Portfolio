@@ -27,6 +27,7 @@ NOT write tax/maintenance/net here; the frontend computes net from these inputs.
 """
 
 import os
+import sys
 import re
 import json
 import base64
@@ -114,6 +115,46 @@ DIVANDO_FIXED_COSTS = {
 }
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+
+
+def _statement_rows(card):
+    """Return an owner card's statement rows, newest first.
+
+    AppFolio redesigned the Owner Statements page (seen Sep 19 2026): the old
+    <ul class="list-group"><li> markup became one <div class="... row"> per
+    statement inside .card-body. The .analytics-statement-download-link
+    container survived the redesign, so anchor on that, and fall back to the
+    legacy <li> so an older layout still works."""
+    rows = [r for r in card.query_selector_all("div.row")
+            if r.query_selector(".analytics-statement-download-link")]
+    return rows or card.query_selector_all("ul.list-group li")
+
+
+def _statement_date_text(row):
+    """The 'Mon D, YYYY to Mon D, YYYY' label for one statement row.
+
+    Now rendered as <a class="fw-bold">; it used to be a <b>."""
+    el = row.query_selector("a.fw-bold") or row.query_selector("b")
+    return el.inner_text().strip() if el else ""
+
+
+def _fail_if_pull_errors(errors):
+    """Exit non-zero when the run finished with unresolved pull errors.
+
+    A run that authenticated and found its owner cards but could not download or
+    parse a packet still has nothing to show for itself. Without this it exits 0
+    and the job goes GREEN with no data — the hole that hid AppFolio's Sep 2026
+    page redesign for days behind green checkmarks.
+
+    "Statement not posted yet" does NOT trip this: that path downloads the
+    PREVIOUS packet normally and is dropped by the dedup, so `errors` stays empty
+    and the job stays green. A partial failure still writes the rows it did get
+    before failing, so data is never lost to this guard."""
+    if not errors:
+        return
+    print(f"::error::Pull finished with {len(errors)} unresolved error(s): "
+          + "; ".join(str(e) for e in errors))
+    sys.exit(1)
 
 
 # ── Google Sheets ────────────────────────────────────────────────────
@@ -330,17 +371,32 @@ def save_cookies(context):
 
 
 def login(page):
+    """Authenticate to AppFolio. Returns True only if we end up OFF the login page.
+
+    A GitHub runner can't complete AppFolio's device-trust SMS 2FA, so when the
+    saved cookies expire the runner is bounced back to /oportal/users/log_in and
+    can never proceed. We MUST detect that and report failure, so the caller can
+    (a) refuse to save the dead login-page cookies over the good ones, and
+    (b) fail the run loudly instead of exiting green with no data."""
     page.goto(APPFOLIO_URL)
     page.wait_for_load_state("networkidle")
     if "log_in" not in page.url:
         print("Already logged in via cookies.")
-        return
+        return True
     print("Logging in with credentials...")
-    page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
-    page.fill("input[name='user[password]']", APPFOLIO_PASS)
-    page.click("input[type='submit']")
-    page.wait_for_load_state("networkidle")
+    try:
+        page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
+        page.fill("input[name='user[password]']", APPFOLIO_PASS)
+        page.click("input[type='submit']")
+        page.wait_for_load_state("networkidle")
+    except Exception as e:
+        print(f"Login form interaction failed: {e}")
+    if "log_in" in page.url:
+        print(f"LOGIN FAILED — still on the login page ({page.url}). This is almost "
+              "always expired APPFOLIO_COOKIES + 2FA. Refusing to treat this as success.")
+        return False
     print("Login complete.")
+    return True
 
 
 def download_packet(page, tmp_dir):
@@ -360,11 +416,11 @@ def download_packet(page, tmp_dir):
         if not h2 or h2.inner_text().strip() != APPFOLIO_OWNER_NAME:
             continue
         print(f"Found card for: {APPFOLIO_OWNER_NAME}")
-        first_li = card.query_selector("ul.list-group li")
+        _rows = _statement_rows(card)
+        first_li = _rows[0] if _rows else None
         if not first_li:
             return None, None, None
-        date_text = first_li.query_selector("b")
-        date_range = date_text.inner_text().strip() if date_text else ""
+        date_range = _statement_date_text(first_li)
         print(f"Most recent packet: {date_range}")
 
         month_label = None
@@ -431,8 +487,34 @@ def main():
         if cookies:
             context.add_cookies(cookies)
         page = context.new_page()
-        login(page)
-        save_cookies(context)
+        logged_in = login(page)
+        if logged_in:
+            # Only persist cookies when we are genuinely authenticated — never save
+            # the dead login-page cookies over a previously-good session.
+            save_cookies(context)
+        else:
+            print("::error::AppFolio login failed (expired cookies + 2FA wall). "
+                  "Not saving cookies; exiting non-zero so the failure is visible.")
+            browser.close()
+            print("Nothing to write (not logged in).")
+            sys.exit(1)
+
+        # Guard: logged in, but if the Statements page shows NO owner cards at all,
+        # the session is effectively dead (the "1 card" in an outage is the login
+        # box). Fail loudly rather than silently writing nothing and exiting green.
+        page.goto("https://laureatetld.appfolio.com/oportal/statements")
+        page.wait_for_load_state("networkidle")
+        try:
+            page.wait_for_selector("#statements-root .card", timeout=20000)
+        except Exception:
+            pass
+        n_cards = len(page.query_selector_all("h2.card-title"))
+        print(f"Owner cards on Statements page: {n_cards}")
+        if n_cards < 1:
+            print("::error::AppFolio Statements page shows 0 owner cards — session "
+                  "likely expired (2FA wall). Exiting non-zero so the failure is visible.")
+            browser.close()
+            sys.exit(1)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             try:
@@ -456,6 +538,7 @@ def main():
 
     if not per_property_results or not month_label:
         print("Nothing to write.")
+        _fail_if_pull_errors(errors)
         return
 
     ensure_detail_tab(sheets)
@@ -485,6 +568,7 @@ def main():
               f"Disb ${r['disbursement']:,.2f}, {row[10]}")
 
     print(f"\nDone. Wrote {written} rows to '{DETAIL_TAB}'.")
+    _fail_if_pull_errors(errors)
 
 
 if __name__ == "__main__":

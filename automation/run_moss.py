@@ -74,6 +74,46 @@ CABO_PLUG_THROUGH      = "2026-12-01"
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
+def _statement_rows(card):
+    """Return an owner card's statement rows, newest first.
+
+    AppFolio redesigned the Owner Statements page (seen Sep 19 2026): the old
+    <ul class="list-group"><li> markup became one <div class="... row"> per
+    statement inside .card-body. The .analytics-statement-download-link
+    container survived the redesign, so anchor on that, and fall back to the
+    legacy <li> so an older layout still works."""
+    rows = [r for r in card.query_selector_all("div.row")
+            if r.query_selector(".analytics-statement-download-link")]
+    return rows or card.query_selector_all("ul.list-group li")
+
+
+def _statement_date_text(row):
+    """The 'Mon D, YYYY to Mon D, YYYY' label for one statement row.
+
+    Now rendered as <a class="fw-bold">; it used to be a <b>."""
+    el = row.query_selector("a.fw-bold") or row.query_selector("b")
+    return el.inner_text().strip() if el else ""
+
+
+def _fail_if_pull_errors(errors):
+    """Exit non-zero when the run finished with unresolved pull errors.
+
+    A run that authenticated and found its owner cards but could not download or
+    parse a packet still has nothing to show for itself. Without this it exits 0
+    and the job goes GREEN with no data — the hole that hid AppFolio's Sep 2026
+    page redesign for days behind green checkmarks.
+
+    "Statement not posted yet" does NOT trip this: that path downloads the
+    PREVIOUS packet normally and is dropped by the dedup, so `errors` stays empty
+    and the job stays green. A partial failure still writes the rows it did get
+    before failing, so data is never lost to this guard."""
+    if not errors:
+        return
+    print(f"::error::Pull finished with {len(errors)} unresolved error(s): "
+          + "; ".join(str(e) for e in errors))
+    sys.exit(1)
+
+
 # ── Google Sheets ────────────────────────────────────────────────────
 def get_sheets_service():
     creds = Credentials.from_service_account_info(json.loads(CREDS_JSON), scopes=SCOPES)
@@ -387,11 +427,24 @@ def download_packet(page, tmp_dir):
         if not h2 or h2.inner_text().strip() != APPFOLIO_OWNER_NAME:
             continue
         print(f"Found card for: {APPFOLIO_OWNER_NAME}")
-        first_li = card.query_selector("ul.list-group li")
+        _rows = _statement_rows(card)
+        first_li = _rows[0] if _rows else None
         if not first_li:
+            # The card matched but carries no statement <li>. Either AppFolio
+            # changed the markup or the list renders after networkidle. Dump the
+            # card so the real structure is visible in the Actions log instead of
+            # failing silently with "Could not download packet".
+            print("DIAG: no statement rows inside the matched card.")
+            try:
+                for sel in ("ul", "li", "a", "[class*=list]", "[class*=statement]"):
+                    print(f"DIAG: count {sel!r} = {len(card.query_selector_all(sel))}")
+                html = card.inner_html()
+                print(f"DIAG: card inner_html ({len(html)} chars), first 4000:")
+                print(html[:4000])
+            except Exception as e:
+                print(f"DIAG failed: {e}")
             return None, None, None
-        date_text = first_li.query_selector("b")
-        date_range = date_text.inner_text().strip() if date_text else ""
+        date_range = _statement_date_text(first_li)
         print(f"Most recent packet: {date_range}")
 
         month_label = None
@@ -517,6 +570,7 @@ def main():
 
     if not per_property_results or not month_label:
         print("Nothing to write.")
+        _fail_if_pull_errors(errors)
         return
 
     approval = require_approval(sheets)
@@ -571,6 +625,7 @@ def main():
             print(f"Written ({tab}): {CABO_PROPERTY} (Cabo plug) -> ${CABO_DISBURSEMENT_PLUG:,.2f}")
 
     print(f"\nDone. Wrote {written} rows to {tab}.")
+    _fail_if_pull_errors(errors)
 
 
 if __name__ == "__main__":

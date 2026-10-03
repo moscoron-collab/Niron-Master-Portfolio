@@ -105,6 +105,90 @@ skill never writes the sheet.
 
 ---
 
+## Step 1c — FIXED-COST DRIFT CHECK (do this every run — it is free)
+
+The CSVs already contain the **actual** amount drafted for every fixed cost. Compare each one to the
+reference table below and **report any difference over $1**. This is the cheapest possible early warning:
+it costs no extra upload and it catches a changed payment the month it happens.
+
+**Why this step exists:** in Sep 2026 Donald's CBRE payment had quietly moved **$13,708 → $13,494**
+(the annual escrow analysis re-set the tax portion). The month's math was still right — Step 2 already
+uses the actual statement amount — but nothing ever fed the observation back, so the **planner cushion,
+the `Loans` and `Settings` sheet tabs, the chatbot and this table all stayed stale for months.** The
+number was only caught by accident when the user uploaded a loan statement.
+
+**How:** for each LLC, pull the actual amount of each line and compare:
+
+| Check | Bank line to find | Reference |
+|---|---|---|
+| Mortgage | `CBRE LOAN` (Donald) · `LUMENT` (Yale) · the 6 `TRANSFER TO LOAN` (Divando) | table below |
+| SBA | `SBA LOAN` | table below |
+| Insurance | `STATE FARM` · `WESTFIELD` · `ACUITY` · `NATIONAL INDEMNITY` | table below |
+
+**If anything differs, say so loudly and list every place that needs syncing:**
+1. `CASHPLAN_CONFIG` in `index.html` (drives the planner cushion)
+2. The **`Settings`** tab, col **B** — Google Sheet `Niron Property Portfolio` (drives Net Cashflow on
+   future AppFolio pulls; history is snapshotted so past months are untouched)
+3. The **`Loans`** tab, col **I** (drives the Loan Details tile) — ⚠️ Donald has TWO rows, SBA and CBRE
+4. `dashboardKnowledge()` in `AppsScript.gs` (chatbot — needs a redeploy)
+5. **This reference table** + the fixed-costs section in `CLAUDE.md`
+
+⚠️ **One draft is not a trend.** Insurance especially can slide or double up in a month (Divando's State
+Farm drafted twice in July 2026, and at $2,633.15 instead of $2,909.98 — that one turned out to be REAL, and the
+reference table now carries $2,633.15; note it took 4 months to confirm because nobody re-checked). Flag it, then **wait for a second
+month** before changing anything — unless a statement or declarations page confirms the new figure outright.
+A mortgage change, by contrast, is almost always real and permanent (escrow re-analysis).
+
+### 🔴 OPEN ITEM for the next run — Divando State Farm: what is the draft now?
+
+**Do this FIRST on the next Divando CSV. Find the `STATE FARM` line and read the amount.** Ron and the
+agent could not settle the cause from the data on hand (Sep 19 2026), and the answer is one line in the
+August/September statement.
+
+What is known:
+
+| Draft | Amount |
+|---|---|
+| Mar 3 · Mar 31 · Apr 29 2026 | `$2,909.98` |
+| **May 29 2026** | **`$2,633.15`** ← dropped here |
+| Jul 1 2026 (June's slid draft) · Jul 29 2026 | `$2,633.15` |
+| Aug 29 · Sep 29 2026 | **unknown — this is what to look for** |
+
+**Ron's reading: it is 4641 Enid Way, which was sold.** That is recorded — Enid sold **Aug 28 2026**,
+Kevin Schult endorsed her off the policy the same day, her share was `$2,528`/yr = **`$210.67`**/mo, and
+the Dorado→Divando credit dropped `$138` → `$67.40`. **Two things don't line up yet:** the drop happened
+**May 29, three months before the sale**, and it is **`$276.83`**/mo, `$66.16` more than Enid's share.
+
+So read the amount and apply whichever case matches — do not assume:
+
+- **`$2,633.15`** → unchanged since May; Enid's removal never showed up in the draft. Keep the current
+  override, and ask Kevin Schult what actually changed in May.
+- **≈`$2,422`** (`2,633.15 − 210.67`) → Enid came off ON TOP of the May change. **The dashboard is then
+  too high** — update `INSURANCE_OVERRIDE.divando` + `CASHPLAN_CONFIG.divando.insurance` in `index.html`,
+  the Noble tab, `dashboardKnowledge()` and the table below, per the 5-place list above.
+- **≈`$2,699`** (`2,909.98 − 210.67`) → the May–July figure was temporary and Enid is the only real
+  change. Same 5-place update, to `$2,699`.
+- **anything else** → report the exact number and stop; do not guess a cause.
+
+⚠️ Whatever it is, the written annual `$34,630`/yr in the Noble tab no longer matches the draft, and the
+12-property per-property table is still the as-written policy. Ask Ron for the **current declarations
+page** to square them.
+
+### Do we need the lender statements for this? No — see below
+
+**CBRE** posts its statement ~the **18th**, billing the payment due the **1st of the next month**, so it is
+already available when this skill runs ~the 25th. **Lument's** timing is not yet known. But the loan
+statement is **not** required to catch drift: the bank CSV shows the real draft every month. Ask for a
+statement only when:
+- **this drift check fires** — the statement explains *why* (it breaks out interest / principal / escrow,
+  and shows the new escrow balance), or
+- **year end** — for the CPA: `Interest Paid YTD`, `Principal Paid YTD`, `Taxes Paid` and the closing
+  principal balance, all on the CBRE prior-year annual statement.
+
+That is roughly **2 statements a year instead of 24**, for the same protection.
+
+---
+
 ## Step 2 — Safe to distribute, per LLC (balance-based)
 
 ```
@@ -242,8 +326,8 @@ reference amount only to reserve a bill that is **missing** (still upcoming).
 
 | LLC | Mortgage | SBA | Insurance | Utilities | Other | Cushion |
 |---|---|---|---|---|---|---|
-| Divando | $12,199.86 — 6 `TRANSFER TO LOAN` (~15th) | $2,334.00 (1st) | State Farm **$2,909.98 (~29th)** | ~$626/mo (Xcel/Aurora Water/Compost/Google — **varies, editable on dashboard**) | ACE Cloud Hosting software $288.98 (~28th, Amex) | **$2,000** |
-| Donald | CBRE ~$13,708 (1st) | $444.00 (1st) | Westfield $1,210.84 (~4th) | **$0/mo** (only occasional quarterly Denver Compost — editable) | — | **$1,500** |
+| Divando | $12,199.86 — 6 `TRANSFER TO LOAN` (~15th) | $2,334.00 (1st) | State Farm **$2,633.15 (~29th)** (actual since May 29 2026; was $2,909.98. NOT a renewal - cause unconfirmed) | ~$626/mo (Xcel/Aurora Water/Compost/Google — **varies, editable on dashboard**) | ACE Cloud Hosting software $288.98 (~28th, Amex) | **$2,000** |
+| Donald | CBRE **$13,494** (1st) — was $13,708 through Aug 2026; P&I is fixed at $11,575.20, only the tax escrow moves | $444.00 (1st) | Westfield $1,191.58 (~4th; renewed Sep 20 2026 → Sep 20 2027 at $14,299/yr, was $1,210.84) | **$0/mo** (only occasional quarterly Denver Compost — editable) | — | **$1,500** |
 | Yale | Lument $7,279.08 (~6th) | $225.00 (1st) | Acuity $1,037.55 (~25th) | **$0/mo** (only occasional quarterly Denver Compost — editable) | — | **$1,500** |
 | Dorado | **none (mortgage-free)** | none | National Indemnity $453.31 (~7th) | ~$268/mo (Xcel/Denver Water — **varies, editable on dashboard**) | pays Divando $67.40/mo ins comp, Jamaica-only (TRANSFER, exclude) — updated Aug 29 2026, was $138 while Enid was still owned | **$1,000** |
 

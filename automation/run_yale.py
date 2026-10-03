@@ -39,6 +39,7 @@ here; the frontend computes net from these inputs.
 """
 
 import os
+import sys
 import re
 import json
 import base64
@@ -84,6 +85,46 @@ YALE_MORTGAGE_EACH  = round(YALE_MORTGAGE_TOTAL / 5, 2)   # 1455.82
 YALE_INS_EACH       = round(YALE_INS_TOTAL / 5, 2)        # 207.51
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
+
+
+def _statement_rows(card):
+    """Return an owner card's statement rows, newest first.
+
+    AppFolio redesigned the Owner Statements page (seen Sep 19 2026): the old
+    <ul class="list-group"><li> markup became one <div class="... row"> per
+    statement inside .card-body. The .analytics-statement-download-link
+    container survived the redesign, so anchor on that, and fall back to the
+    legacy <li> so an older layout still works."""
+    rows = [r for r in card.query_selector_all("div.row")
+            if r.query_selector(".analytics-statement-download-link")]
+    return rows or card.query_selector_all("ul.list-group li")
+
+
+def _statement_date_text(row):
+    """The 'Mon D, YYYY to Mon D, YYYY' label for one statement row.
+
+    Now rendered as <a class="fw-bold">; it used to be a <b>."""
+    el = row.query_selector("a.fw-bold") or row.query_selector("b")
+    return el.inner_text().strip() if el else ""
+
+
+def _fail_if_pull_errors(errors):
+    """Exit non-zero when the run finished with unresolved pull errors.
+
+    A run that authenticated and found its owner cards but could not download or
+    parse a packet still has nothing to show for itself. Without this it exits 0
+    and the job goes GREEN with no data — the hole that hid AppFolio's Sep 2026
+    page redesign for days behind green checkmarks.
+
+    "Statement not posted yet" does NOT trip this: that path downloads the
+    PREVIOUS packet normally and is dropped by the dedup, so `errors` stays empty
+    and the job stays green. A partial failure still writes the rows it did get
+    before failing, so data is never lost to this guard."""
+    if not errors:
+        return
+    print(f"::error::Pull finished with {len(errors)} unresolved error(s): "
+          + "; ".join(str(e) for e in errors))
+    sys.exit(1)
 
 
 # ── Google Sheets ────────────────────────────────────────────────────
@@ -226,7 +267,8 @@ def extract_per_unit_from_pdf(pdf_path):
     statement-level Cash In / Management Fees / Owner Disbursements used to
     allocate the pooled disbursement back to each unit.
     """
-    units = {n: {"cash_in": 0.0, "rent_collected": 0.0, "expenses": 0.0, "occupied": False}
+    units = {n: {"cash_in": 0.0, "rent_collected": 0.0, "deposits": 0.0,
+                 "expenses": 0.0, "occupied": False}
              for n in YALE_UNIT_NUMBERS}
 
     all_lines = []
@@ -288,20 +330,34 @@ def extract_per_unit_from_pdf(pdf_path):
 
         if delta > 0:                      # cash IN
             if unit:
-                units[unit]["cash_in"] += delta
-                if _RENT_RE.search(ln):
-                    units[unit]["rent_collected"] += delta
-                    units[unit]["occupied"] = True
+                if _SD_RE.search(ln):
+                    # "2997 - Owner Held Security Deposits - Move In". This is real
+                    # cash that landed in the account (so it still earns the unit a
+                    # share of the pooled disbursement — see build_rows), but it is
+                    # NOT operating income: it is the tenant's money being held.
+                    # Keep it out of Cash In / Rent Collected so a move-in month
+                    # can't read as a strong month. (Yale Sep 2026: $455 + $579 on
+                    # 2997 inflated the headline by $1,034.)
+                    units[unit]["deposits"] += delta
+                else:
+                    units[unit]["cash_in"] += delta
+                    if _RENT_RE.search(ln):
+                        units[unit]["rent_collected"] += delta
+                        units[unit]["occupied"] = True
         else:                              # cash OUT
             amt = -delta
             if _MGMT_RE.search(ln) or _DISB_RE.search(ln):
                 continue                   # pooled — handled via summary totals
             if unit and (_REVENUE_RE.search(ln) or _SD_RE.search(ln)):
-                # NSF / reversal of a prior receipt (rent, fee, or deposit) —
-                # cancel it back out of cash-in rather than booking an expense.
-                units[unit]["cash_in"] -= amt
-                if _RENT_RE.search(ln):
-                    units[unit]["rent_collected"] -= amt
+                # NSF / reversal of a prior receipt (rent, fee, or deposit) — or a
+                # deposit refunded to a departing tenant. Cancel it back out of the
+                # bucket it came in on rather than booking it as an expense.
+                if _SD_RE.search(ln):
+                    units[unit]["deposits"] -= amt
+                else:
+                    units[unit]["cash_in"] -= amt
+                    if _RENT_RE.search(ln):
+                        units[unit]["rent_collected"] -= amt
             elif unit:
                 units[unit]["expenses"] += amt   # repairs / supplies / utilities
 
@@ -309,6 +365,7 @@ def extract_per_unit_from_pdf(pdf_path):
     for n, u in units.items():
         u["cash_in"]        = round(max(u["cash_in"], 0.0), 2)
         u["rent_collected"] = round(max(u["rent_collected"], 0.0), 2)
+        u["deposits"]       = round(max(u["deposits"], 0.0), 2)
         u["expenses"]       = round(u["expenses"], 2)
         u["occupied"]       = u["rent_collected"] > 0
     return units, summary
@@ -356,19 +413,34 @@ def save_cookies(context):
 STATEMENTS_URL = "https://laureatetld.appfolio.com/oportal/statements"
 
 def login(page):
+    """Authenticate to AppFolio. Returns True only if we end up OFF the login page.
+
+    A GitHub runner can't complete AppFolio's device-trust SMS 2FA, so when the
+    saved cookies expire the runner is bounced back to /oportal/users/log_in and
+    can never proceed. We MUST detect that and report failure, so the caller can
+    (a) refuse to save the dead login-page cookies over the good ones, and
+    (b) fail the run loudly instead of exiting green with no data."""
     page.goto(STATEMENTS_URL)
     page.wait_for_load_state("networkidle")
     if "log_in" not in page.url:
         print("Already logged in via cookies.")
-        return
+        return True
     print("Logging in with credentials...")
-    page.goto(APPFOLIO_URL)
-    page.wait_for_load_state("networkidle")
-    page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
-    page.fill("input[name='user[password]']", APPFOLIO_PASS)
-    page.click("input[type='submit']")
-    page.wait_for_load_state("networkidle")
+    try:
+        page.goto(APPFOLIO_URL)
+        page.wait_for_load_state("networkidle")
+        page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
+        page.fill("input[name='user[password]']", APPFOLIO_PASS)
+        page.click("input[type='submit']")
+        page.wait_for_load_state("networkidle")
+    except Exception as e:
+        print(f"Login form interaction failed: {e}")
+    if "log_in" in page.url:
+        print(f"LOGIN FAILED — still on the login page ({page.url}). This is almost "
+              "always expired APPFOLIO_COOKIES + 2FA. Refusing to treat this as success.")
+        return False
     print("Login complete.")
+    return True
 
 
 def download_packet(page, tmp_dir):
@@ -388,11 +460,11 @@ def download_packet(page, tmp_dir):
         if not h2 or h2.inner_text().strip() != APPFOLIO_OWNER_NAME:
             continue
         print(f"Found card for: {APPFOLIO_OWNER_NAME}")
-        first_li = card.query_selector("ul.list-group li")
+        _rows = _statement_rows(card)
+        first_li = _rows[0] if _rows else None
         if not first_li:
             return None, None, None
-        date_text = first_li.query_selector("b")
-        date_range = date_text.inner_text().strip() if date_text else ""
+        date_range = _statement_date_text(first_li)
         print(f"Most recent packet: {date_range}")
 
         month_label = None
@@ -438,15 +510,30 @@ def get_pdf_path(file_path, tmp_dir):
 def build_rows(units, summary, date_range, month_label, now_str,
                source="System — Yale per-property"):
     """Allocate the pooled Management Fees + Owner Disbursement to each unit in
-    proportion to its cash-in, and build the Property Detail rows."""
-    total_cash_in = sum(u["cash_in"] for u in units.values()) or 1.0
+    proportion to the cash it actually put into the account, and build the
+    Property Detail rows.
+
+    The allocation basis is cash-in PLUS owner-held security deposits, because the
+    pooled disbursement really does contain the deposit money — a move-in unit did
+    fund part of it. The Cash In column written to the sheet stays deposit-free, so
+    the unit's reported income is operating income only.
+    """
+    total_alloc = sum(u["cash_in"] + u["deposits"] for u in units.values()) or 1.0
     total_mgmt    = summary.get("mgmt_fee", 0.0)
     total_disb    = summary.get("disbursement", 0.0)
+
+    total_deposits = round(sum(u["deposits"] for u in units.values()), 2)
+    if total_deposits:
+        held = ", ".join(f"{YALE_PROPERTY[n]} ${units[n]['deposits']:,.2f}"
+                         for n in YALE_UNIT_NUMBERS if units[n]["deposits"])
+        print(f"NOTE: ${total_deposits:,.2f} of this statement's disbursement is "
+              f"owner-held security deposits, not income ({held}). Excluded from "
+              f"Cash In / Rent Collected; still counted in the disbursement split.")
 
     rows = []
     for n in YALE_UNIT_NUMBERS:
         u = units[n]
-        share = u["cash_in"] / total_cash_in
+        share = (u["cash_in"] + u["deposits"]) / total_alloc
         mgmt_fee     = round(total_mgmt * share, 2)
         disbursement = round(total_disb * share, 2)
         rows.append([
@@ -482,8 +569,34 @@ def main():
         if cookies:
             context.add_cookies(cookies)
         page = context.new_page()
-        login(page)
-        save_cookies(context)
+        logged_in = login(page)
+        if logged_in:
+            # Only persist cookies when we are genuinely authenticated — never save
+            # the dead login-page cookies over a previously-good session.
+            save_cookies(context)
+        else:
+            print("::error::AppFolio login failed (expired cookies + 2FA wall). "
+                  "Not saving cookies; exiting non-zero so the failure is visible.")
+            browser.close()
+            print("Nothing to write (not logged in).")
+            sys.exit(1)
+
+        # Guard: logged in, but if the Statements page shows NO owner cards at all,
+        # the session is effectively dead (the "1 card" in an outage is the login
+        # box). Fail loudly rather than silently writing nothing and exiting green.
+        page.goto("https://laureatetld.appfolio.com/oportal/statements")
+        page.wait_for_load_state("networkidle")
+        try:
+            page.wait_for_selector("#statements-root .card", timeout=20000)
+        except Exception:
+            pass
+        n_cards = len(page.query_selector_all("h2.card-title"))
+        print(f"Owner cards on Statements page: {n_cards}")
+        if n_cards < 1:
+            print("::error::AppFolio Statements page shows 0 owner cards — session "
+                  "likely expired (2FA wall). Exiting non-zero so the failure is visible.")
+            browser.close()
+            sys.exit(1)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             try:
@@ -505,6 +618,7 @@ def main():
         print(f"Errors: {errors}")
     if not units or not month_label:
         print("Nothing to write.")
+        _fail_if_pull_errors(errors)
         return
 
     ensure_detail_tab(sheets)
@@ -527,6 +641,7 @@ def main():
               f"Rent ${row[5]:,.2f}, Disb ${row[7]:,.2f}, {row[10]}")
 
     print(f"\nDone. Wrote {written} rows to '{DETAIL_TAB}'.")
+    _fail_if_pull_errors(errors)
 
 
 if __name__ == "__main__":

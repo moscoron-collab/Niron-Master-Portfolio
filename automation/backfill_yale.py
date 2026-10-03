@@ -46,6 +46,27 @@ DETAIL_HEADER = Y.DETAIL_HEADER
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
+def _statement_rows(card):
+    """Return an owner card's statement rows, newest first.
+
+    AppFolio redesigned the Owner Statements page (seen Sep 19 2026): the old
+    <ul class="list-group"><li> markup became one <div class="... row"> per
+    statement inside .card-body. The .analytics-statement-download-link
+    container survived the redesign, so anchor on that, and fall back to the
+    legacy <li> so an older layout still works."""
+    rows = [r for r in card.query_selector_all("div.row")
+            if r.query_selector(".analytics-statement-download-link")]
+    return rows or card.query_selector_all("ul.list-group li")
+
+
+def _statement_date_text(row):
+    """The 'Mon D, YYYY to Mon D, YYYY' label for one statement row.
+
+    Now rendered as <a class="fw-bold">; it used to be a <b>."""
+    el = row.query_selector("a.fw-bold") or row.query_selector("b")
+    return el.inner_text().strip() if el else ""
+
+
 # ── Google Sheets (with backoff + batched writes, mirrors backfill_divando) ──
 def get_sheets_service():
     creds = Credentials.from_service_account_info(json.loads(CREDS_JSON), scopes=SCOPES)
@@ -178,10 +199,9 @@ def login(page):
 
 
 def parse_packet_li(li):
-    date_text = li.query_selector("b")
-    if not date_text:
+    date_range = _statement_date_text(li)
+    if not date_range:
         return None
-    date_range = date_text.inner_text().strip()
     if not re.search(r"\w+ \d+, \d+ to \w+ \d+, \d+", date_range):
         return None
     m_to = re.search(r"to\s+(\w+ \d+, \d+)", date_range)
@@ -260,7 +280,7 @@ def collect_packets(page, appfolio_name, max_count):
         cards = page.query_selector_all(".card")
         if card_idx >= len(cards):
             break
-        items = cards[card_idx].query_selector_all("ul.list-group li")
+        items = _statement_rows(cards[card_idx])
         print(f"  Page {page_num}: {len(items)} items")
         new_added = 0
         for li in items:

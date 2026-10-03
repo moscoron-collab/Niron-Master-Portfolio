@@ -480,6 +480,23 @@
   #loans-content .loan-row .ln.has-tip { text-decoration: underline dotted; text-decoration-color: #33506f; text-underline-offset: 3px; cursor: help; }
   #loans-content .loan-row .amt { color: #eaf3fc; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
   #loans-content .loan-row.paid .ln { color: #7e9cbf; }
+  /* ── Loan Details tab — lender portals & contacts (Donald / Yale) ── */
+  #loans-content .svc-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 16px; }
+  #loans-content .svc-card { background: #0d1c2e; border: 1px solid #1e2d42; border-radius: 14px; overflow: hidden; }
+  #loans-content .svc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; padding: 14px 16px; background: linear-gradient(90deg, #11243a, #0c1a2b); border-bottom: 1px solid #21456b; }
+  #loans-content .svc-llc { font-weight: 700; font-size: 14.5px; color: #d4e6fb; letter-spacing: 0.3px; }
+  #loans-content .svc-lender { font-size: 12px; color: #7e9cbf; margin-top: 3px; }
+  #loans-content .svc-portal { background: #0080cc; color: #fff; border: none; border-radius: 8px; padding: 8px 13px; font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap; display: inline-block; }
+  #loans-content .svc-portal:hover { background: #00a0f0; color: #fff; }
+  #loans-content .svc-rows { padding: 6px 0 10px; }
+  #loans-content .svc-row { display: flex; gap: 14px; align-items: baseline; padding: 8px 16px; }
+  #loans-content .svc-row .k { flex: 0 0 104px; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px; color: #7e9cbf; }
+  #loans-content .svc-row .v { flex: 1 1 auto; min-width: 0; color: #eaf3fc; font-size: 13px; overflow-wrap: anywhere; }
+  #loans-content .svc-row .v a { color: #6fd3ff; text-decoration: none; }
+  #loans-content .svc-row .v a:hover { text-decoration: underline; }
+  #loans-content .svc-row .sub { display: block; color: #7e9cbf; font-size: 11.5px; margin-top: 3px; line-height: 1.45; }
+  #loans-content .svc-sep { margin: 8px 16px 2px; padding-top: 10px; border-top: 1px solid #13243a; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.7px; color: #9fc1e0; font-weight: 700; }
+  #loans-content .svc-miss { color: #e8b23a; font-size: 12.5px; }
 </style>
 </head>
 <body>
@@ -1089,13 +1106,13 @@
         <div class="mg">
           <div class="mc">
             <div class="ml">💰 Total Monthly · All Active</div>
-            <div class="mv">$5,611<span style="font-size:17px">.70</span></div>
-            <div class="ms">Divando $2,909.98 + Donald $1,210.84 + Yale $1,037.55 + Dorado $453.33</div>
+            <div class="mv">$5,315<span style="font-size:17px">.61</span></div>
+            <div class="ms">Divando $2,633.15 + Donald $1,191.58 + Yale $1,037.55 + Dorado $453.33</div>
           </div>
           <div class="mc">
             <div class="ml">📅 Next Renewals Coming Up</div>
-            <div class="mv" style="font-size:17px;padding-top:4px">Sep 20, 2026</div>
-            <div class="ms">Donald LLC (Westfield Superior)<br>Nov 6, 2026 — Dorado (Berkshire Hathaway)<br>Dec 15, 2026 — Divando SFRs (State Farm)<br>Feb 22, 2027 — Yale (Acuity)</div>
+            <div class="mv" style="font-size:17px;padding-top:4px">Nov 6, 2026</div>
+            <div class="ms">Dorado (Berkshire Hathaway)<br>Dec 15, 2026 — Divando SFRs (State Farm)<br>Feb 22, 2027 — Yale (Acuity)<br>Sep 20, 2027 — Donald (Westfield Superior)</div>
           </div>
           <div class="mc">
             <div class="ml">🏘️ Properties / Units Covered</div>
@@ -1113,8 +1130,8 @@
           </div>
           <div class="lc">
             <div class="ln">Donald — 4 Duplexes</div>
-            <div class="la">$1,210<span style="font-size:14px">.84/mo</span></div>
-            <div class="ld">Westfield Superior · 499841Y<br>Donald acct · 2nd of month<br>Sep 20, 2025 → Sep 20, 2026</div>
+            <div class="la">$1,191<span style="font-size:14px">.58/mo</span></div>
+            <div class="ld">Westfield Superior · 499841Y<br>Donald acct · 2nd of month<br>Sep 20, 2026 → Sep 20, 2027</div>
           </div>
           <div class="lc">
             <div class="ln">Yale — Townhomes</div>
@@ -1132,7 +1149,7 @@
         <div class="rl">
           <div class="rh">Status Overview</div>
           <div class="rr"><div class="dot d-a"></div><div class="re">Divando CO SFRs</div><div class="rc-r">State Farm · 13 props · Kevin Schult (303) 989-3847 · Blackhawk Dec 4 ⚠️</div><div class="rd">Dec 15, 2025 → Dec 15, 2026</div><div class="badge b-a">ACTIVE</div></div>
-          <div class="rr"><div class="dot d-a"></div><div class="re">Donald — 4 Duplexes</div><div class="rc-r">Westfield Superior · 499841Y · Wren Arbuthnot 970-668-3500 · $14,530/yr</div><div class="rd">Sep 20 → Sep 20, 2026</div><div class="badge b-a">ACTIVE</div></div>
+          <div class="rr"><div class="dot d-a"></div><div class="re">Donald — 4 Duplexes</div><div class="rc-r">Westfield Superior · 499841Y · Wren Arbuthnot 970-668-3500 · $14,299/yr renewal</div><div class="rd">Sep 20, 2026 → Sep 20, 2027</div><div class="badge b-a">ACTIVE</div></div>
           <div class="rr"><div class="dot d-a"></div><div class="re">Yale — Townhomes</div><div class="rc-r">Acuity · ZM1786-01 · CRS Insurance / Nathan Fonseca · $11,248/yr</div><div class="rd">Feb 22, 2026 → Feb 22, 2027</div><div class="badge b-a">ACTIVE</div></div>
           <div class="rr"><div class="dot d-a"></div><div class="re">Dorado Fourplex</div><div class="rc-r">Berkshire Hathaway 02PRM080318-06 · IMA Select 303-534-4567 · $5,440/yr</div><div class="rd">Nov 6, 2025 → Nov 6, 2026</div><div class="badge b-a">ACTIVE</div></div>
 
@@ -1156,10 +1173,10 @@
             <div class="rz">① Policy</div>
             <div class="rf"><label>Carrier</label><div class="ev hi">State Farm Fire &amp; Casualty Company</div></div>
             <div class="rf"><label>Policy Period</label><div class="ev editable ok" contenteditable="true" spellcheck="false">Dec 15, 2025 → Dec 15, 2026</div></div>
-            <div class="rf"><label>Annual Premium (13 props)</label><div class="ev editable" contenteditable="true" spellcheck="false">$34,630</div></div>
+            <div class="rf"><label>Annual Premium</label><div class="ev editable" contenteditable="true" spellcheck="false">$34,630 as written (13 props). ⚠️ The actual draft is now $2,633.15/mo, $276.83 below the old draft — so the in-force premium is lower than this. Needs the current declarations page.</div></div>
 
             <div class="rz">② Payment</div>
-            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$2,909.98/mo (actual bank draft; quote $34,630/yr ÷12 = $2,885.83)</div></div>
+            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$2,633.15/mo (actual bank draft since May 29, 2026; was $2,909.98/mo). Policy did NOT renew — the $276.83/mo drop is unexplained, likely a property coming off.</div></div>
             <div class="rf"><label>Payment Source</label><div class="ev editable" contenteditable="true" spellcheck="false">Auto-draft Divando acct · end of month</div></div>
             <div class="rf"><label>Payment Plan</label><div class="ev hi">State Farm Payment Plan (SFPP)</div></div>
 
@@ -1205,7 +1222,7 @@
               <tr><td>15559 E Bates Ave, Aurora CO 80013</td><td class="mn">96-E4-G679-9</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$393,400</td><td class="mn">$39,340</td><td class="mn">$59,010</td><td class="mn">$3,934</td><td class="mn ta">$2,507</td><td class="tn wn">Revised PDF pending from agent</td></tr>
               <tr><td>15655 E 13th Ave, Aurora CO 80011</td><td class="mn">96-E4-G681-3</td><td class="mn">Dec 15, 2025–2026</td><td class="mn">$618,900</td><td class="mn">$61,890</td><td class="mn">$92,835</td><td class="mn">$6,189</td><td class="mn ta">$3,529</td><td></td></tr>
             </tbody>
-            <tfoot><tr><td colspan="7">TOTAL — 12 Properties · Kevin Schult (303) 989-3847 (4641 Enid Way removed Aug 28, 2026)</td><td>~$32,102/yr · auto-draft ≈$2,699/mo (est. — confirm against next State Farm draft/declarations)</td><td></td></tr></tfoot>
+            <tfoot><tr><td colspan="7">TOTAL — 12 Properties · Kevin Schult (303) 989-3847 (4641 Enid Way removed Aug 28, 2026) · per-property amounts below are the PRIOR term</td><td>auto-draft $2,633.15/mo (actual since May 2026) · annual pending the current declarations page</td><td></td></tr></tfoot>
           </table>
         </div>
 
@@ -1214,7 +1231,8 @@
           <table>
             <thead><tr><th>Period</th><th>Carrier</th><th>Annual Premium</th><th>Monthly</th><th>Notes</th></tr></thead>
             <tbody>
-              <tr><td class="mn ta">Dec 15, 2025 → Dec 15, 2026</td><td>State Farm (Kevin Schult)</td><td class="mn ta">$34,630</td><td class="mn ta">$2,909.98</td><td class="tn">SFPP auto-draft (actual) · 13 individual policies</td></tr>
+              <tr><td class="mn ta">May 29, 2026 → now</td><td>State Farm (Kevin Schult)</td><td class="mn ta">pending</td><td class="mn ta">$2,633.15</td><td class="tn">SFPP auto-draft (actual: May 29, Jul 1, Jul 29). Same Dec 15 2025–Dec 15 2026 term — NOT a renewal. Drop of $276.83/mo unexplained; send the current declarations page.</td></tr>
+              <tr class="hist"><td class="mn te">Dec 15, 2025 → May 2026</td><td class="te">State Farm (Kevin Schult)</td><td class="mn te">$34,630</td><td class="mn te">$2,909.98</td><td class="tn te">SFPP auto-draft (actual) · 13 individual policies. 4641 Enid Way removed Aug 28, 2026.</td></tr>
               <tr class="hist"><td class="mn te">Dec 15, 2024 → Dec 15, 2025</td><td class="te">State Farm (Kevin Schult)</td><td class="mn te">$31,729</td><td class="mn te">$2,644.10</td><td class="tn te">Divando $1,581 + Donald $1,063 split. Ended Sep 20, 2025.</td></tr>
             </tbody>
           </table>
@@ -1312,14 +1330,14 @@
             <div class="rf"><label>Named Insured</label><div class="ev hi">5070 E Donald Ave Denver LLC</div></div>
             <div class="rf"><label>Carrier</label><div class="ev hi">Westfield Superior Insurance</div></div>
             <div class="rf"><label>Policy Number</label><div class="ev editable" contenteditable="true" spellcheck="false">499841Y</div></div>
-            <div class="rf"><label>Policy Period</label><div class="ev editable ok" contenteditable="true" spellcheck="false">Sep 20, 2025 → Sep 20, 2026</div></div>
-            <div class="rf"><label>Annual Premium</label><div class="ev editable" contenteditable="true" spellcheck="false">$14,530</div></div>
-            <div class="rf"><label>Property Premium</label><div class="ev hi">$13,500</div></div>
-            <div class="rf"><label>Liability Premium</label><div class="ev hi">$1,028</div></div>
+            <div class="rf"><label>Policy Period</label><div class="ev editable ok" contenteditable="true" spellcheck="false">Sep 20, 2026 → Sep 20, 2027</div></div>
+            <div class="rf"><label>Annual Premium</label><div class="ev editable" contenteditable="true" spellcheck="false">$14,299</div></div>
+            <div class="rf"><label>Property Premium</label><div class="ev hi">$13,241</div></div>
+            <div class="rf"><label>Liability Premium</label><div class="ev hi">$1,056</div></div>
             <div class="rf"><label>CO Hazard Fee</label><div class="ev hi">$2.00</div></div>
 
             <div class="rz">② Payment</div>
-            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$1,210.84</div></div>
+            <div class="rf"><label>Monthly Payment</label><div class="ev editable" contenteditable="true" spellcheck="false">$1,191.58</div></div>
             <div class="rf"><label>Payment Source</label><div class="ev hi">Donald LLC account · 2nd of month</div></div>
             <div class="rf"><label>Billing Account #</label><div class="ev hi">6000129933</div></div>
 
@@ -1347,8 +1365,8 @@
             <div class="rf"><label>Additional Insured</label><div class="ev hi">Laureate LTD</div></div>
 
             <div class="rz">⑥ Admin</div>
-            <div class="rf"><label>Last Updated</label><div class="ev editable" contenteditable="true" spellcheck="false">Apr 2026 — verified from Gemini</div></div>
-            <div class="rf"><label>Notes</label><div class="ev editable" contenteditable="true" spellcheck="false">Annual paper invoice. Monthly $1,210.84 drafted from Donald acct on 2nd.</div></div>
+            <div class="rf"><label>Last Updated</label><div class="ev editable" contenteditable="true" spellcheck="false">Sep 2026 — renewal declarations page received (issued 08/07/2026)</div></div>
+            <div class="rf"><label>Notes</label><div class="ev editable" contenteditable="true" spellcheck="false">Annual paper invoice. Renewal confirmed for Sep 20, 2026 → Sep 20, 2027 at $14,299/yr = $1,191.58/mo (down from $1,210.84/mo). The $1,210.84 draft continues through the Sep 20, 2026 term-end; $1,191.58 is the annual÷12 figure — actual invoiced installment may include a small paper-invoice fee, confirm off the first Sep 2026 bill.</div></div>
             <div class="rf" style="grid-column:1/-1"><label>📎 Policy Document — Paste Dropbox Link</label><div class="ev editable" contenteditable="true" spellcheck="false" id="db-donald" style="color:var(--accent)">Paste Dropbox link here...</div></div>
           </div>
           <div class="renewal-actions">
@@ -1377,7 +1395,8 @@
           <table>
             <thead><tr><th>Period</th><th>Carrier</th><th>Policy #</th><th>Annual</th><th>Monthly</th><th>Notes</th></tr></thead>
             <tbody>
-              <tr><td class="mn ta">Sep 2025 → Sep 2026</td><td>Westfield Superior</td><td class="mn">499841Y</td><td class="mn ta">$14,530</td><td class="mn ta">$1,210.84</td><td class="tn">Donald acct · 2nd of month</td></tr>
+              <tr><td class="mn ta">Sep 2026 → Sep 2027</td><td>Westfield Superior</td><td class="mn">499841Y</td><td class="mn ta">$14,299</td><td class="mn ta">$1,191.58</td><td class="tn">Donald acct · renewal, issued 08/07/2026</td></tr>
+              <tr class="hist"><td class="mn te">Sep 2025 → Sep 2026</td><td class="te">Westfield Superior</td><td class="mn te">499841Y</td><td class="mn te">$14,530</td><td class="mn te">$1,210.84</td><td class="tn te">Donald acct · 2nd of month</td></tr>
               <tr class="hist"><td class="mn te">Sep 2024 → Sep 2025</td><td class="te">State Farm (Kevin Schult)</td><td class="mn te">—</td><td class="mn te">—</td><td class="mn te">$1,062.66</td><td class="tn te">Donald's share of split Divando policy</td></tr>
             </tbody>
           </table>
@@ -1497,8 +1516,54 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.6";
+const APP_VERSION = "2.9";
 const CHANGELOG = [
+  {
+    version: "2.9",
+    date: "September 19, 2026",
+    en: [
+      "Divando insurance corrected to $2,633.15 a month \u2014 that is what State Farm has actually drafted since late May. Saves about $277 a month, or $3,321 a year, and Divando\u2019s net cashflow rises by the same amount. Why it dropped is still being checked with the agent.",
+      "The distribution planner now reserves the lower figure too, so Divando has about $277 more room each month.",
+      "Noble Insurance tab: the Divando card and the monthly total were updated. The annual premium and the per-property breakdown still show the written policy \u2014 the current declarations page will square them with the lower draft.",
+      "Yale per-unit: a new tenant\u2019s security deposit no longer shows up as that unit\u2019s income. It is the tenant\u2019s money being held, so a move-in month can no longer look like a strong month."
+    ],
+    he: [
+      "\u05d4\u05d1\u05d9\u05d8\u05d5\u05d7 \u05e9\u05dc \u05d3\u05d9\u05d1\u05e0\u05d3\u05d5 \u05ea\u05d5\u05e7\u05df \u05dc-$2,633.15 \u05dc\u05d7\u05d5\u05d3\u05e9 \u2014 \u05d6\u05d4 \u05de\u05d4 \u05e9-State Farm \u05d1\u05d0\u05de\u05ea \u05de\u05d5\u05e9\u05db\u05ea \u05de\u05e1\u05d5\u05e3 \u05de\u05d0\u05d9. \u05d7\u05d9\u05e1\u05db\u05d5\u05df \u05e9\u05dc \u05db-$277 \u05d1\u05d7\u05d5\u05d3\u05e9, $3,321 \u05d1\u05e9\u05e0\u05d4, \u05d5\u05d4\u05ea\u05d6\u05e8\u05d9\u05dd \u05d4\u05e0\u05e7\u05d9 \u05e9\u05dc \u05d3\u05d9\u05d1\u05e0\u05d3\u05d5 \u05e2\u05d5\u05dc\u05d4 \u05d1\u05d0\u05d5\u05ea\u05d5 \u05e1\u05db\u05d5\u05dd. \u05dc\u05de\u05d4 \u05d6\u05d4 \u05d9\u05e8\u05d3 \u2014 \u05e2\u05d3\u05d9\u05d9\u05df \u05d1\u05d1\u05d3\u05d9\u05e7\u05d4 \u05de\u05d5\u05dc \u05d4\u05e1\u05d5\u05db\u05df.",
+      "\u05de\u05ea\u05db\u05e0\u05df \u05d4\u05d7\u05dc\u05d5\u05e7\u05d5\u05ea \u05e9\u05d5\u05de\u05e8 \u05e2\u05db\u05e9\u05d9\u05d5 \u05d0\u05ea \u05d4\u05e1\u05db\u05d5\u05dd \u05d4\u05e0\u05de\u05d5\u05da \u05d9\u05d5\u05ea\u05e8, \u05db\u05da \u05e9\u05dc\u05d3\u05d9\u05d1\u05e0\u05d3\u05d5 \u05d9\u05e9 \u05db-$277 \u05d9\u05d5\u05ea\u05e8 \u05de\u05e7\u05d5\u05dd \u05db\u05dc \u05d7\u05d5\u05d3\u05e9.",
+      "\u05dc\u05e9\u05d5\u05e0\u05d9\u05ea \u05d4\u05d1\u05d9\u05d8\u05d5\u05d7: \u05db\u05e8\u05d8\u05d9\u05e1 \u05d3\u05d9\u05d1\u05e0\u05d3\u05d5 \u05d5\u05d4\u05e1\u05d4\u05f4\u05db \u05d4\u05d7\u05d5\u05d3\u05e9\u05d9 \u05e2\u05d5\u05d3\u05db\u05e0\u05d5. \u05d4\u05e4\u05e8\u05de\u05d9\u05d4 \u05d4\u05e9\u05e0\u05ea\u05d9\u05ea \u05d5\u05d4\u05e4\u05d9\u05e8\u05d5\u05d8 \u05dc\u05e4\u05d9 \u05e0\u05db\u05e1 \u05e2\u05d3\u05d9\u05d9\u05df \u05de\u05e6\u05d9\u05d2\u05d9\u05dd \u05d0\u05ea \u05d4\u05e4\u05d5\u05dc\u05d9\u05e1\u05d4 \u05db\u05e4\u05d9 \u05e9\u05e0\u05db\u05ea\u05d1\u05d4 \u2014 \u05d3\u05e3 \u05d4\u05d4\u05e6\u05d4\u05e8\u05d5\u05ea \u05d4\u05e2\u05d3\u05db\u05e0\u05d9 \u05d9\u05e1\u05d2\u05d5\u05e8 \u05d0\u05ea \u05d4\u05e4\u05e2\u05e8.",
+      "\u05d9\u05d9\u05dc \u05e4\u05e8 \u05d9\u05d7\u05d9\u05d3\u05d4: \u05e4\u05d9\u05e7\u05d3\u05d5\u05df \u05d1\u05d9\u05d8\u05d7\u05d5\u05df \u05e9\u05dc \u05d3\u05d9\u05d9\u05e8 \u05d7\u05d3\u05e9 \u05dc\u05d0 \u05de\u05d5\u05e6\u05d2 \u05d9\u05d5\u05ea\u05e8 \u05db\u05d4\u05db\u05e0\u05e1\u05d4 \u05e9\u05dc \u05d0\u05d5\u05ea\u05d4 \u05d9\u05d7\u05d9\u05d3\u05d4. \u05d6\u05d4 \u05db\u05e1\u05e3 \u05e9\u05dc \u05d4\u05d3\u05d9\u05d9\u05e8 \u05e9\u05de\u05d5\u05d7\u05d6\u05e7 \u05d0\u05e6\u05dc\u05e0\u05d5, \u05d5\u05dc\u05db\u05df \u05d7\u05d5\u05d3\u05e9 \u05e9\u05dc \u05db\u05e0\u05d9\u05e1\u05ea \u05d3\u05d9\u05d9\u05e8 \u05dc\u05d0 \u05d9\u05d9\u05e8\u05d0\u05d4 \u05d9\u05d5\u05ea\u05e8 \u05db\u05d7\u05d5\u05d3\u05e9 \u05d7\u05d6\u05e7."
+    ]
+  },
+  {
+    version: "2.8",
+    date: "September 10, 2026",
+    en: [
+      "Loan Details: the two portal buttons now point at the real login pages we actually use, and Yale\u2019s card has our Lument contacts \u2014 Maki Murphy (our loan manager, 614-857-3282) and Elizabeth Carmody (214-237-2381).",
+      "Donald\u2019s CBRE payment corrected from $13,708 to $13,494 a month. The loan itself did not change \u2014 principal and interest are fixed at $11,575.20 \u2014 but the September escrow review lowered the tax portion, so Donald\u2019s total monthly debt now reads $13,938 instead of $14,152.",
+      "The distribution planner reserves the new, lower figure, so Donald has about $214 more room each month."
+    ],
+    he: [
+      "\u05e4\u05e8\u05d8\u05d9 \u05d4\u05dc\u05d5\u05d5\u05d0\u05d5\u05ea: \u05e9\u05e0\u05d9 \u05db\u05e4\u05ea\u05d5\u05e8\u05d9 \u05d4\u05e4\u05d5\u05e8\u05d8\u05dc \u05de\u05d5\u05d1\u05d9\u05dc\u05d9\u05dd \u05e2\u05db\u05e9\u05d9\u05d5 \u05dc\u05d3\u05e4\u05d9 \u05d4\u05db\u05e0\u05d9\u05e1\u05d4 \u05d4\u05d0\u05de\u05d9\u05ea\u05d9\u05d9\u05dd \u05e9\u05d0\u05e0\u05d7\u05e0\u05d5 \u05de\u05e9\u05ea\u05de\u05e9\u05d9\u05dd \u05d1\u05d4\u05dd, \u05d5\u05d1\u05db\u05e8\u05d8\u05d9\u05e1 \u05e9\u05dc \u05d9\u05d9\u05dc \u05e0\u05d5\u05e1\u05e4\u05d5 \u05d0\u05e0\u05e9\u05d9 \u05d4\u05e7\u05e9\u05e8 \u05d1-Lument \u2014 \u05de\u05d0\u05e7\u05d9 \u05de\u05e8\u05e4\u05d9 (\u05de\u05e0\u05d4\u05dc\u05ea \u05d4\u05d4\u05dc\u05d5\u05d5\u05d0\u05d4 \u05e9\u05dc\u05e0\u05d5, 614-857-3282) \u05d5\u05d0\u05dc\u05d9\u05d6\u05d1\u05ea \u05e7\u05e8\u05de\u05d5\u05d3\u05d9 (214-237-2381).",
+      "\u05d4\u05ea\u05e9\u05dc\u05d5\u05dd \u05dc-CBRE \u05e2\u05dc \u05d3\u05d5\u05e0\u05dc\u05d3 \u05ea\u05d5\u05e7\u05df \u05de-$13,708 \u05dc-$13,494 \u05dc\u05d7\u05d5\u05d3\u05e9. \u05d4\u05d4\u05dc\u05d5\u05d5\u05d0\u05d4 \u05e2\u05e6\u05de\u05d4 \u05dc\u05d0 \u05d4\u05e9\u05ea\u05e0\u05ea\u05d4 \u2014 \u05e7\u05e8\u05df \u05d5\u05e8\u05d9\u05d1\u05d9\u05ea \u05e7\u05d1\u05d5\u05e2\u05d9\u05dd \u05e2\u05dc $11,575.20 \u2014 \u05d0\u05d1\u05dc \u05d1\u05d3\u05d9\u05e7\u05ea \u05d4\u05e4\u05d9\u05e7\u05d3\u05d5\u05df \u05e9\u05dc \u05e1\u05e4\u05d8\u05de\u05d1\u05e8 \u05d4\u05d5\u05e8\u05d9\u05d3\u05d4 \u05d0\u05ea \u05d7\u05dc\u05e7 \u05d4\u05de\u05e1, \u05d5\u05dc\u05db\u05df \u05e1\u05da \u05d4\u05d7\u05d5\u05d1 \u05d4\u05d7\u05d5\u05d3\u05e9\u05d9 \u05e9\u05dc \u05d3\u05d5\u05e0\u05dc\u05d3 \u05de\u05e8\u05d0\u05d4 \u05e2\u05db\u05e9\u05d9\u05d5 $13,938 \u05d1\u05de\u05e7\u05d5\u05dd $14,152.",
+      "\u05de\u05ea\u05db\u05e0\u05df \u05d4\u05d7\u05dc\u05d5\u05e7\u05d5\u05ea \u05e9\u05d5\u05de\u05e8 \u05e2\u05db\u05e9\u05d9\u05d5 \u05d0\u05ea \u05d4\u05e1\u05db\u05d5\u05dd \u05d4\u05d7\u05d3\u05e9 \u05d5\u05d4\u05e0\u05de\u05d5\u05da \u05d9\u05d5\u05ea\u05e8, \u05db\u05da \u05e9\u05dc\u05d3\u05d5\u05e0\u05dc\u05d3 \u05d9\u05e9 \u05db-$214 \u05d9\u05d5\u05ea\u05e8 \u05de\u05e7\u05d5\u05dd \u05db\u05dc \u05d7\u05d5\u05d3\u05e9."
+    ]
+  },
+  {
+    version: "2.7",
+    date: "September 10, 2026",
+    en: [
+      "New on the \ud83c\udfe6 Loan Details tab: a \"Lender Portals & Contacts\" block with a one-click login button for the two loans that have an online portal \u2014 Donald (CBRE Borrower Portal) and Yale (LeapOnline by Lument).",
+      "Each one shows the loan number (click to copy), the property, the current balance with the date it was taken from, the rate, the payment and the term \u2014 plus who to call: phone (tap to dial), email, office hours and the mailing address.",
+      "Donald: balance $1,755,560.99 after the Sep 1 payment, 5.72% fixed, matures Oct 2048. CBRE also holds the tax escrow ($1,918.80/mo) and pays the Denver tax bill for us.",
+      "Yale: balance $815,897.36, drafts on the 5th of each month. We still need Lument\u2019s direct servicing phone number \u2014 it is marked in yellow on the card until we have it."
+    ],
+    he: [
+      "\u05d7\u05d3\u05e9 \u05d1\u05dc\u05e9\u05d5\u05e0\u05d9\u05ea \u05e4\u05e8\u05d8\u05d9 \u05d4\u05dc\u05d5\u05d5\u05d0\u05d5\u05ea \ud83c\udfe6: \u05d1\u05dc\u05d5\u05e7 \"\u05e4\u05d5\u05e8\u05d8\u05dc\u05d9\u05dd \u05d5\u05d0\u05e0\u05e9\u05d9 \u05e7\u05e9\u05e8 \u05e9\u05dc \u05d4\u05de\u05dc\u05d5\u05d5\u05d9\u05dd\" \u05e2\u05dd \u05db\u05e4\u05ea\u05d5\u05e8 \u05db\u05e0\u05d9\u05e1\u05d4 \u05d1\u05dc\u05d7\u05d9\u05e6\u05d4 \u05d0\u05d7\u05ea \u05dc\u05e9\u05e0\u05d9 \u05d4\u05dc\u05d5\u05d5\u05d0\u05d5\u05ea \u05e9\u05d9\u05e9 \u05dc\u05d4\u05dd \u05e4\u05d5\u05e8\u05d8\u05dc \u05d0\u05d5\u05e0\u05dc\u05d9\u05d9\u05df \u2014 \u05d3\u05d5\u05e0\u05dc\u05d3 (CBRE) \u05d5\u05d9\u05d9\u05dc (LeapOnline \u05e9\u05dc Lument).",
+      "\u05e2\u05dc \u05db\u05dc \u05db\u05e8\u05d8\u05d9\u05e1 \u05de\u05d5\u05e4\u05d9\u05e2\u05d9\u05dd \u05de\u05e1\u05e4\u05e8 \u05d4\u05d4\u05dc\u05d5\u05d5\u05d0\u05d4 (\u05dc\u05d7\u05d9\u05e6\u05d4 \u05de\u05e2\u05ea\u05d9\u05e7\u05d4 \u05d0\u05d5\u05ea\u05d5), \u05d4\u05e0\u05db\u05e1, \u05d4\u05d9\u05ea\u05e8\u05d4 \u05d4\u05e0\u05d5\u05db\u05d7\u05d9\u05ea \u05d5\u05dc\u05e4\u05d9 \u05d0\u05d9\u05d6\u05d4 \u05ea\u05d0\u05e8\u05d9\u05da, \u05d4\u05e8\u05d9\u05d1\u05d9\u05ea, \u05d4\u05ea\u05e9\u05dc\u05d5\u05dd \u05d5\u05ea\u05e7\u05d5\u05e4\u05ea \u05d4\u05d4\u05dc\u05d5\u05d5\u05d0\u05d4 \u2014 \u05d5\u05d2\u05dd \u05dc\u05de\u05d9 \u05dc\u05d4\u05ea\u05e7\u05e9\u05e8: \u05d8\u05dc\u05e4\u05d5\u05df (\u05dc\u05d7\u05d9\u05e6\u05d4 \u05de\u05d7\u05d9\u05d9\u05d2\u05ea), \u05d0\u05d9\u05de\u05d9\u05d9\u05dc, \u05e9\u05e2\u05d5\u05ea \u05e4\u05e2\u05d9\u05dc\u05d5\u05ea \u05d5\u05db\u05ea\u05d5\u05d1\u05ea \u05dc\u05de\u05e9\u05dc\u05d5\u05d7 \u05d3\u05d5\u05d0\u05e8.",
+      "\u05d3\u05d5\u05e0\u05dc\u05d3: \u05d9\u05ea\u05e8\u05d4 $1,755,560.99 \u05d0\u05d7\u05e8\u05d9 \u05d4\u05ea\u05e9\u05dc\u05d5\u05dd \u05e9\u05dc 1 \u05d1\u05e1\u05e4\u05d8\u05de\u05d1\u05e8, \u05e8\u05d9\u05d1\u05d9\u05ea \u05e7\u05d1\u05d5\u05e2\u05d4 5.72%, \u05e1\u05d5\u05e3 \u05d4\u05d4\u05dc\u05d5\u05d5\u05d0\u05d4 \u05d0\u05d5\u05e7\u05d8\u05d5\u05d1\u05e8 2048. CBRE \u05d2\u05dd \u05de\u05d7\u05d6\u05d9\u05e7\u05d4 \u05d0\u05ea \u05e4\u05d9\u05e7\u05d3\u05d5\u05df \u05d4\u05de\u05e1 ($1,918.80 \u05dc\u05d7\u05d5\u05d3\u05e9) \u05d5\u05de\u05e9\u05dc\u05de\u05ea \u05e2\u05d1\u05d5\u05e8\u05e0\u05d5 \u05d0\u05ea \u05d0\u05e8\u05e0\u05d5\u05e0\u05ea \u05d3\u05e0\u05d1\u05e8.",
+      "\u05d9\u05d9\u05dc: \u05d9\u05ea\u05e8\u05d4 $815,897.36, \u05d4\u05d5\u05e8\u05d0\u05ea \u05d4\u05e7\u05d1\u05e2 \u05d9\u05d5\u05e8\u05d3\u05ea \u05d1-5 \u05dc\u05db\u05dc \u05d7\u05d5\u05d3\u05e9. \u05e2\u05d3\u05d9\u05d9\u05df \u05d7\u05e1\u05e8 \u05dc\u05e0\u05d5 \u05de\u05e1\u05e4\u05e8 \u05d8\u05dc\u05e4\u05d5\u05df \u05d9\u05e9\u05d9\u05e8 \u05e9\u05dc Lument \u2014 \u05d6\u05d4 \u05de\u05e1\u05d5\u05de\u05df \u05d1\u05e6\u05d4\u05d5\u05d1 \u05e2\u05dc \u05d4\u05db\u05e8\u05d8\u05d9\u05e1 \u05e2\u05d3 \u05e9\u05e0\u05e7\u05d1\u05dc \u05d0\u05d5\u05ea\u05d5."
+    ]
+  },
   {
     version: "2.6",
     date: "July 8, 2026",
@@ -2426,13 +2491,22 @@ function extraMortgage(llc) { return (llc && llc.toLowerCase().includes('divando
 // The sheet's per-row insurance is stale / over-scoped for these LLCs, so we force
 // the correct whole-LLC monthly figure here:
 //   Yale    $1,037.55/mo - real Acuity bank draft (sheet still had the old $1,024.54).
-//   Divando $2,909.98/mo - bank-verified from the Divando operating acct (3442): the real
-//           STATE FARM auto-draft = $2,909.98/mo (the standing premium - Mar & Apr 2026;
-//           May 2026 dipped once to $2,633.15). This is the GROSS amount drawn. Dorado
-//           separately credits $138/mo back ("TRANSFER FROM DDA ACCT ...2189") for its 2
-//           units on the policy - NOT netted here (user wants the real drawn figure).
+//   Divando $2,633.15/mo - the STATE FARM auto-draft actually seen on the Divando
+//           operating acct (3442). It has drafted at this figure since May 29 2026 (May 29,
+//           Jul 1 = June's slid draft, Jul 29) - three drafts running, so it is the standing
+//           amount, not the one-off it was first called. It was $2,909.98/mo before that.
+//           ⚠️ The CAUSE is NOT a policy renewal - Ron confirmed Sep 19 2026 that the
+//           Divando State Farm policy did NOT renew (Dorado's did). The drop is exactly
+//           $276.83/mo = $3,321.96/yr, which matches 4776 Blackhawk Way's $3,320/yr line to
+//           within $2/yr, so a property most likely came OFF the policy around May 2026 -
+//           unconfirmed. This is the GROSS amount drawn. Dorado separately credits
+//           $67.40/mo back ("TRANSFER FROM DDA ACCT ...2189") for Jamaica St - NOT netted
+//           here (the real drawn figure is what we want).
 // Any LLC NOT listed here uses the insurance amount straight from the sheet.
-const INSURANCE_OVERRIDE = { divando: 2909.98, yale: 1037.55 };
+const INSURANCE_OVERRIDE = { divando: 2633.15, yale: 1037.55 };
+// Returns the bank-verified monthly insurance for an LLC, or the sheet's own figure when
+// that LLC has no override. Used everywhere net cashflow is computed (cards, History, KPIs,
+// trend) so the displayed insurance and the net always agree.
 function effectiveIns(llc, sheetIns) {
   if (llc) { const n = llc.toLowerCase(); for (const k in INSURANCE_OVERRIDE) { if (n.includes(k)) return INSURANCE_OVERRIDE[k]; } }
   return sheetIns || 0;
@@ -2445,8 +2519,8 @@ function effectiveIns(llc, sheetIns) {
 // drafted this month is gone from the balance, so it is NOT reserved again.
 // Distributions: Divando/Yale/Donald split ÷2 (Ron/Nir); Dorado ÷3 (Ron/Nir/Simon).
 const CASHPLAN_CONFIG = {
-  divando: { label: 'Divando', match: 'divando', mortgage: 12199.86, sba: 2334, insurance: 2909.98, accountant: 0, utilities: 626, software: 288.98, buffer: 2000, split: 2 },
-  donald:  { label: 'Donald',  match: 'donald',  mortgage: 13708,    sba: 444,  insurance: 1210.84, accountant: 0, utilities: 0, software: 0, buffer: 1500, split: 2 },
+  divando: { label: 'Divando', match: 'divando', mortgage: 12199.86, sba: 2334, insurance: 2633.15, accountant: 0, utilities: 626, software: 288.98, buffer: 2000, split: 2 },
+  donald:  { label: 'Donald',  match: 'donald',  mortgage: 13494,    sba: 444,  insurance: 1191.58, accountant: 0, utilities: 0, software: 0, buffer: 1500, split: 2 },
   yale:    { label: 'Yale',    match: 'yale',    mortgage: 7279.08,  sba: 225,  insurance: 1037.55, accountant: 0, utilities: 0, software: 0, buffer: 1500, split: 2 },
   dorado:  { label: 'Dorado',  match: 'dorado',  mortgage: 0,        sba: 0,    insurance: 453.31,  accountant: 0, utilities: 268, software: 0, buffer: 1000, split: 3 }
 };
@@ -2466,7 +2540,7 @@ const CASHPLAN_CONFIG = {
 // DIVANDO + DONALD fixed costs from 12 months of bank CSV (Jun 2025–May 2026, user-reviewed):
 //   Divando: software = ACE CLOUD HOSTING $288.98/mo (~28th via Amex); mortgage ~15th (6 loan
 //     transfers), SBA 1st, State Farm insurance ~29th.
-//   Donald: CBRE mortgage $13,708 + SBA $444 + Westfield insurance $1,210.84 ALL draft in the
+//   Donald: CBRE mortgage $13,494 (Sep 2026 escrow re-set; P&I $11,575.20 + tax escrow $1,918.80) + SBA $444 + Westfield insurance $1,191.58 (renewed Sep 2026 → Sep 2027, was $1,210.84) ALL draft in the
 //     first ~4 days (mortgage/SBA 1st, insurance ~4th). No software/Amex on Donald.
 const CASHPLAN_DAYS = {
   divando: { sba: 1, mortgage: 15, software: 28, insurance: 29 },
@@ -4225,7 +4299,7 @@ function renderLoansSection() {
     'Donald has CBRE + SBA; Yale has Lument + SBA; Dorado is mortgage-free. Hover a shortened loan ' +
     'name to see the properties it covers. This is the recurring monthly loan cost — not balances.</span>' +
     '</span></span></h2>';
-  if (!allLoans.length) { html += '<div style="color:#4e6d8c;padding:14px">No loan rows yet.</div></div>'; el.innerHTML = html; return; }
+  if (!allLoans.length) { html += '<div style="color:#4e6d8c;padding:14px">No loan rows yet.</div></div>'; el.innerHTML = html + renderLoanServicers(); return; }
 
   // Group by LLC (alphabetical) and total each.
   const byLlc = {};
@@ -4262,7 +4336,105 @@ function renderLoansSection() {
     html += '</div></div>';
   });
   html += '</div></div>';
-  el.innerHTML = html;
+  el.innerHTML = html + renderLoanServicers();
+}
+
+/* ============================================================
+   LENDER PORTALS & CONTACTS  (Loan Details tab)
+   ------------------------------------------------------------
+   Everything needed to log in to a lender's borrower portal and
+   reach a human. EDIT HERE — this is the only place these live.
+   Sources: CBRE billing statement 08/18/2026 + prior-year 2025
+   statement (Donald), Lument LeapOnline portal + the 2016 note /
+   2017 Hunt escrow analysis (Yale). Balances carry an as-of date
+   — they are a snapshot, not live.
+   ============================================================ */
+const LOAN_SERVICERS = [
+  {
+    llc: '5070 Donald, LLC',
+    lender: 'CBRE Loan Services, Inc.',
+    portal: 'https://borrowerportal.cbreloanservices.com/dashboard',
+    portalLabel: 'CBRE Borrower Portal',
+    facts: [
+      { k: 'Loan #', copy: '010291013', sub: 'written <b>01-0291013</b> on the payment stub' },
+      { k: 'Property', v: '5060–5082 E Donald Ave, Denver, CO 80222' },
+      { k: 'Balance', v: '$1,755,560.99', sub: 'principal, after the Sep 1, 2026 payment' },
+      { k: 'Rate', v: '5.72% fixed' },
+      { k: 'Payment', v: '$13,494.00 · due the 1st', sub: 'auto-drafted · interest $8,661.46 + principal $2,913.74 + tax escrow $1,918.80. Principal+interest is fixed at $11,575.20 — only the tax escrow moves, and the Sep 2026 escrow analysis cut it from $2,106.80 (Aug 2026 drafted $13,682.00).' },
+      { k: 'Tax escrow', v: '$1,918.80 / mo', sub: 'CBRE pays the Denver tax bill — escrow balance $9,618.98, paid out $24,092.88 so far in 2026' },
+      { k: 'Term', v: 'Sep 28, 2018 → Oct 1, 2048' }
+    ],
+    contacts: [
+      { k: 'Phone', v: '1-800-456-1443', href: 'tel:+18004561443', sub: 'Customer Service ext. <b>3001</b> · Delinquent accounts ext. <b>3004</b>' },
+      { k: 'Email', v: 'CBRELSCustomerService@cbre.com', href: 'mailto:CBRELSCustomerService@cbre.com' },
+      { k: 'Hours', v: '8:00 AM – 5:00 PM Central, Mon–Fri' },
+      { k: 'Mail', v: '15377 Memorial Drive, Suite 400, Houston, TX 77079', sub: 'Payments (no need — auto-drafted): PO Box 973788, Dallas, TX 75397-3788' },
+      { k: 'On file as', v: '5070 Donald, LLC · Attn: Nir Shay', sub: '2080 S Holly St #22459, Denver, CO 80222' }
+    ]
+  },
+  {
+    llc: 'Yale Townhomes, LLC',
+    lender: 'Lument — LeapOnline servicing',
+    portal: 'https://leaponlineservicing.lument.com',
+    portalLabel: 'LeapOnline (Lument)',
+    facts: [
+      { k: 'Loan #', copy: '010107412', sub: 'servicing number — the one the portal lists' },
+      { k: 'Lender loan #', copy: '4001110' },
+      { k: 'Property', v: 'Yale Townhomes Apartments — 2991–2999 W Yale Ave, Denver, CO' },
+      { k: 'Balance', v: '$815,897.36', sub: 'unpaid principal (UPB) shown in the portal, Sep 2026' },
+      { k: 'Payment', v: '$7,279.08 / mo', sub: 'ACH drafts on the <b>5th</b> · 10-day grace period' },
+      { k: 'Note date', v: 'Jul 22, 2016', sub: 'originated with Hunt Mortgage Group; Lument services it now' }
+    ],
+    contacts: [
+      { k: 'Loan manager', v: 'Maki Murphy', sub: 'our loan manager at Lument — the first call' },
+      { k: '· phone', v: '614-857-3282', href: 'tel:+16148573282' },
+      { k: '· email', v: 'Maki.Murphy@lument.com', href: 'mailto:Maki.Murphy@lument.com' },
+      { k: 'Assistant', v: 'Elizabeth Carmody', sub: 'backup when Maki is not reachable' },
+      { k: '· phone', v: '214-237-2381', href: 'tel:+12142372381' },
+      { k: '· email', v: 'Elizabeth.Carmody@lument.com', href: 'mailto:Elizabeth.Carmody@lument.com' }
+    ]
+  }
+];
+
+// Renders the "Lender Portals & Contacts" block under the loan cards.
+function renderLoanServicers() {
+  let html = '<div class="section">';
+  html += '<h2><span class="dot"></span>Lender Portals &amp; Contacts' +
+    '<span class="kpi-info">ⓘ<span class="kpi-tip">' +
+    '<b>One-click access to each lender\'s borrower portal, plus who to call.</b> ' +
+    'Click a loan number to copy it, the phone to dial, or the email to write. ' +
+    '<span class="tax-note">Balances are a dated snapshot typed in from the last statement / portal view — ' +
+    'they do not update on their own. Divando\'s 6 property loans and the SBA lines are not here yet; ' +
+    'ask and they get added.</span>' +
+    '</span></span></h2>';
+  html += '<div style="color:#7e9cbf;font-size:12.5px;margin:-6px 0 14px">Donald (CBRE) and Yale (Lument) are the two loans with an online portal. ' +
+    'Both are <b style="color:#00BFFF">auto-drafted</b> — you never need to send a payment, the portal is for statements, balances and escrow.</div>';
+  html += '<div class="svc-cards">';
+  LOAN_SERVICERS.forEach(s => {
+    html += '<div class="svc-card">' +
+      '<div class="svc-head"><div><div class="svc-llc">' + s.llc + '</div>' +
+      '<div class="svc-lender">' + s.lender + '</div></div>' +
+      '<a class="svc-portal" href="' + s.portal + '" target="_blank" rel="noopener noreferrer">🔗 ' + s.portalLabel + ' ↗</a>' +
+      '</div><div class="svc-rows">';
+    const rowHtml = r => {
+      let v;
+      if (r.missing) v = '<span class="svc-miss">⚠ ' + r.missing + '</span>';
+      else if (r.copy) v = '<span class="tax-parcel" title="Click to copy" onclick="copyParcel(event, ' +
+        JSON.stringify(r.copy).replace(/"/g, '&quot;') + ')">' + r.copy + ' <span style="opacity:.6">📋</span></span>';
+      else if (r.href) v = '<a href="' + r.href + '">' + r.v + '</a>';
+      else v = r.v;
+      return '<div class="svc-row"><span class="k">' + r.k + '</span><span class="v">' + v +
+        (r.sub ? '<span class="sub">' + r.sub + '</span>' : '') + '</span></div>';
+    };
+    (s.facts || []).forEach(r => { html += rowHtml(r); });
+    if ((s.contacts || []).length) {
+      html += '<div class="svc-sep">📞 Contact</div>';
+      s.contacts.forEach(r => { html += rowHtml(r); });
+    }
+    html += '</div></div>';
+  });
+  html += '</div></div>';
+  return html;
 }
 
 // Shorten a lender string for the card row; returns { short, full } where `full` (if any)
