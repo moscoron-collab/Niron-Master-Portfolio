@@ -3328,6 +3328,13 @@ still owes Mid South comes out of the September statement, so **enter September 
 by NOI, or that $452.05 is counted twice. `enter_suncoast_manual.py` now writes an explicit `0`
 (blank still = skip) so a real $0 month can be recorded.
 
+**🗓️ Suncoast / Hare Jul + Aug + Sep 2026 = `$1,205.75` each (entered Oct 6 2026).** Ron uploaded the 3 Suncoast
+statements (each PDF repeats the same 3-page statement 5 times). Every month: rent `$1,325` − mgmt `$119.25` =
+`$1,205.75`, `Owner Draws $1,205.75`, ending balance `$0`, maintenance `$0`. The Sep bank CSV shows exactly
+`$1,205.75` deposited 9/4, so the old ~$80 deposit-vs-statement gap (May 2026) is gone. August rent came in two
+pieces ($825 on 8/1 + $500 on 8/5) but in full. Suncoast holds a `$945` security deposit (escrow, not ours). Written
+via `manual_suncoast.yml`, 1 row per month, no duplicates.
+
 **"Already added?" indicator:** the Add Monthly Statement modal reads
 `PORTFOLIO_DATA.history` and, for the selected month, marks each property with
 `✅ already added` (and disables it) or `⬜ not yet`, plus an "X of 3 entered"
