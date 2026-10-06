@@ -66,11 +66,9 @@ the policy #, the broker contact and what to ask for.
 - **Moss insurance reminders were added the same day (Oct 6 2026)** — 4 events (Kenton 1443+1453, Kearney, Tesla,
   apartment contents). Their table lives in the **`moscoron-collab/moss-investments-niron-combined-portfolio`** CLAUDE.md,
   NOT here (Moss is private — this repo is partner-visible).
-- ⚠️ **Older duplicates exist:** Ron's calendar ALREADY had April 2026 events for these 4 Niron policies —
-  `⚠️ 30-DAY WARNING — <LLC> Renewal` (popup only, 1 day after the new ones) + `🚨 POLICY EXPIRATION — <LLC>` on
-  the day itself. Their descriptions are stale (Divando one still lists 4641 Enid Way; Yale says $1,024.54/mo).
-  So each Niron renewal currently fires twice. **Asked Ron Oct 6 2026 which set to keep** — record the answer here.
-  The `🚨 POLICY EXPIRATION` day-of events are a different thing (confirm the renewal went through) and are fine to keep.
+- ✅ **Old duplicates DELETED (Ron said yes, Oct 6 2026):** the 4 April 2026 `⚠️ 30-DAY WARNING — <LLC> Renewal`
+  recurring events (popup only, stale details) were deleted; the new 🛡️ events above are the only renewal reminders.
+  The `🚨 POLICY EXPIRATION — <LLC>` day-of events were KEPT (they check that the renewal went through).
 
 ---
 
