@@ -7,13 +7,13 @@ on:
         description: "Statement month (format: YYYY-MM, e.g. 2026-04)"
         required: true
       hare_noi:
-        description: "8222 Hare Ave — Net Operating Income (leave blank to skip)"
+        description: "8222 Hare Ave — Net Operating Income (blank = skip, 0 = record a $0 month)"
         required: false
       joest_noi:
-        description: "3899 Joest Rd — Net Operating Income (leave blank to skip)"
+        description: "3899 Joest Rd — Net Operating Income (blank = skip, 0 = record a $0 month)"
         required: false
       stockport_noi:
-        description: "6580 Stockport Dr — Net Operating Income (leave blank to skip)"
+        description: "6580 Stockport Dr — Net Operating Income (blank = skip, 0 = record a $0 month)"
         required: false
 
 jobs:
