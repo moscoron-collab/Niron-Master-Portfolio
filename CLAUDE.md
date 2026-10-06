@@ -44,6 +44,30 @@ flag a redeploy for `AppsScript.gs` changes made *after* the newest row in this 
 
 ---
 
+## 🛡️ STANDING RULE — insurance renewal reminders, 1 month before every expiration (Ron, Oct 6 2026)
+
+**Ron's instruction: "remind me every time 1 month before any upcoming expiration of any insurance to email the
+carrier and ask for a new estimate."** Done as **yearly recurring Google Calendar events** on `moscoron@gmail.com`
+(all-day, email + popup reminder), so they fire even when no Claude session is open. Each event's description holds
+the policy #, the broker contact and what to ask for.
+
+| Policy | Expires | Reminder (yearly) | Contact |
+|---|---|---|---|
+| State Farm — Divando 12 SFRs + 2397 Jamaica (Dorado) | Dec 15 (dashboard also flags **Blackhawk Dec 4**) | **Nov 4** (1 month before the earlier date) | Kevin Schult `(303) 989-3847` |
+| Acuity `ZM1786-01` — Yale | Feb 22 | **Jan 22** | CRS Insurance Brokerage / Nathan Fonseca |
+| Westfield `499841Y` — Donald | Sep 20 | **Aug 20** (first fires 2027) | Arrow Insurance / Wren Arbuthnot `970-668-3500` |
+| Berkshire Hathaway `02PRM080318-06` — Dorado 41st fourplex | Nov 6 | **Oct 6** (first fires 2027; 2026 done — Ron emailed Hannah Oct 6 2026) | IMA Select / Hannah Burford `hannah.burford@imacorp.com` · `303-615-7840` |
+
+- **Keep this table and the calendar in sync.** When a renewal moves a date, or a policy is added / dropped / changes
+  carrier, update the matching calendar event (or delete it and create a new one) AND this table, in the same session.
+- **Also check it whenever you touch insurance** (a declarations page, a Noble-tab edit, a bank draft that changed):
+  if a renewal is <=1 month away and Ron hasn't asked for a quote yet, tell him.
+- Niron business email (insurance agents) goes from `ron.moscovich@nironconstruction.com` — see User context.
+- ⚠️ **Moss insurance is NOT covered yet** — its policy dates live in the `Moss-Investments-Niron-combined` repo,
+  not here. Asked Ron Oct 6 2026; add those events once the dates are known.
+
+---
+
 ## 🚨 SEPT 2026 OUTAGE — AppFolio cookies expired AGAIN + the per-property scripts were re-poisoning the secret (Sep 19 2026)
 
 **Symptom Ron reported:** "AppFolio landed on both yesterday but it wasn't executed / nothing went live."
