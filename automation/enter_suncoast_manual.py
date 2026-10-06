@@ -8,7 +8,9 @@ and the Net Operating Income for each property; this writes one row per property
 to the Niron sheet History tab, in the exact same column layout as run.py.
 
 No mortgage, no insurance on these properties → net_cashflow == NOI.
-Leave a property's value blank/0 to skip it (e.g. if you didn't get its statement).
+Leave a property's value BLANK to skip it (e.g. if you didn't get its statement).
+Type an explicit 0 to record a real $0 month (statement received, nothing deposited —
+e.g. Mid South Jul/Aug 2026, when a repair put the owner balance negative).
 """
 
 import os, json, datetime, calendar
@@ -70,7 +72,7 @@ def main():
     wrote = 0
     for prop, raw in PROPERTIES.items():
         noi = parse_money(raw)
-        if noi is None or noi == 0:
+        if noi is None:   # blank = skip; an explicit 0 is a real $0 month and IS written
             print(f"Skipping {prop} (no value entered)")
             continue
         source = f"Manual Entry: {prop}"

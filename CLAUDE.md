@@ -3317,6 +3317,17 @@ and are entered **manually each month** by the user through the dashboard:
   $1,125.40 was deposited — an $80 gap).
 - No mortgage, no insurance on these → `net_cashflow == NOI` entered.
 
+**🗓️ Mid South Jul + Aug 2026 = `$0` for Joest AND Stockport (Ron's call, Oct 6 2026).** Ron uploaded both
+Mid South owner statements. July: Joest NOI **−$2,800** (tree work $1,500 + $2,220 Midsouth Renovations),
+Stockport **+$1,026.98** (returned payment, rent paid in pieces); the July `Draws $2,420.76` was the June
+balance. August: Joest **+$426.22** (repair $493.78), Stockport **+$894.75** (tree work $1,002); `Draws $0`.
+Ending balance Jul **−$1,773.02**, Aug **−$452.05** → **nothing was deposited for either month** (matches the
+Oct 3 finding that Divando got no Mid South money in September). Per the deposited-amount rule Ron chose
+**`$0` rows** for both properties both months (written via `manual_suncoast.yml`). ⚠️ The `$452.05` Divando
+still owes Mid South comes out of the September statement, so **enter September by the DEPOSIT too**, never
+by NOI, or that $452.05 is counted twice. `enter_suncoast_manual.py` now writes an explicit `0`
+(blank still = skip) so a real $0 month can be recorded.
+
 **"Already added?" indicator:** the Add Monthly Statement modal reads
 `PORTFOLIO_DATA.history` and, for the selected month, marks each property with
 `✅ already added` (and disables it) or `⬜ not yet`, plus an "X of 3 entered"
