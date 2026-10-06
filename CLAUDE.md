@@ -63,8 +63,14 @@ the policy #, the broker contact and what to ask for.
 - **Also check it whenever you touch insurance** (a declarations page, a Noble-tab edit, a bank draft that changed):
   if a renewal is <=1 month away and Ron hasn't asked for a quote yet, tell him.
 - Niron business email (insurance agents) goes from `ron.moscovich@nironconstruction.com` — see User context.
-- ⚠️ **Moss insurance is NOT covered yet** — its policy dates live in the `Moss-Investments-Niron-combined` repo,
-  not here. Asked Ron Oct 6 2026; add those events once the dates are known.
+- **Moss insurance reminders were added the same day (Oct 6 2026)** — 4 events (Kenton 1443+1453, Kearney, Tesla,
+  apartment contents). Their table lives in the **`moscoron-collab/moss-investments-niron-combined-portfolio`** CLAUDE.md,
+  NOT here (Moss is private — this repo is partner-visible).
+- ⚠️ **Older duplicates exist:** Ron's calendar ALREADY had April 2026 events for these 4 Niron policies —
+  `⚠️ 30-DAY WARNING — <LLC> Renewal` (popup only, 1 day after the new ones) + `🚨 POLICY EXPIRATION — <LLC>` on
+  the day itself. Their descriptions are stale (Divando one still lists 4641 Enid Way; Yale says $1,024.54/mo).
+  So each Niron renewal currently fires twice. **Asked Ron Oct 6 2026 which set to keep** — record the answer here.
+  The `🚨 POLICY EXPIRATION` day-of events are a different thing (confirm the renewal went through) and are fine to keep.
 
 ---
 
