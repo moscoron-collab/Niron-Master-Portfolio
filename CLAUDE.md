@@ -849,6 +849,7 @@ The two pipelines write to **separate Google Sheets** (separate `GOOGLE_SHEET_ID
 - **Name**: Ronen Moscovich (`moscoron@gmail.com`, Denver, CO)
 - **Language (UPDATED Oct 3 2026, user request): ALWAYS reply in HEBREW** ("אני קורא מהר יותר"). This replaces the old "always reply in English" rule. Code, commit messages, file contents and copyable values (numbers, URLs, commands) stay as they are; only the chat replies are in Hebrew.
 - **Ask ONE question at a time (Oct 3 2026, user request):** when there are several questions or open items, present ONE, wait for the answer, then move to the next. Do not dump a list of questions in one message.
+- **Second email account (Oct 6 2026):** Niron business mail (insurance agents like IMA Select / Hannah Burford, etc.) lives under **`ron.moscovich@nironconstruction.com`**, NOT `moscoron@gmail.com`. The Gmail connector only sees `moscoron@gmail.com`, so a search there for Niron vendors/agents can come back empty. Ask Ron for the address instead of concluding it doesn't exist; drafts made via the connector land in `moscoron@gmail.com` and must be copied to the business account to send from it.
 - **Technical level**: NOT a developer. Communicates business-side.
 - Step-by-step instructions, copyable commands, explain WHAT each does.
 - Decisive when path is clear — don't over-confirm.
