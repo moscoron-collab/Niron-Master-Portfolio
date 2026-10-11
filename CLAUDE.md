@@ -87,7 +87,12 @@ NOT extend it, so **re-seed again ~Nov 8**). Two separate problems then surfaced
   log** (the blob is a step output, so GitHub does not mask it). Anyone could read a live `_oportal_session` +
   `2fa_user_token`. Fix: each script that sets `new_cookies` now prints `::add-mask::<blob>` first
   (`keepalive`, `run`, `run_moss`, `run_divando`, `run_yale`, `run_donald`). **Older run logs still contain old blobs**
-  (the Sep 19 token was valid to Oct 19) — see whether Ron approved deleting them.
+  (the Sep 19 token was valid to Oct 19). **Ron approved (Oct 11 2026) and the logs of 50 runs were deleted**
+  (all 6 pull workflows, Sep 19 → Oct 11 07:47 UTC, i.e. every run before the mask fix; run history kept, log text gone).
+  Logs before Sep 19 hold already-expired tokens and were left. **Not verifiable from here:** whether anyone read them
+  before deletion, or which old sessions AppFolio still honours.
+- ⚠️ **`weekly.yml` keepalive has been RED every Sunday since Aug 23 2026** (Aug 23, 30, Sep 6, 13, 20, 27, Oct 4 — seven
+  in a row; last green Aug 16). Not diagnosed yet. Probably why the device-trust token is never extended by a run.
 - 🔑 LESSON: a public repo + any step that prints a credential-bearing step output = leak. Mask before you echo.
 
 ---
