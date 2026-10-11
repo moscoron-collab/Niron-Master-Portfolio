@@ -92,7 +92,14 @@ NOT extend it, so **re-seed again ~Nov 8**). Two separate problems then surfaced
   Logs before Sep 19 hold already-expired tokens and were left. **Not verifiable from here:** whether anyone read them
   before deletion, or which old sessions AppFolio still honours.
 - ⚠️ **`weekly.yml` keepalive has been RED every Sunday since Aug 23 2026** (Aug 23, 30, Sep 6, 13, 20, 27, Oct 4 — seven
-  in a row; last green Aug 16). Not diagnosed yet. Probably why the device-trust token is never extended by a run.
+  in a row; last green Aug 16). **Diagnosed Oct 11 2026: NOT a code bug.** The Aug 23 / Aug 30 / Sep 13 logs all say
+  `Cookies expired — logging in with credentials...` then `could NOT authenticate` (the session really was dead when it
+  ran). A manual run on Oct 11 with a live session went GREEN (`Save updated cookies` ran, value masked). The code path
+  is fine; the open question is WHY the session dies between runs. Two data points: the Aug 18 re-seed was dead by the
+  Aug 23 keepalive (5 days), and the Sep 19 re-seed was red again on Sep 20 (log deleted, cause unknown). Unproven theory:
+  AppFolio's server-side session idles out faster than the weekly gap. Cheap experiment if it recurs: run the keepalive
+  daily instead of Sundays-only (≈20 s per run, no credential login). The Oct 18 scheduled run is the next data point.
+  NOTE: the daily 15th-25th pulls skip login once a month is in, so they do NOT keep the session warm.
 - 🔑 LESSON: a public repo + any step that prints a credential-bearing step output = leak. Mask before you echo.
 
 ---
