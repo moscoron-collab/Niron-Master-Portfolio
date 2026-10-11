@@ -40,6 +40,9 @@ def load_cookies():
 def save_cookies(context):
     cookies = context.cookies()
     encoded = base64.b64encode(json.dumps(cookies).encode()).decode()
+    # Mask the blob BEFORE it is echoed: the repo is public and the next workflow step
+    # prints it as "value:", which would leak the live AppFolio session in the logs.
+    print(f"::add-mask::{encoded}")
     print(f"::set-output name=new_cookies::{encoded}")
 
 
