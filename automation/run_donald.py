@@ -90,6 +90,17 @@ DONALD_FIXED_COSTS = {
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
+def _wait_idle(page, timeout=15000):
+    """Best-effort wait for the network to settle. AppFolio's Statements page keeps
+    background requests open, so 'networkidle' may never fire (Oct 11 2026 outage).
+    Callers already wait for the real content selector afterwards, so a timeout
+    here is not an error."""
+    try:
+        page.wait_for_load_state("networkidle", timeout=timeout)
+    except Exception as e:
+        print(f"NOTE: networkidle not reached within {timeout} ms ({type(e).__name__}); continuing.")
+
+
 def _statement_rows(card):
     """Return an owner card's statement rows, newest first.
 
@@ -332,6 +343,9 @@ def load_cookies():
 
 def save_cookies(context):
     encoded = base64.b64encode(json.dumps(context.cookies()).encode()).decode()
+    # Mask the blob BEFORE it is echoed: the repo is public and the next workflow step
+    # prints it as "value:", which would leak the live AppFolio session in the logs.
+    print(f"::add-mask::{encoded}")
     print(f"::set-output name=new_cookies::{encoded}")
 
 
@@ -346,18 +360,18 @@ def login(page):
     (a) refuse to save the dead login-page cookies over the good ones, and
     (b) fail the run loudly instead of exiting green with no data."""
     page.goto(STATEMENTS_URL)
-    page.wait_for_load_state("networkidle")
+    _wait_idle(page)
     if "log_in" not in page.url:
         print("Already logged in via cookies.")
         return True
     print("Logging in with credentials...")
     try:
         page.goto(APPFOLIO_URL)
-        page.wait_for_load_state("networkidle")
+        _wait_idle(page)
         page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
         page.fill("input[name='user[password]']", APPFOLIO_PASS)
         page.click("input[type='submit']")
-        page.wait_for_load_state("networkidle")
+        _wait_idle(page)
     except Exception as e:
         print(f"Login form interaction failed: {e}")
     if "log_in" in page.url:
@@ -372,7 +386,7 @@ def download_packet(page, tmp_dir):
     """Find the Donald card and download the most recent packet.
     Returns (file_path, month_label, date_range)."""
     page.goto("https://laureatetld.appfolio.com/oportal/statements")
-    page.wait_for_load_state("networkidle")
+    _wait_idle(page)
     try:
         page.wait_for_selector("#statements-root .card", timeout=20000)
     except Exception:
@@ -472,7 +486,7 @@ def main():
         # the session is effectively dead (the "1 card" in an outage is the login
         # box). Fail loudly rather than silently writing nothing and exiting green.
         page.goto("https://laureatetld.appfolio.com/oportal/statements")
-        page.wait_for_load_state("networkidle")
+        _wait_idle(page)
         try:
             page.wait_for_selector("#statements-root .card", timeout=20000)
         except Exception:

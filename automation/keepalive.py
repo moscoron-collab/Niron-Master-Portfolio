@@ -17,6 +17,17 @@ APPFOLIO_PASS  = os.environ["APPFOLIO_PASSWORD"]
 COOKIES_B64    = os.environ.get("APPFOLIO_COOKIES", "")
 
 
+def _wait_idle(page, timeout=15000):
+    """Best-effort wait for the network to settle. AppFolio's Statements page keeps
+    background requests open, so 'networkidle' may never fire (Oct 11 2026 outage).
+    Callers already wait for the real content selector afterwards, so a timeout
+    here is not an error."""
+    try:
+        page.wait_for_load_state("networkidle", timeout=timeout)
+    except Exception as e:
+        print(f"NOTE: networkidle not reached within {timeout} ms ({type(e).__name__}); continuing.")
+
+
 def load_cookies():
     if not COOKIES_B64:
         return []
@@ -29,6 +40,9 @@ def load_cookies():
 def save_cookies(context):
     cookies = context.cookies()
     encoded = base64.b64encode(json.dumps(cookies).encode()).decode()
+    # Mask the blob BEFORE it is echoed: the repo is public and the next workflow step
+    # prints it as "value:", which would leak the live AppFolio session in the logs.
+    print(f"::add-mask::{encoded}")
     print(f"::set-output name=new_cookies::{encoded}")
 
 
@@ -43,7 +57,7 @@ def main():
 
         page = context.new_page()
         page.goto(APPFOLIO_URL)
-        page.wait_for_load_state("networkidle")
+        _wait_idle(page)
 
         if "log_in" in page.url:
             print("Cookies expired — logging in with credentials...")
@@ -51,7 +65,7 @@ def main():
                 page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
                 page.fill("input[name='user[password]']", APPFOLIO_PASS)
                 page.click("input[type='submit']")
-                page.wait_for_load_state("networkidle")
+                _wait_idle(page)
             except Exception as e:
                 print(f"Login form interaction failed: {e}")
         else:

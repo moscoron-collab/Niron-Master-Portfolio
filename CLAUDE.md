@@ -72,6 +72,26 @@ the policy #, the broker contact and what to ask for.
 
 ---
 
+## 🚨 OCT 11 2026 — cookie re-seed OK, but `networkidle` timed out on the Statements page + cookie blob leaked in public logs
+
+Ron re-seeded `APPFOLIO_COOKIES` Oct 11 (token runs to **Nov 10 2026**; the Sep one was Oct 19 = a fixed ~30 days, runs do
+NOT extend it, so **re-seed again ~Nov 8**). Two separate problems then surfaced:
+- **`networkidle` never fires on `/oportal/statements`** (Moss runs 85+86 both died at `run_moss.py:538`, `Timeout 30000ms`,
+  right after `Already logged in via cookies`). Login was fine. Fix: every strict `wait_for_load_state("networkidle")` in the 11
+  scripts (`run*`, `backfill*`, `keepalive`) is now `_wait_idle(page)` (15 s best-effort, logs `NOTE: networkidle not reached`,
+  continues). The real readiness gate is the `wait_for_selector("#statements-root .card")` that already follows.
+  **Not "green = fixed":** the verification was the Moss log (`Parsed 4 property pages`, `Already recorded … 2026-09-01`,
+  `Done. Wrote 0 rows`), run FROM THE BRANCH before merging. `Wrote 0` is correct: the pull window's month label is Oct,
+  the October packet is not posted yet, and September is already in.
+- **🔓 SECURITY: the repo is PUBLIC and the `Save updated cookies` step echoes `value: <base64 cookie blob>` in the Actions
+  log** (the blob is a step output, so GitHub does not mask it). Anyone could read a live `_oportal_session` +
+  `2fa_user_token`. Fix: each script that sets `new_cookies` now prints `::add-mask::<blob>` first
+  (`keepalive`, `run`, `run_moss`, `run_divando`, `run_yale`, `run_donald`). **Older run logs still contain old blobs**
+  (the Sep 19 token was valid to Oct 19) — see whether Ron approved deleting them.
+- 🔑 LESSON: a public repo + any step that prints a credential-bearing step output = leak. Mask before you echo.
+
+---
+
 ## 🚨 SEPT 2026 OUTAGE — AppFolio cookies expired AGAIN + the per-property scripts were re-poisoning the secret (Sep 19 2026)
 
 **Symptom Ron reported:** "AppFolio landed on both yesterday but it wasn't executed / nothing went live."
