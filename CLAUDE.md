@@ -98,7 +98,9 @@ NOT extend it, so **re-seed again ~Nov 8**). Two separate problems then surfaced
   is fine; the open question is WHY the session dies between runs. Two data points: the Aug 18 re-seed was dead by the
   Aug 23 keepalive (5 days), and the Sep 19 re-seed was red again on Sep 20 (log deleted, cause unknown). Unproven theory:
   AppFolio's server-side session idles out faster than the weekly gap. Cheap experiment if it recurs: run the keepalive
-  daily instead of Sundays-only (≈20 s per run, no credential login). The Oct 18 scheduled run is the next data point.
+  daily instead of Sundays-only (≈20 s per run, no credential login). **DONE Oct 11 2026 (Ron's call): `weekly.yml` now runs
+  Mon / Wed / Fri 08:00 UTC** (`0 8 * * 1,3,5`; max gap 3 days). Next data point: the Mon Oct 12 run. If several of these
+  go red, the theory is wrong and the session really dies faster than 3 days; if they stay green, widen back out.
   NOTE: the daily 15th-25th pulls skip login once a month is in, so they do NOT keep the session warm.
 - 🔑 LESSON: a public repo + any step that prints a credential-bearing step output = leak. Mask before you echo.
 
@@ -1042,8 +1044,8 @@ GitHub cron is fixed UTC, so in Israeli **winter** (late Oct–late Mar, UTC+2) 
 runs **8:00–9:00 AM Israel** instead. The old twice-daily runs (Niron 16/20 UTC, Moss 10/21
 UTC) were removed — once a month's data lands, the remaining daily runs skip login anyway
 (`month_already_pulled`), so the second daily run added little; worst case a statement posted
-midday shows up the next morning at 9. Weekly `keepalive.py` unchanged (Sunday 08:00 UTC =
-11:00 Israel summer / 10:00 winter).
+midday shows up the next morning at 9. Weekly `keepalive.py` now Mon/Wed/Fri 08:00 UTC (was Sundays; changed Oct 11 2026) =
+11:00 Israel summer / 10:00 winter.
 
 ## ⚡ FAST RECOVERY — "the pulls went quiet / data stopped updating" (READ FIRST)
 
