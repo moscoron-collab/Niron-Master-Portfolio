@@ -37,6 +37,17 @@ LLC_MAP = {
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
+def _wait_idle(page, timeout=15000):
+    """Best-effort wait for the network to settle. AppFolio's Statements page keeps
+    background requests open, so 'networkidle' may never fire (Oct 11 2026 outage).
+    Callers already wait for the real content selector afterwards, so a timeout
+    here is not an error."""
+    try:
+        page.wait_for_load_state("networkidle", timeout=timeout)
+    except Exception as e:
+        print(f"NOTE: networkidle not reached within {timeout} ms ({type(e).__name__}); continuing.")
+
+
 def _statement_rows(card):
     """Return an owner card's statement rows, newest first.
 
@@ -297,7 +308,7 @@ def login(page):
     (a) refuse to save the dead login-page cookies over the good ones, and
     (b) fail the run loudly instead of exiting green with no data."""
     page.goto(APPFOLIO_URL)
-    page.wait_for_load_state("networkidle")
+    _wait_idle(page)
     if "log_in" not in page.url:
         print("Already logged in via cookies.")
         return True
@@ -306,7 +317,7 @@ def login(page):
         page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
         page.fill("input[name='user[password]']", APPFOLIO_PASS)
         page.click("input[type='submit']")
-        page.wait_for_load_state("networkidle")
+        _wait_idle(page)
     except Exception as e:
         print(f"Login form interaction failed: {e}")
     if "log_in" in page.url:
@@ -321,7 +332,7 @@ def download_packet_for_llc(page, llc, tmp_dir):
     appfolio_name = LLC_MAP.get(llc, llc)
     print(f"\nLooking for: {appfolio_name}")
     page.goto("https://laureatetld.appfolio.com/oportal/statements")
-    page.wait_for_load_state("networkidle")
+    _wait_idle(page)
     try:
         page.wait_for_selector("#statements-root .card", timeout=20000)
     except Exception:
@@ -423,7 +434,7 @@ def main():
         # the session is effectively dead (the "1 card" in an outage is the login
         # box). Fail loudly rather than silently writing nothing and exiting green.
         page.goto("https://laureatetld.appfolio.com/oportal/statements")
-        page.wait_for_load_state("networkidle")
+        _wait_idle(page)
         try:
             page.wait_for_selector("#statements-root .card", timeout=20000)
         except Exception:

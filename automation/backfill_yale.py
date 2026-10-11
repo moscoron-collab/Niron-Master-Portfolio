@@ -46,6 +46,17 @@ DETAIL_HEADER = Y.DETAIL_HEADER
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
+def _wait_idle(page, timeout=15000):
+    """Best-effort wait for the network to settle. AppFolio's Statements page keeps
+    background requests open, so 'networkidle' may never fire (Oct 11 2026 outage).
+    Callers already wait for the real content selector afterwards, so a timeout
+    here is not an error."""
+    try:
+        page.wait_for_load_state("networkidle", timeout=timeout)
+    except Exception as e:
+        print(f"NOTE: networkidle not reached within {timeout} ms ({type(e).__name__}); continuing.")
+
+
 def _statement_rows(card):
     """Return an owner card's statement rows, newest first.
 
@@ -185,17 +196,17 @@ def login(page):
     # Only fall back to credentials if AppFolio redirects us to the login page.
     print("Navigating to portal...")
     page.goto(STATEMENTS_URL)
-    page.wait_for_load_state("networkidle")
+    _wait_idle(page)
     if "log_in" not in page.url:
         print("Already logged in via cookies.")
         return
     print("Logging in with credentials...")
     page.goto(APPFOLIO_URL)
-    page.wait_for_load_state("networkidle")
+    _wait_idle(page)
     page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
     page.fill("input[name='user[password]']", APPFOLIO_PASS)
     page.click("input[type='submit']")
-    page.wait_for_load_state("networkidle")
+    _wait_idle(page)
 
 
 def parse_packet_li(li):
@@ -260,7 +271,7 @@ def click_next_page(page, card_idx):
 def collect_packets(page, appfolio_name, max_count):
     print("  Navigating to statements page...")
     page.goto("https://laureatetld.appfolio.com/oportal/statements")
-    page.wait_for_load_state("networkidle")
+    _wait_idle(page)
     try:
         page.wait_for_selector("#statements-root .card", timeout=20000)
     except Exception:

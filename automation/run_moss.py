@@ -74,6 +74,17 @@ CABO_PLUG_THROUGH      = "2026-12-01"
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
+def _wait_idle(page, timeout=15000):
+    """Best-effort wait for the network to settle. AppFolio's Statements page keeps
+    background requests open, so 'networkidle' may never fire (Oct 11 2026 outage).
+    Callers already wait for the real content selector afterwards, so a timeout
+    here is not an error."""
+    try:
+        page.wait_for_load_state("networkidle", timeout=timeout)
+    except Exception as e:
+        print(f"NOTE: networkidle not reached within {timeout} ms ({type(e).__name__}); continuing.")
+
+
 def _statement_rows(card):
     """Return an owner card's statement rows, newest first.
 
@@ -339,7 +350,7 @@ def login(page):
     can never proceed. We MUST detect that so the caller refuses to save the dead
     login-page cookies over the good ones and fails the run loudly."""
     page.goto(APPFOLIO_URL)
-    page.wait_for_load_state("networkidle")
+    _wait_idle(page)
     if "log_in" not in page.url:
         print("Already logged in via cookies.")
         return True
@@ -348,7 +359,7 @@ def login(page):
         page.fill("input[name='user[email]']", APPFOLIO_EMAIL)
         page.fill("input[name='user[password]']", APPFOLIO_PASS)
         page.click("input[type='submit']")
-        page.wait_for_load_state("networkidle")
+        _wait_idle(page)
     except Exception as e:
         print(f"Login form interaction failed: {e}")
     if "log_in" in page.url:
@@ -411,7 +422,7 @@ def download_packet(page, tmp_dir):
     """Find the Moss Investments card on the Owner Statements page and download
     the most recent packet. Returns (file_path, month_label, date_range)."""
     page.goto("https://laureatetld.appfolio.com/oportal/statements")
-    page.wait_for_load_state("networkidle")
+    _wait_idle(page)
     try:
         page.wait_for_selector("#statements-root .card", timeout=20000)
     except Exception:
@@ -535,7 +546,7 @@ def main():
         # the session is effectively dead (the diagnostic dump in download_packet
         # prints why). Fail loudly rather than silently writing nothing.
         page.goto("https://laureatetld.appfolio.com/oportal/statements")
-        page.wait_for_load_state("networkidle")
+        _wait_idle(page)
         try:
             page.wait_for_selector("#statements-root .card", timeout=20000)
         except Exception:
