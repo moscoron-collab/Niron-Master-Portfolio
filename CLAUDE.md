@@ -102,6 +102,16 @@ NOT extend it, so **re-seed again ~Nov 8**). Two separate problems then surfaced
   Mon / Wed / Fri 08:00 UTC** (`0 8 * * 1,3,5`; max gap 3 days). Next data point: the Mon Oct 12 run. If several of these
   go red, the theory is wrong and the session really dies faster than 3 days; if they stay green, widen back out.
   NOTE: the daily 15th-25th pulls skip login once a month is in, so they do NOT keep the session warm.
+  **❌ RESULT Oct 14 2026: the "gap too long" theory is WRONG.** The cron registered (GitHub starts these runs 5-9 h late), but
+  BOTH scheduled runs (Mon Oct 12 17:04 UTC, Wed Oct 14 13:08 UTC) went RED with `Cookies expired — logging in with
+  credentials...` then `could NOT authenticate`. The Oct 11 08:11 run was green, so the session died within ~33 hours (alive
+  ≥25 min on Oct 11: five pulls + keepalive all authenticated). **Consequences:** (1) the `APPFOLIO_COOKIES` secret is DEAD
+  right now (last good save = Oct 11 08:11; failed runs correctly saved nothing); (2) the Oct 15-25 pulls will go RED until
+  Ron re-seeds, and a re-seed only buys about a day, so **re-seed at the moment the October packet is posted and run the
+  pulls right away** instead of expecting the secret to persist; (3) the credential fallback ALSO fails even though the
+  `2fa_user_token` is valid to Nov 10 — cause unknown (2FA prompt? captcha? IP/UA-bound session?). The scripts only check the
+  URL after submitting the form, so nothing in the logs says which. **Next diagnostic (needs Ron's OK):** print the first
+  ~300 chars of visible page text after a failed credential login in `keepalive.py`.
 - 🔑 LESSON: a public repo + any step that prints a credential-bearing step output = leak. Mask before you echo.
 
 ---
