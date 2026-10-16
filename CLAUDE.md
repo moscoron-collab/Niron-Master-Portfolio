@@ -23,8 +23,9 @@ confirmed redeploy.**
 | Date | Confirmed how | Covers |
 |---|---|---|
 | **Sep 10 2026** | User redeployed; chatbot then answered Donald mortgage **$13,494 / total $13,938** (it had said $13,708 before) | **Everything in `AppsScript.gs` through Sep 10 2026** — the Donald `$13,494` `dashboardKnowledge()` sync, plus the whole accumulated batch: Messages tab (+ edit, + email), Bug Reports tab (+ email both ways), Utilities per-LLC-per-month tab, Buffers tab, Subs tab, Vacancy tab, Property Tax tab, Activity Log, CPA invoice cols I–L, Paid Date + Cleared cols M–N, Simon `simon_amount` col F, the chatbot per-property maintenance reader, and the Divando/Dorado insurance + tax knowledge fixes. |
+| **Oct 16 2026** | Ron redeployed, then saved a maintenance invoice with several files and confirmed "both the invoice and the photos are there" (multi-file only works on the new deployment) | **Everything in `AppsScript.gs` through Oct 16 2026**, incl. the multi-file invoice upload (`saveInvoiceFiles` / `splitInvoiceUrls`, `invoice_urls`). |
 
-**So as of Sep 10 2026 every `NEEDS REDEPLOY` note ABOVE this date in this file is SATISFIED.** Only
+**So as of Oct 16 2026 every `NEEDS REDEPLOY` note in this file dated on or before Oct 16 2026 is SATISFIED.** Only
 flag a redeploy for `AppsScript.gs` changes made *after* the newest row in this table.
 
 - **The 10-second test** (use it instead of asking the user whether they redeployed): open the 💬 chatbot
@@ -44,7 +45,7 @@ flag a redeploy for `AppsScript.gs` changes made *after* the newest row in this 
 
 ---
 
-## 📎 Maintenance invoices take MULTIPLE files (Oct 16 2026, APP_VERSION → 2.12, NEEDS REDEPLOY)
+## 📎 Maintenance invoices take MULTIPLE files (Oct 16 2026, APP_VERSION → 2.12, ✅ redeployed + confirmed live Oct 16 2026)
 
 Ron: the 🔧 form only let him attach one photo at a time. Now `#maint-file` is `multiple` — pick several
 photos/PDFs at once (Ctrl-click on PC, multi-select on the phone). A line under the box lists what was picked.
