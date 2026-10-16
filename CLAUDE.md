@@ -44,6 +44,32 @@ flag a redeploy for `AppsScript.gs` changes made *after* the newest row in this 
 
 ---
 
+## 📎 Maintenance invoices take MULTIPLE files (Oct 16 2026, APP_VERSION → 2.12, NEEDS REDEPLOY)
+
+Ron: the 🔧 form only let him attach one photo at a time. Now `#maint-file` is `multiple` — pick several
+photos/PDFs at once (Ctrl-click on PC, multi-select on the phone). A line under the box lists what was picked.
+- **Storage:** still **col L** of the Maintenance Log, now **one Drive URL per line**. No new column, so old
+  1-URL rows read exactly as before. **Editing an invoice and choosing files ADDS them** to the existing ones
+  (there is no per-file delete; remove a line in col L by hand if ever needed).
+- **Apps Script (`AppsScript.gs`):** new `saveInvoiceFiles(data)` (saves `data.files[]`, falls back to the old
+  single `data.file`) + `splitInvoiceUrls(cell)`. `addMaintenanceEntry` / `updateMaintenanceEntry` (LAST copies)
+  use them and return `invoice_urls`. The live `getDashboardJson` maintenance reader now emits
+  `invoice_url` = the FIRST URL (so anything that reads the old field, e.g. the combined dashboard, still gets a
+  working link) + `invoice_urls` = all of them.
+- **Frontend (`index.html`):** `maintFileUrls(m)` (uses `invoice_urls`, else splits the raw cell, so it works
+  before AND after the redeploy) + `maintFileLinks(m)` → one numbered 📎 per file in the Maintenance table and the
+  CPA list; both CSV exports join the URLs with ` | `. `shrinkImageFile()` scales JPEG/PNG/WebP over 700 KB to
+  max 2000 px JPEG 0.85 (a 12 MB test photo went to ~1.5 MB); PDFs, GIFs and HEIC go up unchanged. Limits: 25 MB
+  per file, ~45 MB per save (base64) — over that the form asks to save fewer and ✏️ add the rest.
+- **Before the redeploy:** the form sends `files` AND `file` (= the first one), so the old deployment stores the
+  first file and the form shows a ⚠️ "only the FIRST file was stored — redeploy" message instead of a silent loss.
+- **Verified** in headless Chromium (3 files: 12 MB JPG + 13 MB PNG + PDF → all 3 sent, images shrunk, success
+  message; old-backend response → the ⚠️ message; zero JS errors) and the Apps Script helpers with node stubs.
+- 🚀 **Going live:** the usual redeploy (no new scope — Drive is already granted). Probe: add an invoice with 2
+  photos; the row should show 📎¹ 📎².
+
+---
+
 ## 🛡️ STANDING RULE — insurance renewal reminders, 1 month before every expiration (Ron, Oct 6 2026)
 
 **Ron's instruction: "remind me every time 1 month before any upcoming expiration of any insurance to email the
