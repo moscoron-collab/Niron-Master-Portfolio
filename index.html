@@ -536,7 +536,8 @@
     <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:normal;font-size:13px;color:#ccd9ea;margin-top:12px;font-weight:400"><input type="checkbox" id="maint-paid" style="width:auto;margin:0"> Paid <span style="color:#4e6d8c;font-size:11px">(check once it's actually been paid / the check is mailed)</span></label>
     <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:normal;font-size:13px;color:#ccd9ea;margin-top:8px;font-weight:400"><input type="checkbox" id="maint-cleared" style="width:auto;margin:0"> Cleared the bank <span style="color:#4e6d8c;font-size:11px">(for a mailed check — tick once it's actually cashed; the planner stops reserving it)</span></label>
     <label>Notes (optional)</label><textarea id="maint-notes" placeholder="e.g. paid by Zelle, or split with tenant"></textarea>
-    <label>Invoice file (optional)</label><input type="file" id="maint-file" accept="image/*,application/pdf,.pdf">
+    <label>Invoice files / photos (optional — pick as many as you want)</label><input type="file" id="maint-file" multiple accept="image/*,application/pdf,.pdf" onchange="maintFilesChosen(this)">
+    <div id="maint-file-chosen" style="font-size:11px;color:#ccd9ea;margin-top:4px"></div>
     <div id="maint-file-current" style="font-size:11px;color:#7e9cbf;margin-top:4px"></div>
     <div class="form-msg" id="maint-msg"></div>
     <div class="modal-actions"><button class="secondary" onclick="closeMaintModal()">Cancel</button><button class="primary" id="maint-submit" onclick="submitMaintenance()">Save Invoice</button></div>
@@ -1517,8 +1518,18 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.11";
+const APP_VERSION = "2.12";
 const CHANGELOG = [
+  {
+    version: "2.12",
+    date: "October 16, 2026",
+    en: [
+      "Maintenance invoices can now carry several files. In the 🔧 form you can pick many photos or PDFs at once (hold Ctrl, or select several on the phone). Each file gets its own 📎 in the Maintenance table and the CPA list. Editing an invoice and choosing more files adds them to the ones already there. Big phone photos are shrunk automatically so the upload stays fast."
+    ],
+    he: [
+      "אפשר עכשיו לצרף כמה קבצים לחשבונית תחזוקה. בטופס 🔧 בוחרים כמה תמונות או PDF בבת אחת (לחיצה על Ctrl, או בחירה של כמה תמונות בטלפון). לכל קובץ יש 📎 משלו בטבלת התחזוקה וברשימת ה-CPA. בעריכת חשבונית, קבצים חדשים מתווספים לקיימים. תמונות גדולות מהטלפון מוקטנות אוטומטית כדי שההעלאה תהיה מהירה."
+    ]
+  },
   {
     version: "2.11",
     date: "October 3, 2026",
@@ -1948,7 +1959,7 @@ function switchMainTab(tab, skipUrl) {
 /* ============================================================
    MASTER PORTFOLIO — MAINTENANCE MODAL
    ============================================================ */
-function openMaintModal() { document.getElementById("maint-modal").classList.add("open"); syncActorSelects(); document.getElementById("maint-row").value = ""; document.getElementById("maint-title").textContent = "🔧 Add Maintenance Invoice"; document.getElementById("maint-submit").textContent = "Save Invoice"; document.getElementById("maint-edit-help").style.display = "none"; const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, "0"); const dd = String(today.getDate()).padStart(2, "0"); document.getElementById("maint-date").value = yyyy + "-" + mm + "-" + dd; document.getElementById("maint-msg").className = "form-msg"; document.getElementById("maint-msg").textContent = ""; document.getElementById("maint-paidby").value = ""; document.getElementById("maint-paid").checked = false; document.getElementById("maint-notes").value = ""; document.getElementById("maint-file").value = ""; document.getElementById("maint-file-current").textContent = ""; populatePropertyDropdown(); loadCustomSubs(); }
+function openMaintModal() { document.getElementById("maint-modal").classList.add("open"); syncActorSelects(); document.getElementById("maint-row").value = ""; document.getElementById("maint-title").textContent = "🔧 Add Maintenance Invoice"; document.getElementById("maint-submit").textContent = "Save Invoice"; document.getElementById("maint-edit-help").style.display = "none"; const today = new Date(); const yyyy = today.getFullYear(); const mm = String(today.getMonth() + 1).padStart(2, "0"); const dd = String(today.getDate()).padStart(2, "0"); document.getElementById("maint-date").value = yyyy + "-" + mm + "-" + dd; document.getElementById("maint-msg").className = "form-msg"; document.getElementById("maint-msg").textContent = ""; document.getElementById("maint-paidby").value = ""; document.getElementById("maint-paid").checked = false; document.getElementById("maint-notes").value = ""; document.getElementById("maint-file").value = ""; document.getElementById("maint-file-current").textContent = ""; document.getElementById("maint-file-chosen").textContent = ""; populatePropertyDropdown(); loadCustomSubs(); }
 /* Open the SAME modal in edit mode, pre-filled from the clicked row. rowNum is the
    absolute sheet row carried on each maintenance record (m.row from getDashboardJson). */
 function openMaintEdit(rowNum) {
@@ -1976,8 +1987,10 @@ function openMaintEdit(rowNum) {
   document.getElementById("maint-cleared").checked = !!m.cleared;
   document.getElementById("maint-notes").value = m.notes || "";
   document.getElementById("maint-file").value = "";
-  document.getElementById("maint-file-current").innerHTML = m.invoice_url
-    ? '📎 Current file: <a href="' + m.invoice_url + '" target="_blank" style="color:#00BFFF">view</a> · choose a new file to replace it'
+  document.getElementById("maint-file-chosen").textContent = "";
+  const curFiles = maintFileUrls(m);
+  document.getElementById("maint-file-current").innerHTML = curFiles.length
+    ? '📎 Current file' + (curFiles.length > 1 ? 's' : '') + ': ' + curFiles.map((u, i) => '<a href="' + u + '" target="_blank" style="color:#00BFFF">' + (curFiles.length > 1 ? (i + 1) : 'view') + '</a>').join(' · ') + ' — files you choose now are ADDED to these'
     : "";
 }
 /* Select a value in a <select>, inserting a temporary option if the stored value
@@ -1992,7 +2005,7 @@ function setSelectValue(selId, value, label) {
 }
 function populatePropertyDropdown() { const sel = document.getElementById("maint-property"); if (!sel || !PORTFOLIO_DATA) return; const properties = PORTFOLIO_DATA.properties || []; const grouped = {}; properties.forEach(p => { if (!grouped[p.llc]) grouped[p.llc] = []; grouped[p.llc].push(p); }); let html = '<option value="">-- Select Property --</option>'; Object.keys(grouped).sort().forEach(llc => { html += '<optgroup label="' + llc + '">'; grouped[llc].forEach(p => { const label = p.notes ? p.address + ' (' + p.notes + ')' : p.address; html += '<option value="' + p.address + '" data-llc="' + p.llc + '">' + label + '</option>'; }); html += '</optgroup>'; }); sel.innerHTML = html; }
 function onPropertyChange(sel) { const opt = sel.options[sel.selectedIndex]; const llc = opt ? opt.getAttribute("data-llc") || "" : ""; document.getElementById("maint-llc").value = llc; }
-function closeMaintModal() { document.getElementById("maint-modal").classList.remove("open"); ["maint-row", "maint-property", "maint-llc", "maint-sub", "maint-category", "maint-desc", "maint-amount", "maint-paidby", "maint-notes", "maint-file"].forEach(id => { document.getElementById(id).value = ""; }); document.getElementById("maint-paid").checked = false; document.getElementById("maint-cleared").checked = false; document.getElementById("maint-file-current").textContent = ""; }
+function closeMaintModal() { document.getElementById("maint-modal").classList.remove("open"); ["maint-row", "maint-property", "maint-llc", "maint-sub", "maint-category", "maint-desc", "maint-amount", "maint-paidby", "maint-notes", "maint-file"].forEach(id => { document.getElementById(id).value = ""; }); document.getElementById("maint-paid").checked = false; document.getElementById("maint-cleared").checked = false; document.getElementById("maint-file-current").textContent = ""; document.getElementById("maint-file-chosen").textContent = ""; }
 // Subs/vendors live in the shared "Subs" Google Sheet tab (data.subs) so a name added
 // on ANY device shows for everyone. A localStorage cache is kept only as a fallback so a
 // sub added before the Apps Script redeploy still shows that session.
@@ -2029,19 +2042,66 @@ async function submitMaintenance() {
   if (editRow) data.row = Number(editRow);
   if (!data.date || !data.property || !data.llc || !data.amount) { msgEl.className = "form-msg err"; msgEl.textContent = "Please fill in Date, Property, and Amount."; return; }
   const actor = ensureActor(); if (!actor) return; data.actor = actor;
-  const fileInput = document.getElementById("maint-file"); const file = fileInput && fileInput.files && fileInput.files[0];
+  const fileInput = document.getElementById("maint-file"); const files = Array.from((fileInput && fileInput.files) || []);
+  const tooBig = files.find(f => f.size > 25 * 1024 * 1024);
+  if (tooBig) { msgEl.className = "form-msg err"; msgEl.textContent = "File too large (max 25 MB each): " + tooBig.name; return; }
   btn.disabled = true; msgEl.className = "form-msg";
   try {
-    if (file) {
-      if (file.size > 25 * 1024 * 1024) { msgEl.className = "form-msg err"; msgEl.textContent = "File too large (max 25 MB)."; btn.disabled = false; return; }
-      msgEl.textContent = "Uploading invoice..."; data.file = await readFileAsPayload(file);
+    if (files.length) {
+      const payloads = [];
+      for (let i = 0; i < files.length; i++) {
+        msgEl.textContent = "Preparing file " + (i + 1) + " of " + files.length + "...";
+        payloads.push(await readFileAsPayload(await shrinkImageFile(files[i])));
+      }
+      const totalB64 = payloads.reduce((n, p) => n + p.data.length, 0);
+      if (totalB64 > 45 * 1024 * 1024) { msgEl.className = "form-msg err"; msgEl.textContent = "Too much at once (" + Math.round(totalB64 / 1048576) + " MB). Save fewer files now, then ✏️ edit the invoice to add the rest."; btn.disabled = false; return; }
+      data.files = payloads; data.file = payloads[0]; // .file = fallback for an Apps Script that hasn't been redeployed yet
+      msgEl.textContent = "Uploading " + files.length + " file" + (files.length > 1 ? "s" : "") + "...";
     } else { msgEl.textContent = editRow ? "Saving changes..." : "Saving..."; }
     const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(data) });
     const result = await res.json();
     if (result.error) { msgEl.className = "form-msg err"; msgEl.textContent = "Error: " + result.error; }
-    else { msgEl.className = "form-msg ok"; msgEl.textContent = "✅ Saved! Refreshing dashboard..."; setTimeout(() => { closeMaintModal(); load(); }, 1000); }
+    else if (files.length > 1 && !result.invoice_urls) {
+      // Old Apps Script deployment: it only knows data.file, so just the first file was stored.
+      msgEl.className = "form-msg err"; msgEl.textContent = "⚠️ Saved, but only the FIRST file was stored — the Apps Script needs a redeploy for multiple files.";
+      setTimeout(() => { closeMaintModal(); load(); }, 4000);
+    }
+    else { msgEl.className = "form-msg ok"; msgEl.textContent = "✅ Saved" + (files.length > 1 ? " (" + files.length + " files)" : "") + "! Refreshing dashboard..."; setTimeout(() => { closeMaintModal(); load(); }, 1000); }
   } catch (e) { msgEl.className = "form-msg err"; msgEl.textContent = "Network error: " + e.message; }
   finally { btn.disabled = false; }
+}
+// All invoice file URLs for a maintenance row. The sheet's col L holds one Drive URL per line;
+// the redeployed Apps Script sends them as invoice_urls, an older one sends the raw cell.
+function maintFileUrls(m) {
+  if (!m) return [];
+  if (Array.isArray(m.invoice_urls) && m.invoice_urls.length) return m.invoice_urls;
+  return String(m.invoice_url || "").split(/\s+/).filter(Boolean);
+}
+// One 📎 per file (numbered when there's more than one).
+function maintFileLinks(m, style) {
+  const urls = maintFileUrls(m);
+  return urls.map((u, i) => '<a href="' + u + '" target="_blank" style="' + (style || 'text-decoration:none') + '" title="View invoice file' + (urls.length > 1 ? ' ' + (i + 1) + ' of ' + urls.length : '') + '">📎' + (urls.length > 1 ? '<sup style="font-size:9px">' + (i + 1) + '</sup>' : '') + '</a>').join(' ');
+}
+// Show the picked files under the file box so it's clear all of them were taken.
+function maintFilesChosen(input) {
+  const el = document.getElementById("maint-file-chosen"); if (!el) return;
+  const files = Array.from(input.files || []);
+  el.textContent = files.length ? files.length + " file" + (files.length > 1 ? "s" : "") + " selected: " + files.map(f => f.name).join(", ") : "";
+}
+// Phone photos are 3-8 MB each; scale big images down (max 2000px, JPEG) so several fit in one
+// upload. PDFs, GIFs and anything the browser can't decode (e.g. HEIC) go up unchanged.
+async function shrinkImageFile(file) {
+  if (!/^image\/(jpeg|png|webp)$/i.test(file.type) || file.size < 700 * 1024) return file;
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+    const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise(res => c.toBlob(res, "image/jpeg", 0.85));
+    if (!blob || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+  } catch (e) { return file; }
 }
 // Read a File into a {name, mimeType, data(base64)} payload for the Apps Script upload.
 function readFileAsPayload(file) {
@@ -3997,7 +4057,7 @@ function renderCpaModal() {
       '<td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td>' +
       '<td style="text-align:right;white-space:nowrap" class="red">' + fmt(m.amount) + '</td>' +
       '<td style="font-size:11px;color:#7e9cbf">' + (m.notes || '') + '</td>' +
-      '<td>' + (m.invoice_url ? '<a href="' + m.invoice_url + '" target="_blank" style="text-decoration:none" title="View invoice">📎</a>' : '—') + '</td>' +
+      '<td style="white-space:nowrap">' + (maintFileUrls(m).length ? maintFileLinks(m) : '—') + '</td>' +
       '<td><button class="audit-btn" style="margin:0;padding:4px 8px" onclick="markInvoicePaid(' + m.row + ')">Mark paid</button></td></tr>';
   });
   h += '<tr style="font-weight:700;border-top:2px solid #1e2d42"><td colspan="6" style="padding:8px">Total</td><td style="text-align:right" class="red">' + fmt(total) + '</td><td colspan="3"></td></tr></tbody></table>';
@@ -4031,7 +4091,7 @@ function exportCpaCsv() {
   const rows = cpaInvoices();
   const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
   const lines = [['Date', 'LLC', 'Property', 'Vendor', 'Category', 'Description', 'Amount', 'Notes', 'Invoice File'].map(esc).join(',')];
-  rows.forEach(m => lines.push([m.date, m.llc, m.property, m.sub, m.category, m.description, (m.amount || 0).toFixed(2), m.notes, m.invoice_url].map(esc).join(',')));
+  rows.forEach(m => lines.push([m.date, m.llc, m.property, m.sub, m.category, m.description, (m.amount || 0).toFixed(2), m.notes, maintFileUrls(m).join(' | ')].map(esc).join(',')));
   const total = rows.reduce((s, m) => s + (m.amount || 0), 0);
   lines.push(['TOTAL', '', '', '', '', '', total.toFixed(2), '', ''].map(esc).join(','));
   const blob = new Blob([lines.join('\r\n')], { type: 'text/csv' });
@@ -4097,7 +4157,7 @@ function exportMaintCsv() {
     let sub = 0, subUnpaid = 0;
     byLlc[llc].forEach(m => {
       const amt = m.amount || 0; sub += amt; if (!m.paid) subUnpaid += amt;
-      lines.push([m.llc, m.date, m.property, m.sub, m.category, m.description, amt.toFixed(2), maintPaidByLabel(m), m.paid ? 'Yes' : 'No', m.notes, m.invoice_url].map(esc).join(','));
+      lines.push([m.llc, m.date, m.property, m.sub, m.category, m.description, amt.toFixed(2), maintPaidByLabel(m), m.paid ? 'Yes' : 'No', m.notes, maintFileUrls(m).join(' | ')].map(esc).join(','));
     });
     grandTotal += sub; grandUnpaid += subUnpaid;
     lines.push([llc + ' — subtotal', '', '', '', '', '', sub.toFixed(2), '', '', '', ''].map(esc).join(','));
@@ -4307,7 +4367,7 @@ function renderMaintenanceSection(maintenance) {
       } else {
         payBadge = '<span style="color:#4e6d8c">—</span>';
       }
-      const fileLink = m.invoice_url ? ' <a href="' + m.invoice_url + '" target="_blank" title="View invoice file" style="text-decoration:none">📎</a>' : '';
+      const fileLink = maintFileUrls(m).length ? ' ' + maintFileLinks(m) : '';
       html += '<tr><td style="white-space:nowrap">' + dateLabel(m.date) + '</td><td>' + m.llc + '</td><td style="font-size:12px">' + (m.property || '—') + '</td><td>' + (m.sub || '—') + '</td><td>' + (m.category || '—') + '</td><td>' + (m.description || '—') + '</td><td class="red">' + fmt(m.amount) + '</td><td style="white-space:nowrap">' + payBadge + fileLink + '</td><td style="white-space:nowrap">' + actions + '</td></tr>';
     });
     const totalScope = searching ? ' (search — all months)' : (maintMonth ? ' (' + monthLabel(maintMonth) + ')' : ' (all months)');

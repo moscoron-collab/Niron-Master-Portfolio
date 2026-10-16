@@ -1712,10 +1712,8 @@ function addMaintenanceEntry(data) {
   var nextRow = Math.max(5, lastRow + 1);
   var dateObj = new Date(data.date + 'T12:00:00');
   var invoiceUrl = '';
-  if (data.file && data.file.data) {
-    try { invoiceUrl = saveInvoiceFile(data.file); }
-    catch (err) { return ContentService.createTextOutput(JSON.stringify({error:'File upload failed: ' + err.message})).setMimeType(ContentService.MimeType.JSON); }
-  }
+  try { invoiceUrl = saveInvoiceFiles(data).join('\n'); }
+  catch (err) { return ContentService.createTextOutput(JSON.stringify({error:'File upload failed: ' + err.message})).setMimeType(ContentService.MimeType.JSON); }
   // Columns A-N: Date, LLC, Property, Sub, Category, Description, Amount, Entered By,
   //              Paid By, Paid, Notes, Invoice File URL, Paid Date, Cleared
   var paid = data.paid ? true : false;
@@ -1731,7 +1729,7 @@ function addMaintenanceEntry(data) {
     paidDate, data.cleared ? true : false
   ]]);
   logActivity(data.actor, 'Added invoice', (data.property || data.llc) + ' · ' + (data.category || '') + ' · $' + (Number(data.amount) || 0));
-  return ContentService.createTextOutput(JSON.stringify({ok:true, row:nextRow, invoice_url:invoiceUrl})).setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify({ok:true, row:nextRow, invoice_url:invoiceUrl, invoice_urls:splitInvoiceUrls(invoiceUrl)})).setMimeType(ContentService.MimeType.JSON);
 }
 
 // Edit an existing maintenance invoice in place. `row` is the absolute sheet row
@@ -1743,12 +1741,11 @@ function updateMaintenanceEntry(data) {
   if (!row || row < 5 || row > sh.getLastRow()) return ContentService.createTextOutput(JSON.stringify({error:'Invalid row'})).setMimeType(ContentService.MimeType.JSON);
   if (!data.date || !data.llc || !data.amount) return ContentService.createTextOutput(JSON.stringify({error:'Date, LLC, Amount required'})).setMimeType(ContentService.MimeType.JSON);
   var dateObj = new Date(data.date + 'T12:00:00');
-  // Keep the existing invoice link unless a new file is uploaded.
-  var invoiceUrl = sh.getRange(row, 12).getValue() || '';
-  if (data.file && data.file.data) {
-    try { invoiceUrl = saveInvoiceFile(data.file); }
-    catch (err) { return ContentService.createTextOutput(JSON.stringify({error:'File upload failed: ' + err.message})).setMimeType(ContentService.MimeType.JSON); }
-  }
+  // Keep the existing invoice file(s); newly uploaded files are ADDED to them (col L holds one
+  // Drive URL per line).
+  var invoiceUrl = String(sh.getRange(row, 12).getValue() || '');
+  try { invoiceUrl = splitInvoiceUrls(invoiceUrl).concat(saveInvoiceFiles(data)).join('\n'); }
+  catch (err) { return ContentService.createTextOutput(JSON.stringify({error:'File upload failed: ' + err.message})).setMimeType(ContentService.MimeType.JSON); }
   // Paid date: if the invoice is now paid, keep the existing stamp (or use the supplied date);
   // if it's newly paid with no stamp, stamp today; if it's not paid, clear it. The cleared flag
   // is taken from the form when sent, else preserved.
@@ -1767,7 +1764,7 @@ function updateMaintenanceEntry(data) {
     paidDate, clearedVal
   ]]);
   logActivity(data.actor, 'Edited invoice', (data.property || data.llc) + ' · ' + (data.category || '') + ' · $' + (Number(data.amount) || 0));
-  return ContentService.createTextOutput(JSON.stringify({ok:true, row:row, invoice_url:invoiceUrl})).setMimeType(ContentService.MimeType.JSON);
+  return ContentService.createTextOutput(JSON.stringify({ok:true, row:row, invoice_url:invoiceUrl, invoice_urls:splitInvoiceUrls(invoiceUrl)})).setMimeType(ContentService.MimeType.JSON);
 }
 
 // Delete a maintenance invoice row entirely.
@@ -1811,6 +1808,21 @@ function setMaintenanceCleared(data) {
   var cinfo = sh.getRange(row, 1, 1, 7).getValues()[0];
   logActivity(data.actor, cleared ? 'Marked check cleared' : 'Marked check uncleared', (cinfo[2] || cinfo[1]) + ' · $' + (Number(cinfo[6]) || 0));
   return ContentService.createTextOutput(JSON.stringify({ok:true, row:row, cleared:cleared})).setMimeType(ContentService.MimeType.JSON);
+}
+
+// Save every uploaded invoice file in the request; return their view URLs in order.
+// data.files = [{name, mimeType, data}, ...] (multi-file form); data.file = a single file
+// (older dashboard pages). files wins when both are sent.
+function saveInvoiceFiles(data) {
+  var list = (data.files && data.files.length) ? data.files : (data.file ? [data.file] : []);
+  var urls = [];
+  list.forEach(function (f) { if (f && f.data) urls.push(saveInvoiceFile(f)); });
+  return urls;
+}
+
+// Col L can hold several Drive URLs, one per line. Split it into a clean array.
+function splitInvoiceUrls(cell) {
+  return String(cell || '').split(/\s+/).filter(function (u) { return u; });
 }
 
 // Save an uploaded invoice file to a dedicated Drive folder; return its view URL.
@@ -1935,7 +1947,7 @@ function getDashboardJson() {
           category: r[4] || "", description: r[5] || "",
           amount: Number(r[6])||0, entered_by: r[7] || "",
           paid_by: r[8] || "", paid: r[9] === true || String(r[9]).toLowerCase() === 'true',
-          notes: r[10] || "", invoice_url: r[11] || "",
+          notes: r[10] || "", invoice_url: splitInvoiceUrls(r[11])[0] || "", invoice_urls: splitInvoiceUrls(r[11]),
           paid_date: pd, cleared: r[13] === true || String(r[13]).toLowerCase() === 'true'
         });
       }
