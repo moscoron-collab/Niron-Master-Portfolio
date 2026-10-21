@@ -8,6 +8,11 @@ on:
     # Niron 06:00 UTC = 9:00 Israel (summer) / 8:00 Israel (winter).
     - cron: "0 6 15-25 * *"
   workflow_dispatch:  # allows manual trigger from GitHub UI
+    inputs:
+      test_alert:
+        description: "Only send the 'login failed' alert email (no pull) - to preview it"
+        type: boolean
+        default: false
 
 jobs:
   run:
@@ -29,6 +34,7 @@ jobs:
 
       - name: Run automation
         id: automation
+        if: inputs.test_alert != true
         env:
           APPFOLIO_EMAIL: ${{ secrets.APPFOLIO_EMAIL }}
           APPFOLIO_PASSWORD: ${{ secrets.APPFOLIO_PASSWORD }}
@@ -36,7 +42,74 @@ jobs:
           NOTIFICATION_EMAIL: ${{ secrets.NOTIFICATION_EMAIL }}
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
           APPFOLIO_COOKIES: ${{ secrets.APPFOLIO_COOKIES }}
-        run: python automation/run.py
+        # tee keeps the log so the alert step can tell a dead login from other
+        # failures (bash runs with -o pipefail, so run.py's exit code still counts).
+        run: python automation/run.py 2>&1 | tee run.log
+
+      # Oct 21 2026: Ron asked to be told, from the 15th, what is needed whenever the
+      # pull cannot finish on its own. A dead AppFolio login (SMS 2FA) is the usual
+      # cause; the email carries the full fix so no Claude session is needed.
+      - name: Classify failure
+        id: why
+        if: always() && (steps.automation.outcome == 'failure' || inputs.test_alert == true)
+        run: |
+          if [ "${{ inputs.test_alert }}" = "true" ] || grep -q "LOGIN FAILED" run.log 2>/dev/null; then
+            echo "kind=login" >> "$GITHUB_OUTPUT"
+          else
+            echo "kind=other" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Alert - AppFolio login needed
+        if: always() && steps.why.outputs.kind == 'login'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: moscoron@gmail.com
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          from: Niron Automation <moscoron@gmail.com>
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          subject: "AppFolio: צריך התחברות שלך כדי למשוך את החודש"
+          body: |
+            הרובוט לא מצליח להתחבר ל-AppFolio (פג תוקף ההתחברות, צריך קוד SMS).
+
+            אם עוד לא הגיע מ-Laureate המייל "Monthly Statement" - אין מה לעשות היום, המייל הזה יחזור מחר.
+            אם הוא כבר הגיע - 4 צעדים, בערך 3 דקות:
+
+            1. להתחבר ל-AppFolio ולהקליד את קוד ה-SMS:
+            https://laureatetld.appfolio.com/oportal/users/log_in
+
+            2. באותה לשונית: תוסף Cookie-Editor, ואז Export, ואז JSON (זה מעתיק את הכל).
+
+            3. לפתוח את הקישור, להדביק בתיבה Value במקום מה שיש שם, וללחוץ Update secret:
+            https://github.com/${{ github.repository }}/settings/secrets/actions/APPFOLIO_COOKIES
+
+            4. לפתוח את הקישור, ללחוץ Run workflow ואז את הכפתור הירוק Run workflow:
+            https://github.com/${{ github.repository }}/actions/workflows/monthly_all.yml
+
+            בסוף יגיע מייל "Dashboard Updated". אם במקומו מגיע שוב מייל כזה, לפתוח את Claude ולכתוב: המשיכה של AppFolio נכשלה.
+
+            פרטי הריצה: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Alert - pull failed for another reason
+        if: always() && steps.why.outputs.kind == 'other'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: moscoron@gmail.com
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          from: Niron Automation <moscoron@gmail.com>
+          to: ${{ secrets.NOTIFICATION_EMAIL }}
+          subject: "AppFolio: המשיכה נכשלה (לא בגלל ההתחברות)"
+          body: |
+            ההתחברות ל-AppFolio עבדה, אבל המשיכה לא הצליחה לקרוא את הדוח.
+            כנראה AppFolio שינו משהו בדף או בקובץ. זה תיקון קוד.
+
+            לפתוח את Claude ולכתוב: המשיכה של AppFolio נכשלה, והנה הקישור:
+            https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
       - name: Send dashboard updated notification
         if: steps.automation.outcome == 'success' && steps.automation.outputs.wrote_data == 'true'
