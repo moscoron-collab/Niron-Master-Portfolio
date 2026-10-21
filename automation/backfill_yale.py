@@ -70,8 +70,16 @@ def _statement_rows(card):
     return rows or card.query_selector_all("ul.list-group li")
 
 
+# "Aug 16, 2026 to Sep 15, 2026" (to Sep 2026) or "Sep 16, 2026 - Oct 15, 2026"
+# (Oct 2026). Callers and the sheet's Date Range column expect the "to" form,
+# so _statement_date_text always returns it that way.
 _DATE_RANGE_RE = re.compile(
-    r"[A-Z][a-z]{2,8}\.? \d{1,2}, \d{4} to [A-Z][a-z]{2,8}\.? \d{1,2}, \d{4}")
+    r"([A-Z][a-z]{2,8}\.? \d{1,2}, \d{4})\s*(?:to|-|\u2013|\u2014)\s*([A-Z][a-z]{2,8}\.? \d{1,2}, \d{4})")
+
+
+def _norm_date_range(text):
+    m = _DATE_RANGE_RE.search(text or "")
+    return f"{m.group(1)} to {m.group(2)}" if m else ""
 
 _DATE_FROM_ANCESTOR_JS = """(e, src) => {
     const re = new RegExp(src, 'g');
@@ -88,20 +96,22 @@ def _statement_date_text(row):
     """The 'Mon D, YYYY to Mon D, YYYY' label for one statement row.
 
     It was a <b>, then an <a class="fw-bold"> (Sep 2026). By Oct 21 2026 the
-    first fw-bold link in the row read "Owner Packet", so match the date
-    pattern instead of trusting any one element: first inside the row, then in
+    first fw-bold link in the row read "Owner Packet" and the range moved to a
+    plain <div> written with a dash, so match the date pattern instead of
+    trusting any one element: first inside the row, then in
     the nearest ancestor that holds exactly ONE date range (several = another
     statement's label, so give up rather than pick the wrong month)."""
     for sel in ("a.fw-bold", "b"):
         for el in row.query_selector_all(sel):
-            m = _DATE_RANGE_RE.search(el.inner_text())
-            if m:
-                return m.group(0)
-    m = _DATE_RANGE_RE.search(row.inner_text())
-    if m:
-        return m.group(0)
+            found = _norm_date_range(el.inner_text())
+            if found:
+                return found
+    found = _norm_date_range(row.inner_text())
+    if found:
+        return found
     try:
-        found = row.evaluate(_DATE_FROM_ANCESTOR_JS, _DATE_RANGE_RE.pattern)
+        found = _norm_date_range(
+            row.evaluate(_DATE_FROM_ANCESTOR_JS, _DATE_RANGE_RE.pattern))
     except Exception as e:
         found = ""
         print(f"DIAG: ancestor date lookup failed: {e}")
