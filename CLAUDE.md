@@ -99,6 +99,35 @@ the policy #, the broker contact and what to ask for.
 
 ---
 
+## 🚨 OCT 21 2026 — October not pulled for 6 days: dead cookies, THEN a second AppFolio row redesign
+
+Ron: "AppFolio was published yesterday and you didn't automate the pull, why?" Every pull (all 5) had been RED
+every day Oct 15–20, plus the keepalive Oct 12/14/16/19, all with `LOGIN FAILED — still on the login page`. The
+`APPFOLIO_COOKIES` secret was dead since ~Oct 12 (as predicted in the Oct 14 note below). Nothing was "silent" —
+the guards worked — but nobody re-seeded.
+- **Re-seed, Oct 21:** Ron exported Cookie-Editor JSON (4 cookies; `2fa_user_token` still the one valid to Nov 10).
+  ⚠️ His first paste did NOT save — the next run logged **`Loaded 11 cookies`** (the old blob) instead of 4.
+  **Check the `Loaded N cookies` count against what you handed over** before blaming the cookies themselves.
+- **Then a NEW failure once logged in:** `Most recent packet: Owner Packet` → `Could not download Moss Owner Packet`.
+  AppFolio changed the statement rows again. Real row (captured by the diag this fix added):
+  `<a class="fw-bold" href=".../24710/details">Owner Packet</a>` then
+  `<div class="text-muted small mb-2">Sep 16, 2026 - Oct 15, 2026</div>`, a `Most recent` badge, and the download
+  link is now a direct `Owner%20Packet.pdf` (not a .zip). So the first `a.fw-bold` is the document NAME, and the date
+  uses a **dash** instead of "to". `.analytics-statement-download-link a` survived again.
+- **Fix (all 10 `run_*`/`backfill_*`):** `_statement_date_text` now matches the date PATTERN (`to`, `-`, en/em dash)
+  in the row, then in the nearest ancestor holding exactly ONE date range (several = refuse, never guess a month),
+  always returns the `X to Y` form (so month parsing + the sheet's Date Range column are unchanged), and prints the
+  row's text + outer HTML when it finds nothing. Verified in headless Chromium on 6 layouts × 10 scripts, then a
+  Moss run FROM THE BRANCH: `Most recent packet: Sep 16, 2026 to Oct 15, 2026` → `Done. Wrote 5 rows to History.`
+  (Kearney Apt $1,911.88 · Kearney $3,731.15 · Kenton 1443 $2,929.50 · Kenton 1453 $2,954.50 + Cabo plug) and the
+  cookie secret was re-saved.
+- The October Moss packet now has 8 pages (pages 6–8 = `%`, `Payment Options:`, `Tahoe Maintenance Invoice`); the
+  parser skips them correctly.
+- 🔑 **LESSON:** the dump-the-element diagnostic is what solved it in one run. Keep diagnostics that print the real
+  markup on any "found the card but couldn't read it" path.
+
+---
+
 ## 🚨 OCT 11 2026 — cookie re-seed OK, but `networkidle` timed out on the Statements page + cookie blob leaked in public logs
 
 Ron re-seeded `APPFOLIO_COOKIES` Oct 11 (token runs to **Nov 10 2026**; the Sep one was Oct 19 = a fixed ~30 days, runs do
