@@ -1,0 +1,57 @@
+name: Run all 5 AppFolio pulls
+
+# One button for the monthly catch-up after a cookie re-seed (Oct 21 2026).
+# Dispatches the 5 pull workflows ONE AT A TIME (they share APPFOLIO_COOKIES and
+# must not race) and waits for each. Moss goes first because it re-saves the
+# cookie secret after a good login.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  run-all:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run the 5 pulls in order
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -u
+          failed=""
+          for wf in monthly_moss.yml monthly.yml monthly_divando.yml monthly_yale.yml monthly_donald.yml; do
+            echo "::group::$wf"
+            started=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            gh workflow run "$wf" -R "$REPO" --ref main
+            id=""
+            for i in $(seq 1 30); do
+              sleep 5
+              id=$(gh run list -R "$REPO" --workflow "$wf" --event workflow_dispatch -L 5 \
+                     --json databaseId,createdAt \
+                     --jq "[.[] | select(.createdAt >= \"$started\")][0].databaseId // empty")
+              [ -n "$id" ] && break
+            done
+            if [ -z "$id" ]; then
+              echo "::error::$wf did not start"
+              failed="$failed $wf"
+              echo "::endgroup::"
+              continue
+            fi
+            echo "Run: https://github.com/$REPO/actions/runs/$id"
+            if gh run watch "$id" -R "$REPO" --exit-status --interval 15 > /dev/null; then
+              echo "$wf: success"
+            else
+              echo "::error::$wf failed: https://github.com/$REPO/actions/runs/$id"
+              failed="$failed $wf"
+            fi
+            echo "::endgroup::"
+          done
+          if [ -n "$failed" ]; then
+            echo "::error::Failed:$failed"
+            exit 1
+          fi
+          echo "All 5 pulls finished."

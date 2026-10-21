@@ -99,6 +99,33 @@ the policy #, the broker contact and what to ask for.
 
 ---
 
+## 📬 MONTHLY ROUTINE — Ron re-seeds by himself from an email, no Claude needed (Oct 21 2026)
+
+Ron: "not one month has gone smoothly since we built this... every 15th tell me what you need, until the
+file arrives". Facts that shape the design: AppFolio's SMS 2FA needs a human about every 30 days, the session
+dies within ~1-2 days, and **Laureate's monthly email is only a notice with a "Review Owner Packet" link to the
+login page** (from `communications@laureatetld.mailer.appfolio.us`; Oct 2026 notice arrived Oct 20). No PDF is
+emailed. Ron declined drafting a request to Laureate to attach the PDF; the Twilio (robot phone number for the
+SMS) idea is unbuilt and unverified (would need AppFolio to accept that number as the 2FA phone).
+- **Alert email (`monthly.yml`)**: the run step now `tee`s to `run.log`; on failure a `Classify failure` step
+  greps `LOGIN FAILED` → **Hebrew email "AppFolio: צריך התחברות שלך"** to `NOTIFICATION_EMAIL` with the 4 steps
+  (log in + SMS → Cookie-Editor Export JSON → paste into the `APPFOLIO_COOKIES` secret → Run `monthly_all.yml`);
+  any other failure → a "not the login, it's a code fix, open Claude" email. Fires every day 15th-25th while the
+  login is dead (the email itself says "if Laureate's Monthly Statement email hasn't come, nothing to do today").
+  Preview: dispatch `monthly.yml` with input `test_alert: true` (sends the login email, skips the pull).
+- **No base64 conversion needed any more**: all 5 `run_*.py` `load_cookies()` try `json.loads(raw)` first and
+  `_normalize_cookies` maps Cookie-Editor fields, so the raw export can go straight into the secret. Verified with
+  Ron's real Oct 21 export in Playwright (an already-expired `_sp_ses` analytics cookie is dropped; harmless).
+  ⚠️ `keepalive.py` still needs base64 — irrelevant to the monthly flow; Moss re-saves the secret as base64 after
+  its first good login anyway.
+- **`monthly_all.yml` ("Run all 5 AppFolio pulls")**: one button, dispatches Moss → Niron → Divando → Yale →
+  Donald one at a time via `gh` (GITHUB_TOKEN, `actions: write`), waits for each, fails red listing any failure.
+- **A Claude scheduled task was tried and DELETED the same day**: fired sessions got `403` on the repo and had no
+  GitHub MCP / Gmail tools (create_trigger here cannot attach repos or connectors). The GitHub-native alert above
+  replaced it. Don't rebuild a routine for this unless it can be given repo access.
+
+---
+
 ## 🚨 OCT 21 2026 — October not pulled for 6 days: dead cookies, THEN a second AppFolio row redesign
 
 Ron: "AppFolio was published yesterday and you didn't automate the pull, why?" Every pull (all 5) had been RED
