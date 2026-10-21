@@ -43,8 +43,11 @@ jobs:
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
           APPFOLIO_COOKIES: ${{ secrets.APPFOLIO_COOKIES }}
         # tee keeps the log so the alert step can tell a dead login from other
-        # failures (bash runs with -o pipefail, so run.py's exit code still counts).
-        run: python automation/run.py 2>&1 | tee run.log
+        # failures. The default shell here is plain `bash -e` (no pipefail), so set
+        # it explicitly or tee's exit code would hide run.py's failure.
+        run: |
+          set -o pipefail
+          python automation/run.py 2>&1 | tee run.log
 
       # Oct 21 2026: Ron asked to be told, from the 15th, what is needed whenever the
       # pull cannot finish on its own. A dead AppFolio login (SMS 2FA) is the usual
