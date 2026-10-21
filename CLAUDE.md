@@ -119,15 +119,14 @@ the guards worked — but nobody re-seeded.
   always returns the `X to Y` form (so month parsing + the sheet's Date Range column are unchanged), and prints the
   row's text + outer HTML when it finds nothing. Verified in headless Chromium on 6 layouts × 10 scripts, then a
   Moss run FROM THE BRANCH: `Most recent packet: Sep 16, 2026 to Oct 15, 2026` → `Done. Wrote 5 rows to History.`
-  (Kearney Apt $1,911.88 · Kearney $3,731.15 · Kenton 1443 $2,929.50 · Kenton 1453 $2,954.50 + Cabo plug) and the
-  cookie secret was re-saved.
+  and the cookie secret was re-saved.
 - **All 5 October pulls then ran from the branch, verified from each log:** `monthly.yml` `Errors: []` + Written to
   History ×4 (Dorado disb `$8,091.58`) · `monthly_divando.yml` `Wrote 15 rows` · `monthly_yale.yml` `Wrote 5 rows` ·
   `monthly_donald.yml` `Wrote 8 rows`. Divando/Yale/Donald/Moss each re-saved the cookie secret.
   Worth a look: **2332 Oakland Disb `$0.00`** with Cash In `$2,720` (likely a Laureate reserve hold / repair) and Yale
   2993 Cash In `$10,831.05` (the chronic non-payer caught up?). The Dorado statement still mails to the SOLD
   `16923 Melissa Ann Dr`, so Laureate has a stale owner address.
-- The October Moss packet now has 8 pages (pages 6–8 = `%`, `Payment Options:`, `Tahoe Maintenance Invoice`); the
+- The October packets carry extra non-property pages (e.g. `Payment Options:`, an invoice page); the
   parser skips them correctly.
 - 🔑 **LESSON:** the dump-the-element diagnostic is what solved it in one run. Keep diagnostics that print the real
   markup on any "found the card but couldn't read it" path.
