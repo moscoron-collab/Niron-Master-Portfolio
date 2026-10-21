@@ -70,12 +70,50 @@ def _statement_rows(card):
     return rows or card.query_selector_all("ul.list-group li")
 
 
+_DATE_RANGE_RE = re.compile(
+    r"[A-Z][a-z]{2,8}\.? \d{1,2}, \d{4} to [A-Z][a-z]{2,8}\.? \d{1,2}, \d{4}")
+
+_DATE_FROM_ANCESTOR_JS = """(e, src) => {
+    const re = new RegExp(src, 'g');
+    for (let n = e.parentElement; n && n.tagName !== 'BODY'; n = n.parentElement) {
+        const hits = (n.innerText || '').match(re) || [];
+        if (hits.length === 1) return hits[0];
+        if (hits.length > 1 || n.classList.contains('card')) return '';
+    }
+    return '';
+}"""
+
+
 def _statement_date_text(row):
     """The 'Mon D, YYYY to Mon D, YYYY' label for one statement row.
 
-    Now rendered as <a class="fw-bold">; it used to be a <b>."""
-    el = row.query_selector("a.fw-bold") or row.query_selector("b")
-    return el.inner_text().strip() if el else ""
+    It was a <b>, then an <a class="fw-bold"> (Sep 2026). By Oct 21 2026 the
+    first fw-bold link in the row read "Owner Packet", so match the date
+    pattern instead of trusting any one element: first inside the row, then in
+    the nearest ancestor that holds exactly ONE date range (several = another
+    statement's label, so give up rather than pick the wrong month)."""
+    for sel in ("a.fw-bold", "b"):
+        for el in row.query_selector_all(sel):
+            m = _DATE_RANGE_RE.search(el.inner_text())
+            if m:
+                return m.group(0)
+    m = _DATE_RANGE_RE.search(row.inner_text())
+    if m:
+        return m.group(0)
+    try:
+        found = row.evaluate(_DATE_FROM_ANCESTOR_JS, _DATE_RANGE_RE.pattern)
+    except Exception as e:
+        found = ""
+        print(f"DIAG: ancestor date lookup failed: {e}")
+    if found:
+        return found
+    print(f"DIAG: no date-range label found for a statement row. Row text: "
+          f"{row.inner_text()[:300]!r}")
+    try:
+        print(f"DIAG: row outer_html (first 3000): {row.evaluate('e => e.outerHTML')[:3000]}")
+    except Exception as e:
+        print(f"DIAG: outer_html failed: {e}")
+    return ""
 
 
 # ── Google Sheets (with backoff + batched writes, mirrors backfill_divando) ──
