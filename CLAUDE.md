@@ -71,6 +71,28 @@ photos/PDFs at once (Ctrl-click on PC, multi-select on the phone). A line under 
 
 ---
 
+## 🏢 Dorado 41st fourplex RENEWED (Oct 27 2026, APP_VERSION → 2.13) — Berkshire Hathaway, $5,585/yr, $2,500 deductible KEPT
+
+Ron compared three numbers (Oct 27 2026) and **chose to keep the $2,500 deductible**. All dashboard data updated (pure frontend, live on merge, no Apps Script redeploy).
+
+| | Expiring `-06` | Renewal `-07` ($2,500, chosen) | Renewal `-07` w/ $5,000 (NOT taken) |
+|---|---|---|---|
+| Term | Nov 6 2025 → Nov 6 2026 | Nov 6 2026 → Nov 6 2027 | same |
+| Building | $775,000 | $790,500 (+2% inflation guard) | $790,500 |
+| Standard deductible | $2,500 | **$2,500** | $5,000 |
+| Annual / monthly | $5,440 / $453.33 | **$5,585 / $465.42** | $4,983 / $415.25 |
+
+- **Sources:** the expiring policy (Drive `41st.pdf`, issued Sep 18 2025: building $4,765 + BI $304 + GL $370 = $5,440; wind/hail $15,500 is a FLAT amount in endorsement CPM 1110, not 2%); the **binder dated 8/28/2026** (total premium **$5,585**, down payment **$466**, Twelve Payment Plan, valid FOR 60 DAYS from 11/06/2026, asks for mortgagee / loss payee info within 20 business days); and a **PROOF endorsement dated 10/26/2026** ("Modify Building", return premium **-$602**, building deductible $2,500 → $5,000, premium after = $4,983).
+- **The $602 discount is the deductible change** (inference: the -$602 matches the building premium dropping $4,765 → $4,307 while the limit went up 2%; the documents never say so). Without it the renewal was +$145 (+2.7%) vs the expiring $5,440.
+- **⚠️ OPEN: the $5,000 endorsement was "processed 10/26/2026".** Ron must tell Hannah (IMA Select) to cancel it and keep $2,500, otherwise the policy will say $5,000 while the dashboard says $2,500. Ron was given the email text. Ask him whether it is done.
+- **What is NOT verified (the dashboard says so in the card):** the final non-PROOF declarations; the wind/hail deductible on -07 (assumed unchanged $15,500: the endorsement proof does not touch CPM 1110); liability limits (dashboard card still says $1M / $2M, not printed on either PDF); building limit $790,500 on the $2,500 version (it equals 775,000 × 1.02, and appears on the $5,000 proof); the mortgagees on the card (ANB Bank ISAOA, Collegiate Peaks Bank), while this file says Dorado's properties are mortgage-free: ask Hannah what is on the final policy.
+- **Payment schedule:** `FOURPLEX_PAYMENTS` now = Oct 6 2026 $466.00 (down payment, per binder) + 11 × ~$465.36 (estimated) through Sep 6 2027. The Oct 6 2026 date follows last year's pattern (first draft the month before the term) and is **not bank-verified** — check the Oct 6 2026 Dorado bank draft (expected $466.00; the Dorado CSV of the next `/monthly-distribution` run will show it).
+- **Updated in `index.html`:** Noble summary tile (Total Monthly $5,327.70, next-renewals list now starts Dec 15 2026 Divando, Dorado Nov 6 2027 at the end), Dorado LLC card, renewal calendar row, Dorado renewal card (policy `-07`, expiring `-06`, premium $5,585 = prop $5,215 + liability $370, monthly $465.42, building $790,500), payment schedule, premium-history table (new row, `-06` moved to history, YoY +2.7%), the Dorado overview table (building total $1,169,300, annual combined $8,010), and `CASHPLAN_CONFIG.dorado.insurance` 453.31 → **465.42**. Also synced the `/monthly-distribution` skill's Dorado row.
+- `AppsScript.gs` `dashboardKnowledge()` does not quote the Dorado fourplex premium, so no redeploy was needed.
+- Next reminder: yearly Oct 6 2027 (calendar event unchanged; its description still shows policy `-06`, harmless).
+
+---
+
 ## 🛡️ STANDING RULE — insurance renewal reminders, 1 month before every expiration (Ron, Oct 6 2026)
 
 **Ron's instruction: "remind me every time 1 month before any upcoming expiration of any insurance to email the
@@ -83,7 +105,7 @@ the policy #, the broker contact and what to ask for.
 | State Farm — Divando 12 SFRs + 2397 Jamaica (Dorado) | Dec 15 (dashboard also flags **Blackhawk Dec 4**) | **Nov 4** (1 month before the earlier date) | Kevin Schult `(303) 989-3847` |
 | Acuity `ZM1786-01` — Yale | Feb 22 | **Jan 22** | CRS Insurance Brokerage / Nathan Fonseca |
 | Westfield `499841Y` — Donald | Sep 20 | **Aug 20** (first fires 2027) | Arrow Insurance / Wren Arbuthnot `970-668-3500` |
-| Berkshire Hathaway `02PRM080318-06` — Dorado 41st fourplex | Nov 6 | **Oct 6** (first fires 2027; 2026 done — Ron emailed Hannah Oct 6 2026) | IMA Select / Hannah Burford `hannah.burford@imacorp.com` · `303-615-7840` |
+| Berkshire Hathaway `02PRM080318-07` — Dorado 41st fourplex (renewed Nov 6 2026 → Nov 6 2027) | Nov 6 | **Oct 6** (first fires 2027; 2026 done — Ron emailed Hannah Oct 6 2026) | IMA Select / Hannah Burford `hannah.burford@imacorp.com` · `303-615-7840` |
 
 - **Keep this table and the calendar in sync.** When a renewal moves a date, or a policy is added / dropped / changes
   carrier, update the matching calendar event (or delete it and create a new one) AND this table, in the same session.
