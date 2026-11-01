@@ -152,60 +152,20 @@ number was only caught by accident when the user uploaded a loan statement.
 4. `dashboardKnowledge()` in `AppsScript.gs` (chatbot — needs a redeploy)
 5. **This reference table** + the fixed-costs section in `CLAUDE.md`
 
-⚠️ **One draft is not a trend.** Insurance especially can slide or double up in a month (Divando's State
-Farm drafted twice in July 2026, and at $2,633.15 instead of $2,909.98 — that one turned out to be REAL, and the
-reference table now carries $2,633.15; note it took 4 months to confirm because nobody re-checked). Flag it, then **wait for a second
-month** before changing anything — unless a statement or declarations page confirms the new figure outright.
-A mortgage change, by contrast, is almost always real and permanent (escrow re-analysis).
+✅ **RULE (Ron, Nov 1 2026): record what actually went out and what actually came in.** When a fixed cost
+drafts at a different amount, **update the dashboard to the actual amount in the same run and tell Ron what
+changed** (old → new, and the likely reason if one is known). Do NOT wait for a second month and do NOT ask
+permission first. A one-off month (e.g. a refund folded into a draft) gets recorded too; if the next month
+moves again, update again and say so. This replaces the old "one draft is not a trend, wait a month" rule,
+which left Divando's State Farm figure stale for months.
 
-### 🔴 OPEN ITEM for the next run — Divando State Farm: what is the draft now?
+### ✅ CLOSED — Divando State Farm (Nov 1 2026)
 
-**Do this FIRST on the next Divando CSV. Find the `STATE FARM` line and read the amount.** Ron and the
-agent could not settle the cause from the data on hand (Sep 19 2026), and the answer is one line in the
-August/September statement.
-
-What is known:
-
-| Draft | Amount |
-|---|---|
-| Mar 3 · Mar 31 · Apr 29 2026 | `$2,909.98` |
-| **May 29 2026** | **`$2,633.15`** ← dropped here |
-| Jul 1 2026 (June's slid draft) · Jul 29 2026 | `$2,633.15` |
-| Aug 29 2026 | unknown (not in any CSV Ron has sent) |
-| **Sep 30 2026** | **`$2,298.94`** ← first draft after Enid came off (Aug 28) |
-| Oct ~29–31 2026 | **unknown — this is what to look for next** |
-
-**Update (Oct 3 2026): September matched NONE of the cases below.** `$2,298.94` is `$334.21` under
-`$2,633.15` — Enid's `$210.67` plus another `$123.54`, most likely a one-time refund of her unused premium
-(Aug 28 → Dec 15) taken off the draft. **Ron's call: record Sep as an actual, keep `$2,633.15` as the
-standard until the October draft confirms.** So for the October draft:
-- **≈`$2,298.94` again** → that IS the new level. 5-place update to `$2,298.94`.
-- **≈`$2,422`** (`2,633.15 − 210.67`) → September carried a one-time refund; the steady level is
-  `$2,422`. 5-place update to `$2,422`.
-- **lower again / anything else** → the refund may be spread over several drafts. Report the exact
-  number and wait for November (or the declarations page) before changing the standard.
-
-The original cases (written before September was known) are kept below for the record:
-
-**Ron's reading: it is 4641 Enid Way, which was sold.** That is recorded — Enid sold **Aug 28 2026**,
-Kevin Schult endorsed her off the policy the same day, her share was `$2,528`/yr = **`$210.67`**/mo, and
-the Dorado→Divando credit dropped `$138` → `$67.40`. **Two things don't line up yet:** the drop happened
-**May 29, three months before the sale**, and it is **`$276.83`**/mo, `$66.16` more than Enid's share.
-
-So read the amount and apply whichever case matches — do not assume:
-
-- **`$2,633.15`** → unchanged since May; Enid's removal never showed up in the draft. Keep the current
-  override, and ask Kevin Schult what actually changed in May.
-- **≈`$2,422`** (`2,633.15 − 210.67`) → Enid came off ON TOP of the May change. **The dashboard is then
-  too high** — update `INSURANCE_OVERRIDE.divando` + `CASHPLAN_CONFIG.divando.insurance` in `index.html`,
-  the Noble tab, `dashboardKnowledge()` and the table below, per the 5-place list above.
-- **≈`$2,699`** (`2,909.98 − 210.67`) → the May–July figure was temporary and Enid is the only real
-  change. Same 5-place update, to `$2,699`.
-- **anything else** → report the exact number and stop; do not guess a cause.
-
-⚠️ Whatever it is, the written annual `$34,630`/yr in the Noble tab no longer matches the draft, and the
-12-property per-property table is still the as-written policy. Ask Ron for the **current declarations
-page** to square them.
+Draft history on the Divando account: `$2,909.98` Mar-Apr 2026 · `$2,633.15` May 29, Jul 1, Jul 29 ·
+`$2,298.94` Sep 30 (first after Enid came off Aug 28, plus a one-time refund of her unused premium) ·
+**`$2,422.32` Oct 29** (= `$2,633.15 − $210.67` Enid's share, + 16¢). All 5 places now carry `$2,422.32`.
+The written annual `$34,630`/yr in the Noble tab still does not match the draft; ask Ron for the **current
+declarations page** at the Dec 15 2026 renewal. The May 2026 drop of `$276.83` was never explained.
 
 ### Do we need the lender statements for this? No — see below
 
@@ -359,7 +319,7 @@ reference amount only to reserve a bill that is **missing** (still upcoming).
 
 | LLC | Mortgage | SBA | Insurance | Utilities | Other | Cushion |
 |---|---|---|---|---|---|---|
-| Divando | $12,199.86 — 6 `TRANSFER TO LOAN` (~15th) | $2,334.00 (1st) | State Farm **$2,633.15 (~29th)** (actual since May 29 2026; was $2,909.98. NOT a renewal - cause unconfirmed) | ~$626/mo (Xcel/Aurora Water/Compost/Google — **varies, editable on dashboard**) | ACE Cloud Hosting software $288.98 (~28th, Amex) | **$2,000** |
+| Divando | $12,199.86 — 6 `TRANSFER TO LOAN` (~15th) | $2,334.00 (1st) | State Farm **$2,422.32 (~29th)** (actual Oct 29 2026; was $2,633.15 May-Aug, $2,909.98 before. Same term, NOT a renewal) | ~$626/mo (Xcel/Aurora Water/Compost/Google — **varies, editable on dashboard**) | ACE Cloud Hosting software $288.98 (~28th, Amex) | **$2,000** |
 | Donald | CBRE **$13,494** (1st) — was $13,708 through Aug 2026; P&I is fixed at $11,575.20, only the tax escrow moves | $444.00 (1st) | Westfield $1,191.58 (~4th; renewed Sep 20 2026 → Sep 20 2027 at $14,299/yr, was $1,210.84) | **$0/mo** (only occasional quarterly Denver Compost — editable) | — | **$1,500** |
 | Yale | Lument $7,279.08 (~6th) | $225.00 (1st) | Acuity $1,037.55 (~25th) | **$0/mo** (only occasional quarterly Denver Compost — editable) | — | **$1,500** |
 | Dorado | **none (mortgage-free)** | none | Berkshire Hathaway $465.42 (~6th; renewed Nov 6 2026 → Nov 6 2027, was $453.33; expected Oct 6 2026 draft = $466.00 down payment, not bank-verified yet) | ~$268/mo (Xcel/Denver Water — **varies, editable on dashboard**) | pays Divando $67.40/mo ins comp, Jamaica-only (TRANSFER, exclude) — updated Aug 29 2026, was $138 while Enid was still owned | **$1,000** |

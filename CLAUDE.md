@@ -1030,6 +1030,7 @@ The two pipelines write to **separate Google Sheets** (separate `GOOGLE_SHEET_ID
 
 - **Name**: Ronen Moscovich (`moscoron@gmail.com`, Denver, CO)
 - **Language (UPDATED Oct 3 2026, user request): ALWAYS reply in HEBREW** ("אני קורא מהר יותר"). This replaces the old "always reply in English" rule. Code, commit messages, file contents and copyable values (numbers, URLs, commands) stay as they are; only the chat replies are in Hebrew.
+- **Record ACTUALS, then just tell Ron (Nov 1 2026, user rule):** "אתה אמור לרשום את מה שיוצא בפועל ומה שנכנס בפועל. גם אם חודש אחד שונה מחודש אחר, אתה רק צריך להגיד לי." When a bank statement shows a fixed cost (mortgage, insurance, SBA, utilities) at a different amount, update the dashboard to the ACTUAL in the same run and report old → new. No "wait a second month", no asking first.
 - **Ask ONE question at a time (Oct 3 2026, user request):** when there are several questions or open items, present ONE, wait for the answer, then move to the next. Do not dump a list of questions in one message.
 - **Monthly files live in Google Drive (Nov 1 2026, Ron):** from October 2026 on, Ron uploads every month's `/monthly-distribution` inputs (4 bank CSVs, maintenance export, Suncoast/Mid South statements, etc.) to the Drive folder **`Niron Monthly Budget` → `<Month YYYY>`** (parent id `1wlXoxQgB9TngPC6aG1goYSoTIFZU7q9a`). **Read them from there with the Google Drive connector** before asking for anything, then tell him only what is missing. (The skill's "Inputs" section has the details.)
 - **Second email account (Oct 6 2026):** Niron business mail (insurance agents like IMA Select / Hannah Burford, etc.) lives under **`ron.moscovich@nironconstruction.com`**, NOT `moscoron@gmail.com`. The Gmail connector only sees `moscoron@gmail.com`, so a search there for Niron vendors/agents can come back empty. Ask Ron for the address instead of concluding it doesn't exist; drafts made via the connector land in `moscoron@gmail.com` and must be copied to the business account to send from it.
@@ -3352,8 +3353,9 @@ read from the Drive folder `Niron Monthly Budget/October 2026` (4 bank CSVs + ma
   **Yale Samuel $120 (sent 9/16) still NOT cashed at 10/31** - ask Ron if it recurs.
 - **🔴 Divando State Farm Oct 29 2026 = `$2,422.32`** → matches the "≈$2,422" case of the skill's open item: the
   Sep $2,298.94 carried a one-time Enid refund; the steady level is now ≈$2,422 (= $2,633.15 − Enid's $210.67).
-  The 5-place update (INSURANCE_OVERRIDE / CASHPLAN_CONFIG / Noble tab / dashboardKnowledge / skill table) is
-  pending Ron's OK (asked Nov 1 2026).
+  **Done Nov 1 2026 (APP_VERSION → 2.14):** `INSURANCE_OVERRIDE.divando` + `CASHPLAN_CONFIG.divando.insurance` →
+  `2422.32`, Noble tab (Total Monthly · All Active `$5,327.70` → **`$5,116.87`**, Divando card, footer, premium
+  history), `dashboardKnowledge()` **[needs redeploy]**, skill table. Divando net rises `$210.83`/mo.
 - **Drift check otherwise clean:** CBRE $13,494 · Lument $7,279.08 · Divando 6 loans $12,199.86 · all SBA · Acuity
   $1,037.55. Westfield $1,193.42 (10/2) = $1.84 over $1,191.58, likely an installment fee - first renewed-term draft.
   Dorado `NATIONAL INDEMNITY` $465.71 (10/7) = the Berkshire renewal down payment (binder said $466.00).
