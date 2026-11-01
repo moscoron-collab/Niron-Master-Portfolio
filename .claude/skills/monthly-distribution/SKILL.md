@@ -39,6 +39,16 @@ Simon, ⅓ each** (Simon is Dorado-only).
 
 ## Inputs to ask the user for
 
+> 📁 **WHERE THE FILES ARE (Ron, Nov 1 2026): Google Drive, not chat.** From October 2026 on, Ron
+> uploads every month's files to **`Niron Monthly Budget` → `<Month YYYY>`** (e.g. `October 2026`)
+> in `moscoron@gmail.com`'s Drive. Parent folder id `1wlXoxQgB9TngPC6aG1goYSoTIFZU7q9a`
+> ([open](https://drive.google.com/drive/folders/1wlXoxQgB9TngPC6aG1goYSoTIFZU7q9a)).
+> **Start every run by listing that month's subfolder** with the Google Drive connector
+> (`search_files` with `parentId = '<folder id>'`, then `read_file_content` on each CSV), and tell
+> Ron which of the inputs below are there and which are missing. Don't ask him to re-upload what is
+> already in the folder. The folder may also hold extra files (e.g. `Suncoast.pdf`, an Amex export);
+> list them, use what's relevant.
+
 1. **The 4 LLC bank-statement CSVs** for the month (columns: `Account Name,
    Processed Date, Description, Check Number, Credit or Debit, Amount`):
    - `3 Divando LLC 3442` → **Divando LLC** (÷2)
