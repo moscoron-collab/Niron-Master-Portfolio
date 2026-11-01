@@ -3339,6 +3339,31 @@ planner cushion, the Noble tab and the skill's reference table were all updated.
   stays green). Headless-tested with stub data: KPI $5.0K (one-time excluded), Dorado card shows the $252,000 line,
   `✓ Audit OK`, zero JS errors. **To mark any future sale/refinance payout, just put ONE-TIME in its Notes.**
 
+**✅ October 2026 close (run Nov 1 2026): reconcile only, NO distribution calc** (Ron: "כבר חילקנו"). First run
+read from the Drive folder `Niron Monthly Budget/October 2026` (4 bank CSVs + maintenance export + `Suncoast.pdf` +
+`Bzns Amex.xlsx`). No ending balances taken.
+- **Distributions already executed Oct 26-27:** Divando $5,000 each · Donald $5,000 each · Yale $6,000 each (Ron/Nir) ·
+  Dorado $4,500 each (Ron/Nir/Simon). Totals Ron $20,500 · Nir $20,500 · Simon $4,500.
+- **Maintenance, all matched:** Donald Rudy $2,500 = CHECK 7263 · Tamir $124.99 = CHECK 7264 $125.00 · Divando
+  Rolando $600+$1,200 = CHECK 274 $1,800 · Rosalio $1,200 = CHECK 273 · Dorado Aurora Appliance $1,158.99 = debit
+  $1,159.00 · Yale Aurora Appliance $992.47 = debit. No "marked Paid but not cashed" in October.
+  **Carry into November ($845):** Donald Walter $500 (check mailed, unpaid) · Dorado Walter $345 (10/26).
+  September carry-overs: Donald Walter $240 cleared (CHECK 7262, 10/9) · Dorado Walter $345 cleared (CHECK 3292, 10/9) ·
+  **Yale Samuel $120 (sent 9/16) still NOT cashed at 10/31** - ask Ron if it recurs.
+- **🔴 Divando State Farm Oct 29 2026 = `$2,422.32`** → matches the "≈$2,422" case of the skill's open item: the
+  Sep $2,298.94 carried a one-time Enid refund; the steady level is now ≈$2,422 (= $2,633.15 − Enid's $210.67).
+  The 5-place update (INSURANCE_OVERRIDE / CASHPLAN_CONFIG / Noble tab / dashboardKnowledge / skill table) is
+  pending Ron's OK (asked Nov 1 2026).
+- **Drift check otherwise clean:** CBRE $13,494 · Lument $7,279.08 · Divando 6 loans $12,199.86 · all SBA · Acuity
+  $1,037.55. Westfield $1,193.42 (10/2) = $1.84 over $1,191.58, likely an installment fee - first renewed-term draft.
+  Dorado `NATIONAL INDEMNITY` $465.71 (10/7) = the Berkshire renewal down payment (binder said $466.00).
+- **Inter-account:** Divando covered Yale again in October ($3,000 10/6 + $1,000 10/9 + $150 10/14 = $4,150), on top of
+  September's unrepaid $6,000 → **Yale owes Divando ~$10,150**, yet Yale distributed $12,000 on 10/26-27. Divando also
+  sent $700 to X5369 ($500 10/2 + $200 10/9). Dorado→Divando insurance share $67.50.
+- **Mid South: no deposit again in October** (3rd month running). Suncoast/Hare $1,205.75 on 10/8.
+- **Utilities to enter (Oct 2026):** Divando `573` (Xcel 95.12 + Aurora 250.37 + Google 164.34 + Compost 63) ·
+  Donald `0` (no Compost line this quarter) · Yale `315` (Compost) · Dorado `251` (Xcel 79.66 + Denver Water 171.14).
+
 ## 📄 Moss Owner Packet PDF structure
 
 Pages:
