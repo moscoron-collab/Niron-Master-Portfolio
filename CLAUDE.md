@@ -24,8 +24,9 @@ confirmed redeploy.**
 |---|---|---|
 | **Sep 10 2026** | User redeployed; chatbot then answered Donald mortgage **$13,494 / total $13,938** (it had said $13,708 before) | **Everything in `AppsScript.gs` through Sep 10 2026** — the Donald `$13,494` `dashboardKnowledge()` sync, plus the whole accumulated batch: Messages tab (+ edit, + email), Bug Reports tab (+ email both ways), Utilities per-LLC-per-month tab, Buffers tab, Subs tab, Vacancy tab, Property Tax tab, Activity Log, CPA invoice cols I–L, Paid Date + Cleared cols M–N, Simon `simon_amount` col F, the chatbot per-property maintenance reader, and the Divando/Dorado insurance + tax knowledge fixes. |
 | **Oct 16 2026** | Ron redeployed, then saved a maintenance invoice with several files and confirmed "both the invoice and the photos are there" (multi-file only works on the new deployment) | **Everything in `AppsScript.gs` through Oct 16 2026**, incl. the multi-file invoice upload (`saveInvoiceFiles` / `splitInvoiceUrls`, `invoice_urls`). |
+| **Nov 1 2026** | Ron redeployed (first try hit Google's "An error occurred" dialog; it went through on retry), then the chatbot answered Divando insurance **$2,422.32/mo** with the full draft history | **Everything in `AppsScript.gs` through Nov 1 2026**, incl. the Divando State Farm `$2,422.32` `dashboardKnowledge()` sync. |
 
-**So as of Oct 16 2026 every `NEEDS REDEPLOY` note in this file dated on or before Oct 16 2026 is SATISFIED.** Only
+**So as of Nov 1 2026 every `NEEDS REDEPLOY` note in this file dated on or before Nov 1 2026 is SATISFIED.** Only
 flag a redeploy for `AppsScript.gs` changes made *after* the newest row in this table.
 
 - **The 10-second test** (use it instead of asking the user whether they redeployed): open the 💬 chatbot
@@ -3355,7 +3356,7 @@ read from the Drive folder `Niron Monthly Budget/October 2026` (4 bank CSVs + ma
   Sep $2,298.94 carried a one-time Enid refund; the steady level is now ≈$2,422 (= $2,633.15 − Enid's $210.67).
   **Done Nov 1 2026 (APP_VERSION → 2.14):** `INSURANCE_OVERRIDE.divando` + `CASHPLAN_CONFIG.divando.insurance` →
   `2422.32`, Noble tab (Total Monthly · All Active `$5,327.70` → **`$5,116.87`**, Divando card, footer, premium
-  history), `dashboardKnowledge()` **[needs redeploy]**, skill table. Divando net rises `$210.83`/mo.
+  history), `dashboardKnowledge()` (✅ redeployed + confirmed Nov 1 2026), skill table. Divando net rises `$210.83`/mo.
 - **Drift check otherwise clean:** CBRE $13,494 · Lument $7,279.08 · Divando 6 loans $12,199.86 · all SBA · Acuity
   $1,037.55. Westfield $1,193.42 (10/2) = $1.84 over $1,191.58, likely an installment fee - first renewed-term draft.
   Dorado `NATIONAL INDEMNITY` $465.71 (10/7) = the Berkshire renewal down payment (binder said $466.00).
