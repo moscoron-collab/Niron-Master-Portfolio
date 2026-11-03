@@ -3559,6 +3559,24 @@ and are entered **manually each month** by the user through the dashboard:
   $1,125.40 was deposited — an $80 gap).
 - No mortgage, no insurance on these → `net_cashflow == NOI` entered.
 
+**🏦 RULE FROM NOV 3 2026 (Ron): the 3 out-of-state rows follow the BANK, by DEPOSIT MONTH.** Ron: "they are not
+pulled via AppFolio, you can only see it through the bank account, update the whole year." So each row's month = the
+month the deposit landed in `3 Divando LLC 3442`, and the amount = that deposit (same as the AppFolio rows, whose month is
+the month Laureate's money lands). This SUPERSEDES the statement-month entries below (Jul-Sep Hare entered Oct 6, Jun +
+Oct Hare entered Nov 3). Tool: **`sync_manual_bank.yml`** (`automation/sync_manual_bank.py`, input `targets` JSON
+`{"<property>": {"YYYY-MM": amount}}`, dry run unless `confirm=YES`; updates D/J/L of a mismatched row, appends a
+missing one, never deletes). Bank lines: `SUNCOAST PROPERT WEB PMTS` = Hare, `MID SOUTH BEST R WEB PMTS` = Joest +
+Stockport COMBINED (one transfer, no split on the bank line).
+- **Hare 2026 by deposit, DONE Nov 3 (run 2, `Written.`):** Jan `1,183.91` · Feb `1,183.91` · Mar `536.76` · Apr `1,205.75`
+  (was `1,209`) · May `1,125.40` · Jun `1,205.75` (was `913.65`) · Jul `913.65` (was `1,205.75`) · Aug `1,205.75` ·
+  Sep `1,205.75` · Oct `1,205.75` (was `950.75`). Jan-Mar were missing and were added. **Nov should be `$950.75`**
+  (Oct statement draw with the $255 inspection), add it from the November CSV. Sep comes from the Sep CSV read Oct 3
+  (9/4 deposit); that CSV is not in Drive.
+- **Mid South 2026 deposits (combined):** Jan 12 `1,403.93` · Feb 11 `1,804.57` · Mar 10 `1,160.77` · Apr 10 `1,282.88` ·
+  May 11 `2,129.00` · Jun 12 `920.00` · Jul 10 `2,420.76` · Aug/Sep/Oct `0`. Sheet today: Apr Joest `478.25` (suspicious:
+  it equals Hare's April NOI) + Apr Stockport `920`, May Stockport `920`, Jul + Aug `0/0`, nothing else. **OPEN: how to
+  split each deposit between Joest and Stockport** (needs the Mid South statements or Ron's rule), then run the sync.
+
 **🗓️ Mid South Jul + Aug 2026 = `$0` for Joest AND Stockport (Ron's call, Oct 6 2026).** Ron uploaded both
 Mid South owner statements. July: Joest NOI **−$2,800** (tree work $1,500 + $2,220 Midsouth Renovations),
 Stockport **+$1,026.98** (returned payment, rent paid in pieces); the July `Draws $2,420.76` was the June
