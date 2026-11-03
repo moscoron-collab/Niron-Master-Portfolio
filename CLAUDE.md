@@ -77,6 +77,16 @@ Divando `8,000` · Dorado `5,200` · Yale `2,500`; Simon (col F) filled for Dora
 YTD: `$61,825` → `$78,100`** (+`$16,275`). **Confirmed from the receiving side too (Nov 3 2026):** the deposits into Ron's own account for Jan-Oct 2026 add up to exactly `$78,100` (+ `$84,000` Enid). Only that total is recorded here; the account itself is private. Also noticed, NOT yet explained: Divando's Laureate bank deposit was lower than the History row in Apr (`-356.68`), Jun (`-1,893.76`), Jul (`-1,998.17`) and Aug (`-590.64`) 2026; Jan-Mar and May match. Still open: (a) **all 2025 Historical-import rows are probably halved too** (only
 Dec 2025 Dorado verified, no other 2025 CSVs on file); (b) **Donald Feb 27 2026: Nir got `$3,400`, no Ron line** in the Donald
 CSV and no sheet row at all; (c) the Aug 31 Enid payouts were not re-checked line by line.
+- **2025 fixed too (Nov 3 2026, Ron uploaded the 2025 CSVs for Donald, Divando, Dorado; Yale's 2025 file is NOT in Drive).**
+  Same halving, plus payments that were never imported. Written via `fix_distribution.yml` batch (20 rows + 1 appended):
+  Donald Mar 28 `7,000` (row ADDED) · Aug `8,000` (Aug 6 `5,000` + Aug 29 `3,000`) · Sep `1,600` · Dec `7,000`; Dorado Mar `5,000` ·
+  May `5,000` · Jun `2,500` · Jul `3,300` · Aug `4,000` · Sep `4,000` · Oct `3,700` (Simon filled); Divando Jan `10,000` · Mar `4,500` ·
+  Apr `6,000` · May `7,500` · Jun `2,000` · Jul `15,000` (Jul 7 `6,000` + Jul 23 `9,000`) · Aug `5,400` · Sep `10,000` · Oct `9,500` ·
+  Dec `14,000`. **Left as-is / open:** Divando **Feb 2025 `14,683`** (= half of `29,366`, which came IN from `X6023` and went out
+  to Ron the same day, Feb 19: looks like a pass-through, not a distribution; asked Ron); Divando Oct 30 2025 `TRANSF TO NIR SHIR
+  5769 $4,000` (not recorded); **Yale 2025** (needs its CSV); non-distribution lines NOT touched: Divando Jan 22 2025 foreign wire
+  `EHUD TWAKE $10,000`, Mar 21 2025 `BILL PAID-RBA FEDERAL LLC $10,000`, Jan 30 2026 wire `EHUD TWAKE $10,718`. 2025 fixed costs
+  (insurance / loans) were NOT reconciled.
 
 **Dorado insurance, what the bank really shows (2026):** Berkshire/National Indemnity is `$453.31`/mo all year, but
 **Jan-Apr it was paid from DIVANDO's Amex** (`AMEX EPAYMENT ACH PMT $453.31` on the Divando CSV, Jan 28 · Feb 25 · Mar 30 ·
