@@ -3576,6 +3576,16 @@ Stockport COMBINED (one transfer, no split on the bank line).
   May 11 `2,129.00` · Jun 12 `920.00` · Jul 10 `2,420.76` · Aug/Sep/Oct `0`. Sheet today: Apr Joest `478.25` (suspicious:
   it equals Hare's April NOI) + Apr Stockport `920`, May Stockport `920`, Jul + Aug `0/0`, nothing else. **OPEN: how to
   split each deposit between Joest and Stockport** (needs the Mid South statements or Ron's rule), then run the sync.
+- **✅ Mid South 2026 SYNCED Nov 3 (run 4, `Written.`), split ESTIMATED at a fixed ratio.** Ron: "one of them gets more
+  than the other, follow the same." The August Mid South statement shows each unit's net BEFORE repairs: Joest
+  `426.22 + 493.78 = $920.00`, Stockport `894.75 + 1,002 = $1,896.75` → **Joest 32.66% / Stockport 67.34%** of every
+  deposit (Joest rounded to the cent, Stockport = the rest, so each month sums to the bank exactly). Rows now: Joest Jan
+  `458.55` · Feb `589.40` · Mar `379.13` · Apr `419.01` (was `478.25`) · May `695.37` · Jun `300.49` · Jul `790.66` (was
+  `0`) · Aug-Oct `0`; Stockport Jan `945.38` · Feb `1,215.17` · Mar `781.64` · Apr `863.87` (was `920`) · May `1,433.63`
+  (was `920`) · Jun `619.51` · Jul `1,630.10` (was `0`) · Aug-Oct `0`. Totals Joest `3,632.61` + Stockport `7,489.30` =
+  `11,121.91` = the bank. ⚠️ The old `$920` Stockport rows were probably Joest's money (`$920` = Joest's August net); the
+  per-unit split is an estimate, the Mid South TOTAL per month is exact. If Ron later uploads the Mid South statements,
+  re-split with the real per-unit draws.
 
 **🗓️ Mid South Jul + Aug 2026 = `$0` for Joest AND Stockport (Ron's call, Oct 6 2026).** Ron uploaded both
 Mid South owner statements. July: Joest NOI **−$2,800** (tree work $1,500 + $2,220 Midsouth Renovations),
