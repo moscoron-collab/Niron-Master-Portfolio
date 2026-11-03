@@ -3,10 +3,11 @@ name: Fix one Distributions row (Notes / Simon)
 on:
   workflow_dispatch:
     inputs:
-      match_date: {description: "Date Sent of the row (YYYY-MM-DD)", required: true}
-      match_llc: {description: "LLC (part of the name, e.g. Dorado)", required: true}
-      match_amount: {description: "Ron's amount on that row (col C)", required: true}
-      set_notes: {description: "New Notes text (col E)", required: true}
+      match_date: {description: "Date Sent of the row (YYYY-MM-DD)", required: false, default: ""}
+      match_llc: {description: "LLC (part of the name, e.g. Dorado)", required: false, default: ""}
+      match_amount: {description: "Ron's amount on that row (col C)", required: false, default: ""}
+      set_notes: {description: "New Notes text (col E)", required: false, default: ""}
+      batch: {description: 'JSON list [{"date","llc","amount","ron","nir","simon","notes"}] (overrides the single-row fields)', required: false, default: ""}
       set_simon: {description: "Simon amount (col F). Blank = leave as is", required: false, default: ""}
       confirm: {description: "Type YES to write. Anything else = dry run.", required: false, default: "NO"}
 
@@ -28,5 +29,6 @@ jobs:
           MATCH_AMOUNT: ${{ github.event.inputs.match_amount }}
           SET_NOTES: ${{ github.event.inputs.set_notes }}
           SET_SIMON: ${{ github.event.inputs.set_simon }}
+          BATCH: ${{ github.event.inputs.batch }}
           CONFIRM: ${{ github.event.inputs.confirm }}
         run: python automation/fix_distribution.py
