@@ -1520,8 +1520,18 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.15";
+const APP_VERSION = "2.16";
 const CHANGELOG = [
+  {
+    version: "2.16",
+    date: "November 3, 2026",
+    en: [
+      "The year-to-date half of the Your Distribution card is now labeled 'YTD net from rent'. It counts only distributions from rental income. One-time payouts, like the 4641 Enid Way sale money, are shown separately."
+    ],
+    he: [
+      "בכרטיס 'החלוקה שלך', החצי של מתחילת השנה נקרא עכשיו 'מתחילת השנה נטו משכירויות'. הוא סופר רק חלוקות מהשכירות. תשלומים חד-פעמיים, כמו הכסף ממכירת 4641 Enid Way, מוצגים בנפרד."
+    ]
+  },
   {
     version: "2.15",
     date: "November 3, 2026",
@@ -3025,7 +3035,7 @@ function renderAll() {
         'החלק מתזרים המזומנים הנקי של החודש ששולם בפועל אליך ונכנס לחשבון הבנק שלך. תזרים המזומנים הנקי הוא של כל התיק (הכסף שלך + של ניר), כך שחלוקה שווה ביניכם מגיעה לכ-50%.')
     + '</span></span>';
   html += '<div class="summary-card dual ' + netCls + '"><div class="card-cell"><div class="label">' + L('Net Cashflow', 'תזרים מזומנים נקי') + netTip + langBtn + '</div><div class="value" id="kpi-net">' + fmtShort(totalNet) + '</div><div class="sublabel">' + L('After all expenses', 'אחרי כל ההוצאות') + '<br><span class="kpi-ratio">📊 ' + marginPct + ' ' + L('kept', 'נשמר') + '</span></div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">' + L('YTD', 'מתחילת השנה') + '</div><div class="value" id="kpi-net-ytd">' + fmtShort(ytdNet) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
-  html += '<div class="summary-card dual blue"><div class="card-cell"><div class="label">' + L('Your Distribution', 'החלוקה שלך') + distTip + langBtn + '</div><div class="value" id="kpi-dist">' + fmtShort(distThisMonth) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || L('No data', 'אין נתונים')) + '<br><span class="kpi-ratio blue">💸 ' + payoutPct + ' ' + L('of net', 'מהנקי') + '</span></div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">' + L('YTD', 'מתחילת השנה') + '</div><div class="value" id="kpi-dist-ytd">' + fmtShort(distYtd) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
+  html += '<div class="summary-card dual blue"><div class="card-cell"><div class="label">' + L('Your Distribution', 'החלוקה שלך') + distTip + langBtn + '</div><div class="value" id="kpi-dist">' + fmtShort(distThisMonth) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || L('No data', 'אין נתונים')) + '<br><span class="kpi-ratio blue">💸 ' + payoutPct + ' ' + L('of net', 'מהנקי') + '</span></div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">' + L('YTD net from rent', 'מתחילת השנה נטו משכירויות') + '</div><div class="value" id="kpi-dist-ytd">' + fmtShort(distYtd) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
   // ── Property tax owed tile (blinking red when > 0) — sits between Your Distribution
   //    and the combined Mortgage/Value card. Outstanding excludes escrow (taxOutstanding
   //    returns 0 for Donald/Yale). Click jumps to the Property Tax tab.
