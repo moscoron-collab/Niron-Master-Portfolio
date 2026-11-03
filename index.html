@@ -616,7 +616,7 @@
     <select id="vac-actor" class="actor-pick" onchange="setActor(this.value)"><option value="">— who are you? —</option><option value="R.M">R.M — Ron</option><option value="O.M">O.M — Oshrat</option><option value="N.S">N.S — Nir</option></select>
     <label>Property / Unit</label>
     <select id="vac-property"><option value="">-- Select unit --</option></select>
-    <label>Vacant From</label><input type="date" id="vac-from">
+    <label>Vacant From (move-out date)</label><input type="date" id="vac-from">
     <label>Note (optional)</label><input type="text" id="vac-note" placeholder="e.g. 60-day notice, out end of June">
     <div class="form-msg" id="vac-msg"></div>
     <div class="modal-actions"><button class="secondary" onclick="closeVacancyModal()">Cancel</button><button class="primary" id="vac-submit" onclick="submitVacancy()">Add Flag</button></div>
@@ -1520,8 +1520,20 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.14";
+const APP_VERSION = "2.15";
 const CHANGELOG = [
+  {
+    version: "2.15",
+    date: "November 3, 2026",
+    en: [
+      "Vacant Units now closes a vacancy flag by itself as soon as the AppFolio statement shows rent for that unit again. Before, a flag stayed on the tile until someone clicked Re-rented: 15559 E Bates Upper was re-let in July but still counted as vacant until today.",
+      "Tip: set Vacant From to the move-out date, not the notice date."
+    ],
+    he: [
+      "ה-Vacant Units סוגר דגל ריק לבד ברגע שדוח AppFolio מראה שוב שכר דירה ליחידה. קודם הדגל נשאר על המונה עד שמישהו לחץ Re-rented: 15559 E Bates Upper הושכרה ביולי ועדיין נספרה כריקה עד היום.",
+      "טיפ: ב-Vacant From לשים את תאריך היציאה, לא את תאריך ההודעה."
+    ]
+  },
   {
     version: "2.14",
     date: "November 1, 2026",
@@ -2289,8 +2301,11 @@ function renderVacancyList() {
   if (!flags.length) { el.innerHTML = '<div style="color:#4e6d8c;font-size:12px">No vacancy flags yet.</div>'; return; }
   let h = '<div style="font-size:12px;color:#8aa6c4;margin-bottom:4px;font-weight:600">Current flags</div>';
   flags.forEach(f => {
-    const active = !f.rerented_on;
-    const badge = active ? '<span style="color:#f0a500;font-weight:600">● Vacant</span>' : '<span style="color:#00c97a">re-rented ' + f.rerented_on + '</span>';
+    const autoEnd = !f.rerented_on ? vacancyStatementEnd(f) : '';
+    const active = !f.rerented_on && !autoEnd;
+    const badge = active ? '<span style="color:#f0a500;font-weight:600">● Vacant</span>'
+      : (f.rerented_on ? '<span style="color:#00c97a">re-rented ' + f.rerented_on + '</span>'
+        : '<span style="color:#00c97a">rent back on AppFolio ' + monthLabel(autoEnd) + ' · closed automatically</span>');
     h += '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #14202f">'
       + '<div style="flex:1;min-width:0"><div style="color:#cfe0f0;font-size:13px">' + f.property + '</div>'
       + '<div style="color:#4e6d8c;font-size:11px">from ' + (f.vacant_from || '') + ' · ' + badge + (f.note ? ' · ' + f.note : '') + '</div></div>'
@@ -2826,12 +2841,35 @@ function maintenanceForProp(maintenance, prop, period) {
 function monthStartOf(d) { d = String(d || ''); return d.length >= 7 ? d.slice(0, 7) + '-01' : ''; }
 // A flag covers month M (period_start 'YYYY-MM-01') if it started on/before M and has NOT
 // been re-rented on/before M.
+// AppFolio auto-close: a flag ENDS at the first statement month AFTER its start month in which
+// AppFolio shows rent collected for that unit (status Occupied). So a flag nobody marked
+// "Re-rented" can't keep a re-let unit on the Vacant tile for months (Bates Upper: flagged Jun,
+// rent again from Jul, still counted until Nov 3 2026). Returns 'YYYY-MM-01' or ''.
+function vacancyStatementEnd(flag) {
+  const from = monthStartOf(flag && flag.vacant_from);
+  if (!from) return '';
+  let end = '';
+  ((PORTFOLIO_DATA && PORTFOLIO_DATA.property_detail) || []).forEach(r => {
+    const m = String(r.period_start || '').slice(0, 10);
+    if (!m || m <= from || !unitMatch(flag.property, r.property)) return;
+    if (String(r.status || '').toLowerCase().indexOf('vac') !== -1) return;
+    if (!end || m < end) end = m;
+  });
+  return end;
+}
+// Effective end month = the earlier of a manual "Re-rented" date and the AppFolio auto-close.
+function vacancyEndMonth(flag) {
+  const re = monthStartOf(flag && flag.rerented_on), st = vacancyStatementEnd(flag);
+  if (re && st) return re < st ? re : st;
+  return re || st;
+}
+function vacancyFlagOpen(flag) { return !vacancyEndMonth(flag); }
 function vacancyActiveForMonth(flag, monthPS) {
   if (!flag || !monthPS) return false;
   const from = monthStartOf(flag.vacant_from);
   if (!from || from > monthPS) return false;
-  const re = monthStartOf(flag.rerented_on);
-  if (re && re <= monthPS) return false;
+  const end = vacancyEndMonth(flag);
+  if (end && end <= monthPS) return false;
   return true;
 }
 function unitMatch(a, b) {
@@ -3019,7 +3057,7 @@ function renderAll() {
   // month-based, so the self-audit is unaffected.)
   const vacant = healthRecs.filter(r => !r.occupied);
   const vSeen = {}; vacant.forEach(r => vSeen[String(r.property).trim().toLowerCase()] = true);
-  (data.vacancy || []).filter(f => !f.rerented_on).forEach(f => {
+  (data.vacancy || []).filter(vacancyFlagOpen).forEach(f => {
     const k = String(f.property).trim().toLowerCase();
     if (!vSeen[k]) { vSeen[k] = true; vacant.push({ property: f.property, manual_vacant: true }); }
   });

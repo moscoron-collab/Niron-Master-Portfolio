@@ -46,6 +46,36 @@ flag a redeploy for `AppsScript.gs` changes made *after* the newest row in this 
 
 ---
 
+## 🏠 Vacant Units: flags close themselves from AppFolio + standing rule (Nov 3 2026, APP_VERSION → 2.15, pure frontend)
+
+Ron sent a screenshot of the tile (`1 · 15675 E 13th Pl`): "you know which one is vacant because you have the numbers from
+AppFolio. So please make sure to correct it every time you see something." **STANDING RULE: whenever you read AppFolio /
+Property Detail data, check the Vacant Units tile against it and fix or report any mismatch** (also Step 1d of the
+`/monthly-distribution` skill).
+- **15675 E 13th Pl IS vacant (verified Nov 3 2026).** Oct statement (Sep 16 to Oct 15): Cash In `$2,179.74`, no Rent Income,
+  Mgmt Fee `$0`, Disb `$0` (run log of `monthly_divando.yml` Oct 21). Ron logged two `Tenant Turnover` invoices there
+  ($1,200 Rosalio trash removal Oct 16 + $1,200 Rolando Oct 22) and a $280 Carolina cleaning Nov 1. Sep was a normal
+  $2,850 rent month. So the tenant moved out around early October.
+- **The real bug was stale flags.** Ron flagged Holly, Blackhawk and Bates Upper vacant from Jun 1 2026. AppFolio showed
+  rent again for Bates Upper from **July** and for Holly + Blackhawk from **October**, but the tile kept counting them until
+  Ron cleared them by hand (Oct 21 and Nov 3). Bates Upper sat on the tile 4 months too long.
+- **Fix (`index.html`):** `vacancyStatementEnd(flag)` = the first `property_detail` month AFTER the flag's `vacant_from`
+  month where that unit's status is not Vacant. `vacancyEndMonth` = the earlier of that and `rerented_on`;
+  `vacancyActiveForMonth` and the tile (`vacancyFlagOpen`) use it. The modal shows "rent back on AppFolio <Mon YYYY> ·
+  closed automatically" and hides Re-rented for those. Nothing is written to the sheet (the row stays; 🗑 removes it).
+  The modal label is now **"Vacant From (move-out date)"**: a flag dated at the NOTICE would close early if the tenant
+  still pays the next month.
+- **Verified** in headless Chromium with the real sheet rows (Drive xlsx export) + the 3 June flags as they stood: Oct tile =
+  `1 · 15675 E 13th Pl` (would have been 4), Jul tile no longer lists Bates Upper, all 3 flags show "closed automatically",
+  `✓ Audit OK`, zero JS errors.
+- **Known limit, NOT changed:** the statement rule is still `occupied = "Rent Income" in text`, so a month with no rent
+  reads Vacant even for a tenant who is just late (Sep 2026: Yale 2993 nonpayment, 2995 bounced eCheck, Crown A late, all
+  read Vacant; all paid in October). Tell Ron when the tile shows that case.
+- 🔑 The Niron sheet IS readable from here through the Google Drive connector (`download_file_content`, export as xlsx,
+  file id `11iAqBbFmC19lN9WfCjsX_f38fMvbZOSuW7TFkRDKuPE`). Read-only, but enough to check any tab.
+
+---
+
 ## 📎 Maintenance invoices take MULTIPLE files (Oct 16 2026, APP_VERSION → 2.12, ✅ redeployed + confirmed live Oct 16 2026)
 
 Ron: the 🔧 form only let him attach one photo at a time. Now `#maint-file` is `multiple` — pick several

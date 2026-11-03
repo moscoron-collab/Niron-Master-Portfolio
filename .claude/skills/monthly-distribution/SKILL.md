@@ -182,6 +182,19 @@ That is roughly **2 statements a year instead of 24**, for the same protection.
 
 ---
 
+## Step 1d — VACANCY CHECK (every run, Ron's standing rule, Nov 3 2026)
+
+Ron: "you know which one is vacant because you have the numbers from AppFolio. Correct it every time you see something."
+Read the `Property Detail` tab (the `Niron Property Portfolio` sheet is readable through the Google Drive connector:
+download it as xlsx) for the newest month and compare with the dashboard's **Vacant Units** tile:
+- A unit with **no Rent Income and no management fee** (`Rent Collected` 0, `Mgmt Fee` 0) is a candidate vacancy.
+  Confirm with the Maintenance Log (a `Tenant Turnover` / `Cleaning` invoice on that unit = real move-out).
+  **No rent but no turnover invoice** = probably a late payer or a bounced payment (Sep 2026: Yale 2993/2995 and
+  Crown A read Vacant, then paid double in October). Tell Ron which case it is.
+- A `Vacancy` tab flag whose unit shows rent again on a later statement closes itself on the dashboard (v2.15).
+  Still tell Ron so he can 🗑 it, and tell him about any unit that is really vacant but has no flag.
+- Report: "Vacant now: <units>. Changed since last month: <...>". Fix anything the code can fix in the same run.
+
 ## Step 2 — Safe to distribute, per LLC (balance-based)
 
 ```
