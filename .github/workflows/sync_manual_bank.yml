@@ -1,0 +1,29 @@
+name: Sync manual rows (Hare / Joest / Stockport) to bank deposits
+
+on:
+  workflow_dispatch:
+    inputs:
+      targets:
+        description: 'JSON: {"8222 Hare Ave": {"2026-01": 1183.91, ...}, ...}'
+        required: true
+      confirm:
+        description: "Type YES to write. Anything else = dry run."
+        required: false
+        default: "NO"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install google-auth google-auth-httplib2 google-api-python-client
+      - name: Sync
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          TARGETS: ${{ github.event.inputs.targets }}
+          CONFIRM: ${{ github.event.inputs.confirm }}
+        run: python automation/sync_manual_bank.py
