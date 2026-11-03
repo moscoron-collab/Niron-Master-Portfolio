@@ -151,6 +151,18 @@ number was only caught by accident when the user uploaded a loan statement.
 3. The **`Loans`** tab, col **I** (drives the Loan Details tile) — ⚠️ Donald has TWO rows, SBA and CBRE
 4. `dashboardKnowledge()` in `AppsScript.gs` (chatbot — needs a redeploy)
 5. **This reference table** + the fixed-costs section in `CLAUDE.md`
+6. **`FIXED_COST_REFERENCE` in `index.html`** — the self-audit compares every card against it and goes RED
+   on a mismatch. **Every run, even when nothing changed, set its `verified` to the closing month**, or the
+   audit warns that the bank check is stale. `debt` = all loans incl. SBA; Dorado `insurance` = its own
+   Berkshire draft only (the `$67.50` to Divando is an inter-LLC transfer, already inside Divando's figure).
+7. Wrong History months + Settings: fix with **`fix_fixed_costs.yml`** (dry run first, then `confirm=YES`).
+   Then open the dashboard, click 🩺 **Run Audit** and confirm the "Fixed costs vs bank" rows are all green.
+   The run is not done until the audit is green.
+
+**Lesson (Nov 3 2026):** the audit was green while 3 fixed costs were wrong (Donald SBA `$444` dropped from
+the Settings tab in Sep 2026 because the Sep 10 instruction said `13494` instead of `13494 + 444 = 13938`;
+Donald Oct insurance; Dorado insurance still `$866.07` with the sold Enid house). The old audit only
+checked that the screen matched the sheet, never the sheet against the bank. Ron caught it by eye.
 
 ✅ **RULE (Ron, Nov 1 2026): record what actually went out and what actually came in.** When a fixed cost
 drafts at a different amount, **update the dashboard to the actual amount in the same run and tell Ron what

@@ -46,6 +46,38 @@ flag a redeploy for `AppsScript.gs` changes made *after* the newest row in this 
 
 ---
 
+## 🩺 The audit now checks the BANK, not just the sheet (Nov 3 2026, APP_VERSION → 2.17)
+
+Ron sent the Oct Monthly Breakdown + KPI tiles: "tell me if everything is OK now". The audit chip was **✓ Audit OK**,
+yet **3 fixed costs were wrong**. Ron: "the audit doesn't even do its job... I need a checker like a CEO from above."
+He was right: every audit check compared the screen to the sheet; none compared the sheet to the bank, and the old
+"Insurance (bank-verified)" row was a hard-coded PASS (it compared a number to itself).
+- **The 3 errors (all sheet data, fixed via `fix_fixed_costs.yml`):**
+  1. **Donald SBA `$444`/mo missing in Sep + Oct 2026.** Through Aug the Settings col B was `14,152` (CBRE `13,708` +
+     SBA `444`). On Sep 10 the agent told Ron to set it to `13494` (CBRE only) instead of `13,938`, so the SBA dropped
+     out. **Our mistake, not Ron's.** Settings B + History Sep/Oct col F → `13,938`.
+  2. **Donald Oct insurance** `1,210.84` (old Westfield term) → `1,193.42` (Oct 2 draft). Settings D → `14,321.04`.
+  3. **Dorado insurance `866.07`** = 41st `453.33` + Enid `210.67` + Jamaica `202.08`. Enid and Jamaica sit on the
+     Divando State Farm draft, which the Divando card already counts in full, so they were counted twice (and Enid was
+     sold Aug 28). Dorado's own draft is National Indemnity/Berkshire: **2026 Jan-Sep `453.31`, Oct `465.71`**. Settings
+     D → `5,585` (renewal). The `$67.50`/mo Dorado sends Divando is an inter-LLC transfer, NOT counted (it would double
+     the Jamaica premium). ⚠️ **2025 Dorado rows (Dec 2024-Dec 2025) still carry `866.07`** (same double count, ~`$413`/mo);
+     left as-is because the prior policy's draft is not on file.
+- **New audit checks (`auditRun`, index.html):** (a) **Fixed costs vs bank**: for the newest month (and the selected
+  month, if on/after `verified`), each LLC's loans (`mortgage + extraMortgage`) and effective insurance must equal
+  **`FIXED_COST_REFERENCE`** within $1, else **FAIL**; (b) **Loans tab vs cards**: Loans tab + `DIVANDO_PROPERTY_LOANS`
+  per LLC must equal what the card subtracts, else **FAIL** (independent of our reference, would have caught the SBA by
+  itself); (c) **Planner vs bank**: `CASHPLAN_CONFIG` mortgage+sba and insurance vs the reference, **WARN**; (d) **freshness**:
+  WARN when `FIXED_COST_REFERENCE.verified` is 2+ months behind the newest data month. The tautological insurance PASS was
+  removed. `CASHPLAN_CONFIG.donald.insurance` 1191.58 → 1193.42.
+- **Verified in headless Chromium on the real sheet rows (Drive xlsx export):** before the fix the chip read **✗ 4 issues**
+  (Donald loans, Donald insurance, Dorado insurance, Donald Loans-tab), after it **✓ Audit OK**, zero JS errors.
+- **Process:** the `/monthly-distribution` skill Step 1c now updates `FIXED_COST_REFERENCE` (incl. `verified`) every run
+  and is not done until Run Audit is green. **Honest limit:** the audit can only be as current as the last bank check.
+  If nobody runs the monthly close, the freshness warning is what turns the chip amber.
+
+---
+
 ## 🏠 Vacant Units: flags close themselves from AppFolio + standing rule (Nov 3 2026, APP_VERSION → 2.15, pure frontend)
 
 Ron sent a screenshot of the tile (`1 · 15675 E 13th Pl`): "you know which one is vacant because you have the numbers from

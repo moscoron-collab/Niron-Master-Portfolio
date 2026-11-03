@@ -1,0 +1,29 @@
+name: Fix fixed costs (History mortgage + insurance, Settings)
+
+on:
+  workflow_dispatch:
+    inputs:
+      targets:
+        description: 'JSON: {"history": {...}, "settings": {...}}'
+        required: true
+      confirm:
+        description: "Type YES to write. Anything else = dry run."
+        required: false
+        default: "NO"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install google-auth google-auth-httplib2 google-api-python-client
+      - name: Fix
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          TARGETS: ${{ github.event.inputs.targets }}
+          CONFIRM: ${{ github.event.inputs.confirm }}
+        run: python automation/fix_fixed_costs.py
