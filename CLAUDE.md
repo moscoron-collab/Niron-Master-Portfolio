@@ -82,9 +82,13 @@ CSV and no sheet row at all; (c) the Aug 31 Enid payouts were not re-checked lin
   Donald Mar 28 `7,000` (row ADDED) · Aug `8,000` (Aug 6 `5,000` + Aug 29 `3,000`) · Sep `1,600` · Dec `7,000`; Dorado Mar `5,000` ·
   May `5,000` · Jun `2,500` · Jul `3,300` · Aug `4,000` · Sep `4,000` · Oct `3,700` (Simon filled); Divando Jan `10,000` · Mar `4,500` ·
   Apr `6,000` · May `7,500` · Jun `2,000` · Jul `15,000` (Jul 7 `6,000` + Jul 23 `9,000`) · Aug `5,400` · Sep `10,000` · Oct `9,500` ·
-  Dec `14,000`. **Left as-is / open:** Divando **Feb 2025 `14,683`** (= half of `29,366`, which came IN from `X6023` and went out
-  to Ron the same day, Feb 19: looks like a pass-through, not a distribution; asked Ron); Divando Oct 30 2025 `TRANSF TO NIR SHIR
-  5769 $4,000` (not recorded); **Yale 2025** (needs its CSV); non-distribution lines NOT touched: Divando Jan 22 2025 foreign wire
+  Dec `14,000`. **Then (Ron: "I assume yes", uploaded Yale 2025):** Divando **Feb 2025 → `0`** (the `29,366` came IN from `X6023` and
+  went out to Ron the same day, Feb 19: a pass-through, note written in col E). **Yale 2025 from its CSV:** Mar `8,000`
+  (Mar 3 `4,500` + Mar 28 `3,500`) · Jun `3,000` · **Jul `0`** (no Yale payout in July; the old `4,500` was the Mar 3 one) ·
+  Aug `6,500` · Sep `1,700` (the old Yale Aug `2,700` and Divando Aug `3,250` were each other's halves, swapped). **Ron's 2025
+  distributions now: Donald `23,600` · Dorado `33,700` · Divando `83,900` · Yale `19,200` = `$160,400`** (was `$87,633`).
+  Oct-Dec 2025 also match the deposits on Ron's receiving account. Still open: Divando Oct 30 2025 `TRANSF TO NIR SHIR
+  5769 $4,000` (not recorded); non-distribution lines NOT touched: Divando Jan 22 2025 foreign wire
   `EHUD TWAKE $10,000`, Mar 21 2025 `BILL PAID-RBA FEDERAL LLC $10,000`, Jan 30 2026 wire `EHUD TWAKE $10,718`. 2025 fixed costs
   (insurance / loans) were NOT reconciled.
 
