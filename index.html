@@ -1520,8 +1520,20 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.17";
+const APP_VERSION = "2.18";
 const CHANGELOG = [
+  {
+    version: "2.18",
+    date: "November 3, 2026",
+    en: [
+      "Insurance is now split by who owns the house. 2397 Jamaica (Dorado) is on Divando's State Farm policy, and Dorado pays Divando for it ($138/mo through Aug 2026 while 4641 Enid was also on it, $67.50/mo since). That payment now counts as Dorado's insurance and comes off Divando's. Total for all LLCs is unchanged.",
+      "Divando's insurance now shows the real State Farm draft of each month instead of one flat number: $2,909.98 Jan-Apr, $2,633.15 May-Aug, $2,298.94 Sep, $2,422.32 Oct 2026 (each minus the Jamaica share)."
+    ],
+    he: [
+      "הביטוח מחולק עכשיו לפי מי שהבית שלו. 2397 Jamaica (של Dorado) נמצאת בפוליסת State Farm של Divando, ו-Dorado משלמת עליה ל-Divando ($138 בחודש עד אוגוסט 2026, כשגם 4641 Enid הייתה בפוליסה, ו-$67.50 מאז). התשלום הזה נספר עכשיו כביטוח של Dorado ויורד מ-Divando. הסכום הכולל של כל החברות לא השתנה.",
+      "הביטוח של Divando מראה עכשיו את מה שירד בפועל מ-State Farm בכל חודש במקום מספר אחד קבוע: $2,909.98 בינואר עד אפריל, $2,633.15 במאי עד אוגוסט, $2,298.94 בספטמבר, $2,422.32 באוקטובר 2026 (כל אחד פחות החלק של Jamaica)."
+    ]
+  },
   {
     version: "2.17",
     date: "November 3, 2026",
@@ -2645,7 +2657,10 @@ function extraMortgage(llc) { return (llc && llc.toLowerCase().includes('divando
 //           $67.40/mo back ("TRANSFER FROM DDA ACCT ...2189") for Jamaica St - NOT netted
 //           here (the real drawn figure is what we want).
 // Any LLC NOT listed here uses the insurance amount straight from the sheet.
-const INSURANCE_OVERRIDE = { divando: 2422.32, yale: 1037.55 };
+// Nov 3 2026: Divando was REMOVED from this override. Its insurance now comes per month from the sheet
+// (History col H = the State Farm draft of that month MINUS the share Dorado pays Divando for 2397 Jamaica),
+// so each month shows what really happened instead of one flat figure for the whole history.
+const INSURANCE_OVERRIDE = { yale: 1037.55 };
 // Returns the bank-verified monthly insurance for an LLC, or the sheet's own figure when
 // that LLC has no override. Used everywhere net cashflow is computed (cards, History, KPIs,
 // trend) so the displayed insurance and the net always agree.
@@ -2660,15 +2675,15 @@ function effectiveIns(llc, sheetIns) {
 // Update it in the /monthly-distribution run (Step 1c) every month, together with the sheet.
 //   debt = all loan payments (Divando: 6 property loans 12,199.86 + SBA 2,334; Donald: CBRE 13,494 +
 //          SBA 444; Yale: Lument 7,279.08 + SBA 225; Dorado: none).
-//   insurance = the LLC's own insurance draft. Dorado = its Berkshire draft only: the $67.50 it sends
-//          Divando for 2397 Jamaica is a transfer between two of our LLCs, and Divando's State Farm
-//          figure already includes Jamaica, so counting it in Dorado too would count it twice.
+//   insurance = each LLC carries the premiums of the houses it owns (Ron, Nov 3 2026, because Simon owns
+//          a third of Dorado only). Dorado = Berkshire (41st) + the $67.50/mo it pays Divando for 2397
+//          Jamaica on the State Farm policy. Divando = the State Farm draft minus that $67.50.
 const FIXED_COST_REFERENCE = {
   verified: '2026-10',
-  divando: { debt: 14533.86, insurance: 2422.32 },
+  divando: { debt: 14533.86, insurance: 2354.82 },
   donald:  { debt: 13938.00, insurance: 1193.42 },
   yale:    { debt: 7504.08,  insurance: 1037.55 },
-  dorado:  { debt: 0,        insurance: 465.71 }
+  dorado:  { debt: 0,        insurance: 533.21 }
 };
 // --- Cash cushion / distribution planner (bank-verified Mar–May 2026) -------------
 // Recurring monthly cash that leaves each LLC's operating account. Used to compute the
@@ -2678,10 +2693,10 @@ const FIXED_COST_REFERENCE = {
 // drafted this month is gone from the balance, so it is NOT reserved again.
 // Distributions: Divando/Yale/Donald split ÷2 (Ron/Nir); Dorado ÷3 (Ron/Nir/Simon).
 const CASHPLAN_CONFIG = {
-  divando: { label: 'Divando', match: 'divando', mortgage: 12199.86, sba: 2334, insurance: 2422.32, accountant: 0, utilities: 626, software: 288.98, buffer: 2000, split: 2 },
+  divando: { label: 'Divando', match: 'divando', mortgage: 12199.86, sba: 2334, insurance: 2354.82, accountant: 0, utilities: 626, software: 288.98, buffer: 2000, split: 2 },
   donald:  { label: 'Donald',  match: 'donald',  mortgage: 13494,    sba: 444,  insurance: 1193.42, accountant: 0, utilities: 0, software: 0, buffer: 1500, split: 2 },
   yale:    { label: 'Yale',    match: 'yale',    mortgage: 7279.08,  sba: 225,  insurance: 1037.55, accountant: 0, utilities: 0, software: 0, buffer: 1500, split: 2 },
-  dorado:  { label: 'Dorado',  match: 'dorado',  mortgage: 0,        sba: 0,    insurance: 465.42,  accountant: 0, utilities: 268, software: 0, buffer: 1000, split: 3 }
+  dorado:  { label: 'Dorado',  match: 'dorado',  mortgage: 0,        sba: 0,    insurance: 532.92,  accountant: 0, utilities: 268, software: 0, buffer: 1000, split: 3 }
 };
 // NOTE: accountant (Jeff Bergman) is set to 0 — it is NOT a fixed monthly bill, it's a
 // one-time / occasional charge (user confirmed Jun 16 2026 the $3,255 was a one-time payment).

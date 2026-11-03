@@ -46,6 +46,26 @@ flag a redeploy for `AppsScript.gs` changes made *after* the newest row in this 
 
 ---
 
+## 🛡️ Insurance split by OWNER: Dorado carries Jamaica (Ron said yes, Nov 3 2026, APP_VERSION → 2.18)
+
+Ron: 41st is the only Berkshire policy (drafts from Dorado); 2397 Jamaica (Dorado) sits on the State Farm policy with
+Divando. Decision: **each LLC carries the premiums of the houses it owns** (Simon owns a third of Dorado only).
+- **Dorado insurance** = Berkshire + what Dorado pays Divando for its State Farm houses, at the REGULAR monthly amount:
+  `$138` Jan-Aug 2026 (Jamaica + Enid), `$67.50` from Sep (Jamaica only). 2026 History col H: Jan-Aug `591.31`
+  (453.31 + 138), Sep `520.81`, Oct `533.21` (465.71 + 67.50). The one-off catch-up transfers (Jan 9 `$413` "DEC INS",
+  Apr 27 `$2,000` "INS CMPNSTN 25+26", Dec 2025 `$2,896` + `$375.67`) are NOT spread into these months.
+- **Divando insurance** = that month's State Farm draft minus the same share: Jan-Apr `2,771.98` (2,909.98 − 138), May-Aug
+  `2,495.15` (2,633.15 − 138), Sep `2,231.44` (2,298.94 − 67.50), Oct `2,354.82` (2,422.32 − 67.50). **`INSURANCE_OVERRIDE`
+  no longer has Divando** (it applied one flat figure to every month); Divando now reads col H per month like everyone else.
+  ⚠️ So **2025 Divando months now show the sheet's `2,885.83`** (they showed the flat `2,422.32` before; 2025 not reconciled).
+- Settings col D: Divando `28,257.84` (2,354.82 × 12), Dorado `6,395.04` (532.92 × 12). `FIXED_COST_REFERENCE`: Divando
+  `2354.82`, Dorado `533.21`. `CASHPLAN_CONFIG`: Divando `2354.82`, Dorado `532.92`. Portfolio total unchanged.
+- **Not updated (say so if asked):** the Noble Insurance tab texts and `dashboardKnowledge()` in `AppsScript.gs` still quote
+  Divando `$2,422.32` (the gross draft, which is still what State Farm takes). No redeploy was needed.
+- Verified in headless Chromium on the real sheet rows: Oct Divando `$2,354.82`, Dorado `$533.21`, `✓ Audit OK`, no JS errors.
+
+---
+
 ## 💸 "Historical import" distributions were HALF the bank (found + fixed Nov 3 2026)
 
 Ron uploaded the Dorado Dec 2025 CSV. Checking every 2026 bank CSV in Drive (`Niron Monthly Budget`) against the
