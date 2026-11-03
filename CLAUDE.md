@@ -46,6 +46,33 @@ flag a redeploy for `AppsScript.gs` changes made *after* the newest row in this 
 
 ---
 
+## 💸 "Historical import" distributions were HALF the bank (found + fixed Nov 3 2026)
+
+Ron uploaded the Dorado Dec 2025 CSV. Checking every 2026 bank CSV in Drive (`Niron Monthly Budget`) against the
+Distributions tab showed **every `Historical import` row holds exactly HALF of what each partner received**
+(Dorado Mar 2026: bank `BILL PAID-RONEN` `$5,200`, sheet `$2,600`; same for every LLC, Dec 2025-Mar 2026). Rows entered
+by hand from Apr 2026 on match the bank. **Fixed via `fix_distribution.yml` batch mode** (11 rows): Dec 2025 Dorado
+`6,200`; Jan Donald `3,000` · Dorado `3,100`; Feb Divando `3,750` · Dorado `1,900` · Yale `1,900`; Mar Donald `3,200` ·
+Divando `8,000` · Dorado `5,200` · Yale `2,500`; Simon (col F) filled for Dorado Dec 2025-Apr 2026. **Ron's 2026 operating
+YTD: `$61,825` → `$78,100`** (+`$16,275`). Still open: (a) **all 2025 Historical-import rows are probably halved too** (only
+Dec 2025 Dorado verified, no other 2025 CSVs on file); (b) **Donald Feb 27 2026: Nir got `$3,400`, no Ron line** in the Donald
+CSV and no sheet row at all; (c) the Aug 31 Enid payouts were not re-checked line by line.
+
+**Dorado insurance, what the bank really shows (2026):** Berkshire/National Indemnity is `$453.31`/mo all year, but
+**Jan-Apr it was paid from DIVANDO's Amex** (`AMEX EPAYMENT ACH PMT $453.31` on the Divando CSV, Jan 28 · Feb 25 · Mar 30 ·
+Apr 27), from May on by Dorado's own debit card (`NATIONAL INDEMNITY`, ~7th). Dec 2025 has no Berkshire line on Dorado.
+Dorado pays Divando for its houses on the State Farm policy: `$138`/mo (Jamaica + Enid, through Aug), `$67.50` from Oct, plus
+lumps: Dec 15 2025 `$2,896` "INSURANCE PORTION", Dec 26 2025 `$375.67`, Jan 9 2026 `$413` "DEC INS" (= Jamaica `202.08` +
+Enid `210.67`), Apr 27 2026 `$2,000` "INS CMPNSTN 25+26". **So the old `$866.07` (= Berkshire `453.33` + Enid `210.67` +
+Jamaica `202.08`) was the ECONOMIC Dorado cost**, and the real problem was the other side: Divando's flat
+`INSURANCE_OVERRIDE` counts the full State Farm draft, including Dorado's houses. ⚠️ The Nov 3 change to Dorado `453.31` /
+`465.71` therefore makes Dorado look cheaper than it is (matters for Simon's third). **Decision pending with Ron:** each LLC
+carries the premiums of the houses it owns (Dorado = Berkshire + its State Farm houses; Divando = State Farm draft minus
+those), and the flat Divando override should become per-month actuals (Jan-Apr `2,909.98`, May-Aug `2,633.15`,
+Sep `2,298.94`, Oct `2,422.32`; the flat `2,422.32` overstates Divando's YTD net by about `$2,671`).
+
+---
+
 ## 🩺 The audit now checks the BANK, not just the sheet (Nov 3 2026, APP_VERSION → 2.17)
 
 Ron sent the Oct Monthly Breakdown + KPI tiles: "tell me if everything is OK now". The audit chip was **✓ Audit OK**,
