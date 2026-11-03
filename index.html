@@ -1520,8 +1520,20 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.16";
+const APP_VERSION = "2.17";
 const CHANGELOG = [
+  {
+    version: "2.17",
+    date: "November 3, 2026",
+    en: [
+      "Fixed three wrong fixed costs. Donald: the $444/mo SBA loan was not being subtracted since September 2026, and October insurance is now the real $1,193.42 draft. Dorado: insurance was $866.07 (it still included the sold 4641 Enid house and 2397 Jamaica, which Divando's State Farm draft already covers); it is now its own Berkshire draft, $465.71 in October and $453.31 for Jan-Sep 2026.",
+      "Run Audit now checks the numbers against the bank, not just against the sheet. It turns red if any LLC's loans or insurance differ from the bank figures, if a loan on the Loans tab is missing from the card, and it warns when the bank check is more than a month old."
+    ],
+    he: [
+      "תוקנו שלוש עלויות קבועות שגויות. Donald: הלוואת ה-SBA של $444 בחודש לא הופחתה מאז ספטמבר 2026, והביטוח של אוקטובר הוא עכשיו מה שירד בפועל, $1,193.42. Dorado: הביטוח היה $866.07 (עדיין כלל את 4641 Enid שנמכר ואת 2397 Jamaica, שכבר כלולים בביטוח State Farm של Divando). עכשיו זה רק הביטוח של Dorado עצמה: $465.71 באוקטובר ו-$453.31 בינואר עד ספטמבר 2026.",
+      "ה-Run Audit בודק עכשיו את המספרים מול הבנק, לא רק מול הגיליון. הוא נהיה אדום אם ההלוואות או הביטוח של חברה כלשהי שונים מהבנק, או אם הלוואה מטאב Loans לא מופחתת בכרטיס. והוא מזהיר אם הבדיקה מול הבנק ישנה מיותר מחודש."
+    ]
+  },
   {
     version: "2.16",
     date: "November 3, 2026",
@@ -2641,6 +2653,23 @@ function effectiveIns(llc, sheetIns) {
   if (llc) { const n = llc.toLowerCase(); for (const k in INSURANCE_OVERRIDE) { if (n.includes(k)) return INSURANCE_OVERRIDE[k]; } }
   return sheetIns || 0;
 }
+// FIXED-COST REFERENCE = what really leaves each LLC's bank account every month, read off the
+// bank statements. The self-audit FAILS (red) when the newest month on the dashboard uses a
+// different loan or insurance figure, and warns when this table itself has not been re-checked
+// against the bank recently. `verified` = the month of the statements it was last checked against.
+// Update it in the /monthly-distribution run (Step 1c) every month, together with the sheet.
+//   debt = all loan payments (Divando: 6 property loans 12,199.86 + SBA 2,334; Donald: CBRE 13,494 +
+//          SBA 444; Yale: Lument 7,279.08 + SBA 225; Dorado: none).
+//   insurance = the LLC's own insurance draft. Dorado = its Berkshire draft only: the $67.50 it sends
+//          Divando for 2397 Jamaica is a transfer between two of our LLCs, and Divando's State Farm
+//          figure already includes Jamaica, so counting it in Dorado too would count it twice.
+const FIXED_COST_REFERENCE = {
+  verified: '2026-10',
+  divando: { debt: 14533.86, insurance: 2422.32 },
+  donald:  { debt: 13938.00, insurance: 1193.42 },
+  yale:    { debt: 7504.08,  insurance: 1037.55 },
+  dorado:  { debt: 0,        insurance: 465.71 }
+};
 // --- Cash cushion / distribution planner (bank-verified Mar–May 2026) -------------
 // Recurring monthly cash that leaves each LLC's operating account. Used to compute the
 // cushion to LEAVE before distributing. The cushion uses a ROLLING window (planUpcoming):
@@ -2650,7 +2679,7 @@ function effectiveIns(llc, sheetIns) {
 // Distributions: Divando/Yale/Donald split ÷2 (Ron/Nir); Dorado ÷3 (Ron/Nir/Simon).
 const CASHPLAN_CONFIG = {
   divando: { label: 'Divando', match: 'divando', mortgage: 12199.86, sba: 2334, insurance: 2422.32, accountant: 0, utilities: 626, software: 288.98, buffer: 2000, split: 2 },
-  donald:  { label: 'Donald',  match: 'donald',  mortgage: 13494,    sba: 444,  insurance: 1191.58, accountant: 0, utilities: 0, software: 0, buffer: 1500, split: 2 },
+  donald:  { label: 'Donald',  match: 'donald',  mortgage: 13494,    sba: 444,  insurance: 1193.42, accountant: 0, utilities: 0, software: 0, buffer: 1500, split: 2 },
   yale:    { label: 'Yale',    match: 'yale',    mortgage: 7279.08,  sba: 225,  insurance: 1037.55, accountant: 0, utilities: 0, software: 0, buffer: 1500, split: 2 },
   dorado:  { label: 'Dorado',  match: 'dorado',  mortgage: 0,        sba: 0,    insurance: 465.42,  accountant: 0, utilities: 268, software: 0, buffer: 1000, split: 3 }
 };
@@ -4039,10 +4068,46 @@ function auditRun(openModal) {
       Object.keys(seenD).filter(k => seenD[k] > 1).forEach(k => add('warn', 'Distribution data', k, '1 row', seenD[k] + ' rows', 'Duplicate distribution'));
       const rseen = {}; let rbad = 0; maintenance.forEach(m => { if (m.row == null || m.row < 5) rbad++; else rseen[m.row] = (rseen[m.row] || 0) + 1; }); const rdup = Object.keys(rseen).filter(k => rseen[k] > 1).length;
       add((rbad || rdup) ? 'warn' : 'pass', 'Write-back', 'Maintenance row indices valid & unique (read-only check)', 'all unique', rbad ? (rbad + ' invalid') : (rdup ? (rdup + ' duplicate') : 'OK'), 'The audit never writes to the sheet');
-      // Insurance: Divando + Yale use a bank-verified monthly figure (from the operating-acct
-      // statements), not the sheet's stale field. That override IS the source of truth now, so
-      // it's a PASS — we no longer flag it as drift against the old sheet value.
-      ['divando', 'yale'].forEach(key => { const row = history.find(h => h.period_start === month && h.llc.toLowerCase().includes(key)); if (row) { const eff = effectiveIns(row.llc, row.ins_mo || 0); add('pass', 'Insurance (bank-verified)', row.llc + ' insurance = bank draft', eff, eff, 'Uses the bank-verified amount, not the sheet'); } });
+      // ---- FIXED COSTS vs REALITY (added Nov 3 2026) ----
+      // The checks above only prove the screen matches the sheet. These check the sheet against
+      // the bank: a stale loan or insurance figure in the sheet used to pass silently (Donald SBA
+      // $444 dropped in Sep 2026, Dorado insurance still carrying the sold Enid house).
+      const histMonths = [...new Set(history.map(h => h.period_start))].filter(Boolean).sort();
+      const newest = histMonths[histMonths.length - 1];
+      const ref = FIXED_COST_REFERENCE;
+      const keys = ['divando', 'donald', 'yale', 'dorado'];
+      const checkMonths = [...new Set([newest, month].filter(m => m && m.slice(0, 7) >= ref.verified))];
+      checkMonths.forEach(m => keys.forEach(key => {
+        const rows = history.filter(h => h.period_start === m && (h.llc || '').toLowerCase().includes(key) && !/^Manual Entry/.test(h.source || ''));
+        if (!rows.length) return;
+        const llc = rows[0].llc, ml = monthLabel(m);
+        const debt = rows.reduce((t, r) => t + (r.mortgage || 0), 0) + extraMortgage(llc);
+        const ins = effectiveIns(llc, rows.reduce((t, r) => t + (r.ins_mo || 0), 0));
+        const dOk = Math.abs(debt - ref[key].debt) <= 1, iOk = Math.abs(ins - ref[key].insurance) <= 1;
+        add(dOk ? 'pass' : 'fail', 'Fixed costs vs bank', llc + ' loans · ' + ml, fmt(ref[key].debt), fmt(debt), dOk ? 'Matches the bank' : 'The sheet uses a different loan total than the bank shows. Fix the Settings tab (col B) and this month in History.');
+        add(iOk ? 'pass' : 'fail', 'Fixed costs vs bank', llc + ' insurance · ' + ml, fmt(ref[key].insurance), fmt(ins), iOk ? 'Matches the bank' : 'The sheet uses a different insurance figure than the bank shows. Fix the Settings tab (col D, yearly) and this month in History.');
+      }));
+      // Loans tab (+ the 6 Divando property loans) must add up to the loan total each card subtracts.
+      if (newest && loans.length) keys.forEach(key => {
+        const rows = history.filter(h => h.period_start === newest && (h.llc || '').toLowerCase().includes(key) && !/^Manual Entry/.test(h.source || ''));
+        if (!rows.length) return;
+        const llc = rows[0].llc;
+        const listed = loans.concat(DIVANDO_PROPERTY_LOANS).filter(l => (l.llc || '').toLowerCase().includes(key)).reduce((t, l) => t + (Number(l.monthly_payment) || 0), 0);
+        const used = rows.reduce((t, r) => t + (r.mortgage || 0), 0) + extraMortgage(llc);
+        const ok = Math.abs(listed - used) <= 1;
+        add(ok ? 'pass' : 'fail', 'Loans tab vs cards', llc + ' · ' + monthLabel(newest), fmt(listed) + ' (Loans tab)', fmt(used) + ' (card)', ok ? 'Every loan on the Loans tab is subtracted' : 'A loan on the Loans tab is missing from the card (or the other way round).');
+      });
+      // The Distribution Planner cushion uses its own copy of these numbers.
+      keys.forEach(key => {
+        const c = CASHPLAN_CONFIG[key]; if (!c) return;
+        const pd = (c.mortgage || 0) + (c.sba || 0), ok = Math.abs(pd - ref[key].debt) <= 1 && Math.abs((c.insurance || 0) - ref[key].insurance) <= 1;
+        add(ok ? 'pass' : 'warn', 'Planner vs bank', c.label + ' planner cushion', fmt(ref[key].debt) + ' + ' + fmt(ref[key].insurance), fmt(pd) + ' + ' + fmt(c.insurance || 0), ok ? 'Same as the bank' : 'Update CASHPLAN_CONFIG to the bank figures.');
+      });
+      // Is the reference itself fresh? Statements for month M arrive in M+1, so a gap of 2+ months = stale.
+      if (newest) {
+        const gap = (Number(newest.slice(0, 4)) * 12 + Number(newest.slice(5, 7))) - (Number(ref.verified.slice(0, 4)) * 12 + Number(ref.verified.slice(5, 7)));
+        add(gap <= 1 ? 'pass' : 'warn', 'Fixed costs vs bank', 'Bank check is current', 'checked within 1 month of ' + monthLabel(newest), 'last checked ' + monthLabel(ref.verified + '-01'), gap <= 1 ? '' : 'Run /monthly-distribution with the latest bank statements to re-check loans and insurance.');
+      }
       let pfBad = 0; history.forEach(r => { if (!/^\d{4}-\d{2}-\d{2}$/.test(String(r.period_start || ''))) pfBad++; });
       add(pfBad ? 'warn' : 'pass', 'Date format', 'History period_start = YYYY-MM-DD', 'all valid', pfBad ? (pfBad + ' malformed') : 'all valid');
       const lu = new Date(data.last_updated); add(isFinite(lu.getTime()) ? 'pass' : 'warn', 'Timestamp', 'Last Updated is a valid date', 'valid', isFinite(lu.getTime()) ? 'valid' : 'invalid');
