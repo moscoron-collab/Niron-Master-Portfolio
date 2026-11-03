@@ -3370,6 +3370,11 @@ planner cushion, the Noble tab and the skill's reference table were all updated.
   **One-time** column in the by-year table. The self-audit's `expDist`/`expDistYtd` apply the same filter (audit
   stays green). Headless-tested with stub data: KPI $5.0K (one-time excluded), Dorado card shows the $252,000 line,
   `✓ Audit OK`, zero JS errors. **To mark any future sale/refinance payout, just put ONE-TIME in its Notes.**
+- **⚠️ Found Nov 3 2026: the Enid row's Notes (col E) and Simon (col F) were EMPTY in the sheet**, so the "Your
+  Distribution YTD" tile read `$145.8K` (with the $84K) instead of `$61.8K`. Fixed with the new
+  **`fix_distribution.yml`** (`automation/fix_distribution.py`: finds ONE row by date + LLC + Ron's amount, sets col E
+  and optionally col F, dry run unless `confirm=YES`): Notes → `ONE-TIME - Enid sale proceeds (not operating)`, Simon →
+  `84000`. Ron's 2026 distributions to Nov 3: operating `$61,825` + Enid `$84,000` = `$145,825` (Nir the same).
 
 **✅ October 2026 close (run Nov 1 2026): reconcile only, NO distribution calc** (Ron: "כבר חילקנו"). First run
 read from the Drive folder `Niron Monthly Budget/October 2026` (4 bank CSVs + maintenance export + `Suncoast.pdf` +
