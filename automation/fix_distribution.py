@@ -48,13 +48,24 @@ def money(v):
 rows = s.values().get(spreadsheetId=SHEET_ID, range="Distributions!A:F",
                       valueRenderOption="UNFORMATTED_VALUE").execute().get("values", [])
 
-# BATCH mode (env BATCH = JSON list of {"date","llc","amount", "ron"?, "nir"?, "simon"?, "notes"?}):
+# BATCH mode (env BATCH = JSON list of {"date","llc","amount", "ron"?, "nir"?, "simon"?, "notes"?}, or
+# {"append": true, "date","llc","ron","nir","simon"?,"notes"?} to add a missing row):
 # sets Ron (C) / Nir (D) / Simon (F) / Notes (E) on each matched row. Every row must match exactly once.
 BATCH = os.environ.get("BATCH", "").strip()
 if BATCH:
     print("MODE:", "WRITE" if CONFIRM else "DRY RUN (set confirm=YES to write)")
-    data, bad = [], []
+    data, bad, appends = [], [], []
     for t in json.loads(BATCH):
+        if t.get("append"):
+            # New row: only if no row already holds this date + LLC + Ron amount (idempotent).
+            y, m, d = (int(x) for x in t["date"].split("-"))
+            dup = [i for i, r in enumerate(rows) if i >= 4 and len(r) > 2 and iso(r[0]) == t["date"]
+                   and t["llc"].lower() in str(r[1]).lower() and money(r[2]) == round(float(t["ron"]), 2)]
+            if dup:
+                print(f"SKIP    {t['date']} {t['llc']}: already there (row {dup[0] + 1})"); continue
+            row = [f"{m}/{d}/{y}", t["llc"], t["ron"], t["nir"], t.get("notes", ""), t.get("simon", "")]
+            print(f"APPEND  {row}")
+            appends.append(row); continue
         hits = [i + 1 for i, r in enumerate(rows) if i >= 4 and len(r) > 2 and iso(r[0]) == t["date"]
                 and t["llc"].lower() in str(r[1]).lower() and money(r[2]) == round(float(t["amount"]), 2)]
         if len(hits) != 1:
@@ -67,7 +78,11 @@ if BATCH:
     if bad:
         raise SystemExit("::error::No single match for: " + "; ".join(bad))
     if CONFIRM:
-        s.values().batchUpdate(spreadsheetId=SHEET_ID, body={"valueInputOption": "USER_ENTERED", "data": data}).execute()
+        if data:
+            s.values().batchUpdate(spreadsheetId=SHEET_ID, body={"valueInputOption": "USER_ENTERED", "data": data}).execute()
+        if appends:
+            s.values().append(spreadsheetId=SHEET_ID, range="Distributions!A:F", valueInputOption="USER_ENTERED",
+                              body={"values": appends}).execute()
         print("Written.")
     raise SystemExit(0)
 hits = [i + 1 for i, r in enumerate(rows) if i >= 4 and len(r) > 2 and iso(r[0]) == DATE
