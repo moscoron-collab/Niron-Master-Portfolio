@@ -54,7 +54,7 @@ Distributions tab showed **every `Historical import` row holds exactly HALF of w
 by hand from Apr 2026 on match the bank. **Fixed via `fix_distribution.yml` batch mode** (11 rows): Dec 2025 Dorado
 `6,200`; Jan Donald `3,000` · Dorado `3,100`; Feb Divando `3,750` · Dorado `1,900` · Yale `1,900`; Mar Donald `3,200` ·
 Divando `8,000` · Dorado `5,200` · Yale `2,500`; Simon (col F) filled for Dorado Dec 2025-Apr 2026. **Ron's 2026 operating
-YTD: `$61,825` → `$78,100`** (+`$16,275`). Still open: (a) **all 2025 Historical-import rows are probably halved too** (only
+YTD: `$61,825` → `$78,100`** (+`$16,275`). **Confirmed from the receiving side too (Nov 3 2026):** the deposits into Ron's own account for Jan-Oct 2026 add up to exactly `$78,100` (+ `$84,000` Enid). Only that total is recorded here; the account itself is private. Also noticed, NOT yet explained: Divando's Laureate bank deposit was lower than the History row in Apr (`-356.68`), Jun (`-1,893.76`), Jul (`-1,998.17`) and Aug (`-590.64`) 2026; Jan-Mar and May match. Still open: (a) **all 2025 Historical-import rows are probably halved too** (only
 Dec 2025 Dorado verified, no other 2025 CSVs on file); (b) **Donald Feb 27 2026: Nir got `$3,400`, no Ron line** in the Donald
 CSV and no sheet row at all; (c) the Aug 31 Enid payouts were not re-checked line by line.
 
