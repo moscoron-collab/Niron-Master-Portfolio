@@ -3584,6 +3584,14 @@ November, so **check the Divando November CSV for a `$950.75` Suncoast deposit**
 (The `$1,205.75` deposit on 10/8 in the October CSV is the SEPTEMBER draw.) Joest + Stockport (Mid South) still have
 no Sep/Oct rows: no statements and no deposits yet.
 
+**🔎 Mid South deposits found + June 2026 gap (Nov 3 2026, Ron's Jul+Aug Divando CSV in Drive).** Bank lines
+`MID SOUTH BEST R WEB PMTS PPD NIR SHAY`: **Jun 12 2026 `$920`** (= the May Stockport row already in the sheet) and
+**Jul 10 2026 `$2,420.76`** (= the July statement's `Draws $2,420.76`, i.e. the JUNE balance). **None since** (Aug, Sep,
+Oct CSVs checked). **The sheet had NO June 2026 manual rows at all.** Fixed for Hare: **June Hare `$913.65`** entered
+Nov 3 (Suncoast JUN-26 NOI `$913.65` = the Jul 6 deposit `$913.65`; `manual_suncoast.yml` run 8, 1 row). **STILL OPEN:
+June Joest + Stockport** = `$2,420.76` combined, split unknown. Ask Ron for the June Mid South statement, then write
+both via `manual_suncoast.yml` (month `2026-06`). Also no May Joest row exists (unverified whether one is due).
+
 **"Already added?" indicator:** the Add Monthly Statement modal reads
 `PORTFOLIO_DATA.history` and, for the selected month, marks each property with
 `✅ already added` (and disables it) or `⬜ not yet`, plus an "X of 3 entered"
