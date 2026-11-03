@@ -16,9 +16,9 @@ SHEET_ID = os.environ["GOOGLE_SHEET_ID"]
 creds = Credentials.from_service_account_info(json.loads(os.environ["GOOGLE_CREDENTIALS_JSON"]),
                                               scopes=["https://www.googleapis.com/auth/spreadsheets"])
 s = build("sheets", "v4", credentials=creds).spreadsheets()
-DATE = os.environ["MATCH_DATE"].strip()
-LLC = os.environ["MATCH_LLC"].strip().lower()
-AMT = round(float(os.environ["MATCH_AMOUNT"]), 2)
+DATE = os.environ.get("MATCH_DATE", "").strip()
+LLC = os.environ.get("MATCH_LLC", "").strip().lower()
+AMT = round(float(os.environ.get("MATCH_AMOUNT") or 0), 2)
 NOTES = os.environ.get("SET_NOTES", "")
 SIMON = os.environ.get("SET_SIMON", "").strip()
 CONFIRM = os.environ.get("CONFIRM", "").strip().upper() == "YES"
@@ -47,6 +47,29 @@ def money(v):
 
 rows = s.values().get(spreadsheetId=SHEET_ID, range="Distributions!A:F",
                       valueRenderOption="UNFORMATTED_VALUE").execute().get("values", [])
+
+# BATCH mode (env BATCH = JSON list of {"date","llc","amount", "ron"?, "nir"?, "simon"?, "notes"?}):
+# sets Ron (C) / Nir (D) / Simon (F) / Notes (E) on each matched row. Every row must match exactly once.
+BATCH = os.environ.get("BATCH", "").strip()
+if BATCH:
+    print("MODE:", "WRITE" if CONFIRM else "DRY RUN (set confirm=YES to write)")
+    data, bad = [], []
+    for t in json.loads(BATCH):
+        hits = [i + 1 for i, r in enumerate(rows) if i >= 4 and len(r) > 2 and iso(r[0]) == t["date"]
+                and t["llc"].lower() in str(r[1]).lower() and money(r[2]) == round(float(t["amount"]), 2)]
+        if len(hits) != 1:
+            bad.append(f'{t["date"]} {t["llc"]} {t["amount"]}: {len(hits)} rows'); continue
+        rn = hits[0]; r = rows[rn - 1] + [""] * 6
+        for key, col, idx in (("ron", "C", 2), ("nir", "D", 3), ("notes", "E", 4), ("simon", "F", 5)):
+            if key in t:
+                print(f"Row {rn} {t['date']} {r[1]}: {key} {r[idx]!r} -> {t[key]!r}")
+                data.append({"range": f"Distributions!{col}{rn}", "values": [[t[key]]]})
+    if bad:
+        raise SystemExit("::error::No single match for: " + "; ".join(bad))
+    if CONFIRM:
+        s.values().batchUpdate(spreadsheetId=SHEET_ID, body={"valueInputOption": "USER_ENTERED", "data": data}).execute()
+        print("Written.")
+    raise SystemExit(0)
 hits = [i + 1 for i, r in enumerate(rows) if i >= 4 and len(r) > 2 and iso(r[0]) == DATE
         and LLC in str(r[1]).lower() and money(r[2]) == AMT]
 print("MODE:", "WRITE" if CONFIRM else "DRY RUN (set confirm=YES to write)")
