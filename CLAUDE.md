@@ -3577,6 +3577,13 @@ statements (each PDF repeats the same 3-page statement 5 times). Every month: re
 pieces ($825 on 8/1 + $500 on 8/5) but in full. Suncoast holds a `$945` security deposit (escrow, not ours). Written
 via `manual_suncoast.yml`, 1 row per month, no duplicates.
 
+**🗓️ Suncoast / Hare Oct 2026 = `$950.75` (entered Nov 3 2026).** Statement 10/01-10/31: rent `$1,325` − mgmt `$119.25`
+− a one-time **Property Inspection `$255`** (10/26) = `$950.75` = `Owner Draws`, ending balance `$0`, escrow still `$945`.
+Written via `manual_suncoast.yml` (run 7, `Saved 8222 Hare Ave 2026-10-01 → $950.75`). The draw lands in the bank early
+November, so **check the Divando November CSV for a `$950.75` Suncoast deposit** and correct the row if it differs.
+(The `$1,205.75` deposit on 10/8 in the October CSV is the SEPTEMBER draw.) Joest + Stockport (Mid South) still have
+no Sep/Oct rows: no statements and no deposits yet.
+
 **"Already added?" indicator:** the Add Monthly Statement modal reads
 `PORTFOLIO_DATA.history` and, for the selected month, marks each property with
 `✅ already added` (and disables it) or `⬜ not yet`, plus an "X of 3 entered"
