@@ -3375,6 +3375,8 @@ planner cushion, the Noble tab and the skill's reference table were all updated.
   **`fix_distribution.yml`** (`automation/fix_distribution.py`: finds ONE row by date + LLC + Ron's amount, sets col E
   and optionally col F, dry run unless `confirm=YES`): Notes → `ONE-TIME - Enid sale proceeds (not operating)`, Simon →
   `84000`. Ron's 2026 distributions to Nov 3: operating `$61,825` + Enid `$84,000` = `$145,825` (Nir the same).
+- **Label (Nov 3 2026, Ron, APP_VERSION → 2.16):** the YTD half of the Your Distribution card now reads
+  **`מתחילת השנה נטו משכירויות`** / `YTD net from rent` (was just `מתחילת השנה` / `YTD`), so it is clear the sale money is not in it.
 
 **✅ October 2026 close (run Nov 1 2026): reconcile only, NO distribution calc** (Ron: "כבר חילקנו"). First run
 read from the Drive folder `Niron Monthly Budget/October 2026` (4 bank CSVs + maintenance export + `Suncoast.pdf` +
