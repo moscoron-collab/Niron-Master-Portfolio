@@ -226,7 +226,7 @@ the policy #, the broker contact and what to ask for.
 
 | Policy | Expires | Reminder (yearly) | Contact |
 |---|---|---|---|
-| State Farm — Divando 12 SFRs + 2397 Jamaica (Dorado) | Dec 15 (dashboard also flags **Blackhawk Dec 4**) | **Nov 4** (1 month before the earlier date) | Kevin Schult `(303) 989-3847` |
+| State Farm — Divando 12 SFRs + 2397 Jamaica (Dorado) | Dec 15 (dashboard also flags **Blackhawk Dec 4**) | **Nov 4** (1 month before the earlier date; 2026 done — Ron emailed Kevin `kevin.schult.l4wu@statefarm.com` Nov 4 2026 asking for per-policy renewal premiums, new SFPP draft, coverage changes, a higher-deductible option, current dec pages, and whether Blackhawk renews Dec 4 or Dec 15. Answer pending) | Kevin Schult `(303) 989-3847` |
 | Acuity `ZM1786-01` — Yale | Feb 22 | **Jan 22** | CRS Insurance Brokerage / Nathan Fonseca |
 | Westfield `499841Y` — Donald | Sep 20 | **Aug 20** (first fires 2027) | Arrow Insurance / Wren Arbuthnot `970-668-3500` |
 | Berkshire Hathaway `02PRM080318-07` — Dorado 41st fourplex (renewed Nov 6 2026 → Nov 6 2027) | Nov 6 | **Oct 6** (first fires 2027; 2026 done — Ron emailed Hannah Oct 6 2026) | IMA Select / Hannah Burford `hannah.burford@imacorp.com` · `303-615-7840` |
