@@ -213,8 +213,10 @@ NAME says `-06` but every page says `-07`). Read in full (declarations + all for
   remaining check, free, in the monthly close: Dorado's Berkshire/National Indemnity draft should stay ~`$465`; ~`$415`
   or a `$602` refund would mean the `$5,000` endorsement went through after all, then tell Ron.
 - **Not in the file:** the GL declarations (liability limits). The card still says `$1M / $2M` from the old policy, unverified.
-- **Mortgagees vs "Dorado is mortgage-free":** the policy still names 2 banks. Either old loans that were never removed from the
-  policy, or a loan we don't know about. Ask Ron (one question at a time).
+- **Mortgagees are STALE (Ron, Nov 6 2026: "אין הלוואות").** No loan on 41st, yet the policy still names ANB Bank +
+  Collegiate Peaks. Why it matters: on a claim the insurer can make the check payable jointly to the named mortgagees, so
+  a bank with no loan would have to sign off before Dorado gets paid. Recommended: ask Hannah to remove both (she may ask
+  for a lien release / payoff letter). Ron was given the email text. The Noble card shows a ⚠ line under Mortgagees.
 
 ---
 
