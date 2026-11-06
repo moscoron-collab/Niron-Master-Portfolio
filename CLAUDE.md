@@ -236,7 +236,7 @@ Ron compared three numbers (Oct 27 2026) and **chose to keep the $2,500 deductib
 - **Payment schedule:** `FOURPLEX_PAYMENTS` now = Oct 6 2026 $466.00 (down payment, per binder) + 11 × ~$465.36 (estimated) through Sep 6 2027. The Oct 6 2026 date follows last year's pattern (first draft the month before the term) and is **not bank-verified** — check the Oct 6 2026 Dorado bank draft (expected $466.00; the Dorado CSV of the next `/monthly-distribution` run will show it).
 - **Updated in `index.html`:** Noble summary tile (Total Monthly $5,327.70, next-renewals list now starts Dec 15 2026 Divando, Dorado Nov 6 2027 at the end), Dorado LLC card, renewal calendar row, Dorado renewal card (policy `-07`, expiring `-06`, premium $5,585 = prop $5,215 + liability $370, monthly $465.42, building $790,500), payment schedule, premium-history table (new row, `-06` moved to history, YoY +2.7%), the Dorado overview table (building total $1,169,300, annual combined $8,010), and `CASHPLAN_CONFIG.dorado.insurance` 453.31 → **465.42**. Also synced the `/monthly-distribution` skill's Dorado row.
 - `AppsScript.gs` `dashboardKnowledge()` does not quote the Dorado fourplex premium, so no redeploy was needed.
-- Next reminder: yearly Oct 6 2027 (calendar event unchanged; its description still shows policy `-06`, harmless).
+- Next reminder: yearly Oct 6 2027 (description updated to `-07` on Nov 6 2026).
 
 ---
 
@@ -252,7 +252,7 @@ the policy #, the broker contact and what to ask for.
 | State Farm — Divando 12 SFRs + 2397 Jamaica (Dorado) | Dec 15 (dashboard also flags **Blackhawk Dec 4**) | **Nov 4** (1 month before the earlier date; 2026 done — Ron emailed Kevin `kevin.schult.l4wu@statefarm.com` Nov 4 2026 asking for per-policy renewal premiums, new SFPP draft, coverage changes, a higher-deductible option, current dec pages, and whether Blackhawk renews Dec 4 or Dec 15. Answer pending) | Kevin Schult `(303) 989-3847` |
 | Acuity `ZM1786-01` — Yale | Feb 22 | **Jan 22** | CRS Insurance Brokerage / Nathan Fonseca |
 | Westfield `499841Y` — Donald | Sep 20 | **Aug 20** (first fires 2027) | Arrow Insurance / Wren Arbuthnot `970-668-3500` |
-| Berkshire Hathaway `02PRM080318-07` — Dorado 41st fourplex (renewed Nov 6 2026 → Nov 6 2027) | Nov 6 | **Oct 6** (first fires 2027; 2026 done — Ron emailed Hannah Oct 6 2026) | IMA Select / Hannah Burford `hannah.burford@imacorp.com` · `303-615-7840` |
+| Berkshire Hathaway `02PRM080318-07` — Dorado 41st fourplex (renewed Nov 6 2026 → Nov 6 2027) | Nov 6 | **Oct 6** (first fires 2027; 2026 done — Ron emailed Hannah Oct 6 2026. Ron asked for it again Nov 6 2026: it already existed, so its description was updated to policy `-07`, `$5,585`, `$2,500` / wind-hail `$16,000`; the Nov 6 day-of expiration event too) | IMA Select / Hannah Burford `hannah.burford@imacorp.com` · `303-615-7840` |
 
 - **Keep this table and the calendar in sync.** When a renewal moves a date, or a policy is added / dropped / changes
   carrier, update the matching calendar event (or delete it and create a new one) AND this table, in the same session.
