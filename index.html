@@ -1254,7 +1254,7 @@
             <div class="rf"><label>Policy Number (Expiring)</label><div class="ev hi">02PRM080318-06</div></div>
             <div class="rf"><label>Policy Period</label><div class="ev editable ok" contenteditable="true" spellcheck="false">Nov 6, 2026 → Nov 6, 2027</div></div>
             <div class="rf"><label>Annual Premium</label><div class="ev editable" contenteditable="true" spellcheck="false">$5,585</div></div>
-            <div class="rf"><label>Prop Premium</label><div class="ev hi">$5,215</div></div>
+            <div class="rf"><label>Prop Premium</label><div class="ev hi">$5,215<br><span style="font-size:11px;color:#8aa6c4">Building $4,909 · Business Income $305</span></div></div>
             <div class="rf"><label>Liability Premium</label><div class="ev hi">$370</div></div>
 
             <div class="rz">② Payment</div>
@@ -1270,7 +1270,7 @@
 
             <div class="rz">④ Deductibles</div>
             <div class="rf"><label>Deductible — Standard</label><div class="ev editable" contenteditable="true" spellcheck="false">$2,500</div></div>
-            <div class="rf"><label>Deductible — Wind/Hail</label><div class="ev editable" contenteditable="true" spellcheck="false" style="color:var(--warn)">$15,500</div></div>
+            <div class="rf"><label>Deductible — Wind/Hail</label><div class="ev editable" contenteditable="true" spellcheck="false" style="color:var(--warn)">$16,000</div></div>
 
             <div class="rz">⑤ Contacts &amp; Parties</div>
             <div class="rf"><label>Agent</label><div class="ev hi">Hannah Burford — IMA Select, LLC<br>1705 17th St Ste 100, Denver CO</div></div>
@@ -1278,8 +1278,8 @@
             <div class="rf"><label>Mortgagees</label><div class="ev hi">ANB Bank ISAOA<br>Collegiate Peaks Bank · Div of Glacier Bank</div></div>
 
             <div class="rz">⑥ Admin</div>
-            <div class="rf"><label>Last Updated</label><div class="ev editable" contenteditable="true" spellcheck="false">Oct 27, 2026 — from Berkshire binder (8/28/2026), $2,500 deductible. Final policy docs pending.</div></div>
-            <div class="rf"><label>Notes</label><div class="ev editable" contenteditable="true" spellcheck="false">Recurring monthly. Cancel ≥3 days before due. Wind/Hail deductible $15,500 — note for claims. Oct 26, 2026 endorsement proof (-$602, $5,000 deductible) NOT taken: Ronen keeps the $2,500 deductible. Confirm with IMA that it is cancelled and that wind/hail is still $15,500 on the final policy.</div></div>
+            <div class="rf"><label>Last Updated</label><div class="ev editable" contenteditable="true" spellcheck="false">Nov 6, 2026 — from the final 26-27 policy (Berkshire, issued Sep 11, 2026, sent by IMA Nov 6, 2026). $2,500 deductible, $5,585/yr.</div></div>
+            <div class="rf"><label>Notes</label><div class="ev editable" contenteditable="true" spellcheck="false">Recurring monthly. Cancel ≥3 days before due. Wind/Hail deductible $16,000 per occurrence (was $15,500 on -06) — note for claims. Final policy (issued Sep 11, 2026) shows the $2,500 standard deductible and $5,585. It was issued BEFORE the Oct 26, 2026 endorsement proof (-$602, $5,000 deductible), so confirm with IMA that endorsement was cancelled. Liability limits are not printed in the policy file IMA sent (only the $370 premium).</div></div>
             <div class="rf" style="grid-column:1/-1"><label>📎 Policy Document — Paste Dropbox Link</label><div class="ev editable" contenteditable="true" spellcheck="false" id="db-dorado" style="color:var(--accent)">Paste Dropbox link here...</div></div>
           </div>
           <div class="renewal-actions">
@@ -1520,8 +1520,18 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.18";
+const APP_VERSION = "2.19";
 const CHANGELOG = [
+  {
+    version: "2.19",
+    date: "November 6, 2026",
+    en: [
+      "Noble Insurance, Dorado fourplex (1460 W 41st Ave): updated from the final 2026-27 Berkshire policy. Premium $5,585 a year and the $2,500 standard deductible are confirmed. The wind/hail deductible is now $16,000 (it was $15,500)."
+    ],
+    he: [
+      "ביטוח Noble, הפורפלקס של דורדו (1460 W 41st Ave): עודכן לפי הפוליסה הסופית של Berkshire לשנת 2026-27. הפרמיה $5,585 לשנה וההשתתפות העצמית $2,500 אושרו. ההשתתפות העצמית לרוח וברד עכשיו $16,000 (הייתה $15,500)."
+    ]
+  },
   {
     version: "2.18",
     date: "November 3, 2026",
