@@ -195,6 +195,27 @@ photos/PDFs at once (Ctrl-click on PC, multi-select on the phone). A line under 
 
 ---
 
+## 📄 Dorado 41st FINAL policy received (Nov 6 2026, APP_VERSION → 2.19, pure frontend)
+
+IMA Select Support emailed Ron the "26-27 Commercial Package Policy" on Nov 6 2026 (to his business address, NOT
+`moscoron@gmail.com`, so the Gmail connector cannot see it). Ron uploaded it to Drive as
+`POL -26-27 - CPKG 02PRM080318-06 Commercial Package Policy.pdf` (file id `1imEP2hL6Je-iSYxSe5MwnngwO82JWbkH`; the file
+NAME says `-06` but every page says `-07`). Read in full (declarations + all forms).
+- **Confirmed:** policy `02PRM080318-07`, Berkshire Hathaway Homestate, NIRON NOBLE LLC (3536 S Cherokee St, Englewood),
+  billing acct `240311`, term **11/06/2026 → 11/06/2027**, premium **`$5,585`** = property `$5,215` (building `$4,909` +
+  business income `$305`, rounded) + GL `$370`. Building **`$790,500`**, 80% coinsurance, replacement cost, 2% inflation
+  guard, **standard deductible `$2,500`**, Business Income `$60,600`. Mortgagee schedule: **ANB Bank ISAOA** (PO Box 9250,
+  Colorado Springs) + **Collegiate Peaks Bank, Div. of Glacier Bank** (885 S Colorado Blvd), no loan numbers.
+- **Changed:** wind/hail deductible (CPM 1110) is now **`$16,000`** per occurrence (was `$15,500` on `-06`). Updated in the
+  Noble Dorado card (+ Prop Premium split, Last Updated, Notes) and CHANGELOG 2.19.
+- **⚠️ STILL OPEN:** the cover letter is dated **Sep 11 2026**, i.e. BEFORE the Oct 26 2026 `$5,000` endorsement proof. So this
+  file does NOT prove that endorsement was cancelled. Ask Ron whether Hannah confirmed it (in writing).
+- **Not in the file:** the GL declarations (liability limits). The card still says `$1M / $2M` from the old policy, unverified.
+- **Mortgagees vs "Dorado is mortgage-free":** the policy still names 2 banks. Either old loans that were never removed from the
+  policy, or a loan we don't know about. Ask Ron (one question at a time).
+
+---
+
 ## 🏢 Dorado 41st fourplex RENEWED (Oct 27 2026, APP_VERSION → 2.13) — Berkshire Hathaway, $5,585/yr, $2,500 deductible KEPT
 
 Ron compared three numbers (Oct 27 2026) and **chose to keep the $2,500 deductible**. All dashboard data updated (pure frontend, live on merge, no Apps Script redeploy).
@@ -208,7 +229,7 @@ Ron compared three numbers (Oct 27 2026) and **chose to keep the $2,500 deductib
 
 - **Sources:** the expiring policy (Drive `41st.pdf`, issued Sep 18 2025: building $4,765 + BI $304 + GL $370 = $5,440; wind/hail $15,500 is a FLAT amount in endorsement CPM 1110, not 2%); the **binder dated 8/28/2026** (total premium **$5,585**, down payment **$466**, Twelve Payment Plan, valid FOR 60 DAYS from 11/06/2026, asks for mortgagee / loss payee info within 20 business days); and a **PROOF endorsement dated 10/26/2026** ("Modify Building", return premium **-$602**, building deductible $2,500 → $5,000, premium after = $4,983).
 - **The $602 discount is the deductible change** (inference: the -$602 matches the building premium dropping $4,765 → $4,307 while the limit went up 2%; the documents never say so). Without it the renewal was +$145 (+2.7%) vs the expiring $5,440.
-- **⚠️ OPEN: the $5,000 endorsement was "processed 10/26/2026".** Ron must tell Hannah (IMA Select) to cancel it and keep $2,500, otherwise the policy will say $5,000 while the dashboard says $2,500. Ron was given the email text. Ask him whether it is done.
+- **⚠️ OPEN (see the Nov 6 2026 section above; the final policy was issued before it): the $5,000 endorsement was "processed 10/26/2026".** Ron must tell Hannah (IMA Select) to cancel it and keep $2,500, otherwise the policy will say $5,000 while the dashboard says $2,500. Ron was given the email text. Ask him whether it is done.
 - **What is NOT verified (the dashboard says so in the card):** the final non-PROOF declarations; the wind/hail deductible on -07 (assumed unchanged $15,500: the endorsement proof does not touch CPM 1110); liability limits (dashboard card still says $1M / $2M, not printed on either PDF); building limit $790,500 on the $2,500 version (it equals 775,000 × 1.02, and appears on the $5,000 proof); the mortgagees on the card (ANB Bank ISAOA, Collegiate Peaks Bank), while this file says Dorado's properties are mortgage-free: ask Hannah what is on the final policy.
 - **Payment schedule:** `FOURPLEX_PAYMENTS` now = Oct 6 2026 $466.00 (down payment, per binder) + 11 × ~$465.36 (estimated) through Sep 6 2027. The Oct 6 2026 date follows last year's pattern (first draft the month before the term) and is **not bank-verified** — check the Oct 6 2026 Dorado bank draft (expected $466.00; the Dorado CSV of the next `/monthly-distribution` run will show it).
 - **Updated in `index.html`:** Noble summary tile (Total Monthly $5,327.70, next-renewals list now starts Dec 15 2026 Divando, Dorado Nov 6 2027 at the end), Dorado LLC card, renewal calendar row, Dorado renewal card (policy `-07`, expiring `-06`, premium $5,585 = prop $5,215 + liability $370, monthly $465.42, building $790,500), payment schedule, premium-history table (new row, `-06` moved to history, YoY +2.7%), the Dorado overview table (building total $1,169,300, annual combined $8,010), and `CASHPLAN_CONFIG.dorado.insurance` 453.31 → **465.42**. Also synced the `/monthly-distribution` skill's Dorado row.
