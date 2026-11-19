@@ -56,6 +56,14 @@ mortgages, insurance and our own repairs are NOT taken off yet (that is the Net 
 month only. Number unchanged (`ytdDisb` = sum of History disbursement Jan→selected). Verified headless on the real
 2026 History rows: `$840.3K`, tooltip visible, `✓ Audit OK`, zero JS errors.
 
+**Cash Collected got the same Hebrew 💡 (v2.21, same day):** `cashTip` (anchored `left:0;transform:none` since it is the
+leftmost card). Lists: included (Laureate Owner Disbursement, Suncoast / Mid South deposits by deposit month, an owner-held
+security deposit if any), already taken off by Laureate (mgmt fee, repairs/supplies they paid, reserve), NOT taken off
+(mortgage + SBA, insurance, owner-paid repairs, property tax, utilities), never included (partner distributions, sale
+proceeds like Enid, Moss), and timing (AppFolio "November" = Oct 16-Nov 15, lands ~18-21). Also fixed a pre-existing bug:
+the card hover `transform` trapped every KPI tooltip under the next row of tiles; `.summary-card:hover` now also sets
+`position: relative; z-index: 5`. Verified with elementFromPoint that both tooltips are on top, `✓ Audit OK`, no JS errors.
+
 **Nov 2026 pull (same day):** all 5 pulls failed Nov 15-18 on `LOGIN FAILED` (2FA token expired ~Nov 10). Ron re-seeded
 Nov 19; `monthly_all.yml` then wrote Moss 5 · Niron 4 (`Errors: []`) · Divando 15 · Yale 5 · Donald 8 rows. **Next re-seed
 expected ~Dec 19.** Ron was told plainly that the SMS 2FA cannot be automated as long as the code goes to SMS (earlier
