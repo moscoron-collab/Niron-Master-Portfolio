@@ -55,7 +55,7 @@
   /* Master Portfolio card styles (existing) */
   .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; align-items: stretch; }
   .summary-card { background: rgba(14, 22, 38, 0.8); border: 1px solid #1e2d42; border-radius: 12px; padding: 18px 16px; transition: transform 0.15s, border-color 0.15s; display: flex; min-height: 140px; }
-  .summary-card:hover { transform: translateY(-2px); border-color: #0080cc; }
+  .summary-card:hover { transform: translateY(-2px); border-color: #0080cc; position: relative; z-index: 5; }
   .card-cell { flex: 1; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
   .card-cell .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.4px; line-height: 1.3; min-height: 32px; color: #00BFFF; }
   .card-cell .value { font-size: 24px; font-weight: 700; line-height: 1.1; color: #ffffff; margin: 6px 0 4px; }
@@ -1520,8 +1520,18 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.20";
+const APP_VERSION = "2.21";
 const CHANGELOG = [
+  {
+    version: "2.21",
+    date: "November 19, 2026",
+    en: [
+      "Cash Collected (top-left card) now has a 💡 explainer in Hebrew: what is included (Laureate's monthly transfers, the out-of-state deposits), what Laureate already took off (their fees, repairs they paid, reserve), and what is NOT taken off yet (mortgages, insurance, our own repairs, property tax, utilities)."
+    ],
+    he: [
+      "ל-Cash Collected (הכרטיס הראשון משמאל למעלה) נוספה מנורה 💡 עם הסבר בעברית: מה כלול (ההעברות החודשיות מ-Laureate וההפקדות מהבתים שמחוץ לקולורדו), מה Laureate כבר הורידו (דמי ניהול, תיקונים ששילמו, רזרבה), ומה עוד לא ירד (משכנתאות, ביטוח, תיקונים שלנו, מס נכס, חשבונות)."
+    ]
+  },
   {
     version: "2.20",
     date: "November 19, 2026",
@@ -3078,7 +3088,22 @@ function renderAll() {
     + '<span class="tax-note"><b>מה עוד לא הורד:</b> משכנתאות, ביטוח ותיקונים שאנחנו משלמים בעצמנו. כלומר זה הכסף <b>לפני</b> ההוצאות שלנו, לא הרווח. כמה נשאר אחרי ההוצאות רואים בכרטיס Net Cashflow (תזרים מזומנים נקי), בחצי של YTD.</span>'
     + '<span class="tax-note"><b>ההבדל מהחצי השמאלי:</b> Cash Collected מראה רק את החודש שבחרת. Cash YTD מחבר את כל החודשים של השנה עד אליו.</span>'
     + '</span></span>';
-  html += '<div class="summary-card dual gold"><div class="card-cell"><div class="label">Cash Collected</div><div class="value" id="kpi-cash">' + fmtShort(totalDisb) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">Cash YTD' + cashYtdTip + '</div><div class="value" id="kpi-cash-ytd">' + fmtShort(ytdDisb) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
+  // 💡 Hebrew-only explainer for Cash Collected (Ron, Nov 19 2026). Anchored left so it
+  // does not run off the screen (this is the leftmost card).
+  const cashTip = '<span class="kpi-info">💡<span class="kpi-tip" dir="rtl" style="text-align:right;left:0;transform:none">'
+    + '<b>Cash Collected - מה זה?</b>'
+    + '<span class="formula" dir="rtl">כל הכסף שנכנס לבנק של 4 החברות בחודש שבחרת</span>'
+    + 'הסכום של כל מה שהגיע לחשבונות הבנק של Divando, Donald, Yale ו-Dorado <b>בחודש אחד</b>, החודש שבחרת למעלה.'
+    + '<span class="tax-note"><b>✅ מה כלול:</b><br>'
+    + '• ההעברה החודשית מ-Laureate לכל חברה (Owner Disbursement).<br>'
+    + '• ההפקדות מ-Suncoast ו-Mid South על 3 הבתים שמחוץ לקולורדו, לפי החודש שבו הכסף נכנס לבנק.<br>'
+    + '• פיקדון ששוכר חדש שילם ונשמר אצלנו, אם היה כזה החודש.</span>'
+    + '<span class="tax-note"><b>➖ מה Laureate כבר הורידו לפני שהכסף הגיע:</b> דמי הניהול שלהם, תיקונים וחומרים שהם שילמו, וכסף שהם השאירו אצלם כרזרבה.</span>'
+    + '<span class="tax-note"><b>❌ מה לא ירד עדיין:</b> משכנתאות והלוואות SBA, ביטוח, תיקונים שאנחנו משלמים בעצמנו, מס נכס וחשבונות (חשמל, מים). לכן זה <b>לא הרווח</b>. אחרי ההוצאות האלה רואים את Net Cashflow בכרטיס הבא.</span>'
+    + '<span class="tax-note"><b>🚫 לא נכלל בכלל:</b> החלוקות לשותפים, כסף ממכירת נכס (כמו Enid), ונכסי Moss.</span>'
+    + '<span class="tax-note"><b>תזמון:</b> "נובמבר" ב-AppFolio זה הדוח של 16 באוקטובר עד 15 בנובמבר. הכסף שלו נכנס לבנק בערך ב-18 עד 21 בנובמבר.</span>'
+    + '</span></span>';
+  html += '<div class="summary-card dual gold"><div class="card-cell"><div class="label">Cash Collected' + cashTip + '</div><div class="value" id="kpi-cash">' + fmtShort(totalDisb) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">Cash YTD' + cashYtdTip + '</div><div class="value" id="kpi-cash-ytd">' + fmtShort(ytdDisb) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
   // ── Ratio helpers (recalc with the selected month) ──
   // marginPct = Net ÷ Cash Collected (how much of collected cash survives expenses)
   // payoutPct = Your Distribution ÷ Net Cashflow (your slice of net that hit the bank)
