@@ -1520,8 +1520,18 @@
    both `en` and `he` bullet lists. The "What's New" popup auto-
    opens once per browser after a version bump (then on click).
    ============================================================ */
-const APP_VERSION = "2.19";
+const APP_VERSION = "2.20";
 const CHANGELOG = [
+  {
+    version: "2.20",
+    date: "November 19, 2026",
+    en: [
+      "Cash YTD (top-left card) now has a 💡 explainer, in Hebrew: it is all the money that reached the 4 LLC bank accounts from January 1 to the selected month, before mortgages, insurance and our own repairs."
+    ],
+    he: [
+      "ל-Cash YTD (הכרטיס הראשון משמאל למעלה) נוספה מנורה 💡 עם הסבר בעברית: זה כל הכסף שנכנס לחשבונות הבנק של 4 החברות מ-1 בינואר ועד החודש שבחרת, לפני משכנתאות, ביטוח ותיקונים שאנחנו משלמים."
+    ]
+  },
   {
     version: "2.19",
     date: "November 6, 2026",
@@ -3059,7 +3069,16 @@ function renderAll() {
   const headerSelect = document.getElementById('header-month-select'); if (headerSelect) headerSelect.innerHTML = monthOptions;
   const netCls = totalNet >= 0 ? 'green' : 'red';
   let html = '<div class="summary-grid">';
-  html += '<div class="summary-card dual gold"><div class="card-cell"><div class="label">Cash Collected</div><div class="value" id="kpi-cash">' + fmtShort(totalDisb) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">Cash YTD</div><div class="value" id="kpi-cash-ytd">' + fmtShort(ytdDisb) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
+  // 💡 Hebrew-only explainer for Cash YTD (Ron, Nov 19 2026).
+  const cashYtdTip = '<span class="kpi-info">💡<span class="kpi-tip" dir="rtl" style="text-align:right">'
+    + '<b>Cash YTD - מה זה?</b>'
+    + '<span class="formula" dir="rtl">כל הכסף שנכנס לבנק מ-1 בינואר ועד החודש שבחרת</span>'
+    + 'YTD זה קיצור של "מתחילת השנה". המספר הזה מחבר את <b>כל הכסף שנכנס לחשבונות הבנק של 4 החברות</b> (Divando, Donald, Yale, Dorado) מ-1 בינואר ועד החודש שבחרת למעלה.'
+    + '<span class="tax-note"><b>מה נכלל:</b> ההעברות החודשיות מ-Laureate (אחרי שהם כבר הורידו את דמי הניהול שלהם ותיקונים ששילמו), וגם ההפקדות מ-Suncoast ו-Mid South על 3 הבתים שמחוץ לקולורדו.</span>'
+    + '<span class="tax-note"><b>מה עוד לא הורד:</b> משכנתאות, ביטוח ותיקונים שאנחנו משלמים בעצמנו. כלומר זה הכסף <b>לפני</b> ההוצאות שלנו, לא הרווח. כמה נשאר אחרי ההוצאות רואים בכרטיס Net Cashflow (תזרים מזומנים נקי), בחצי של YTD.</span>'
+    + '<span class="tax-note"><b>ההבדל מהחצי השמאלי:</b> Cash Collected מראה רק את החודש שבחרת. Cash YTD מחבר את כל החודשים של השנה עד אליו.</span>'
+    + '</span></span>';
+  html += '<div class="summary-card dual gold"><div class="card-cell"><div class="label">Cash Collected</div><div class="value" id="kpi-cash">' + fmtShort(totalDisb) + '</div><div class="sublabel">' + (monthLabel(SELECTED_MONTH) || 'No data') + '</div></div><div class="divider"></div><div class="card-cell"><div class="label ytd-label">Cash YTD' + cashYtdTip + '</div><div class="value" id="kpi-cash-ytd">' + fmtShort(ytdDisb) + '</div><div class="sublabel">' + ytdSubLabel + '</div></div></div>';
   // ── Ratio helpers (recalc with the selected month) ──
   // marginPct = Net ÷ Cash Collected (how much of collected cash survives expenses)
   // payoutPct = Your Distribution ÷ Net Cashflow (your slice of net that hit the bank)
