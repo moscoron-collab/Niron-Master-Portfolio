@@ -61,10 +61,18 @@ Kevin Schult emailed Ron Nov 19 2026 with 3 PDFs (all now in Drive folder `Divan
   `$2M/$4M`. Billed SEPARATELY: **`$3,334.92` due Dec 24 2026** (not in the SFPP draft). Named insured NIRON NOBLE LLC.
 - **The Nov 2026 SFPP draft scheduled = `$2,422.32`** (same as Oct) = WITHOUT Blackhawk. With it the draft would be ~`$2,699`.
 - **So the dashboard's Divando insurance May-Nov 2026 is ~`$277`/mo too low** (only the SFPP draft was recorded).
-- **Pending Kevin's reply** (Ron sent/will send an email asking to add Blackhawk to SFPP + the new December monthly total +
-  all the Dec 15 Divando/Jamaica renewal dec pages). When it arrives: update the Noble tab Blackhawk row (policy #, term
-  Dec 15, remove "Blackhawk Dec 4 ⚠️" at the renewal-calendar row and the State Farm calendar note), the State Farm premium
-  history (explain the May drop), the December SFPP figure, and record the `$1,974.65` in its bank month.
+- **✅ Kevin replied Nov 24 2026:** Blackhawk added back to the monthly SFPP; **new total for all 12 policies = `$2,770.99`/mo**
+  (from the Dec 2026 draft, ~Dec 29). That is `$72` more than `2,422.32 + 276.67 = 2,698.99`, most likely the Dec 15
+  renewal rates on the other policies (NOT verified; the other renewal dec pages are not on file).
+- **Done Nov 24 2026 (APP_VERSION → 2.22, pure frontend):** Noble tab only: renewal row (12 policies, no more "Blackhawk Dec 4"),
+  Monthly Payment text, Blackhawk table row (`96-S0-B187-9`, Dec 15 2026-2027), footer, premium-history row "Dec 2026 →
+  $2,770.99 (announced)". **The cost numbers were deliberately NOT changed** (`FIXED_COST_REFERENCE`, `CASHPLAN_CONFIG`,
+  Settings col D, History col H): the new amount has not drafted yet, and changing the reference now would fail the audit on
+  November. **December close TODO:** confirm the `$2,770.99` draft on the Divando CSV → Divando insurance =
+  `2,770.99 − 67.50 = 2,703.49`/mo → `FIXED_COST_REFERENCE`, `CASHPLAN_CONFIG`, Settings D (`32,441.88`), History Dec col H,
+  `dashboardKnowledge()` (needs redeploy), the skill table. Also record the `$1,974.65` catch-up in its bank month, and
+  check that the separate `$3,334.92` Dec 24 bill is NOT also charged (it should be replaced by the monthly draft).
+  The "Total Monthly · All Active" Noble tile (`$5,116.87`) was left as-is until the draft lands.
 
 ---
 
