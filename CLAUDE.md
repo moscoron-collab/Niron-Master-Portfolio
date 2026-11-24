@@ -46,6 +46,28 @@ flag a redeploy for `AppsScript.gs` changes made *after* the newest row in this 
 
 ---
 
+## 🛡️ Blackhawk SOLVED: the May 2026 $276.83 State Farm drop was Blackhawk not being billed (Nov 24 2026, nothing changed in code yet)
+
+Kevin Schult emailed Ron Nov 19 2026 with 3 PDFs (all now in Drive folder `Divando(includes hare +jamaica)`, id
+`1Ks_YYLODYFTlggOB2pGl-AUI7HGOYhgE`: `4776 Blackhawk Way - Renewal 2026-2027 (96-S0-B187-9).pdf` + `... Policy May-Dec 2026 ...`).
+- **What happened (from the documents):** in April Kevin asked State Farm to move Blackhawk to the Dec 15 date. State Farm
+  issued policy **`96-S0-B187-9`** (replaces `96-E4-G672-4`) for **May 13 2026 → Dec 15 2026** and then **stopped collecting
+  premium**. So the Divando SFPP draft fell `$2,909.98 → $2,633.15` on May 29 = Blackhawk (`$3,320/12 = $276.67`). The
+  "cause unknown" open item in the Divando insurance sections below is CLOSED: it was Blackhawk, not a refund or renewal.
+- **Catch-up:** balance due notice `$1,974.65` (premium `$1,965` for the 7 months + `$2` disaster mitigation + `$7.65` CO FAIR
+  Plan). Ron authorized Kevin to run it; Kevin emailed a receipt Nov 19. Which account paid it is NOT known yet; record it as an
+  actual in the month it leaves the bank (Ron's actuals rule).
+- **Renewal Dec 15 2026 → Dec 15 2027:** premium `$3,320` (unchanged), dwelling `$525,500`, 1% deductible `$5,255`, liability
+  `$2M/$4M`. Billed SEPARATELY: **`$3,334.92` due Dec 24 2026** (not in the SFPP draft). Named insured NIRON NOBLE LLC.
+- **The Nov 2026 SFPP draft scheduled = `$2,422.32`** (same as Oct) = WITHOUT Blackhawk. With it the draft would be ~`$2,699`.
+- **So the dashboard's Divando insurance May-Nov 2026 is ~`$277`/mo too low** (only the SFPP draft was recorded).
+- **Pending Kevin's reply** (Ron sent/will send an email asking to add Blackhawk to SFPP + the new December monthly total +
+  all the Dec 15 Divando/Jamaica renewal dec pages). When it arrives: update the Noble tab Blackhawk row (policy #, term
+  Dec 15, remove "Blackhawk Dec 4 ⚠️" at the renewal-calendar row and the State Farm calendar note), the State Farm premium
+  history (explain the May drop), the December SFPP figure, and record the `$1,974.65` in its bank month.
+
+---
+
 ## 💡 Cash YTD Hebrew tooltip (Nov 19 2026, APP_VERSION → 2.20, pure frontend)
 
 Ron asked for a 💡 next to **Cash YTD** (top-left card) explaining it in simple Hebrew. `cashYtdTip` in `renderAll`
