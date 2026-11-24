@@ -70,7 +70,7 @@ Kevin Schult emailed Ron Nov 19 2026 with 3 PDFs (all now in Drive folder `Divan
   Settings col D, History col H): the new amount has not drafted yet, and changing the reference now would fail the audit on
   November. **December close TODO:** confirm the `$2,770.99` draft on the Divando CSV → Divando insurance =
   `2,770.99 − 67.50 = 2,703.49`/mo → `FIXED_COST_REFERENCE`, `CASHPLAN_CONFIG`, Settings D (`32,441.88`), History Dec col H,
-  `dashboardKnowledge()` (needs redeploy), the skill table. Also record the `$1,974.65` catch-up in its bank month, and
+  `dashboardKnowledge()` (needs redeploy), the skill table. Also record the `$1,974.65` catch-up in its bank month (**Ron, Nov 24 2026: paid from DIVANDO**; Kevin ran it ~Nov 19, so expect it on Divando's November CSV as a State Farm line; by the actuals rule it goes into Divando's NOVEMBER insurance as a one-off, and the audit's fixed-cost-vs-reference check will flag November unless that month is noted as a one-off), and
   check that the separate `$3,334.92` Dec 24 bill is NOT also charged (it should be replaced by the monthly draft).
   The "Total Monthly · All Active" Noble tile (`$5,116.87`) was left as-is until the draft lands.
 
